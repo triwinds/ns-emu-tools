@@ -6,7 +6,7 @@ from pathlib import Path
 import py7zr
 
 from config import yuzu_config, dump_yuzu_config
-from module.common import get_firmware_infos
+from module.common import get_firmware_infos, get_keys_info, download_keys_by_name
 from module.downloader import download
 from repository.yuzu import get_latest_yuzu_release_info, get_yuzu_release_info_by_version
 
@@ -48,6 +48,34 @@ def install_yuzu(target_version=None):
     os.remove(yuzu_package_path)
 
 
+def install_key_to_yuzu(target_name=None):
+    keys_info = get_keys_info()
+    if not target_name and yuzu_config.yuzu_firmware:
+        for k in keys_info:
+            if yuzu_config.yuzu_firmware in k:
+                print(f'key [{k}] maybe suitable for firmware [{yuzu_config.yuzu_firmware}].')
+                target_name = k
+                break
+    if not target_name:
+        idx2name = {}
+        print('Follow keys are available:')
+        for i, name in enumerate(keys_info.keys()):
+            print(f'  {i}: {name}')
+            idx2name[str(i)] = name
+        choose = input('Choose num: ')
+        if choose not in idx2name:
+            raise RuntimeError(f'Not available choose: {choose}')
+        target_name = idx2name[choose]
+    file = download_keys_by_name(target_name)
+    with py7zr.SevenZipFile(file) as zf:
+        zf: py7zr.SevenZipFile = zf
+        keys_path = Path(yuzu_config.yuzu_path).joinpath(r'user\keys')
+        keys_path.mkdir(parents=True, exist_ok=True)
+        print(f'Extracting keys to {keys_path}')
+        zf.extractall(keys_path)
+        print(f'Keys [{target_name}] install successfully.')
+
+
 def install_firmware_to_yuzu(firmware_version=None):
     firmware_infos = get_firmware_infos()
     if firmware_version:
@@ -78,4 +106,5 @@ def install_firmware_to_yuzu(firmware_version=None):
 
 if __name__ == '__main__':
     # install_yuzu()
-    install_firmware_to_yuzu()
+    # install_firmware_to_yuzu()
+    install_key_to_yuzu()

@@ -1,5 +1,5 @@
-from config import yuzu_config, dump_yuzu_config
-from module.yuzu import install_yuzu, install_firmware_to_yuzu
+from config import yuzu_config
+from module.yuzu import install_yuzu, install_firmware_to_yuzu, install_key_to_yuzu
 
 
 if __name__ == '__main__':
@@ -8,5 +8,6 @@ if __name__ == '__main__':
     print(f'Yuzu firmware: {yuzu_config.yuzu_firmware}')
     install_yuzu()
     install_firmware_to_yuzu('15.0.0')
+    install_key_to_yuzu()
     print(f'Yuzu version: {yuzu_config.yuzu_version}')
     print(f'Yuzu firmware: {yuzu_config.yuzu_firmware}')
