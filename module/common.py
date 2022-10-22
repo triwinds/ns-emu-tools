@@ -4,6 +4,7 @@ import requests
 import bs4
 
 
+@lru_cache(1)
 def get_firmware_infos():
     resp = requests.get('https://darthsternie.net/switch-firmwares/')
     soup = bs4.BeautifulSoup(resp.text, features="html.parser")
