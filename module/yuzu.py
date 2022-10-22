@@ -66,6 +66,9 @@ def install_key_to_yuzu(target_name=None):
         if choose not in idx2name:
             raise RuntimeError(f'Not available choose: {choose}')
         target_name = idx2name[choose]
+    elif yuzu_config.key_file == target_name:
+        print(f'Current key file is same as target file [{target_name}], skip install.')
+        return
     file = download_keys_by_name(target_name)
     with py7zr.SevenZipFile(file) as zf:
         zf: py7zr.SevenZipFile = zf
@@ -73,6 +76,8 @@ def install_key_to_yuzu(target_name=None):
         keys_path.mkdir(parents=True, exist_ok=True)
         print(f'Extracting keys to {keys_path}')
         zf.extractall(keys_path)
+        yuzu_config.key_file = target_name
+        dump_yuzu_config()
         print(f'Keys [{target_name}] install successfully.')
 
 
@@ -84,6 +89,9 @@ def install_firmware_to_yuzu(firmware_version=None):
     else:
         target_info = firmware_infos[0]
         firmware_version = target_info['version']
+    if firmware_version == yuzu_config.yuzu_firmware:
+        print(f'Current firmware are same as target version [{firmware_version}], skip install.')
+        return
     if not target_info:
         print(f'Target firmware version [{firmware_version}] not found, skip install.')
         return

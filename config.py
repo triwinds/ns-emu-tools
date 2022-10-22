@@ -16,6 +16,7 @@ class YuzuConfig:
     yuzu_path: Optional[str] = 'D:/Yuzu'
     yuzu_version: Optional[str] = None
     yuzu_firmware: Optional[str] = None
+    key_file: Optional[str] = None
 
 
 if os.path.exists(yuzu_config_path):
