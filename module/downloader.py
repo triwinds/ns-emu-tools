@@ -33,7 +33,7 @@ def init_aria2():
             break
     print(f'starting aria2 daemon at port {port}')
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
-                                      '--rpc-secret', '123456'])
+                                      '--rpc-secret', '123456'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     aria2 = aria2p.API(
         aria2p.Client(
             host="http://localhost",
@@ -42,11 +42,9 @@ def init_aria2():
         )
     )
     global_options = {
-        'split': 16,
-        'max-connection-per-server': 16,
-        'min-split-size': '4M',
-        'allow-overwrite': True,
-        'auto-file-renaming': False
+        'split': '16',
+        'max-connection-per-server': '16',
+        'min-split-size': '1M',
     }
     proxies = urllib.request.getproxies()
     if proxies:
@@ -72,21 +70,29 @@ def download(url, save_dir=None, options=None, download_in_background=False):
         return info
     info = aria2.get_download(info.gid)
     while info.is_active:
-        # print(f'progress: {info.progress_string()}, download speed: {info.download_speed_string()}')
-        time.sleep(0.5)
+        print(f'\rprogress: {info.progress_string()}, '
+              f'connections: {info.connections}, '
+              f'{info.completed_length_string()}/{info.total_length_string()} , '
+              f'download speed: {info.download_speed_string()}, eta: {info.eta_string()}', end='')
+        time.sleep(0.3)
         info = aria2.get_download(info.gid)
+    if info.error_code != '0':
+        if info.error_code == '13':
+            print('\rfile already exist.')
+        else:
+            print(f'\rinfo.error_code: {info.error_code}')
+    else:
+        print(f'\rprogress: {info.progress_string()}, total size: {info.total_length_string()},')
     aria2.autopurge()
     return info
 
 
 def shutdown_aria2():
     if aria2_process:
-        print('Shutdown aria2...')
+        # print('Shutdown aria2...')
         aria2_process.kill()
 
 
 if __name__ == '__main__':
-    info = download('http://www.baidu.com')
-    for file in info.files:
-        print(file.path)
-    # download('https://github.com/pineappleEA/pineapple-src/releases/download/EA-2888/Windows-Yuzu-EA-2888.7z', './')
+    info = download('http://ipv4.download.thinkbroadband.com/200MB.zip')
+    os.remove(info.files[0].path)

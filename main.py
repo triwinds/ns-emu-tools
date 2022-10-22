@@ -7,7 +7,7 @@ if __name__ == '__main__':
     print(f'Yuzu version: {yuzu_config.yuzu_version}')
     print(f'Yuzu firmware: {yuzu_config.yuzu_firmware}')
     install_yuzu()
-    install_firmware_to_yuzu('15.0.0')
+    install_firmware_to_yuzu()
     install_key_to_yuzu()
     print(f'Yuzu version: {yuzu_config.yuzu_version}')
     print(f'Yuzu firmware: {yuzu_config.yuzu_firmware}')

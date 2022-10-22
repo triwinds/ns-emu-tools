@@ -87,7 +87,15 @@ def install_firmware_to_yuzu(firmware_version=None):
         firmware_map = {fi['version']: fi for fi in firmware_infos}
         target_info = firmware_map.get(firmware_version)
     else:
-        target_info = firmware_infos[0]
+        idx2info = {}
+        print('Available firmwares:')
+        for i in range(5):
+            print(f"  {i}: {firmware_infos[i]}")
+            idx2info[str(i)] = firmware_infos[i]
+        choose = input('Choose num: ')
+        if choose not in idx2info:
+            raise RuntimeError(f'Invalid choose: {choose}')
+        target_info = idx2info[choose]
         firmware_version = target_info['version']
     if firmware_version == yuzu_config.yuzu_firmware:
         print(f'Current firmware are same as target version [{firmware_version}], skip install.')
