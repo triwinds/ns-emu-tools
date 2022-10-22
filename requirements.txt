@@ -1,0 +1,6 @@
+requests
+dataclasses-json
+aria2p
+py7zr
+beautifulsoup4
+# google-api-python-client
