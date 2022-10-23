@@ -5,6 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Yuzu Tools</title>
+    <script src="./bootstrap.min.js"></script>
+    <link href="./bootstrap.min.css" rel="stylesheet">
     <style>
         h1 {
             color: #c3e87d;
@@ -63,15 +65,24 @@
             font-size: 1.28rem;
             overflow: scroll;
         }
+
         div#component-manage-container {
             font-size: 19px;
+        }
+
+        .install-btn {
+            width: 100px !important;
+        }
+
+        select.form-select {
+            width: 300px;
         }
     </style>
     <script>
         const height = 700;
         const width = 650;
         window.resizeTo(650, 700);
-        self.moveTo((screen.availWidth-width)/2,(screen.availHeight-height)/2);
+        self.moveTo((screen.availWidth - width) / 2, (screen.availHeight - height) / 2);
     </script>
     <script type="text/javascript" src="../eel.js"></script>
     <script src="./vue.js"></script>
@@ -83,8 +94,8 @@
     <div id="top-bar">
         <span class="basic-info top-bar">{{topBarMsg}}</span>
     </div>
+    <h1>Yuzu Tools</h1>
     <div id="main-container">
-        <h1>Yuzu Tools</h1>
         <div id="yuzu-info">
             <h2>Yuzu 基础信息: </h2>
             <p>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span></p>
@@ -100,11 +111,11 @@
             <div id="component-manage-container">
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installYuzu">安装 Yuzu</button>
+                        <button @click="installYuzu" class="btn btn-primary install-btn">安装 Yuzu</button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的 yuzu 版本:
-                            <select v-model="targetYuzuVersion">
+                            <select v-model="targetYuzuVersion" class="form-select">
                                 <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
                                     {{item['tag_name'].substring(3)}}
                                 </option>
@@ -114,11 +125,11 @@
                 </div>
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installFirmware">安装固件</button>
+                        <button @click="installFirmware" class="btn btn-primary install-btn">安装固件</button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的固件版本:
-                            <select v-model="targetFirmwareVersion">
+                            <select v-model="targetFirmwareVersion" class="form-select">
                                 <option v-for="item in availableFirmwareInfos" :value="item['version']">
                                     {{item['version']}}
                                 </option>
@@ -128,11 +139,11 @@
                 </div>
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installKeys">安装密钥</button>
+                        <button @click="installKeys" class="btn btn-primary install-btn">安装密钥</button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的密钥版本:
-                            <select v-model="targetKeyName">
+                            <select v-model="targetKeyName" class="form-select">
                                 <option v-for="item in availableKeyInfos" :value="item['name']">
                                     {{item['name']}}
                                 </option>
