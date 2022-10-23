@@ -8,12 +8,14 @@ const vm = new Vue({
         targetYuzuVersion: "",
         targetFirmwareVersion: "",
         targetKeyName: "",
+        topBarMsg: ""
     },
     created() {
         this.updateYuzuConfig()
         this.updateYuzuReleaseInfos()
         this.updateAvailableFirmwareInfos()
         this.updateKeysInfo()
+        this.topBarMsg = '启动完毕'
     },
     methods: {
         updateYuzuConfig() {
@@ -41,25 +43,29 @@ const vm = new Vue({
                     res.push(info[key])
                 }
                 this.availableKeyInfos = res.reverse()
+                this.targetKeyName = this.availableKeyInfos[0]['name']
             })
         },
         installYuzu() {
             eel.install_yuzu(this.targetYuzuVersion)((resp) => {
-                alert(resp['msg'])
+                this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             });
         },
         installFirmware() {
             eel.install_firmware(this.targetFirmwareVersion)((resp) => {
-                alert(resp['msg'])
+                this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             })
         },
         installKeys() {
             eel.install_keys(this.targetKeyName)((resp) => {
-                alert(resp['msg'])
+                this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             })
+        },
+        updateTopBarMsg(msg) {
+            this.topBarMsg = msg
         }
     },
     computed: {
@@ -77,3 +83,8 @@ const vm = new Vue({
         },
     }
 });
+
+eel.expose(updateTopBarMsg);
+function updateTopBarMsg(msg) {
+    vm.updateTopBarMsg(msg)
+}

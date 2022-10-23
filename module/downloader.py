@@ -5,6 +5,7 @@ import urllib
 import aria2p
 from pathlib import Path
 import os
+from module.msg_notifier import send_notify
 
 
 aria2: Optional[aria2p.API] = None
@@ -74,6 +75,8 @@ def download(url, save_dir=None, options=None, download_in_background=False):
               f'connections: {info.connections}, '
               f'{info.completed_length_string()}/{info.total_length_string()} , '
               f'download speed: {info.download_speed_string()}, eta: {info.eta_string()}', end='')
+        send_notify(f'下载进度: {info.progress_string()}, 下载速度: {info.download_speed_string()}, '
+                    f'{info.completed_length_string()}/{info.total_length_string()}')
         time.sleep(0.3)
         info = aria2.get_download(info.gid)
     if info.error_code != '0':
@@ -83,6 +86,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
             print(f'\rinfo.error_code: {info.error_code}')
     else:
         print(f'\rprogress: {info.progress_string()}, total size: {info.total_length_string()},')
+    send_notify('下载完成')
     aria2.autopurge()
     return info
 

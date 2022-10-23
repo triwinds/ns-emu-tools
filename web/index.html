@@ -18,18 +18,25 @@
 
         body {
             background-color: #263238;
+            width: 100%;
+            margin: 0;
         }
 
         h2 {
             color: #c792cc;
         }
 
-        p {
+        #yuzu-info > p {
             color: #69aae7;
+            font-size: 19px;
         }
 
         .basic-info {
             color: #eeffff;
+        }
+
+        div#main-container {
+            padding-left: 10px;
         }
 
         div#yuzu-info {
@@ -44,96 +51,94 @@
         .inner {
             display: inline-block;
         }
+
+        div#top-bar {
+            background-color: #3a4c55;
+            width: 100%;
+            height: 30px;
+        }
+
+        span.top-bar {
+            padding-left: 8px;
+            font-size: 1.28rem;
+            overflow: scroll;
+        }
+        div#component-manage-container {
+            font-size: 19px;
+        }
     </style>
     <script>
-        // Provided for type checking
-        window.eel = {
-            initialise: () => ({
-                filename: null,
-                options: [],
-                suppliedUiConfiguration: {},
-                warnings: [],
-                pathSeparator: '',
-                defaultOutputFolder: '',
-                languageHint: ''
-            }),
-            does_file_exist: (path) => false,
-            does_folder_exist: (path) => false,
-            ask_file: (file_type) => "",
-            ask_files: () => [],
-            ask_folder: () => "",
-            open_folder_in_explorer: (path) => {
-            },
-            will_packaging_overwrite_existing: (file_path, one_file, output_folder) => true,
-            package: (command, non_pyinstaller_options) => {
-            },
-            import_configuration: () => {
-            },
-            export_configuration: (configuration) => {
-            }
-        }
-        window.resizeTo(600, 550);
+        const height = 700;
+        const width = 650;
+        window.resizeTo(650, 700);
+        self.moveTo((screen.availWidth-width)/2,(screen.availHeight-height)/2);
     </script>
     <script type="text/javascript" src="../eel.js"></script>
     <script src="./vue.js"></script>
 
 </head>
 <body>
-<h1>Yuzu Tools</h1>
+
 <div id="root">
-    <div id="yuzu-info">
-        <h2>Yuzu 基础信息: </h2>
-        <p>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span></p>
-        <p>当前 Yuzu 版本: <span
-                class="basic-info">{{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}</span> ,
-            最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
-        <p>当前固件版本: <span
-                class="basic-info">{{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}</span> ,
-            最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
+    <div id="top-bar">
+        <span class="basic-info top-bar">{{topBarMsg}}</span>
     </div>
-    <div>
-        <h2>Yuzu 组件管理: </h2>
+    <div id="main-container">
+        <h1>Yuzu Tools</h1>
+        <div id="yuzu-info">
+            <h2>Yuzu 基础信息: </h2>
+            <p>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span></p>
+            <p>当前 Yuzu 版本: <span
+                    class="basic-info">{{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}</span> ,
+                最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
+            <p>当前固件版本: <span
+                    class="basic-info">{{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}</span> ,
+                最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
+        </div>
         <div>
-            <div class="outer">
-                <div class="inner">
-                    <button @click="installYuzu">安装 Yuzu</button>
+            <h2>Yuzu 组件管理: </h2>
+            <div id="component-manage-container">
+                <div class="outer">
+                    <div class="inner">
+                        <button @click="installYuzu">安装 Yuzu</button>
+                    </div>
+                    <div class="inner">
+                        <label class="basic-info">选择需要安装的 yuzu 版本:
+                            <select v-model="targetYuzuVersion">
+                                <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
+                                    {{item['tag_name'].substring(3)}}
+                                </option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
-                <div class="inner">
-                    <label class="basic-info">选择需要安装的 yuzu 版本:
-                    <select v-model="targetYuzuVersion">
-                        <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
-                            {{item['tag_name'].substring(3)}}
-                        </option>
-                    </select>
-                    </label>
+                <div class="outer">
+                    <div class="inner">
+                        <button @click="installFirmware">安装固件</button>
+                    </div>
+                    <div class="inner">
+                        <label class="basic-info">选择需要安装的固件版本:
+                            <select v-model="targetFirmwareVersion">
+                                <option v-for="item in availableFirmwareInfos" :value="item['version']">
+                                    {{item['version']}}
+                                </option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="outer">
-                <div class="inner">
-                    <button @click="installFirmware">安装固件</button>
-                </div>
-                <div class="inner">
-                    <label class="basic-info">选择需要安装的固件版本:
-                    <select v-model="targetFirmwareVersion">
-                        <option v-for="item in availableFirmwareInfos" :value="item['version']">
-                            {{item['version']}}
-                        </option>
-                    </select>
-                    </label>
-                </div>
-            </div>
-            <div class="outer">
-                <div class="inner">
-                    <button @click="installKeys">安装密钥</button>
-                </div>
-                <div class="inner">
-                    <label class="basic-info">选择需要安装的密钥版本:
-                    <select v-model="targetKeyName">
-                        <option v-for="item in availableKeyInfos" :value="item['name']">
-                            {{item['name']}}
-                        </option>
-                    </select>
-                    </label>
+                <div class="outer">
+                    <div class="inner">
+                        <button @click="installKeys">安装密钥</button>
+                    </div>
+                    <div class="inner">
+                        <label class="basic-info">选择需要安装的密钥版本:
+                            <select v-model="targetKeyName">
+                                <option v-for="item in availableKeyInfos" :value="item['name']">
+                                    {{item['name']}}
+                                </option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>

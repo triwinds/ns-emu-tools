@@ -60,11 +60,12 @@ def can_use_chrome():
 
 
 def main():
-    # Start the index.html file
+    from module.msg_notifier import update_notifier
+    update_notifier('eel')
     if can_use_chrome():
-        eel.start("index.html", size=(550, 600), port=0)
+        eel.start("index.html", port=0)
     else:
-        eel.start("index.html", size=(550, 600), port=0, mode='user default')
+        eel.start("index.html", port=0, mode='user default')
 
 
 if __name__ == '__main__':

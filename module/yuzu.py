@@ -8,6 +8,7 @@ import py7zr
 from config import yuzu_config, dump_yuzu_config
 from module.common import get_firmware_infos, get_keys_info, download_keys_by_name
 from module.downloader import download
+from module.msg_notifier import send_notify
 from repository.yuzu import get_latest_yuzu_release_info, get_yuzu_release_info_by_version
 
 
@@ -23,6 +24,10 @@ def download_yuzu(release_info):
 
 
 def install_yuzu(target_version=None):
+    if target_version == yuzu_config.yuzu_version:
+        print(f'Current yuzu version is same as target version [{target_version}], skip install.')
+        return f'当前就是 [{target_version}] 版本的 yuzu , 跳过安装.'
+    send_notify('正在获取 yuzu 版本信息...')
     if target_version:
         release_info = get_yuzu_release_info_by_version(target_version)
     else:
@@ -30,29 +35,33 @@ def install_yuzu(target_version=None):
     version = release_info["tag_name"][3:]
     if version == yuzu_config.yuzu_version:
         print(f'Current yuzu version is same as target version [{version}], skip install.')
-        return f'Current yuzu version is same as target version [{version}], skip install.'
+        return f'当前就是 [{version}] 版本的 yuzu , 跳过安装.'
     print(f'target yuzu version: {release_info["tag_name"][3:]}')
     yuzu_path = Path(yuzu_config.yuzu_path)
     print(f'target yuzu path: {yuzu_path}')
+    send_notify('开始下载 yuzu...')
     yuzu_package_path = download_yuzu(release_info)
     with py7zr.SevenZipFile(yuzu_package_path) as zf:
         zf: py7zr.SevenZipFile = zf
         print(f'Unpacking yuzu files...')
+        send_notify('正在解压 yuzu 文件...')
         zf.extractall(tempfile.gettempdir())
         tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc-early-access')
         for useless_file in tmp_dir.glob('yuzu-windows-msvc-source-*.tar.xz'):
             os.remove(useless_file)
         print(f'Copy back yuzu files...')
+        send_notify('安装 yuzu 文件至目录...')
         shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
         shutil.rmtree(tmp_dir)
         yuzu_config.yuzu_version = version
         dump_yuzu_config()
         print(f'Yuzu of [{version}] install successfully.')
     os.remove(yuzu_package_path)
-    return f'Yuzu of [{version}] install successfully.'
+    return f'Yuzu [{version}] 安装完成.'
 
 
 def install_key_to_yuzu(target_name=None):
+    send_notify('正在获取 key 信息...')
     keys_info = get_keys_info()
     if not target_name and yuzu_config.yuzu_firmware:
         for k in keys_info:
@@ -72,21 +81,26 @@ def install_key_to_yuzu(target_name=None):
         target_name = idx2name[choose]
     elif yuzu_config.key_file == target_name:
         print(f'Current key file is same as target file [{target_name}], skip install.')
-        return f'Current key file is same as target file [{target_name}], skip install.'
+        return f'当前的 key 就是 [{target_name}], 跳过安装.'
     file = download_keys_by_name(target_name)
     with py7zr.SevenZipFile(file) as zf:
         zf: py7zr.SevenZipFile = zf
         keys_path = Path(yuzu_config.yuzu_path).joinpath(r'user\keys')
         keys_path.mkdir(parents=True, exist_ok=True)
         print(f'Extracting keys to {keys_path}')
+        send_notify('提取 key 至目录...')
         zf.extractall(keys_path)
         yuzu_config.key_file = target_name
         dump_yuzu_config()
         print(f'Keys [{target_name}] install successfully.')
-    return f'Keys [{target_name}] install successfully.'
+    return f'Keys [{target_name}] 安装完成.'
 
 
 def install_firmware_to_yuzu(firmware_version=None):
+    if firmware_version == yuzu_config.yuzu_firmware:
+        print(f'Current firmware are same as target version [{firmware_version}], skip install.')
+        return f'当前的 固件 就是 [{firmware_version}], 跳过安装.'
+    send_notify('正在获取固件信息...')
     firmware_infos = get_firmware_infos()
     if firmware_version:
         firmware_map = {fi['version']: fi for fi in firmware_infos}
@@ -104,11 +118,12 @@ def install_firmware_to_yuzu(firmware_version=None):
         firmware_version = target_info['version']
     if firmware_version == yuzu_config.yuzu_firmware:
         print(f'Current firmware are same as target version [{firmware_version}], skip install.')
-        return f'Current firmware are same as target version [{firmware_version}], skip install.'
+        return f'当前的 固件 就是 [{firmware_version}], 跳过安装.'
     if not target_info:
         print(f'Target firmware version [{firmware_version}] not found, skip install.')
         return f'Target firmware version [{firmware_version}] not found, skip install.'
     url = target_info['url'].replace('https://archive.org', 'https://cfrp.e6ex.com/archive')
+    send_notify(f'开始下载固件...')
     print(f"downloading firmware of [{firmware_version}] from {url}")
     info = download(url)
     file = info.files[0]
@@ -118,6 +133,7 @@ def install_firmware_to_yuzu(firmware_version=None):
         firmware_path = yuzu_path.joinpath(r'\user\nand\system\Contents\registered')
         shutil.rmtree(firmware_path, ignore_errors=True)
         firmware_path.mkdir(parents=True, exist_ok=True)
+        send_notify(f'开始解压安装固件...')
         print(f'Unzipping firmware files to {firmware_path}')
         zf.extractall(firmware_path)
         yuzu_config.yuzu_firmware = firmware_version
