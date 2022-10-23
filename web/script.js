@@ -8,7 +8,8 @@ const vm = new Vue({
         targetYuzuVersion: "",
         targetFirmwareVersion: "",
         targetKeyName: "",
-        topBarMsg: ""
+        topBarMsg: "",
+        isRunningInstall: false
     },
     created() {
         this.updateYuzuConfig()
@@ -47,19 +48,25 @@ const vm = new Vue({
             })
         },
         installYuzu() {
+            this.isRunningInstall = true
             eel.install_yuzu(this.targetYuzuVersion)((resp) => {
+                this.isRunningInstall = false
                 this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             });
         },
         installFirmware() {
+            this.isRunningInstall = true
             eel.install_firmware(this.targetFirmwareVersion)((resp) => {
+                this.isRunningInstall = false
                 this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             })
         },
         installKeys() {
+            this.isRunningInstall = true
             eel.install_keys(this.targetKeyName)((resp) => {
+                this.isRunningInstall = false
                 this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             })

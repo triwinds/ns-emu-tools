@@ -111,7 +111,7 @@
             <div id="component-manage-container">
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installYuzu" class="btn btn-primary install-btn">安装 Yuzu</button>
+                        <button @click="installYuzu" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装 Yuzu</button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的 yuzu 版本:
@@ -125,7 +125,7 @@
                 </div>
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installFirmware" class="btn btn-primary install-btn">安装固件</button>
+                        <button @click="installFirmware" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装固件</button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的固件版本:
@@ -139,7 +139,7 @@
                 </div>
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installKeys" class="btn btn-primary install-btn">安装密钥</button>
+                        <button @click="installKeys" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装密钥</button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的密钥版本:
