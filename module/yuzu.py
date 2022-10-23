@@ -15,8 +15,9 @@ def download_yuzu(release_info):
     assets = release_info['assets']
     for asset in assets:
         if asset['content_type'] == 'application/x-7z-compressed':
-            print(f"downloading yuzu from {asset['browser_download_url']}")
-            info = download(asset['browser_download_url'])
+            url = asset['browser_download_url'].replace('https://github.com', 'https://cfrp.e6ex.com/gh')
+            print(f"downloading yuzu from {url}")
+            info = download(url)
             file = info.files[0]
             return file.path
 
@@ -29,7 +30,7 @@ def install_yuzu(target_version=None):
     version = release_info["tag_name"][3:]
     if version == yuzu_config.yuzu_version:
         print(f'Current yuzu version is same as target version [{version}], skip install.')
-        return
+        return f'Current yuzu version is same as target version [{version}], skip install.'
     print(f'target yuzu version: {release_info["tag_name"][3:]}')
     yuzu_path = Path(yuzu_config.yuzu_path)
     print(f'target yuzu path: {yuzu_path}')
@@ -39,6 +40,8 @@ def install_yuzu(target_version=None):
         print(f'Unpacking yuzu files...')
         zf.extractall(tempfile.gettempdir())
         tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc-early-access')
+        for useless_file in tmp_dir.glob('yuzu-windows-msvc-source-*.tar.xz'):
+            os.remove(useless_file)
         print(f'Copy back yuzu files...')
         shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
         shutil.rmtree(tmp_dir)
@@ -46,6 +49,7 @@ def install_yuzu(target_version=None):
         dump_yuzu_config()
         print(f'Yuzu of [{version}] install successfully.')
     os.remove(yuzu_package_path)
+    return f'Yuzu of [{version}] install successfully.'
 
 
 def install_key_to_yuzu(target_name=None):
@@ -68,7 +72,7 @@ def install_key_to_yuzu(target_name=None):
         target_name = idx2name[choose]
     elif yuzu_config.key_file == target_name:
         print(f'Current key file is same as target file [{target_name}], skip install.')
-        return
+        return f'Current key file is same as target file [{target_name}], skip install.'
     file = download_keys_by_name(target_name)
     with py7zr.SevenZipFile(file) as zf:
         zf: py7zr.SevenZipFile = zf
@@ -79,6 +83,7 @@ def install_key_to_yuzu(target_name=None):
         yuzu_config.key_file = target_name
         dump_yuzu_config()
         print(f'Keys [{target_name}] install successfully.')
+    return f'Keys [{target_name}] install successfully.'
 
 
 def install_firmware_to_yuzu(firmware_version=None):
@@ -99,12 +104,13 @@ def install_firmware_to_yuzu(firmware_version=None):
         firmware_version = target_info['version']
     if firmware_version == yuzu_config.yuzu_firmware:
         print(f'Current firmware are same as target version [{firmware_version}], skip install.')
-        return
+        return f'Current firmware are same as target version [{firmware_version}], skip install.'
     if not target_info:
         print(f'Target firmware version [{firmware_version}] not found, skip install.')
-        return
-    print(f"downloading firmware of [{firmware_version}] from {target_info['url']}")
-    info = download(target_info['url'])
+        return f'Target firmware version [{firmware_version}] not found, skip install.'
+    url = target_info['url'].replace('https://archive.org', 'https://cfrp.e6ex.com/archive')
+    print(f"downloading firmware of [{firmware_version}] from {url}")
+    info = download(url)
     file = info.files[0]
     yuzu_path = Path(yuzu_config.yuzu_path)
     import zipfile
@@ -118,6 +124,7 @@ def install_firmware_to_yuzu(firmware_version=None):
         dump_yuzu_config()
         print(f'Firmware of [{firmware_version}] install successfully.')
     os.remove(file.path)
+    return f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.'
 
 
 if __name__ == '__main__':

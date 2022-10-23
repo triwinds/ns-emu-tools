@@ -24,7 +24,7 @@ def get_firmware_infos():
 
 @lru_cache(1)
 def get_keys_info():
-    resp = requests.get('https://rawgit.e6ex.com/triwinds/yuzu-tools/main/keys_info.json')
+    resp = requests.get('https://cfrp.e6ex.com/rawgit/triwinds/yuzu-tools/main/keys_info.json')
     return resp.json()
 
 
@@ -33,8 +33,9 @@ def download_keys_by_name(name):
     if name not in keys_info:
         raise RuntimeError(f'No such key [{name}].')
     key_info = keys_info[name]
-    print(f'Downloading keys [{name}] from {key_info["url"]}')
-    data = requests.get(key_info['url'])
+    url = key_info['url'].replace('https://drive.google.com', 'https://cfrp.e6ex.com/gd')
+    print(f'Downloading keys [{name}] from {url}')
+    data = requests.get(url)
     file = download_path.joinpath(name)
     with file.open('wb') as f:
         f.write(data.content)

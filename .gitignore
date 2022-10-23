@@ -213,3 +213,4 @@ cython_debug/
 
 yuzu-config.json
 download/
+output/

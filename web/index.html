@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Yuzu Tools</title>
+    <style>
+        h1 {
+            color: #c3e87d;
+            text-align: center;
+        }
+
+        button {
+            display: block;
+            margin: 0 auto;
+        }
+
+        body {
+            background-color: #263238;
+        }
+
+        h2 {
+            color: #c792cc;
+        }
+
+        p {
+            color: #69aae7;
+        }
+
+        .basic-info {
+            color: #eeffff;
+        }
+
+        div#yuzu-info {
+            padding-bottom: 30px;
+        }
+
+        .outer {
+            width: 100%;
+            text-align: left;
+        }
+
+        .inner {
+            display: inline-block;
+        }
+    </style>
+    <script>
+        // Provided for type checking
+        window.eel = {
+            initialise: () => ({
+                filename: null,
+                options: [],
+                suppliedUiConfiguration: {},
+                warnings: [],
+                pathSeparator: '',
+                defaultOutputFolder: '',
+                languageHint: ''
+            }),
+            does_file_exist: (path) => false,
+            does_folder_exist: (path) => false,
+            ask_file: (file_type) => "",
+            ask_files: () => [],
+            ask_folder: () => "",
+            open_folder_in_explorer: (path) => {
+            },
+            will_packaging_overwrite_existing: (file_path, one_file, output_folder) => true,
+            package: (command, non_pyinstaller_options) => {
+            },
+            import_configuration: () => {
+            },
+            export_configuration: (configuration) => {
+            }
+        }
+        window.resizeTo(600, 550);
+    </script>
+    <script type="text/javascript" src="../eel.js"></script>
+    <script src="./vue.js"></script>
+
+</head>
+<body>
+<h1>Yuzu Tools</h1>
+<div id="root">
+    <div id="yuzu-info">
+        <h2>Yuzu 基础信息: </h2>
+        <p>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span></p>
+        <p>当前 Yuzu 版本: <span
+                class="basic-info">{{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}</span> ,
+            最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
+        <p>当前固件版本: <span
+                class="basic-info">{{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}</span> ,
+            最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
+    </div>
+    <div>
+        <h2>Yuzu 组件管理: </h2>
+        <div>
+            <div class="outer">
+                <div class="inner">
+                    <button @click="installYuzu">安装 Yuzu</button>
+                </div>
+                <div class="inner">
+                    <label class="basic-info">选择需要安装的 yuzu 版本:
+                    <select v-model="targetYuzuVersion">
+                        <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
+                            {{item['tag_name'].substring(3)}}
+                        </option>
+                    </select>
+                    </label>
+                </div>
+            </div>
+            <div class="outer">
+                <div class="inner">
+                    <button @click="installFirmware">安装固件</button>
+                </div>
+                <div class="inner">
+                    <label class="basic-info">选择需要安装的固件版本:
+                    <select v-model="targetFirmwareVersion">
+                        <option v-for="item in availableFirmwareInfos" :value="item['version']">
+                            {{item['version']}}
+                        </option>
+                    </select>
+                    </label>
+                </div>
+            </div>
+            <div class="outer">
+                <div class="inner">
+                    <button @click="installKeys">安装密钥</button>
+                </div>
+                <div class="inner">
+                    <label class="basic-info">选择需要安装的密钥版本:
+                    <select v-model="targetKeyName">
+                        <option v-for="item in availableKeyInfos" :value="item['name']">
+                            {{item['name']}}
+                        </option>
+                    </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="./script.js"></script>
+</body>
+</html>
