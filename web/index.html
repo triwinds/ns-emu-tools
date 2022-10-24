@@ -5,83 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Yuzu Tools</title>
-    <script src="./bootstrap.min.js"></script>
+    <script src="./bootstrap.bundle.min.js"></script>
     <link href="./bootstrap.min.css" rel="stylesheet">
-    <style>
-        h1 {
-            color: #c3e87d;
-            text-align: center;
-        }
-
-        button {
-            display: block;
-            margin: 0 auto;
-        }
-
-        body {
-            background-color: #263238;
-            width: 100%;
-            margin: 0;
-        }
-
-        h2 {
-            color: #c792cc;
-        }
-
-        #yuzu-info > p {
-            color: #69aae7;
-            font-size: 19px;
-        }
-
-        .basic-info {
-            color: #eeffff;
-        }
-
-        div#main-container {
-            padding-left: 10px;
-        }
-
-        div#yuzu-info {
-            padding-bottom: 30px;
-        }
-
-        .outer {
-            width: 100%;
-            text-align: left;
-        }
-
-        .inner {
-            display: inline-block;
-        }
-
-        div#top-bar {
-            background-color: #3a4c55;
-            width: 100%;
-            height: 30px;
-        }
-
-        span.top-bar {
-            padding-left: 8px;
-            font-size: 1.28rem;
-            overflow: scroll;
-        }
-
-        div#component-manage-container {
-            font-size: 19px;
-        }
-
-        .install-btn {
-            width: 100px !important;
-        }
-
-        select.form-select {
-            width: 300px;
-        }
-    </style>
+    <link href="./style.css" rel="stylesheet">
     <script>
         const height = 700;
         const width = 650;
-        window.resizeTo(650, 700);
+        window.resizeTo(width, height);
         self.moveTo((screen.availWidth - width) / 2, (screen.availHeight - height) / 2);
     </script>
     <script type="text/javascript" src="../eel.js"></script>
@@ -99,9 +29,12 @@
         <div id="yuzu-info">
             <h2>Yuzu 基础信息: </h2>
             <p>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span></p>
-            <p>当前 Yuzu 版本: <span
-                    class="basic-info">{{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}</span> ,
-                最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
+            <p>当前 Yuzu 版本:
+                <button @click="detectYuzuVersion" title="点击重新检测 yuzu 版本"
+                        class="basic-info btn btn-outline-warning" data-bs-toggle="tooltip" data-placement="top">
+                    {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}
+                </button>
+                , 最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
             <p>当前固件版本: <span
                     class="basic-info">{{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}</span> ,
                 最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
@@ -111,7 +44,9 @@
             <div id="component-manage-container">
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installYuzu" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装 Yuzu</button>
+                        <button @click="installYuzu" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装
+                            Yuzu
+                        </button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的 yuzu 版本:
@@ -125,7 +60,9 @@
                 </div>
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installFirmware" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装固件</button>
+                        <button @click="installFirmware" class="btn btn-primary install-btn"
+                                :disabled='isRunningInstall'>安装固件
+                        </button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的固件版本:
@@ -139,7 +76,9 @@
                 </div>
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installKeys" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装密钥</button>
+                        <button @click="installKeys" class="btn btn-primary install-btn" :disabled='isRunningInstall'>
+                            安装密钥
+                        </button>
                     </div>
                     <div class="inner">
                         <label class="basic-info">选择需要安装的密钥版本:

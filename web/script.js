@@ -14,8 +14,8 @@ const vm = new Vue({
     created() {
         this.updateYuzuConfig()
         this.updateYuzuReleaseInfos()
-        this.updateAvailableFirmwareInfos()
         this.updateKeysInfo()
+        this.updateAvailableFirmwareInfos()
         this.topBarMsg = '启动完毕'
     },
     methods: {
@@ -73,7 +73,12 @@ const vm = new Vue({
         },
         updateTopBarMsg(msg) {
             this.topBarMsg = msg
-        }
+        },
+        detectYuzuVersion() {
+            eel.detect_yuzu_version()((info) => {
+                this.updateYuzuConfig()
+            })
+        },
     },
     computed: {
         latestFirmwareVersion: function () {
@@ -90,6 +95,11 @@ const vm = new Vue({
         },
     }
 });
+
+let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+let tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
 
 eel.expose(updateTopBarMsg);
 function updateTopBarMsg(msg) {

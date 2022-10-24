@@ -16,22 +16,13 @@ if not download_path.exists():
     download_path.mkdir()
 
 
-def is_port_in_use(port: int) -> bool:
-    import socket
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
-
-
 def init_aria2():
     global aria2
     global aria2_process
     if aria2:
         return
-    import random
-    while True:
-        port = random.randint(20000, 60000)
-        if not is_port_in_use(port):
-            break
+    from module.network import get_available_port, get_global_options
+    port = get_available_port()
     print(f'starting aria2 daemon at port {port}')
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
                                       '--rpc-secret', '123456'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
@@ -42,14 +33,7 @@ def init_aria2():
             secret="123456"
         )
     )
-    global_options = {
-        'split': '16',
-        'max-connection-per-server': '16',
-        'min-split-size': '1M',
-    }
-    proxies = urllib.request.getproxies()
-    if proxies:
-        global_options['all-proxy'] = iter(proxies.values()).__next__()
+    global_options = get_global_options()
     print(f'aria2 global options: {global_options}')
     aria2.set_global_options(global_options)
     import atexit

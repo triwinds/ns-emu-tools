@@ -6,7 +6,7 @@ from pathlib import Path
 from dataclasses_json import dataclass_json
 
 
-yuzu_config_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('yuzu-config.json')
+yuzu_config_path = Path('yuzu-config.json')
 yuzu_config = None
 
 
@@ -27,6 +27,7 @@ if not yuzu_config:
 
 
 def dump_yuzu_config():
+    print(f'saving config to {yuzu_config_path.absolute()}')
     with open(yuzu_config_path, 'w', encoding='utf-8') as f:
         f.write(yuzu_config.to_json(ensure_ascii=False))
 

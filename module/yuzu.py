@@ -1,6 +1,8 @@
 import os
 import shutil
+import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 import py7zr
@@ -10,13 +12,14 @@ from module.common import get_firmware_infos, get_keys_info, download_keys_by_na
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_latest_yuzu_release_info, get_yuzu_release_info_by_version
+from module.network import get_finial_url
 
 
 def download_yuzu(release_info):
     assets = release_info['assets']
     for asset in assets:
         if asset['content_type'] == 'application/x-7z-compressed':
-            url = asset['browser_download_url'].replace('https://github.com', 'https://cfrp.e6ex.com/gh')
+            url = get_finial_url(asset['browser_download_url'])
             print(f"downloading yuzu from {url}")
             info = download(url)
             file = info.files[0]
@@ -122,7 +125,7 @@ def install_firmware_to_yuzu(firmware_version=None):
     if not target_info:
         print(f'Target firmware version [{firmware_version}] not found, skip install.')
         return f'Target firmware version [{firmware_version}] not found, skip install.'
-    url = target_info['url'].replace('https://archive.org', 'https://cfrp.e6ex.com/archive')
+    url = get_finial_url(target_info['url'])
     send_notify(f'开始下载固件...')
     print(f"downloading firmware of [{firmware_version}] from {url}")
     info = download(url)
@@ -143,7 +146,39 @@ def install_firmware_to_yuzu(firmware_version=None):
     return f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.'
 
 
+def detect_yuzu_version():
+    send_notify('正在检测 yuzu 版本...')
+    yz_path = Path(yuzu_config.yuzu_path).joinpath('yuzu.exe')
+    if not yz_path.exists():
+        send_notify('未能找到 yuzu 程序')
+        return None
+    st_inf = subprocess.STARTUPINFO()
+    st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
+    subprocess.Popen(['powershell', 'Start-Process', str(yz_path.absolute()), '-WindowStyle', 'Hidden'],
+                     startupinfo=st_inf)
+    time.sleep(3)
+    from pywinauto import Desktop
+    windows = Desktop().windows()
+    version = None
+    for w in windows:
+        if w.window_text().startswith('yuzu Early Access '):
+            version = w.window_text()[18:]
+            send_notify(f'当前 yuzu 版本 [{version}]')
+            break
+    import psutil
+    for p in psutil.process_iter():
+        if p.name() == 'yuzu.exe':
+            p.kill()
+            break
+    if version:
+        yuzu_config.yuzu_version = version
+        dump_yuzu_config()
+        return version
+
+
 if __name__ == '__main__':
     # install_yuzu()
     # install_firmware_to_yuzu()
-    install_key_to_yuzu()
+    # install_key_to_yuzu()
+    print(detect_yuzu_version())
+

@@ -51,6 +51,12 @@ def install_keys(name):
     return {'msg': install_key_to_yuzu(name)}
 
 
+@eel.expose
+def detect_yuzu_version():
+    from module.yuzu import detect_yuzu_version
+    return {'yuzu_version': detect_yuzu_version()}
+
+
 def can_use_chrome():
     """ Identify if Chrome is available for Eel to use """
     import os
