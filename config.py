@@ -58,6 +58,9 @@ def update_yuzu_path(new_yuzu_path: str):
     if not new_path.exists():
         logger.info(f'create directory: {new_path}')
         new_path.mkdir(parents=True, exist_ok=True)
+    if new_path.absolute() == Path(config.yuzu.yuzu_path).absolute():
+        logger.info(f'No different with old yuzu path, skip update.')
+        return
     logger.info(f'setting yuzu path to {new_path}')
     cfg = YuzuConfig()
     cfg.yuzu_path = str(new_path.absolute())
