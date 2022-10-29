@@ -6,6 +6,18 @@ from module.common import get_firmware_infos
 eel.init("web")
 
 
+def success_response(data=None, msg=None):
+    return {'code': 0, 'data': data, 'msg': msg}
+
+
+def exception_response(ex):
+    return error_response(999, str(ex))
+
+
+def error_response(code, msg):
+    return {'code': code, 'msg': msg}
+
+
 @eel.expose
 def get_yuzu_config():
     return yuzu_config.to_dict()
@@ -13,12 +25,18 @@ def get_yuzu_config():
 
 @eel.expose
 def get_yuzu_release_infos():
-    return get_all_yuzu_release_infos()
+    try:
+        return success_response(get_all_yuzu_release_infos())
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
 def get_available_firmware_infos():
-    return get_firmware_infos()
+    try:
+        return success_response(get_firmware_infos())
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
@@ -40,7 +58,10 @@ def install_firmware(version):
 @eel.expose
 def get_available_keys_info():
     from module.common import get_keys_info
-    return get_keys_info()
+    try:
+        return success_response(get_keys_info())
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
@@ -48,7 +69,7 @@ def install_keys(name):
     if not name or name == '':
         return {'msg': f'无效的 key {name}'}
     from module.yuzu import install_key_to_yuzu
-    return {'msg': install_key_to_yuzu(name)}
+    return success_response(msg=install_key_to_yuzu(name))
 
 
 @eel.expose

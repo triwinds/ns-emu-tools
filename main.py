@@ -1,3 +1,6 @@
+import gevent.monkey
+gevent.monkey.patch_all(httplib=True)
+
 from config import yuzu_config
 from module.yuzu import install_yuzu, install_firmware_to_yuzu, install_key_to_yuzu
 import argparse
@@ -25,8 +28,7 @@ if __name__ == '__main__':
         "-nu",
         "--no-ui",
         action="store_true",
-        help="do not open a browser to show the application and simply print out where it's being hosted from. "
-             "When using this option, you must manually stop the application using Ctrl+C",
+        help="Run in cli mode.",
     )
     args = parser.parse_args()
     if args.no_ui:

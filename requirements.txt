@@ -7,3 +7,5 @@ beautifulsoup4
 eel
 pywinauto
 psutil
+gevent
+httplib2

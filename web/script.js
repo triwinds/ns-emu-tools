@@ -25,26 +25,41 @@ const vm = new Vue({
             })
         },
         updateYuzuReleaseInfos() {
-            eel.get_yuzu_release_infos()((infos) => {
-                this.allYuzuReleaseInfos = infos
-                this.targetYuzuVersion = infos[0]['tag_name'].substring(3)
+            eel.get_yuzu_release_infos()((data) => {
+                if (data['code'] === 0) {
+                    let infos = data['data']
+                    this.allYuzuReleaseInfos = infos
+                    this.targetYuzuVersion = infos[0]['tag_name'].substring(3)
+                } else {
+                    this.topBarMsg = 'yuzu 版本信息加载异常.'
+                }
             })
         },
         updateAvailableFirmwareInfos() {
-            eel.get_available_firmware_infos()((infos) => {
-                this.availableFirmwareInfos = infos
-                this.targetFirmwareVersion = infos[0]['version']
+            eel.get_available_firmware_infos()((data) => {
+                if (data['code'] === 0) {
+                    let infos = data['data']
+                    this.availableFirmwareInfos = infos
+                    this.targetFirmwareVersion = infos[0]['version']
+                } else {
+                    this.topBarMsg = '固件信息加载异常.'
+                }
             })
         },
         updateKeysInfo() {
-            eel.get_available_keys_info()((info) => {
-                res = []
-                for (let key in info) {
-                    // console.log(key, info[key]);
-                    res.push(info[key])
+            eel.get_available_keys_info()((data) => {
+                if (data['code'] === 0) {
+                    let info = data['data']
+                    res = []
+                    for (let key in info) {
+                        // console.log(key, info[key]);
+                        res.push(info[key])
+                    }
+                    this.availableKeyInfos = res.reverse()
+                    this.targetKeyName = this.availableKeyInfos[0]['name']
+                } else {
+                    this.topBarMsg = 'key 信息加载异常.'
                 }
-                this.availableKeyInfos = res.reverse()
-                this.targetKeyName = this.availableKeyInfos[0]['name']
             })
         },
         installYuzu() {
