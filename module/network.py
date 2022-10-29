@@ -4,7 +4,7 @@ from utils.common import is_using_proxy
 
 url_override_map = {
     'https://github.com': 'https://ghproxy.com/https://github.com',
-    'https://archive.org': 'https://archive.e6ex.com',
+    'https://archive.org/download/nintendo-switch-global-firmwares/': 'https://nsarchive.e6ex.com/nsfrp/',
 }
 
 
