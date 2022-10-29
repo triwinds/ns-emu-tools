@@ -58,6 +58,7 @@ def install_yuzu(target_version=None):
             os.remove(useless_file)
         logger.info(f'Copy back yuzu files...')
         send_notify('安装 yuzu 文件至目录...')
+        kill_all_yuzu_instance()
         shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
         shutil.rmtree(tmp_dir)
         config.yuzu.yuzu_version = version
@@ -170,15 +171,24 @@ def detect_yuzu_version():
                 break
     except:
         logger.exception('error occur in get_all_window_name')
-    import psutil
-    for p in psutil.process_iter():
-        if p.name() == 'yuzu.exe':
-            p.kill()
-            break
+    kill_all_yuzu_instance()
     if version:
         config.yuzu.yuzu_version = version
         dump_config()
         return version
+
+
+def kill_all_yuzu_instance():
+    import psutil
+    kill_flag = False
+    for p in psutil.process_iter():
+        if p.name() == 'yuzu.exe':
+            send_notify(f'关闭 yuzu 进程 [{p.pid}]')
+            logger.info(f'kill yuzu.exe [{p.pid}]')
+            p.kill()
+            kill_flag = True
+    if kill_flag:
+        time.sleep(1)
 
 
 def start_yuzu():
