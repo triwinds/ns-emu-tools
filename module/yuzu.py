@@ -161,14 +161,15 @@ def detect_yuzu_version():
     subprocess.Popen(['powershell', 'Start-Process', str(yz_path.absolute()), '-WindowStyle', 'Hidden'],
                      startupinfo=st_inf)
     time.sleep(3)
-    from pywinauto import Desktop
-    windows = Desktop().windows()
     version = None
-    for w in windows:
-        if w.window_text().startswith('yuzu Early Access '):
-            version = w.window_text()[18:]
-            send_notify(f'当前 yuzu 版本 [{version}]')
-            break
+    try:
+        for window_name in get_all_window_name():
+            if window_name.startswith('yuzu Early Access '):
+                version = window_name[18:]
+                send_notify(f'当前 yuzu 版本 [{version}]')
+                break
+    except:
+        logger.exception('error occur in get_all_window_name')
     import psutil
     for p in psutil.process_iter():
         if p.name() == 'yuzu.exe':
@@ -188,6 +189,22 @@ def start_yuzu():
     else:
         logger.error(f'yuzu not exist in [{yz_path}]')
         raise RuntimeError(f'yuzu not exist in [{yz_path}]')
+
+
+def callback(hwnd, strings):
+    from win32 import win32gui
+    window_title = win32gui.GetWindowText(hwnd)
+    # left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+    if window_title:
+        strings.append(window_title)
+    return True
+
+
+def get_all_window_name():
+    from win32 import win32gui
+    win_list = []  # list of strings containing win handles and window titles
+    win32gui.EnumWindows(callback, win_list)  # populate list
+    return win_list
 
 
 if __name__ == '__main__':

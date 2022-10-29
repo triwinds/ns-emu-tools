@@ -1,8 +1,4 @@
-import gevent.monkey
-gevent.monkey.patch_all(httplib=True)
-
 from config import config
-from module.yuzu import install_yuzu, install_firmware_to_yuzu, install_key_to_yuzu
 import argparse
 
 
@@ -12,6 +8,7 @@ def start_ui():
 
 
 def run_in_cli():
+    from module.yuzu import install_yuzu, install_firmware_to_yuzu, install_key_to_yuzu
     print(f'Yuzu path: {config.yuzu.yuzu_path}')
     print(f'Yuzu version: {config.yuzu.yuzu_version}')
     print(f'Yuzu firmware: {config.yuzu.yuzu_firmware}')

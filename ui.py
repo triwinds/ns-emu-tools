@@ -1,3 +1,6 @@
+import gevent.monkey
+gevent.monkey.patch_ssl()
+gevent.monkey.patch_socket()
 import eel
 from config import config, current_version
 from repository.yuzu import get_all_yuzu_release_infos
@@ -13,6 +16,7 @@ def success_response(data=None, msg=None):
 
 
 def exception_response(ex):
+    logger.error(ex, exc_info=True)
     return error_response(999, str(ex))
 
 

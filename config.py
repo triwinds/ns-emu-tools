@@ -6,6 +6,7 @@ from pathlib import Path
 from dataclasses_json import dataclass_json
 import logging
 from logging.handlers import RotatingFileHandler
+import sys
 
 
 current_version = '0.0.1'
@@ -26,6 +27,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 config_path = Path('config.json')
 config = None
+
+
+# def log_exception(exctype, value, traceback):
+#     logger.error(f'error: {exctype, value, traceback}')
+#
+#
+# sys.excepthook = log_exception
 
 
 @dataclass_json

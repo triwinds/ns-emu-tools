@@ -5,7 +5,7 @@ py7zr
 beautifulsoup4
 # google-api-python-client
 eel
-pywinauto
+pywin32
 psutil
 gevent
 httplib2
