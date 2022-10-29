@@ -10,7 +10,7 @@ from module.network import get_available_port, get_global_options, init_download
 
 aria2: Optional[aria2p.API] = None
 aria2_process: Optional[subprocess.Popen] = None
-download_path = Path(os.path.realpath(os.path.dirname(__file__))).parent.joinpath('download')
+download_path = Path('./download/')
 aria2_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('aria2c.exe')
 if not download_path.exists():
     download_path.mkdir()
@@ -25,9 +25,11 @@ def init_aria2():
     port = get_available_port()
     send_notify(f'starting aria2 daemon at port {port}')
     logger.info(f'starting aria2 daemon at port {port}')
+    st_inf = subprocess.STARTUPINFO()
+    st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
                                       '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level', 'info'],
-                                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
     aria2 = aria2p.API(
         aria2p.Client(
             host="http://localhost",
