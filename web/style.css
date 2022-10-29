@@ -17,10 +17,17 @@ button {
     margin: 0 auto;
 }
 
-body {
+html, body {
     background-color: #263238;
     width: 100%;
+    height: 100%;
     margin: 0;
+}
+
+footer {
+    text-align: center;
+    width: 100%;
+    color: #eeffff;
 }
 
 h2 {
