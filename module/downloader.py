@@ -6,6 +6,7 @@ import aria2p
 from pathlib import Path
 import os
 from module.msg_notifier import send_notify
+from module.network import get_available_port, get_global_options, init_download_options_with_proxy
 
 
 aria2: Optional[aria2p.API] = None
@@ -21,7 +22,6 @@ def init_aria2():
     global aria2_process
     if aria2:
         return
-    from module.network import get_available_port, get_global_options
     port = get_available_port()
     print(f'starting aria2 daemon at port {port}')
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
@@ -42,8 +42,10 @@ def init_aria2():
 
 def download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
-    if options is None:
-        options = {}
+    tmp = init_download_options_with_proxy()
+    if options is not None:
+        tmp.update(options)
+    options = tmp
     if save_dir is not None:
         options['dir'] = save_dir
     else:

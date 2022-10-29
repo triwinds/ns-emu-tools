@@ -1,5 +1,5 @@
 import requests
-from utils.common import is_using_proxy
+from utils.common import is_using_proxy, get_proxies
 
 
 url_override_map = {
@@ -10,13 +10,10 @@ url_override_map = {
 
 def get_global_options():
     if is_using_proxy():
-        import urllib.request
-        proxies = urllib.request.getproxies()
         global_options = {
             'split': '16',
             'max-connection-per-server': '16',
             'min-split-size': '1M',
-            'all-proxy': iter(proxies.values()).__next__()
         }
     else:
         global_options = {
@@ -25,6 +22,13 @@ def get_global_options():
             'min-split-size': '4M',
         }
     return global_options
+
+
+def init_download_options_with_proxy():
+    if is_using_proxy():
+        return {'all-proxy': iter(get_proxies().values()).__next__()}
+    else:
+        return {}
 
 
 def get_finial_url(origin_url: str):
