@@ -25,7 +25,7 @@ def init_aria2():
     port = get_available_port()
     logger.info(f'starting aria2 daemon at port {port}')
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
-                                      '--rpc-secret', '123456', '--log', 'aria2.log'],
+                                      '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level', 'info'],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     aria2 = aria2p.API(
         aria2p.Client(
