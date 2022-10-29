@@ -3,6 +3,10 @@ from module.downloader import download_path
 import requests
 import bs4
 from module.network import get_finial_url
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache(1)
@@ -44,7 +48,7 @@ def download_keys_by_name(name):
         raise RuntimeError(f'No such key [{name}].')
     key_info = keys_info[name]
     url = key_info['url'].replace('https://drive.google.com', 'https://cfrp.e6ex.com/gd')
-    print(f'Downloading keys [{name}] from {url}')
+    logger.info(f'Downloading keys [{name}] from {url}')
     data = requests.get(url)
     file = download_path.joinpath(name)
     with file.open('wb') as f:

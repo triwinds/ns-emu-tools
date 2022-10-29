@@ -1,13 +1,12 @@
 import subprocess
 import time
 from typing import Optional
-import urllib
+import logging
 import aria2p
 from pathlib import Path
 import os
 from module.msg_notifier import send_notify
 from module.network import get_available_port, get_global_options, init_download_options_with_proxy
-
 
 aria2: Optional[aria2p.API] = None
 aria2_process: Optional[subprocess.Popen] = None
@@ -15,6 +14,7 @@ download_path = Path(os.path.realpath(os.path.dirname(__file__))).parent.joinpat
 aria2_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('aria2c.exe')
 if not download_path.exists():
     download_path.mkdir()
+logger = logging.getLogger(__name__)
 
 
 def init_aria2():
@@ -23,9 +23,10 @@ def init_aria2():
     if aria2:
         return
     port = get_available_port()
-    print(f'starting aria2 daemon at port {port}')
+    logger.info(f'starting aria2 daemon at port {port}')
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
-                                      '--rpc-secret', '123456'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                                      '--rpc-secret', '123456', '--log', 'aria2.log'],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     aria2 = aria2p.API(
         aria2p.Client(
             host="http://localhost",
@@ -34,7 +35,7 @@ def init_aria2():
         )
     )
     global_options = get_global_options()
-    print(f'aria2 global options: {global_options}')
+    logger.info(f'aria2 global options: {global_options}')
     aria2.set_global_options(global_options)
     import atexit
     atexit.register(shutdown_aria2)
@@ -58,20 +59,21 @@ def download(url, save_dir=None, options=None, download_in_background=False):
     info = aria2.get_download(info.gid)
     while info.is_active:
         print(f'\rprogress: {info.progress_string()}, '
-              f'connections: {info.connections}, '
-              f'{info.completed_length_string()}/{info.total_length_string()} , '
-              f'download speed: {info.download_speed_string()}, eta: {info.eta_string()}', end='')
+                    f'connections: {info.connections}, '
+                    f'{info.completed_length_string()}/{info.total_length_string()} , '
+                    f'download speed: {info.download_speed_string()}, eta: {info.eta_string()}', end='')
         send_notify(f'下载进度: {info.progress_string()}, 下载速度: {info.download_speed_string()}, '
                     f'{info.completed_length_string()}/{info.total_length_string()}')
         time.sleep(0.3)
         info = aria2.get_download(info.gid)
+    print('\r')
     if info.error_code != '0':
         if info.error_code == '13':
-            print('\rfile already exist.')
+            logger.info('file already exist.')
         else:
-            print(f'\rinfo.error_code: {info.error_code}')
+            logger.info('info.error_code: {info.error_code}')
     else:
-        print(f'\rprogress: {info.progress_string()}, total size: {info.total_length_string()},')
+        logger.info(f'progress: {info.progress_string()}, total size: {info.total_length_string()}')
     send_notify('下载完成')
     aria2.autopurge()
     return info
@@ -79,7 +81,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
 
 def shutdown_aria2():
     if aria2_process:
-        # print('Shutdown aria2...')
+        # logger.info('Shutdown aria2...')
         aria2_process.kill()
 
 

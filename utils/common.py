@@ -1,9 +1,13 @@
 import urllib.request
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def is_using_proxy():
     proxies = get_proxies()
-    print(f'proxies: {proxies}')
+    logger.info(f'current proxies: {proxies}')
     return proxies is not None and proxies != {}
 
 
