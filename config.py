@@ -8,6 +8,9 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
+current_version = '0.0.1'
+
+
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
 # logging.getLogger("requests").setLevel(logging.WARNING)
@@ -68,4 +71,4 @@ def update_yuzu_path(new_yuzu_path: str):
     dump_config()
 
 
-__all__ = ['config', 'dump_config', 'update_yuzu_path']
+__all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version']

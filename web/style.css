@@ -1,6 +1,15 @@
-h1 {
-    color: #c3e87d;
+div#title-container {
+    width: 100%;
     text-align: center;
+}
+
+#main-title {
+    font-size: 35px;
+    color: #c3e87d;
+}
+
+.version-text {
+    color: #6fdcff;
 }
 
 button {
@@ -58,7 +67,7 @@ div#top-bar {
 
 span.top-bar {
     padding-left: 8px;
-    font-size: 1.28rem;
+    font-size: 1.1rem;
 }
 
 div#component-manage-container {

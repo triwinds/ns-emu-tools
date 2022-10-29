@@ -10,7 +10,7 @@
     <link href="./style.css" rel="stylesheet">
     <script>
         const height = 700;
-        const width = 650;
+        const width = 550;
         window.resizeTo(width, height);
         self.moveTo((screen.availWidth - width) / 2, (screen.availHeight - height) / 2);
     </script>
@@ -24,7 +24,10 @@
     <div id="top-bar">
         <span class="basic-info top-bar">{{displayTopBarMsg}}</span>
     </div>
-    <h1>Yuzu Tools</h1>
+    <div id="title-container">
+        <span id="main-title">Yuzu Tools</span>
+        <span class="version-text">v{{currentVersion}}</span>
+    </div>
     <div id="main-container">
         <div id="yuzu-info">
             <h2>Yuzu 基础信息: </h2>

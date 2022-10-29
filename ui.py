@@ -1,5 +1,5 @@
 import eel
-from config import config
+from config import config, current_version
 from repository.yuzu import get_all_yuzu_release_infos
 from module.common import get_firmware_infos
 import logging
@@ -101,6 +101,11 @@ def start_yuzu():
         return success_response()
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def get_current_version():
+    return success_response(current_version)
 
 
 def can_use_chrome():

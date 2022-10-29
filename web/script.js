@@ -9,9 +9,11 @@ const vm = new Vue({
         targetFirmwareVersion: "",
         targetKeyName: "",
         topBarMsg: "",
-        isRunningInstall: false
+        isRunningInstall: false,
+        currentVersion: '',
     },
     created() {
+        this.initCurrentVersion()
         this.updateYuzuConfig()
         this.updateYuzuReleaseInfos()
         this.updateKeysInfo()
@@ -19,6 +21,15 @@ const vm = new Vue({
         this.topBarMsg = '启动完毕'
     },
     methods: {
+        initCurrentVersion() {
+            eel.get_current_version()((data) => {
+                if (data['code'] === 0) {
+                    this.currentVersion = data['data']
+                } else {
+                    this.currentVersion = '未知'
+                }
+            })
+        },
         updateYuzuConfig() {
             eel.get_yuzu_config()((config) => {
                 this.yuzuConfig = config
@@ -126,7 +137,7 @@ const vm = new Vue({
             return "加载中"
         },
         displayTopBarMsg: function () {
-            const maxLength = 48
+            const maxLength = 42
             if (this.topBarMsg.length > maxLength) {
                 return this.topBarMsg.substring(0, maxLength) + '...'
             }
