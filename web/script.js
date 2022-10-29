@@ -101,8 +101,12 @@ const vm = new Vue({
             this.topBarMsg = msg
         },
         detectYuzuVersion() {
-            eel.detect_yuzu_version()((info) => {
-                this.updateYuzuConfig()
+            eel.detect_yuzu_version()((data) => {
+                if (data['code'] === 0) {
+                    this.updateYuzuConfig()
+                } else {
+                    this.topBarMsg = '检测 yuzu 版本时发生异常'
+                }
             })
         },
         modifyYuzuPath() {

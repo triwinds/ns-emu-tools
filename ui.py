@@ -89,8 +89,11 @@ def install_keys(name):
 
 @eel.expose
 def detect_yuzu_version():
-    from module.yuzu import detect_yuzu_version
-    return {'yuzu_version': detect_yuzu_version()}
+    try:
+        from module.yuzu import detect_yuzu_version
+        return success_response(detect_yuzu_version())
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
