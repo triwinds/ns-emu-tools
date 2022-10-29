@@ -1,5 +1,5 @@
 import eel
-from config import yuzu_config
+from config import config
 from repository.yuzu import get_all_yuzu_release_infos
 from module.common import get_firmware_infos
 
@@ -20,7 +20,7 @@ def error_response(code, msg):
 
 @eel.expose
 def get_yuzu_config():
-    return yuzu_config.to_dict()
+    return config.yuzu.to_dict()
 
 
 @eel.expose

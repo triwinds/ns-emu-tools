@@ -21,8 +21,8 @@ logging.basicConfig(
               console]
 )
 logger = logging.getLogger(__name__)
-yuzu_config_path = Path('yuzu-config.json')
-yuzu_config = None
+config_path = Path('config.json')
+config = None
 
 
 @dataclass_json
@@ -34,17 +34,23 @@ class YuzuConfig:
     key_file: Optional[str] = None
 
 
-if os.path.exists(yuzu_config_path):
-    with open(yuzu_config_path, 'r', encoding='utf-8') as f:
-        yuzu_config = YuzuConfig.schema().loads(f.read())
-if not yuzu_config:
-    yuzu_config = YuzuConfig()
+@dataclass_json
+@dataclass
+class Config:
+    yuzu: YuzuConfig
 
 
-def dump_yuzu_config():
-    logger.info(f'saving config to {yuzu_config_path.absolute()}')
-    with open(yuzu_config_path, 'w', encoding='utf-8') as f:
-        f.write(yuzu_config.to_json(ensure_ascii=False))
+if os.path.exists(config_path):
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = Config.schema().loads(f.read())
+if not config:
+    config = Config(yuzu=YuzuConfig())
 
 
-__all__ = ['yuzu_config', 'dump_yuzu_config']
+def dump_config():
+    logger.info(f'saving config to {config_path.absolute()}')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        f.write(config.to_json(ensure_ascii=False))
+
+
+__all__ = ['config', 'dump_config']

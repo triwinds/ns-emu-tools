@@ -211,6 +211,7 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+config.json
 yuzu-config.json
 download/
 output/
