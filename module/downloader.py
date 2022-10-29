@@ -23,6 +23,7 @@ def init_aria2():
     if aria2:
         return
     port = get_available_port()
+    send_notify(f'starting aria2 daemon at port {port}')
     logger.info(f'starting aria2 daemon at port {port}')
     aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
                                       '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level', 'info'],
@@ -62,7 +63,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
                     f'connections: {info.connections}, '
                     f'{info.completed_length_string()}/{info.total_length_string()} , '
                     f'download speed: {info.download_speed_string()}, eta: {info.eta_string()}', end='')
-        send_notify(f'下载进度: {info.progress_string()}, 下载速度: {info.download_speed_string()}, '
+        send_notify(f'下载速度: {info.download_speed_string()}, '
                     f'{info.completed_length_string()}/{info.total_length_string()}')
         time.sleep(0.3)
         info = aria2.get_download(info.gid)

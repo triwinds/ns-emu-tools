@@ -37,14 +37,14 @@ class YuzuConfig:
 @dataclass_json
 @dataclass
 class Config:
-    yuzu: YuzuConfig
+    yuzu: YuzuConfig = YuzuConfig()
 
 
 if os.path.exists(config_path):
     with open(config_path, 'r', encoding='utf-8') as f:
         config = Config.schema().loads(f.read())
 if not config:
-    config = Config(yuzu=YuzuConfig())
+    config = Config()
 
 
 def dump_config():
@@ -53,4 +53,16 @@ def dump_config():
         f.write(config.to_json(ensure_ascii=False))
 
 
-__all__ = ['config', 'dump_config']
+def update_yuzu_path(new_yuzu_path: str):
+    new_path = Path(new_yuzu_path)
+    if not new_path.exists():
+        logger.info(f'create directory: {new_path}')
+        new_path.mkdir(parents=True, exist_ok=True)
+    logger.info(f'setting yuzu path to {new_path}')
+    cfg = YuzuConfig()
+    cfg.yuzu_path = str(new_path.absolute())
+    config.yuzu = cfg
+    dump_config()
+
+
+__all__ = ['config', 'dump_config', 'update_yuzu_path']

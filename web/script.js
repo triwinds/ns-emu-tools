@@ -94,6 +94,23 @@ const vm = new Vue({
                 this.updateYuzuConfig()
             })
         },
+        modifyYuzuPath() {
+            eel.ask_and_update_yuzu_path()((data) => {
+                if (data['code'] === 0) {
+                    this.updateYuzuConfig()
+                }
+                this.topBarMsg = data['msg']
+            })
+        },
+        startYuzu() {
+            eel.start_yuzu()((data) => {
+                if (data['code'] === 0) {
+                    this.topBarMsg = 'yuzu 启动成功'
+                } else {
+                    this.topBarMsg = 'yuzu 启动失败'
+                }
+            })
+        },
     },
     computed: {
         latestFirmwareVersion: function () {
@@ -108,6 +125,13 @@ const vm = new Vue({
             }
             return "加载中"
         },
+        displayTopBarMsg: function () {
+            const maxLength = 48
+            if (this.topBarMsg.length > maxLength) {
+                return this.topBarMsg.substring(0, maxLength) + '...'
+            }
+            return this.topBarMsg
+        }
     }
 });
 

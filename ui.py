@@ -2,8 +2,10 @@ import eel
 from config import config
 from repository.yuzu import get_all_yuzu_release_infos
 from module.common import get_firmware_infos
+import logging
 
 eel.init("web")
+logger = logging.getLogger(__name__)
 
 
 def success_response(data=None, msg=None):
@@ -21,6 +23,19 @@ def error_response(code, msg):
 @eel.expose
 def get_yuzu_config():
     return config.yuzu.to_dict()
+
+
+@eel.expose
+def ask_and_update_yuzu_path():
+    from module.dialogs import ask_folder
+    folder = ask_folder()
+    logger.info(f'select folder: {folder}')
+    if folder:
+        from config import update_yuzu_path
+        update_yuzu_path(folder)
+        return success_response(msg=f'修改 yuzu 目录至 {folder}')
+    else:
+        return error_response(100, '修改已取消')
 
 
 @eel.expose
@@ -76,6 +91,16 @@ def install_keys(name):
 def detect_yuzu_version():
     from module.yuzu import detect_yuzu_version
     return {'yuzu_version': detect_yuzu_version()}
+
+
+@eel.expose
+def start_yuzu():
+    from module.yuzu import start_yuzu
+    try:
+        start_yuzu()
+        return success_response()
+    except Exception as e:
+        return exception_response(e)
 
 
 def can_use_chrome():

@@ -22,13 +22,20 @@
 
 <div id="root">
     <div id="top-bar">
-        <span class="basic-info top-bar">{{topBarMsg}}</span>
+        <span class="basic-info top-bar">{{displayTopBarMsg}}</span>
     </div>
     <h1>Yuzu Tools</h1>
     <div id="main-container">
         <div id="yuzu-info">
             <h2>Yuzu 基础信息: </h2>
-            <p>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span></p>
+            <div>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span>
+                <button @click="modifyYuzuPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
+                    修改路径
+                </button>
+                <button @click="startYuzu" class="btn btn-outline-custom" :disabled='isRunningInstall'>
+                    启动 Yuzu
+                </button>
+            </div>
             <p>当前 Yuzu 版本:
                 <button @click="detectYuzuVersion" title="点击重新检测 yuzu 版本"
                         class="basic-info btn btn-outline-warning" data-bs-toggle="tooltip" data-placement="top">

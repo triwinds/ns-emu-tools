@@ -23,6 +23,12 @@ h2 {
     font-size: 19px;
 }
 
+#yuzu-info > div {
+    color: #69aae7;
+    font-size: 19px;
+    padding-bottom: 15px;
+}
+
 .basic-info {
     color: #eeffff;
 }
@@ -53,7 +59,6 @@ div#top-bar {
 span.top-bar {
     padding-left: 8px;
     font-size: 1.28rem;
-    overflow: scroll;
 }
 
 div#component-manage-container {
@@ -62,6 +67,24 @@ div#component-manage-container {
 
 .install-btn {
     width: 100px !important;
+}
+
+.btn-outline-custom {
+    color: #c3e87d;
+    border-color: #c3e87d;
+}
+
+.btn-outline-custom:focus {
+    box-shadow: 0 0 0 0.2rem #b3a7a7;
+    -webkit-box-shadow: 0 0 0 0.2rem #b3a7a7;
+    outline: 0;
+}
+
+.btn-outline-custom:hover,
+.btn-outline-custom:active {
+    color: #263238;
+    background-color: #c3e87d;
+    border-color: #c3e87d;
 }
 
 select.form-select {

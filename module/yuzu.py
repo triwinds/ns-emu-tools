@@ -180,6 +180,16 @@ def detect_yuzu_version():
         return version
 
 
+def start_yuzu():
+    yz_path = Path(config.yuzu.yuzu_path).joinpath('yuzu.exe')
+    if yz_path.exists():
+        logger.info(f'starting yuzu from: {yz_path}')
+        subprocess.Popen([yz_path])
+    else:
+        logger.error(f'yuzu not exist in [{yz_path}]')
+        raise RuntimeError(f'yuzu not exist in [{yz_path}]')
+
+
 if __name__ == '__main__':
     # install_yuzu()
     # install_firmware_to_yuzu()
