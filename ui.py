@@ -115,6 +115,13 @@ def get_current_version():
     return success_response(current_version)
 
 
+@eel.expose
+def check_update():
+    from module.common import check_update
+    has_update, latest_version = check_update()
+    return success_response(has_update, latest_version)
+
+
 def can_use_chrome():
     """ Identify if Chrome is available for Eel to use """
     import os

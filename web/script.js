@@ -19,6 +19,7 @@ const vm = new Vue({
         this.updateKeysInfo()
         this.updateAvailableFirmwareInfos()
         this.topBarMsg = '启动完毕'
+        this.checkUpdate()
     },
     methods: {
         initCurrentVersion() {
@@ -126,6 +127,13 @@ const vm = new Vue({
                 }
             })
         },
+        checkUpdate() {
+            eel.check_update()((data) => {
+                if (data['code'] === 0 && data['data']) {
+                    this.topBarMsg = `检测到新版本 [${data['msg']}], 点击下方标题查看更新`
+                }
+            })
+        }
     },
     computed: {
         latestFirmwareVersion: function () {

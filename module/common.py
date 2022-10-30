@@ -9,7 +9,6 @@ import bs4
 from module.network import get_finial_url
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +41,7 @@ def get_firmware_infos():
 
 @lru_cache(1)
 def get_keys_info():
-    resp = requests.get('https://cfrp.e6ex.com/rawgit/triwinds/yuzu-tools/main/keys_info.json')
+    resp = requests.get('https://cfrp.e6ex.com/rawgit/triwinds/ns-emu-tools/main/keys_info.json')
     return resp.json()
 
 
@@ -75,6 +74,26 @@ def check_and_install_msvc():
     logger.info('install msvc...')
     process = subprocess.Popen([install_file.path])
     # process.wait()
+
+
+def check_update(prerelease=False):
+    from repository.my_info import get_latest_release
+    latest_release = get_latest_release(prerelease)
+    latest_tag = latest_release['tag_name']
+    from config import current_version
+    latest_version_num = calc_version_num(latest_tag)
+    current_version_num = calc_version_num(current_version)
+    return latest_version_num > current_version_num, latest_tag
+
+
+def calc_version_num(version_str: str):
+    version_num = 0
+    for s in version_str.split('.'):
+        version_num *= 100
+        num_str = ''.join(ch for ch in s if ch.isdigit())
+        if num_str:
+            version_num += int(num_str)
+    return version_num
 
 
 if __name__ == '__main__':
