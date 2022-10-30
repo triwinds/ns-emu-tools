@@ -1,6 +1,7 @@
 name: CI build on new tag
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*'
