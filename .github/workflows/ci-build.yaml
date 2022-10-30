@@ -27,3 +27,9 @@ jobs:
       with:
         path: dist/*
         name: NsEmuTools
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      draft: true
+      with:
+        files: dist/NsEmuTools.exe
