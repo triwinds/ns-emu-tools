@@ -1,4 +1,8 @@
+import os
+import subprocess
 from functools import lru_cache
+from pathlib import Path
+
 from module.downloader import download_path
 import requests
 import bs4
@@ -56,7 +60,25 @@ def download_keys_by_name(name):
     return file
 
 
+def check_and_install_msvc():
+    windir = Path(os.environ['windir'])
+    if windir.joinpath(r'System32\msvcp140_atomic_wait.dll').exists():
+        logger.info(f'msvc already installed.')
+        return
+    from module.downloader import download
+    from module.msg_notifier import send_notify
+    send_notify('开始下载 msvc 安装包...')
+    logger.info('downloading msvc installer...')
+    download_info = download('https://aka.ms/vs/17/release/VC_redist.x64.exe')
+    install_file = download_info.files[0]
+    send_notify('安装 msvc...')
+    logger.info('install msvc...')
+    process = subprocess.Popen([install_file.path])
+    # process.wait()
+
+
 if __name__ == '__main__':
-    infos = get_firmware_infos()
-    for info in infos:
-        print(info)
+    # infos = get_firmware_infos()
+    # for info in infos:
+    #     print(info)
+    check_and_install_msvc()

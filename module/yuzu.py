@@ -65,6 +65,8 @@ def install_yuzu(target_version=None):
         dump_config()
         logger.info(f'Yuzu of [{version}] install successfully.')
     os.remove(yuzu_package_path)
+    from module.common import check_and_install_msvc
+    check_and_install_msvc()
     return f'Yuzu [{version}] 安装完成.'
 
 
