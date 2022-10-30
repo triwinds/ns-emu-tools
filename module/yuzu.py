@@ -95,7 +95,7 @@ def install_key_to_yuzu(target_name=None):
     file = download_keys_by_name(target_name)
     with py7zr.SevenZipFile(file) as zf:
         zf: py7zr.SevenZipFile = zf
-        keys_path = Path(config.yuzu.yuzu_path).joinpath(r'user\keys')
+        keys_path = get_yuzu_user_path().joinpath('keys')
         keys_path.mkdir(parents=True, exist_ok=True)
         logger.info(f'Extracting keys to {keys_path}')
         send_notify('提取 key 至目录...')
@@ -137,10 +137,9 @@ def install_firmware_to_yuzu(firmware_version=None):
     logger.info(f"downloading firmware of [{firmware_version}] from {url}")
     info = download(url)
     file = info.files[0]
-    yuzu_path = Path(config.yuzu.yuzu_path)
     import zipfile
     with zipfile.ZipFile(file.path, 'r') as zf:
-        firmware_path = yuzu_path.joinpath(r'\user\nand\system\Contents\registered')
+        firmware_path = get_yuzu_user_path().joinpath(r'nand\system\Contents\registered')
         shutil.rmtree(firmware_path, ignore_errors=True)
         firmware_path.mkdir(parents=True, exist_ok=True)
         send_notify(f'开始解压安装固件...')
@@ -219,9 +218,18 @@ def get_all_window_name():
     return win_list
 
 
+def get_yuzu_user_path():
+    yuzu_path = Path(config.yuzu.yuzu_path)
+    if yuzu_path.joinpath('user/').exists():
+        return yuzu_path.joinpath('user/')
+    elif Path(os.environ['appdata']).joinpath('yuzu/').exists():
+        return Path(os.environ['appdata']).joinpath('yuzu/')
+    return yuzu_path.joinpath('user/')
+
+
 if __name__ == '__main__':
     # install_yuzu()
     # install_firmware_to_yuzu()
     # install_key_to_yuzu()
-    print(detect_yuzu_version())
-
+    # print(detect_yuzu_version())
+    print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
