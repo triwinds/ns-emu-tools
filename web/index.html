@@ -24,7 +24,7 @@
     <div id="top-bar">
         <span class="basic-info top-bar">{{displayTopBarMsg}}</span>
     </div>
-    <div id="title-container" style="cursor: pointer;">
+    <div id="title-container" @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }">
         <span id="main-title">Ns Emu Tools</span>
         <span class="version-text">v{{currentVersion}}</span>
     </div>

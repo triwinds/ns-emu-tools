@@ -11,6 +11,7 @@ const vm = new Vue({
         topBarMsg: "",
         isRunningInstall: false,
         currentVersion: '',
+        hasNewVersion: false,
     },
     created() {
         this.initCurrentVersion()
@@ -130,9 +131,15 @@ const vm = new Vue({
         checkUpdate() {
             eel.check_update()((data) => {
                 if (data['code'] === 0 && data['data']) {
-                    this.topBarMsg = `检测到新版本 [${data['msg']}], 点击下方标题查看更新`
+                    this.topBarMsg = `检测到新版本 [${data['msg']}], 点击下方标题查看更新`;
+                    this.hasNewVersion = true
                 }
             })
+        },
+        clickTitle() {
+            if (this.hasNewVersion) {
+                window.open('https://github.com/triwinds/ns-emu-tools/releases', '_blank');
+            }
         }
     },
     computed: {
