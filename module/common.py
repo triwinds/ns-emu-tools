@@ -6,7 +6,7 @@ from pathlib import Path
 from module.downloader import download_path
 import requests
 import bs4
-from module.network import get_finial_url
+from utils.network import get_finial_url
 import logging
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,9 @@
 import requests
+from utils.network import get_finial_url
 
 
 def get_all_yuzu_release_infos():
-    resp = requests.get('https://cfrp.e6ex.com/ghapi/repos/pineappleEA/pineapple-src/releases')
+    resp = requests.get(get_finial_url('https://api.github.com/repos/pineappleEA/pineapple-src/releases'))
     res = [item for item in resp.json() if item['author']['login'] == 'pineappleEA']
     return res
 
@@ -12,7 +13,7 @@ def get_latest_yuzu_release_info():
 
 
 def get_yuzu_release_info_by_version(version):
-    url = f'https://cfrp.e6ex.com/ghapi/repos/pineappleEA/pineapple-src/releases/tags/EA-{version}'
+    url = get_finial_url(f'https://api.github.com/repos/pineappleEA/pineapple-src/releases/tags/EA-{version}')
     return requests.get(url).json()
 
 

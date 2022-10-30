@@ -13,7 +13,7 @@ from module.common import get_firmware_infos, get_keys_info, download_keys_by_na
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_latest_yuzu_release_info, get_yuzu_release_info_by_version
-from module.network import get_finial_url
+from utils.network import get_finial_url
 
 
 logger = logging.getLogger(__name__)

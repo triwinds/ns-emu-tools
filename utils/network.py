@@ -1,11 +1,29 @@
-import requests
-from utils.common import is_using_proxy, get_proxies
+import urllib.request
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 url_override_map = {
     'https://github.com': 'https://ghproxy.com/https://github.com',
     'https://archive.org/download/nintendo-switch-global-firmwares/': 'https://nsarchive.e6ex.com/nsfrp/',
+    'https://api.github.com': 'https://cfrp.e6ex.com/ghapi',
 }
+
+
+def is_using_proxy():
+    proxies = get_proxies()
+    logger.info(f'current proxies: {proxies}')
+    return proxies is not None and proxies != {}
+
+
+def get_proxies():
+    return urllib.request.getproxies()
+
+
+def get_proxy_option():
+    return {'all-proxy': iter(get_proxies().values()).__next__()}
 
 
 def get_global_options():
@@ -36,7 +54,9 @@ def get_finial_url(origin_url: str):
         return origin_url
     for k in url_override_map:
         if origin_url.startswith(k):
-            return origin_url.replace(k, url_override_map[k])
+            new_url = origin_url.replace(k, url_override_map[k])
+            logger.info(f'new url: {new_url}')
+            return new_url
     return origin_url
 
 

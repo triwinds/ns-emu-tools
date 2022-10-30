@@ -1,8 +1,9 @@
 import requests
+from utils.network import get_finial_url
 
 
 def get_all_release():
-    resp = requests.get('https://cfrp.e6ex.com/ghapi/repos/triwinds/ns-emu-tools/releases')
+    resp = requests.get(get_finial_url('https://api.github.com/repos/triwinds/ns-emu-tools/releases'))
     return resp.json()
 
 
