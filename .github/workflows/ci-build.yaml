@@ -20,7 +20,7 @@ jobs:
         python-version: '3.10'
     - run: |
         python -m venv venv
-        venv\Scripts\activate.bat
+        venv\Scripts\activate.ps1
         pip install -r requirements.txt pyinstaller
         pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/aria2c.exe;./module/" --add-data "./web;web/"  "./main.py" --name "NsEmuTools"
     - uses: actions/upload-artifact@v2
