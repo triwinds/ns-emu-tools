@@ -52,7 +52,8 @@
             <h2>添加 keys 到模拟器</h2>
             <p class="basic-info">请将上面获取到的 <b>prod.keys</b> 和 <b>title.keys</b> 放进相应模拟器的文件夹</p>
             <p class="basic-info">注意: 你使用的 keys 版本号应该大于等于当前使用的固件版本号</p>
-            <button class="btn btn-primary" @click="openYuzuKeyFolder">打开 yuzu keys 文件夹</button>
+            <button class="btn btn-primary" @click="openYuzuKeyFolder">打开 Yuzu keys 文件夹</button>
+            <button class="btn btn-primary" @click="openRyujinxKeyFolder">打开 Ryujinx keys 文件夹</button>
         </div>
     </div>
 </div>
@@ -62,6 +63,9 @@
         methods: {
             openYuzuKeyFolder() {
                 eel.open_yuzu_keys_folder()((data) => {})
+            },
+            openRyujinxKeyFolder() {
+                eel.open_ryujinx_keys_folder()((data) => {})
             }
         }
     })
