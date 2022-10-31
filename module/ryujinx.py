@@ -136,8 +136,38 @@ def start_ryujinx():
         raise RuntimeError(f'Ryujinx not exist in [{rj_path}]')
 
 
+def detect_ryujinx_version():
+    send_notify('正在检测 Ryujinx 版本...')
+    rj_path = Path(config.ryujinx.path).joinpath('Ryujinx.exe')
+    if not rj_path.exists():
+        send_notify('未能找到 Ryujinx 程序')
+        return None
+    st_inf = subprocess.STARTUPINFO()
+    st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
+    subprocess.Popen([rj_path],
+                     startupinfo=st_inf)
+    time.sleep(3)
+    version = None
+    try:
+        from utils.common import get_all_window_name
+        for window_name in get_all_window_name():
+            if window_name.startswith('Ryujinx '):
+                version = window_name[8:]
+                send_notify(f'当前 Ryujinx 版本 [{version}]')
+                logger.info(f'Current Ryujinx version: {version}')
+                break
+    except:
+        logger.exception('error occur in get_all_window_name')
+    kill_all_ryujinx_instance()
+    if version:
+        config.ryujinx.version = version
+        dump_config()
+        return version
+
+
 if __name__ == '__main__':
     # install_ryujinx_by_version('1.1.335')
     # clear_ryujinx_folder(Path(config.ryujinx.path))
     # install_firmware_to_ryujinx('15.0.0')
-    open_ryujinx_keys_folder()
+    # open_ryujinx_keys_folder()
+    detect_ryujinx_version()

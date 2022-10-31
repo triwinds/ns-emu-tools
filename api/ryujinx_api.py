@@ -43,13 +43,11 @@ def get_ryujinx_release_infos():
 
 @eel.expose
 def detect_ryujinx_version():
-    # todo
-    return error_response(-1, 'todo')
-    # try:
-    #     from module.ryujinx import detect_ryujinx_version
-    #     return success_response(detect_ryujinx_version())
-    # except Exception as e:
-    #     return exception_response(e)
+    try:
+        from module.ryujinx import detect_ryujinx_version
+        return success_response(detect_ryujinx_version())
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
