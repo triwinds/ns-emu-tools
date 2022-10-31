@@ -35,9 +35,9 @@ def get_global_options():
         }
     else:
         global_options = {
-            'split': '16',
-            'max-connection-per-server': '16',
-            'min-split-size': '8M',
+            'split': '4',
+            'max-connection-per-server': '4',
+            'min-split-size': '12M',
         }
     return global_options
 
