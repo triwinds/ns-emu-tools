@@ -10,9 +10,10 @@
 
 ## Feature
 
- - 安装 yuzu EA 模拟器及固件
+ - 安装 yuzu EA 模拟器
+ - 安装 Ryujinx 正式版模拟器
  - aria2 多线程下载
- - yuzu/固件版本检查 & 更新
+ - yuzu/Ryujinx/固件版本检查 & 更新
 
 ## 下载
 
@@ -25,4 +26,5 @@
 
 ## TODO
 
- - 支持 ryujinx
+ - 支持换 yuzu 主线分支
+ - 支持切换 ryujinx ava 分支
