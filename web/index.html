@@ -5,9 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Ns Emu Tools</title>
-    <script src="./bootstrap.bundle.min.js"></script>
-    <link href="./bootstrap.min.css" rel="stylesheet">
-    <link href="./style.css" rel="stylesheet">
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
     <script>
         const height = 700;
         const width = 550;
@@ -15,7 +15,7 @@
         self.moveTo((screen.availWidth - width) / 2, (screen.availHeight - height) / 2);
     </script>
     <script type="text/javascript" src="../eel.js"></script>
-    <script src="./vue.js"></script>
+    <script src="js/vue.js"></script>
 
 </head>
 <body class="d-flex flex-column h-100">
@@ -30,7 +30,7 @@
     </div>
     <div id="main-container">
         <div id="yuzu-info">
-            <h2>Yuzu 基础信息: </h2>
+            <h2>Yuzu 基础信息</h2>
             <div>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span>
                 <button @click="modifyYuzuPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
                     修改路径
@@ -50,7 +50,7 @@
                 最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
         </div>
         <div>
-            <h2>Yuzu 组件管理: </h2>
+            <h2>Yuzu 组件管理</h2>
             <div id="component-manage-container">
                 <div class="outer">
                     <div class="inner">
@@ -84,22 +84,9 @@
                         </label>
                     </div>
                 </div>
-                <div class="outer">
-                    <div class="inner">
-                        <button @click="installKeys" class="btn btn-primary install-btn" :disabled='isRunningInstall'>
-                            安装密钥
-                        </button>
-                    </div>
-                    <div class="inner">
-                        <label class="basic-info">选择需要安装的密钥版本:
-                            <select v-model="targetKeyName" class="form-select">
-                                <option v-for="item in availableKeyInfos" :value="item['name']">
-                                    {{item['name']}}
-                                </option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
+                <p class="basic-info" style="margin-top: 10px">安装/更新固件后, 请一并安装相应的 keys:
+                    <a href="install_keys.html" class="link-info">keys 管理</a>
+                </p>
             </div>
         </div>
     </div>
@@ -115,6 +102,6 @@
            class="link-info">About</a>
     </div>
 </footer>
-<script src="./script.js"></script>
+<script src="js/script.js"></script>
 </body>
 </html>

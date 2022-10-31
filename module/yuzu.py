@@ -227,9 +227,18 @@ def get_yuzu_user_path():
     return yuzu_path.joinpath('user/')
 
 
+def open_yuzu_keys_folder():
+    keys_path = get_yuzu_user_path().joinpath('keys')
+    keys_path.mkdir(parents=True, exist_ok=True)
+    keys_path.joinpath('把prod.keys和title.keys放当前目录.txt').touch(exist_ok=True)
+    logger.info(f'open explorer on path {keys_path}')
+    subprocess.Popen(f'explorer "{str(keys_path.absolute())}"')
+
+
 if __name__ == '__main__':
     # install_yuzu()
     # install_firmware_to_yuzu()
     # install_key_to_yuzu()
     # print(detect_yuzu_version())
-    print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
+    # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
+    open_yuzu_keys_folder()

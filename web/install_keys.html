@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ns Emu Tools</title>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <script type="text/javascript" src="../eel.js"></script>
+    <script src="js/vue.js"></script>
+    <style>
+        /*#main-container > p {*/
+        /*    font-size: 20px;*/
+        /*}*/
+    </style>
+</head>
+<body>
+<div style="width: 100%; padding-top: 12px;">
+    <button class="btn btn-primary inner" onclick="history.back()" style="margin-left: 15px">< 返回</button>
+    <hr style="color: #c5d7f2">
+</div>
+<div style="width: 100%;text-align: center;">
+    <span id="main-title">密钥管理</span>
+</div>
+<div>
+    <div id="main-container" style="margin-top: 15px;">
+        <p class="basic-info">由于版权原因, 本项目不再提供 keys 自动安装功能。</p>
+        <p class="basic-info">请用户自行放置 keys 至相应文件夹。</p>
+        <h2>获取 keys</h2>
+        <p class="basic-info">你可以跟随
+            <a href="https://yuzu-emu.org/help/quickstart/#dumping-prodkeys-and-titlekeys" target="_blank"
+               rel="noopener noreferrer" class="link-info">yuzu 的官方教程</a>
+            从 switch 中提取 keys 文件.
+        </p>
+        <p class="basic-info">也可以在贴吧或者 qq 群等地方找到其他大佬分享的 keys 文件.</p>
+        <p class="basic-info">下面是两位大佬分享的 keys:</p>
+        <p class="basic-info">1. 由 文无 大佬提供的
+            <a href="https://url11.ctfile.com/d/18719411-48103523-6faacf?49760005" target="_blank"
+               rel="noopener noreferrer" class="link-info">城通网盘</a>(访问密码：7257),
+            原帖地址: <a href="https://tieba.baidu.com/p/7799545671" target="_blank" rel="noopener noreferrer"
+                         class="link-info">百度贴吧</a>
+        </p>
+        <p class="basic-info">2. 由 PrincessAkira 大佬提供的
+            <a href="https://drive.google.com/drive/folders/1KAym-RpGIDuJiSmMLmpCtGVbhLm4VjTZ" target="_blank"
+               rel="noopener noreferrer" class="link-info">GDrive(需代理)</a>
+            原地址: <a href="https://github.com/PrincessAkira/road-to-yuzu-without-switch" target="_blank"
+                       rel="noopener noreferrer" class="link-info">GitHub</a>
+        </p>
+        <div id="root">
+            <h2>添加 keys 到模拟器</h2>
+            <p class="basic-info">请将上面获取到的 <b>prod.keys</b> 和 <b>title.keys</b> 放进相应模拟器的文件夹</p>
+            <p class="basic-info">注意: 你使用的 keys 版本号应该大于等于当前使用的固件版本号</p>
+            <button class="btn btn-primary" @click="openYuzuKeyFolder">打开 yuzu keys 文件夹</button>
+        </div>
+    </div>
+</div>
+<script>
+    const vm = new Vue({
+        el: '#root',
+        methods: {
+            openYuzuKeyFolder() {
+                eel.open_yuzu_keys_folder()((data) => {})
+            }
+        }
+    })
+</script>
+</body>
+</html>

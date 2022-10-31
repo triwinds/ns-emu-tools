@@ -122,6 +122,13 @@ def check_update():
     return success_response(has_update, latest_version)
 
 
+@eel.expose
+def open_yuzu_keys_folder():
+    from module.yuzu import open_yuzu_keys_folder
+    open_yuzu_keys_folder()
+    return success_response()
+
+
 def can_use_chrome():
     """ Identify if Chrome is available for Eel to use """
     import os
