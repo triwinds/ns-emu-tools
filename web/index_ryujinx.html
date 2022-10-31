@@ -29,40 +29,41 @@
         <span class="version-text">v{{currentVersion}}</span>
     </div>
     <div id="main-container">
-        <div id="yuzu-info">
-            <h2>Yuzu 基础信息</h2>
-            <div>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span>
-                <button @click="modifyYuzuPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
+        <div id="emu-info">
+            <h2>Ryujinx 基础信息</h2>
+            <div>Ryujinx 路径: <span class="basic-info">{{ ryujinxConfig.path }}</span>
+                <button @click="modifyRyujinxPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
                     修改路径
                 </button>
-                <button @click="startYuzu" class="btn btn-outline-custom" :disabled='isRunningInstall'>
-                    启动 Yuzu
+                <button @click="startRyujinx" class="btn btn-outline-custom" :disabled='isRunningInstall'>
+                    启动 Ryujinx
                 </button>
             </div>
-            <p>当前 Yuzu 版本:
-                <button @click="detectYuzuVersion" title="点击重新检测 yuzu 版本"
+            <p>当前 Ryujinx 版本:
+                <button @click="detectRyujinxVersion" title="点击重新检测 Ryujinx 版本"
                         class="basic-info btn btn-outline-warning" data-bs-toggle="tooltip" data-placement="top">
-                    {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}
+                    {{ ryujinxConfig.version ? ryujinxConfig.version: "未知" }}
                 </button>
-                , 最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
+                , 最新 Ryujinx 版本: <span class="basic-info">{{ latestRyujinxVersion }}</span></p>
             <p>当前固件版本: <span
-                    class="basic-info">{{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}</span> ,
+                    class="basic-info">{{ ryujinxConfig.firmware ? ryujinxConfig.firmware : "未知"}}</span> ,
                 最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
         </div>
         <div>
-            <h2>Yuzu 组件管理</h2>
+            <h2>Ryujinx 组件管理</h2>
             <div id="component-manage-container">
                 <div class="outer">
                     <div class="inner">
-                        <button @click="installYuzu" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装
-                            Yuzu
+                        <button @click="installRyujinx" class="btn btn-primary install-btn"
+                                :disabled='isRunningInstall'>安装
+                            Ryujinx
                         </button>
                     </div>
                     <div class="inner">
-                        <label class="basic-info">选择需要安装的 yuzu 版本:
-                            <select v-model="targetYuzuVersion" class="form-select">
-                                <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
-                                    {{item['tag_name'].substring(3)}}
+                        <label class="basic-info">选择需要安装的 Ryujinx 版本:
+                            <select v-model="targetRyujinxVersion" class="form-select">
+                                <option v-for="item in allRyujinxReleaseInfos" :value="item['tag_name']">
+                                    {{item['tag_name']}}
                                 </option>
                             </select>
                         </label>
@@ -90,6 +91,11 @@
             </div>
         </div>
     </div>
+    <div class="d-grid gap-2" style="width: 100%">
+        <button class="btn btn-outline-info basic-info" type="button" style="width: 95%"
+                onclick="window.location='index_yuzu.html'">切换至 Yuzu
+        </button>
+    </div>
 </div>
 <footer class="footer mt-auto py-3">
     <div class="container">
@@ -102,6 +108,6 @@
            class="link-info">About</a>
     </div>
 </footer>
-<script src="js/script.js"></script>
+<script src="js/script_ryujinx.js"></script>
 </body>
 </html>

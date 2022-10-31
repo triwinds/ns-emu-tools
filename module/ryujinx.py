@@ -3,7 +3,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from downloader import download
+from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version
 from utils.network import get_finial_url
 from module.msg_notifier import send_notify
@@ -124,6 +124,16 @@ def open_ryujinx_keys_folder():
     keys_path.joinpath('把prod.keys放当前目录.txt').touch(exist_ok=True)
     logger.info(f'open explorer on path {keys_path}')
     subprocess.Popen(f'explorer "{str(keys_path.absolute())}"')
+
+
+def start_ryujinx():
+    rj_path = Path(config.ryujinx.path).joinpath('Ryujinx.exe')
+    if rj_path.exists():
+        logger.info(f'starting Ryujinx from: {rj_path}')
+        subprocess.Popen([rj_path])
+    else:
+        logger.error(f'Ryujinx not exist in [{rj_path}]')
+        raise RuntimeError(f'Ryujinx not exist in [{rj_path}]')
 
 
 if __name__ == '__main__':

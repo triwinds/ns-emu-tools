@@ -34,12 +34,12 @@ h2 {
     color: #c792cc;
 }
 
-#yuzu-info > p {
+#emu-info > p {
     color: #69aae7;
     font-size: 19px;
 }
 
-#yuzu-info > div {
+#emu-info > div {
     color: #69aae7;
     font-size: 19px;
     padding-bottom: 15px;
@@ -53,7 +53,7 @@ div#main-container {
     padding-left: 10px;
 }
 
-div#yuzu-info {
+div#emu-info {
     padding-bottom: 30px;
 }
 

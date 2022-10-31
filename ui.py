@@ -1,6 +1,5 @@
 import gevent.monkey
-gevent.monkey.patch_ssl()
-gevent.monkey.patch_socket()
+gevent.monkey.patch_all(httplib=True)
 import eel
 
 
@@ -18,16 +17,19 @@ def can_use_chrome():
 def import_api_modules():
     import api.yuzu_api
     import api.common_api
+    import api.ryujinx_api
 
 
 def main():
     import_api_modules()
     from module.msg_notifier import update_notifier
+    from config import config
+    default_page = f'index_{config.setting.lastOpenEmuPage}.html'
     update_notifier('eel')
     if can_use_chrome():
-        eel.start("index.html", port=0)
+        eel.start(default_page, port=0)
     else:
-        eel.start("index.html", port=0, mode='user default')
+        eel.start(default_page, port=0, mode='user default')
 
 
 if __name__ == '__main__':

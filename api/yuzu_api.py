@@ -65,3 +65,11 @@ def install_yuzu(version):
         return {'msg': f'无效的版本 {version}'}
     from module.yuzu import install_yuzu
     return {'msg': install_yuzu(version)}
+
+
+@eel.expose
+def install_yuzu_firmware(version):
+    if not version or version == '':
+        return {'msg': f'无效的版本 {version}'}
+    from module.yuzu import install_firmware_to_yuzu
+    return {'msg': install_firmware_to_yuzu(version)}

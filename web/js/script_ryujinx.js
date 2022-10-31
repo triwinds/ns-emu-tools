@@ -1,11 +1,11 @@
 const vm = new Vue({
     el: '#root',
     data: {
-        yuzuConfig: {},
-        allYuzuReleaseInfos: [],
+        ryujinxConfig: {},
+        allRyujinxReleaseInfos: [],
         availableFirmwareInfos: [],
         availableKeyInfos: [],
-        targetYuzuVersion: "",
+        targetRyujinxVersion: "",
         targetFirmwareVersion: "",
         targetKeyName: "",
         topBarMsg: "",
@@ -15,12 +15,13 @@ const vm = new Vue({
     },
     created() {
         this.initCurrentVersion()
-        this.updateYuzuConfig()
-        this.updateYuzuReleaseInfos()
+        this.updateRyujinxConfig()
+        this.updateRyujinxReleaseInfos()
         this.updateKeysInfo()
         this.updateAvailableFirmwareInfos()
         this.topBarMsg = '启动完毕'
         this.checkUpdate()
+        eel.update_last_open_emu_page('ryujinx')()
     },
     methods: {
         initCurrentVersion() {
@@ -32,19 +33,19 @@ const vm = new Vue({
                 }
             })
         },
-        updateYuzuConfig() {
-            eel.get_yuzu_config()((config) => {
-                this.yuzuConfig = config
+        updateRyujinxConfig() {
+            eel.get_ryujinx_config()((config) => {
+                this.ryujinxConfig = config
             })
         },
-        updateYuzuReleaseInfos() {
-            eel.get_yuzu_release_infos()((data) => {
+        updateRyujinxReleaseInfos() {
+            eel.get_ryujinx_release_infos()((data) => {
                 if (data['code'] === 0) {
                     let infos = data['data']
-                    this.allYuzuReleaseInfos = infos
-                    this.targetYuzuVersion = infos[0]['tag_name'].substring(3)
+                    this.allRyujinxReleaseInfos = infos
+                    this.targetRyujinxVersion = infos[0]['tag_name']
                 } else {
-                    this.topBarMsg = 'yuzu 版本信息加载异常.'
+                    this.topBarMsg = 'ryujinx 版本信息加载异常.'
                 }
             })
         },
@@ -75,20 +76,22 @@ const vm = new Vue({
                 }
             })
         },
-        installYuzu() {
+        installRyujinx() {
             this.isRunningInstall = true
-            eel.install_yuzu(this.targetYuzuVersion)((resp) => {
+            eel.install_ryujinx(this.targetRyujinxVersion)((resp) => {
                 this.isRunningInstall = false
                 this.topBarMsg = resp['msg']
-                this.updateYuzuConfig()
+                this.updateRyujinxConfig()
             });
         },
         installFirmware() {
             this.isRunningInstall = true
-            eel.install_firmware(this.targetFirmwareVersion)((resp) => {
+            eel.install_ryujinx_firmware(this.targetFirmwareVersion)((resp) => {
                 this.isRunningInstall = false
-                this.topBarMsg = resp['msg']
-                this.updateYuzuConfig()
+                if (resp['msg']) {
+                    this.topBarMsg = resp['msg']
+                }
+                this.updateRyujinxConfig()
             })
         },
         installKeys() {
@@ -96,35 +99,35 @@ const vm = new Vue({
             eel.install_keys(this.targetKeyName)((resp) => {
                 this.isRunningInstall = false
                 this.topBarMsg = resp['msg']
-                this.updateYuzuConfig()
+                this.updateRyujinxConfig()
             })
         },
         updateTopBarMsg(msg) {
             this.topBarMsg = msg
         },
-        detectYuzuVersion() {
-            eel.detect_yuzu_version()((data) => {
+        detectRyujinxVersion() {
+            eel.detect_ryujinx_version()((data) => {
                 if (data['code'] === 0) {
-                    this.updateYuzuConfig()
+                    this.updateRyujinxConfig()
                 } else {
-                    this.topBarMsg = '检测 yuzu 版本时发生异常'
+                    this.topBarMsg = '检测 Ryujinx 版本时发生异常'
                 }
             })
         },
-        modifyYuzuPath() {
-            eel.ask_and_update_yuzu_path()((data) => {
+        modifyRyujinxPath() {
+            eel.ask_and_update_ryujinx_path()((data) => {
                 if (data['code'] === 0) {
-                    this.updateYuzuConfig()
+                    this.updateRyujinxConfig()
                 }
                 this.topBarMsg = data['msg']
             })
         },
-        startYuzu() {
-            eel.start_yuzu()((data) => {
+        startRyujinx() {
+            eel.start_ryujinx()((data) => {
                 if (data['code'] === 0) {
-                    this.topBarMsg = 'yuzu 启动成功'
+                    this.topBarMsg = 'Ryujinx 启动成功'
                 } else {
-                    this.topBarMsg = 'yuzu 启动失败'
+                    this.topBarMsg = 'Ryujinx 启动失败'
                 }
             })
         },
@@ -149,9 +152,9 @@ const vm = new Vue({
             }
             return "加载中"
         },
-        latestYuzuVersion: function () {
-            if (this.allYuzuReleaseInfos.length > 0) {
-                return this.allYuzuReleaseInfos[0]['tag_name'].substring(3)
+        latestRyujinxVersion: function () {
+            if (this.allRyujinxReleaseInfos.length > 0) {
+                return this.allRyujinxReleaseInfos[0]['tag_name']
             }
             return "加载中"
         },

@@ -55,9 +55,16 @@ class RyujinxConfig:
 
 @dataclass_json
 @dataclass
+class CommonSetting:
+    lastOpenEmuPage: Optional[str] = 'yuzu'
+
+
+@dataclass_json
+@dataclass
 class Config:
     yuzu: YuzuConfig = YuzuConfig()
     ryujinx: RyujinxConfig = RyujinxConfig()
+    setting: CommonSetting = CommonSetting()
 
 
 if os.path.exists(config_path):
@@ -88,4 +95,29 @@ def update_yuzu_path(new_yuzu_path: str):
     dump_config()
 
 
-__all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version']
+def update_ryujinx_path(new_ryujinx_path: str):
+    new_path = Path(new_ryujinx_path)
+    if not new_path.exists():
+        logger.info(f'create directory: {new_path}')
+        new_path.mkdir(parents=True, exist_ok=True)
+    if new_path.absolute() == Path(config.ryujinx.path).absolute():
+        logger.info(f'No different with old ryujinx path, skip update.')
+        return
+    logger.info(f'setting ryujinx path to {new_path}')
+    cfg = RyujinxConfig()
+    cfg.path = str(new_path.absolute())
+    config.ryujinx = cfg
+    dump_config()
+
+
+def update_last_open_emu_page(page: str):
+    if page == 'ryujinx':
+        config.setting.lastOpenEmuPage = 'ryujinx'
+    else:
+        config.setting.lastOpenEmuPage = 'yuzu'
+    logger.info(f'update lastOpenEmuPage to {config.setting.lastOpenEmuPage}')
+    dump_config()
+
+
+__all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version', 'update_ryujinx_path',
+           'update_last_open_emu_page']

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ns Emu Tools</title>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <script>
+        const height = 700;
+        const width = 550;
+        window.resizeTo(width, height);
+        self.moveTo((screen.availWidth - width) / 2, (screen.availHeight - height) / 2);
+    </script>
+    <script type="text/javascript" src="../eel.js"></script>
+    <script src="js/vue.js"></script>
+
+</head>
+<body class="d-flex flex-column h-100">
+
+<div id="root">
+    <div id="top-bar">
+        <span class="basic-info top-bar">{{displayTopBarMsg}}</span>
+    </div>
+    <div id="title-container" @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }">
+        <span id="main-title">Ns Emu Tools</span>
+        <span class="version-text">v{{currentVersion}}</span>
+    </div>
+    <div id="main-container">
+        <div id="emu-info">
+            <h2>Yuzu 基础信息</h2>
+            <div>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span>
+                <button @click="modifyYuzuPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
+                    修改路径
+                </button>
+                <button @click="startYuzu" class="btn btn-outline-custom" :disabled='isRunningInstall'>
+                    启动 Yuzu
+                </button>
+            </div>
+            <p>当前 Yuzu 版本:
+                <button @click="detectYuzuVersion" title="点击重新检测 yuzu 版本"
+                        class="basic-info btn btn-outline-warning" data-bs-toggle="tooltip" data-placement="top">
+                    {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version: "未知" }}
+                </button>
+                , 最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
+            <p>当前固件版本: <span
+                    class="basic-info">{{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}</span> ,
+                最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
+        </div>
+        <div>
+            <h2>Yuzu 组件管理</h2>
+            <div id="component-manage-container">
+                <div class="outer">
+                    <div class="inner">
+                        <button @click="installYuzu" class="btn btn-primary install-btn" :disabled='isRunningInstall'>安装
+                            Yuzu
+                        </button>
+                    </div>
+                    <div class="inner">
+                        <label class="basic-info">选择需要安装的 yuzu 版本:
+                            <select v-model="targetYuzuVersion" class="form-select">
+                                <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
+                                    {{item['tag_name'].substring(3)}}
+                                </option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="outer">
+                    <div class="inner">
+                        <button @click="installFirmware" class="btn btn-primary install-btn"
+                                :disabled='isRunningInstall'>安装固件
+                        </button>
+                    </div>
+                    <div class="inner">
+                        <label class="basic-info">选择需要安装的固件版本:
+                            <select v-model="targetFirmwareVersion" class="form-select">
+                                <option v-for="item in availableFirmwareInfos" :value="item['version']">
+                                    {{item['version']}}
+                                </option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <p class="basic-info" style="margin-top: 10px">安装/更新固件后, 请一并安装相应的 keys:
+                    <a href="install_keys.html" class="link-info">keys 管理</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="d-grid gap-2" style="width: 100%">
+        <button class="btn btn-outline-info basic-info" type="button" style="width: 95%"
+                onclick="window.location='index_ryujinx.html'">切换至 Ryujinx
+        </button>
+    </div>
+</div>
+<footer class="footer mt-auto py-3">
+    <div class="container">
+        <a href="https://github.com/triwinds/ns-emu-tools" target="_blank" rel="noopener noreferrer" class="link-info">源码</a>
+        |
+        <a href="https://github.com/triwinds/ns-emu-tools/issues" target="_blank" rel="noopener noreferrer"
+           class="link-info">问题反馈</a>
+        |
+        <a href="https://github.com/triwinds/ns-emu-tools/blob/main/readme.md" target="_blank" rel="noopener noreferrer"
+           class="link-info">About</a>
+    </div>
+</footer>
+<script src="js/script_yuzu.js"></script>
+</body>
+</html>
