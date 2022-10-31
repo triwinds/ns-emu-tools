@@ -1,5 +1,5 @@
 import gevent.monkey
-gevent.monkey.patch_all(httplib=True)
+gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 
 
