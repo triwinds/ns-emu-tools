@@ -1,13 +1,15 @@
 import os
+import shutil
 import subprocess
 from functools import lru_cache
 from pathlib import Path
-
+from module.msg_notifier import send_notify
 from module.downloader import download_path
 import requests
 import bs4
 from utils.network import get_finial_url
 import logging
+from module.downloader import download
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +96,35 @@ def calc_version_num(version_str: str):
         if num_str:
             version_num += int(num_str)
     return version_num
+
+
+def install_firmware(firmware_version, target_firmware_path):
+    send_notify('正在获取固件信息...')
+    firmware_infos = get_firmware_infos()
+    target_info = None
+    if firmware_version:
+        firmware_map = {fi['version']: fi for fi in firmware_infos}
+        target_info = firmware_map.get(firmware_version)
+    if not target_info:
+        logger.info(f'Target firmware version [{firmware_version}] not found, skip install.')
+        send_notify(f'Target firmware version [{firmware_version}] not found, skip install.')
+        return
+    url = get_finial_url(target_info['url'])
+    send_notify(f'开始下载固件...')
+    logger.info(f"downloading firmware of [{firmware_version}] from {url}")
+    info = download(url)
+    file = info.files[0]
+    import zipfile
+    with zipfile.ZipFile(file.path, 'r') as zf:
+        firmware_path = target_firmware_path
+        shutil.rmtree(firmware_path, ignore_errors=True)
+        firmware_path.mkdir(parents=True, exist_ok=True)
+        send_notify(f'开始解压安装固件...')
+        logger.info(f'Unzipping firmware files to {firmware_path}')
+        zf.extractall(firmware_path)
+        logger.info(f'Firmware of [{firmware_version}] install successfully.')
+    os.remove(file.path)
+    return firmware_version
 
 
 if __name__ == '__main__':

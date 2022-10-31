@@ -47,8 +47,17 @@ class YuzuConfig:
 
 @dataclass_json
 @dataclass
+class RyujinxConfig:
+    path: Optional[str] = 'D:/Ryujinx'
+    version: Optional[str] = None
+    firmware: Optional[str] = None
+
+
+@dataclass_json
+@dataclass
 class Config:
     yuzu: YuzuConfig = YuzuConfig()
+    ryujinx: RyujinxConfig = RyujinxConfig()
 
 
 if os.path.exists(config_path):

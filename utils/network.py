@@ -31,13 +31,13 @@ def get_global_options():
         global_options = {
             'split': '16',
             'max-connection-per-server': '16',
-            'min-split-size': '1M',
+            'min-split-size': '4M',
         }
     else:
         global_options = {
             'split': '16',
             'max-connection-per-server': '16',
-            'min-split-size': '4M',
+            'min-split-size': '8M',
         }
     return global_options
 

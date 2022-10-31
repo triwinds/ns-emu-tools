@@ -109,47 +109,14 @@ def install_key_to_yuzu(target_name=None):
 def install_firmware_to_yuzu(firmware_version=None):
     if firmware_version == config.yuzu.yuzu_firmware:
         logger.info(f'Current firmware are same as target version [{firmware_version}], skip install.')
-        return f'当前的 固件 就是 [{firmware_version}], 跳过安装.'
-    send_notify('正在获取固件信息...')
-    firmware_infos = get_firmware_infos()
-    if firmware_version:
-        firmware_map = {fi['version']: fi for fi in firmware_infos}
-        target_info = firmware_map.get(firmware_version)
-    else:
-        idx2info = {}
-        logger.info('Available firmwares:')
-        for i in range(5):
-            logger.info(f"  {i}: {firmware_infos[i]}")
-            idx2info[str(i)] = firmware_infos[i]
-        choose = input('Choose num: ')
-        if choose not in idx2info:
-            raise RuntimeError(f'Invalid choose: {choose}')
-        target_info = idx2info[choose]
-        firmware_version = target_info['version']
-    if firmware_version == config.yuzu.yuzu_firmware:
-        logger.info(f'Current firmware are same as target version [{firmware_version}], skip install.')
-        return f'当前的 固件 就是 [{firmware_version}], 跳过安装.'
-    if not target_info:
-        logger.info(f'Target firmware version [{firmware_version}] not found, skip install.')
-        return f'Target firmware version [{firmware_version}] not found, skip install.'
-    url = get_finial_url(target_info['url'])
-    send_notify(f'开始下载固件...')
-    logger.info(f"downloading firmware of [{firmware_version}] from {url}")
-    info = download(url)
-    file = info.files[0]
-    import zipfile
-    with zipfile.ZipFile(file.path, 'r') as zf:
-        firmware_path = get_yuzu_user_path().joinpath(r'nand\system\Contents\registered')
-        shutil.rmtree(firmware_path, ignore_errors=True)
-        firmware_path.mkdir(parents=True, exist_ok=True)
-        send_notify(f'开始解压安装固件...')
-        logger.info(f'Unzipping firmware files to {firmware_path}')
-        zf.extractall(firmware_path)
-        config.yuzu.yuzu_firmware = firmware_version
+        send_notify(f'当前的 固件 就是 [{firmware_version}], 跳过安装.')
+        return
+    from module.common import install_firmware
+    new_version = install_firmware(firmware_version, get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
+    if new_version:
+        config.yuzu.yuzu_firmware = new_version
         dump_config()
-        logger.info(f'Firmware of [{firmware_version}] install successfully.')
-    os.remove(file.path)
-    return f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.'
+        send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.')
 
 
 def detect_yuzu_version():
