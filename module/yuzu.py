@@ -19,7 +19,17 @@ from utils.network import get_finial_url
 logger = logging.getLogger(__name__)
 
 
-def download_yuzu(release_info):
+def download_yuzu(target_version, branch):
+    send_notify('正在获取 yuzu 版本信息...')
+    release_info = get_yuzu_release_info_by_version(target_version, branch)
+    if not release_info.get('tag_name'):
+        logger.error(f'fail to get release info of version {target_version} on branch {branch}')
+        send_notify(f'无法获取 {branch} 分支的 [{target_version}] 版本信息')
+        raise RuntimeError(f'fail to get release info of version {target_version} on branch {branch}')
+    logger.info(f'target yuzu version: {target_version}')
+    yuzu_path = Path(config.yuzu.yuzu_path)
+    logger.info(f'target yuzu path: {yuzu_path}')
+    send_notify('开始下载 yuzu...')
     assets = release_info['assets']
     for asset in assets:
         if asset['content_type'] == 'application/x-7z-compressed':
@@ -30,44 +40,59 @@ def download_yuzu(release_info):
             return file.path
 
 
-def install_yuzu(target_version=None):
-    if target_version == config.yuzu.yuzu_version:
-        logger.info(f'Current yuzu version is same as target version [{target_version}], skip install.')
-        return f'当前就是 [{target_version}] 版本的 yuzu , 跳过安装.'
-    send_notify('正在获取 yuzu 版本信息...')
-    if target_version:
-        release_info = get_yuzu_release_info_by_version(target_version)
-    else:
-        release_info = get_latest_yuzu_release_info()
-    version = release_info["tag_name"][3:]
-    if version == config.yuzu.yuzu_version:
-        logger.info(f'Current yuzu version is same as target version [{version}], skip install.')
-        return f'当前就是 [{version}] 版本的 yuzu , 跳过安装.'
-    logger.info(f'target yuzu version: {release_info["tag_name"][3:]}')
+def install_ea_yuzu(target_version):
     yuzu_path = Path(config.yuzu.yuzu_path)
-    logger.info(f'target yuzu path: {yuzu_path}')
-    send_notify('开始下载 yuzu...')
-    yuzu_package_path = download_yuzu(release_info)
+    yuzu_package_path = download_yuzu(target_version, 'ea')
     with py7zr.SevenZipFile(yuzu_package_path) as zf:
         zf: py7zr.SevenZipFile = zf
         logger.info(f'Unpacking yuzu files...')
         send_notify('正在解压 yuzu 文件...')
         zf.extractall(tempfile.gettempdir())
         tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc-early-access')
-        for useless_file in tmp_dir.glob('yuzu-windows-msvc-source-*.tar.xz'):
-            os.remove(useless_file)
-        logger.info(f'Copy back yuzu files...')
-        send_notify('安装 yuzu 文件至目录...')
-        kill_all_yuzu_instance()
-        shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
-        shutil.rmtree(tmp_dir)
-        config.yuzu.yuzu_version = version
-        dump_config()
-        logger.info(f'Yuzu of [{version}] install successfully.')
+        copy_back_yuzu_files(tmp_dir, yuzu_path)
+        logger.info(f'Yuzu EA of [{target_version}] install successfully.')
     os.remove(yuzu_package_path)
+
+
+def install_mainline_yuzu(target_version):
+    yuzu_path = Path(config.yuzu.yuzu_path)
+    yuzu_package_path = download_yuzu(target_version, 'mainline')
+    with py7zr.SevenZipFile(yuzu_package_path) as zf:
+        zf: py7zr.SevenZipFile = zf
+        logger.info(f'Unpacking yuzu files...')
+        send_notify('正在解压 yuzu 文件...')
+        zf.extractall(tempfile.gettempdir())
+        tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc')
+        copy_back_yuzu_files(tmp_dir, yuzu_path)
+        logger.info(f'Yuzu mainline of [{target_version}] install successfully.')
+    os.remove(yuzu_package_path)
+
+
+def copy_back_yuzu_files(tmp_dir: Path, yuzu_path: Path, ):
+    for useless_file in tmp_dir.glob('yuzu-windows-msvc-source-*.tar.xz'):
+        os.remove(useless_file)
+    logger.info(f'Copy back yuzu files...')
+    send_notify('安装 yuzu 文件至目录...')
+    kill_all_yuzu_instance()
+    shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
+    shutil.rmtree(tmp_dir)
+
+
+def install_yuzu(target_version, branch='ea'):
+    if target_version == config.yuzu.yuzu_version:
+        logger.info(f'Current yuzu version is same as target version [{target_version}], skip install.')
+        send_notify(f'当前就是 [{target_version}] 版本的 yuzu , 跳过安装.')
+        return
+    if branch == 'ea':
+        install_ea_yuzu(target_version)
+    else:
+        install_mainline_yuzu(target_version)
+    config.yuzu.yuzu_version = target_version
+    config.yuzu.branch = branch
+    dump_config()
     from module.common import check_and_install_msvc
     check_and_install_msvc()
-    return f'Yuzu [{version}] 安装完成.'
+    send_notify(f'yuzu {branch} [{target_version}] 安装成功.')
 
 
 def install_key_to_yuzu(target_name=None):
@@ -125,24 +150,34 @@ def detect_yuzu_version():
     if not yz_path.exists():
         send_notify('未能找到 yuzu 程序')
         return None
+    kill_all_yuzu_instance()
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     subprocess.Popen(['powershell', 'Start-Process', str(yz_path.absolute()), '-WindowStyle', 'Hidden'],
                      startupinfo=st_inf)
     time.sleep(3)
     version = None
+    branch = None
     try:
         from utils.common import get_all_window_name
         for window_name in get_all_window_name():
-            if window_name.startswith('yuzu Early Access '):
-                version = window_name[18:]
+            if window_name.startswith('yuzu '):
+                logger.info(f'yuzu window name: {window_name}')
+                if window_name.startswith('yuzu Early Access '):
+                    version = window_name[18:]
+                    branch = 'ea'
+                else:
+                    version = window_name[5:]
+                    branch = 'mainline'
                 send_notify(f'当前 yuzu 版本 [{version}]')
+                logger.info(f'current yuzu version: {version}, branch: {branch}')
                 break
     except:
         logger.exception('error occur in get_all_window_name')
     kill_all_yuzu_instance()
     if version:
         config.yuzu.yuzu_version = version
+        config.yuzu.branch = branch
         dump_config()
         return version
 
@@ -188,9 +223,9 @@ def open_yuzu_keys_folder():
 
 
 if __name__ == '__main__':
-    # install_yuzu()
+    # install_yuzu('1220', 'mainline')
     # install_firmware_to_yuzu()
     # install_key_to_yuzu()
-    # print(detect_yuzu_version())
+    print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
-    open_yuzu_keys_folder()
+    # open_yuzu_keys_folder()

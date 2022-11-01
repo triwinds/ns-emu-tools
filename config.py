@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 from pathlib import Path
-from dataclasses_json import dataclass_json
+from dataclasses_json import dataclass_json, Undefined
 import logging
 from logging.handlers import RotatingFileHandler
 import sys
@@ -42,7 +42,7 @@ class YuzuConfig:
     yuzu_path: Optional[str] = 'D:/Yuzu'
     yuzu_version: Optional[str] = None
     yuzu_firmware: Optional[str] = None
-    key_file: Optional[str] = None
+    branch: Optional[str] = 'ea'
 
 
 @dataclass_json
@@ -59,7 +59,7 @@ class CommonSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu'
 
 
-@dataclass_json
+@dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class Config:
     yuzu: YuzuConfig = YuzuConfig()
@@ -69,7 +69,7 @@ class Config:
 
 if os.path.exists(config_path):
     with open(config_path, 'r', encoding='utf-8') as f:
-        config = Config.schema().loads(f.read())
+        config = Config.from_dict(json.load(f))
 if not config:
     config = Config()
 
@@ -77,7 +77,7 @@ if not config:
 def dump_config():
     logger.info(f'saving config to {config_path.absolute()}')
     with open(config_path, 'w', encoding='utf-8') as f:
-        f.write(config.to_json(ensure_ascii=False))
+        f.write(config.to_json(ensure_ascii=False, indent=2))
 
 
 def update_yuzu_path(new_yuzu_path: str):

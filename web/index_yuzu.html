@@ -30,7 +30,11 @@
     </div>
     <div id="main-container">
         <div id="emu-info">
-            <h2>Yuzu 基础信息</h2>
+            <h2>Yuzu 基础信息
+                <button class="basic-info btn btn-outline-danger" @click="switchYuzuBranch" :disabled='isRunningInstall'>
+                    {{displayBranch}}版
+                </button>
+            </h2>
             <div>Yuzu 路径: <span class="basic-info">{{ yuzuConfig.yuzu_path }}</span>
                 <button @click="modifyYuzuPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
                     修改路径
@@ -61,8 +65,8 @@
                     <div class="inner">
                         <label class="basic-info">选择需要安装的 yuzu 版本:
                             <select v-model="targetYuzuVersion" class="form-select">
-                                <option v-for="item in allYuzuReleaseInfos" :value="item['tag_name'].substring(3)">
-                                    {{item['tag_name'].substring(3)}}
+                                <option v-for="item in allYuzuReleaseVersions" :value="item">
+                                    {{item}}
                                 </option>
                             </select>
                         </label>

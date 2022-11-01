@@ -1,7 +1,7 @@
 import eel
 from api.common_response import success_response, exception_response, error_response
 from repository.yuzu import get_all_yuzu_release_infos
-from config import config
+from config import config, dump_config
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,14 +33,6 @@ def ask_and_update_yuzu_path():
 
 
 @eel.expose
-def get_yuzu_release_infos():
-    try:
-        return success_response(get_all_yuzu_release_infos())
-    except Exception as e:
-        return exception_response(e)
-
-
-@eel.expose
 def detect_yuzu_version():
     try:
         from module.yuzu import detect_yuzu_version
@@ -60,11 +52,11 @@ def start_yuzu():
 
 
 @eel.expose
-def install_yuzu(version):
+def install_yuzu(version, branch):
     if not version or version == '':
         return {'msg': f'无效的版本 {version}'}
     from module.yuzu import install_yuzu
-    return {'msg': install_yuzu(version)}
+    return {'msg': install_yuzu(version, branch)}
 
 
 @eel.expose
@@ -73,3 +65,24 @@ def install_yuzu_firmware(version):
         return {'msg': f'无效的版本 {version}'}
     from module.yuzu import install_firmware_to_yuzu
     return {'msg': install_firmware_to_yuzu(version)}
+
+
+@eel.expose
+def switch_yuzu_branch():
+    if config.yuzu.branch == 'ea':
+        target_branch = 'mainline'
+    else:
+        target_branch = 'ea'
+    logger.info(f'switch yuzu branch to {target_branch}')
+    config.yuzu.branch = target_branch
+    dump_config()
+    return config.yuzu.to_dict()
+
+
+@eel.expose
+def get_all_yuzu_release_versions():
+    from repository.yuzu import get_all_yuzu_release_versions
+    try:
+        return success_response(get_all_yuzu_release_versions(config.yuzu.branch))
+    except Exception as e:
+        return exception_response(e)
