@@ -10,14 +10,23 @@
 
 ## Feature
 
- - 安装 yuzu EA 模拟器
- - 安装 Ryujinx 正式版模拟器
+ - 支持安装 Yuzu EA/正式版 模拟器
+ - 支持 Yuzu 版本检测及更新
+ - 支持安装 Ryujinx 正式版模拟器
+ - 支持 Ryujinx 版本检测及更新
+ - 自动检测并安装 msvc 运行库
+ - 支持安装及更新 NS 固件至模拟器
+ - 管理模拟器密钥
  - aria2 多线程下载
- - yuzu/Ryujinx/固件版本检查 & 更新
 
 ## 下载
 
 [GitHub Release](https://github.com/triwinds/ns-emu-tools/releases)
+
+
+## 讨论组
+
+Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 
 ## License
@@ -26,5 +35,5 @@
 
 ## TODO
 
- - 支持换 yuzu 主线分支
+ - 固件版本检测
  - 支持切换 ryujinx ava 分支

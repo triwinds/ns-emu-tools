@@ -27,6 +27,7 @@
     <div id="title-container" @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }">
         <span id="main-title">Ns Emu Tools</span>
         <span class="version-text">v{{currentVersion}}</span>
+        <span class="basic-info" v-show="hasNewVersion">New</span>
     </div>
     <div id="main-container">
         <div id="emu-info">
@@ -106,6 +107,9 @@
         |
         <a href="https://github.com/triwinds/ns-emu-tools/issues" target="_blank" rel="noopener noreferrer"
            class="link-info">问题反馈</a>
+        |
+        <a href="https://t.me/+mxI34BRClLUwZDcx" target="_blank" rel="noopener noreferrer"
+           class="link-info">TG 讨论组</a>
         |
         <a href="https://github.com/triwinds/ns-emu-tools/blob/main/readme.md" target="_blank" rel="noopener noreferrer"
            class="link-info">About</a>
