@@ -23,7 +23,8 @@ jobs:
         python -m venv venv
         venv\Scripts\activate.ps1
         pip install -r requirements.txt pyinstaller
-        pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/aria2c.exe;./module/" --add-data "./web;web/"  "./main.py" --name "NsEmuTools"
+        pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/"  "./main.py" --name "NsEmuTools"
+        pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/"  "./main.py" --name "NsEmuTools-console"
     - uses: actions/upload-artifact@v2
       with:
         path: dist/*
@@ -33,4 +34,6 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true
-        files: dist/NsEmuTools.exe
+        files: |
+          dist/NsEmuTools.exe
+          dist/NsEmuTools-console.exe
