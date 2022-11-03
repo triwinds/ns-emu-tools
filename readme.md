@@ -37,5 +37,12 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 ## TODO
 
-
  - 支持切换 ryujinx ava 分支
+ - UI spa 重构
+
+## Credits
+
+ - [Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器
+ - [Ryujinx](https://github.com/Ryujinx/Ryujinx) - Ryujinx 模拟器
+ - [hactool](https://github.com/SciresM/hactool) - NS 固件解析
+ - [aria2](https://github.com/aria2/aria2) - aria2 下载器
