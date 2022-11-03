@@ -7,6 +7,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/triwinds/ns-emu-tools/CI%20build%20on%20new%20tag?style=for-the-badge)
 ![GitHub all releases](https://img.shields.io/github/downloads/triwinds/ns-emu-tools/total?style=for-the-badge)
 ![GitHub Repo stars](https://img.shields.io/github/stars/triwinds/ns-emu-tools?style=for-the-badge)
+![GitHub](https://img.shields.io/github/license/triwinds/ns-emu-tools?style=for-the-badge)
 
 ## Feature
 
@@ -32,7 +33,7 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 ## License
 
-本项目的发布受 [Apache 2.0 license](https://github.com/triwinds/ns-emu-tools/blob/main/LICENSE) 许可认证。
+本项目的发布受 [AGPL-3.0](https://github.com/triwinds/ns-emu-tools/blob/main/LICENSE) 许可认证。
 
 ## TODO
 
