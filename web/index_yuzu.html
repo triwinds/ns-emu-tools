@@ -32,8 +32,8 @@
     <div id="main-container">
         <div id="emu-info">
             <h2>Yuzu 基础信息
-                <button class="basic-info btn btn-outline-danger" @click="switchYuzuBranch"
-                        :disabled='isRunningInstall'>
+                <button class="basic-info btn btn-outline-danger" @click="switchYuzuBranch" title="切换安装分支"
+                        :disabled='isRunningInstall' data-bs-toggle="tooltip" data-placement="right">
                     {{displayBranch}}版
                 </button>
             </h2>
@@ -52,7 +52,7 @@
                 </button>
                 , 最新 Yuzu 版本: <span class="basic-info">{{ latestYuzuVersion }}</span></p>
             <p>当前固件版本:
-                <button @click="detectFirmwareVersion" title="点击重新检测固件版本"
+                <button @click="detectFirmwareVersion" title="点击重新检测固件版本, 需安装密钥后使用"
                         class="basic-info btn btn-outline-warning" data-bs-toggle="tooltip" data-placement="top">
                     {{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : "未知"}}
                 </button>
