@@ -48,3 +48,13 @@ def check_update():
 def update_last_open_emu_page(page):
     from config import update_last_open_emu_page
     update_last_open_emu_page(page)
+
+
+@eel.expose
+def detect_firmware_version(emu_type: str):
+    from module.firmware import detect_firmware_version
+    try:
+        detect_firmware_version(emu_type)
+        return success_response()
+    except Exception as e:
+        return exception_response(e)

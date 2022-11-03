@@ -46,8 +46,12 @@
                     {{ ryujinxConfig.version ? ryujinxConfig.version: "未知" }}
                 </button>
                 , 最新 Ryujinx 版本: <span class="basic-info">{{ latestRyujinxVersion }}</span></p>
-            <p>当前固件版本: <span
-                    class="basic-info">{{ ryujinxConfig.firmware ? ryujinxConfig.firmware : "未知"}}</span> ,
+            <p>当前固件版本:
+                <button @click="detectFirmwareVersion" title="点击重新检测固件版本"
+                        class="basic-info btn btn-outline-warning" data-bs-toggle="tooltip" data-placement="top">
+                    {{ ryujinxConfig.firmware ? ryujinxConfig.firmware : "未知"}}
+                </button>
+                ,
                 最新固件版本: <span class="basic-info">{{ latestFirmwareVersion }}</span></p>
         </div>
         <div>

@@ -143,7 +143,14 @@ const vm = new Vue({
             if (this.hasNewVersion) {
                 window.open('https://github.com/triwinds/ns-emu-tools/releases', '_blank');
             }
-        }
+        },
+        async detectFirmwareVersion() {
+            eel.detect_firmware_version("ryujinx")((data) => {
+                if (data['code'] === 0) {
+                    this.updateRyujinxConfig()
+                }
+            })
+        },
     },
     computed: {
         latestFirmwareVersion: function () {
