@@ -11,9 +11,9 @@
 
 ## Feature
 
- - 支持安装 Yuzu EA/正式版 模拟器
+ - 支持安装 Yuzu EA/正式 版模拟器
  - 支持 Yuzu 版本检测及更新
- - 支持安装 Ryujinx 正式版模拟器
+ - 支持安装 Ryujinx Ava/正式 版模拟器
  - 支持 Ryujinx 版本检测及更新
  - 自动检测并安装 msvc 运行库
  - 支持安装及更新 NS 固件至模拟器
@@ -37,7 +37,8 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 ## TODO
 
- - 支持切换 ryujinx ava 分支
+ - 添加 wiki
+ - 完善异常处理
  - UI spa 重构
 
 ## Credits
