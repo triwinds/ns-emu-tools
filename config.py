@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.1.4'
+current_version = '0.1.5'
 
 
 console = logging.StreamHandler()
@@ -51,6 +51,7 @@ class RyujinxConfig:
     path: Optional[str] = 'D:/Ryujinx'
     version: Optional[str] = None
     firmware: Optional[str] = None
+    branch: Optional[str] = 'mainline'
 
 
 @dataclass_json

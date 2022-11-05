@@ -15,19 +15,23 @@ import os
 logger = logging.getLogger(__name__)
 
 
-def install_ryujinx_by_version(target_version: str):
+def get_ryujinx_download_url(target_version: str, branch: str):
+    release_info = get_ryujinx_release_info_by_version(target_version)
+    assets = release_info['assets']
+    for asset in assets:
+        name: str = asset['name']
+        if branch == 'mainline' and name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
+            return asset['browser_download_url']
+        elif branch == 'ava' and name.startswith('test-ava-ryujinx-') and name.endswith('-win_x64.zip'):
+            return asset['browser_download_url']
+
+
+def install_ryujinx_by_version(target_version: str, branch: str):
     if config.ryujinx.version == target_version:
         logger.info(f'Current ryujinx version is same as target version [{target_version}], skip install.')
         return f'当前就是 [{target_version}] 版本的 ryujinx , 跳过安装.'
     send_notify('正在获取 ryujinx 版本信息...')
-    release_info = get_ryujinx_release_info_by_version(target_version)
-    assets = release_info['assets']
-    download_url = None
-    for asset in assets:
-        name: str = asset['name']
-        if name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
-            download_url = asset['browser_download_url']
-            break
+    download_url = get_ryujinx_download_url(target_version, branch)
     if not download_url:
         send_notify(f'获取 ryujinx 下载链接失败')
         raise RuntimeError(f'No download url found with version: {target_version}')
@@ -53,6 +57,7 @@ def install_ryujinx_by_version(target_version: str):
         shutil.copytree(ryujinx_tmp_dir, ryujinx_path, dirs_exist_ok=True)
         shutil.rmtree(tmp_dir)
         config.ryujinx.version = target_version
+        config.ryujinx.branch = branch
         dump_config()
         logger.info(f'Ryujinx of [{target_version}] install successfully.')
     os.remove(file.path)
@@ -118,6 +123,14 @@ def get_ryujinx_user_folder():
     return ryujinx_path.joinpath('portable/')
 
 
+def get_ryujinx_exe_path():
+    ryujinx_path = Path(config.ryujinx.path)
+    if ryujinx_path.joinpath('Ryujinx.Ava.exe').exists():
+        return ryujinx_path.joinpath('Ryujinx.Ava.exe')
+    elif ryujinx_path.joinpath('Ryujinx.exe').exists():
+        return ryujinx_path.joinpath('Ryujinx.exe')
+
+
 def open_ryujinx_keys_folder():
     keys_path = get_ryujinx_user_folder().joinpath('system')
     keys_path.mkdir(parents=True, exist_ok=True)
@@ -127,8 +140,8 @@ def open_ryujinx_keys_folder():
 
 
 def start_ryujinx():
-    rj_path = Path(config.ryujinx.path).joinpath('Ryujinx.exe')
-    if rj_path.exists():
+    rj_path = get_ryujinx_exe_path()
+    if rj_path:
         logger.info(f'starting Ryujinx from: {rj_path}')
         subprocess.Popen([rj_path])
     else:
@@ -138,21 +151,24 @@ def start_ryujinx():
 
 def detect_ryujinx_version():
     send_notify('正在检测 Ryujinx 版本...')
-    rj_path = Path(config.ryujinx.path).joinpath('Ryujinx.exe')
-    if not rj_path.exists():
+    rj_path = get_ryujinx_exe_path()
+    if not rj_path:
         send_notify('未能找到 Ryujinx 程序')
         return None
+    if rj_path.name.endswith('Ava.exe'):
+        config.ryujinx.branch = 'ava'
+    else:
+        config.ryujinx.branch = 'mainline'
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
-    subprocess.Popen([rj_path],
-                     startupinfo=st_inf)
+    subprocess.Popen([rj_path], startupinfo=st_inf, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(3)
     version = None
     try:
         from utils.common import get_all_window_name
         for window_name in get_all_window_name():
             if window_name.startswith('Ryujinx '):
-                version = window_name[8:]
+                version = window_name[16:] if window_name.startswith('Ryujinx Console ') else window_name[8:]
                 send_notify(f'当前 Ryujinx 版本 [{version}]')
                 logger.info(f'Current Ryujinx version: {version}')
                 break
@@ -166,7 +182,7 @@ def detect_ryujinx_version():
 
 
 if __name__ == '__main__':
-    # install_ryujinx_by_version('1.1.335')
+    # install_ryujinx_by_version('1.1.338', 'ava')
     # clear_ryujinx_folder(Path(config.ryujinx.path))
     # install_firmware_to_ryujinx('15.0.0')
     # open_ryujinx_keys_folder()

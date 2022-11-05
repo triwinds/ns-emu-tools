@@ -61,11 +61,11 @@ def start_ryujinx():
 
 
 @eel.expose
-def install_ryujinx(version):
+def install_ryujinx(version, branch):
     if not version or version == '':
         return {'msg': f'无效的版本 {version}'}
     from module.ryujinx import install_ryujinx_by_version
-    return {'msg': install_ryujinx_by_version(version)}
+    return {'msg': install_ryujinx_by_version(version, branch)}
 
 
 @eel.expose
@@ -74,4 +74,17 @@ def install_ryujinx_firmware(version):
         return {'msg': f'无效的版本 {version}'}
     from module.ryujinx import install_firmware_to_ryujinx
     return {'msg': install_firmware_to_ryujinx(version)}
+
+
+@eel.expose
+def switch_ryujinx_branch():
+    from config import dump_config
+    if config.ryujinx.branch == 'ava':
+        target_branch = 'mainline'
+    else:
+        target_branch = 'ava'
+    logger.info(f'switch ryujinx branch to {target_branch}')
+    config.ryujinx.branch = target_branch
+    dump_config()
+    return config.ryujinx.to_dict()
 

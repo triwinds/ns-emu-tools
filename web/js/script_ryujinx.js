@@ -12,6 +12,7 @@ const vm = new Vue({
         isRunningInstall: false,
         currentVersion: '',
         hasNewVersion: false,
+        branch: '',
     },
     created() {
         this.initCurrentVersion()
@@ -36,6 +37,7 @@ const vm = new Vue({
         updateRyujinxConfig() {
             eel.get_ryujinx_config()((config) => {
                 this.ryujinxConfig = config
+                this.branch = config.branch
             })
         },
         updateRyujinxReleaseInfos() {
@@ -78,7 +80,7 @@ const vm = new Vue({
         },
         installRyujinx() {
             this.isRunningInstall = true
-            eel.install_ryujinx(this.targetRyujinxVersion)((resp) => {
+            eel.install_ryujinx(this.targetRyujinxVersion, this.branch)((resp) => {
                 this.isRunningInstall = false
                 this.topBarMsg = resp['msg']
                 this.updateRyujinxConfig()
@@ -151,6 +153,12 @@ const vm = new Vue({
                 }
             })
         },
+        switchRyujinxBranch() {
+            eel.switch_ryujinx_branch()((config) => {
+                this.ryujinxConfig = config
+                this.branch = config.branch
+            })
+        },
     },
     computed: {
         latestFirmwareVersion: function () {
@@ -171,6 +179,14 @@ const vm = new Vue({
                 return this.topBarMsg.substring(0, maxLength) + '...'
             }
             return this.topBarMsg
+        },
+        displayBranch: function () {
+            if (this.branch === 'ava') {
+                return 'ava'
+            } else if (this.branch === 'mainline') {
+                return '正式'
+            }
+            return '未知'
         }
     }
 });

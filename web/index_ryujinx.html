@@ -31,7 +31,12 @@
     </div>
     <div id="main-container">
         <div id="emu-info">
-            <h2>Ryujinx 基础信息</h2>
+            <h2>Ryujinx 基础信息
+                <button class="basic-info btn btn-outline-danger" @click="switchRyujinxBranch" title="切换安装分支"
+                        :disabled='isRunningInstall' data-bs-toggle="tooltip" data-bs-placement="right">
+                    {{displayBranch}}版
+                </button>
+            </h2>
             <div>Ryujinx 路径: <span class="basic-info">{{ ryujinxConfig.path }}</span>
                 <button @click="modifyRyujinxPath" class="btn btn-outline-info" :disabled='isRunningInstall'>
                     修改路径
