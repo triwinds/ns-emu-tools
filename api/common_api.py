@@ -16,23 +16,6 @@ def get_available_firmware_infos():
 
 
 @eel.expose
-def get_available_keys_info():
-    from module.common import get_keys_info
-    try:
-        return success_response(get_keys_info())
-    except Exception as e:
-        return exception_response(e)
-
-
-@eel.expose
-def install_keys(name):
-    if not name or name == '':
-        return {'msg': f'无效的 key {name}'}
-    from module.yuzu import install_key_to_yuzu
-    return success_response(msg=install_key_to_yuzu(name))
-
-
-@eel.expose
 def get_current_version():
     return success_response(current_version)
 

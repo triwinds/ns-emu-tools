@@ -41,26 +41,6 @@ def get_firmware_infos():
     return archive_versions
 
 
-@lru_cache(1)
-def get_keys_info():
-    resp = requests.get('https://cfrp.e6ex.com/rawgit/triwinds/ns-emu-tools/main/keys_info.json')
-    return resp.json()
-
-
-def download_keys_by_name(name):
-    keys_info = get_keys_info()
-    if name not in keys_info:
-        raise RuntimeError(f'No such key [{name}].')
-    key_info = keys_info[name]
-    url = key_info['url'].replace('https://drive.google.com', 'https://cfrp.e6ex.com/gd')
-    logger.info(f'Downloading keys [{name}] from {url}')
-    data = requests.get(url)
-    file = download_path.joinpath(name)
-    with file.open('wb') as f:
-        f.write(data.content)
-    return file
-
-
 def check_and_install_msvc():
     windir = Path(os.environ['windir'])
     if windir.joinpath(r'System32\msvcp140_atomic_wait.dll').exists():

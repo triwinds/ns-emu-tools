@@ -4,7 +4,6 @@ const vm = new Vue({
         ryujinxConfig: {},
         allRyujinxReleaseInfos: [],
         availableFirmwareInfos: [],
-        availableKeyInfos: [],
         targetRyujinxVersion: "",
         targetFirmwareVersion: "",
         targetKeyName: "",
@@ -18,7 +17,6 @@ const vm = new Vue({
         this.initCurrentVersion()
         this.updateRyujinxConfig()
         this.updateRyujinxReleaseInfos()
-        this.updateKeysInfo()
         this.updateAvailableFirmwareInfos()
         this.topBarMsg = '启动完毕'
         this.checkUpdate()
@@ -62,22 +60,6 @@ const vm = new Vue({
                 }
             })
         },
-        updateKeysInfo() {
-            eel.get_available_keys_info()((data) => {
-                if (data['code'] === 0) {
-                    let info = data['data']
-                    res = []
-                    for (let key in info) {
-                        // console.log(key, info[key]);
-                        res.push(info[key])
-                    }
-                    this.availableKeyInfos = res.reverse()
-                    this.targetKeyName = this.availableKeyInfos[0]['name']
-                } else {
-                    this.topBarMsg = 'key 信息加载异常.'
-                }
-            })
-        },
         installRyujinx() {
             this.isRunningInstall = true
             eel.install_ryujinx(this.targetRyujinxVersion, this.branch)((resp) => {
@@ -93,14 +75,6 @@ const vm = new Vue({
                 if (resp['msg']) {
                     this.topBarMsg = resp['msg']
                 }
-                this.updateRyujinxConfig()
-            })
-        },
-        installKeys() {
-            this.isRunningInstall = true
-            eel.install_keys(this.targetKeyName)((resp) => {
-                this.isRunningInstall = false
-                this.topBarMsg = resp['msg']
                 this.updateRyujinxConfig()
             })
         },

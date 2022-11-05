@@ -5,7 +5,6 @@ const vm = new Vue({
         branch: 'ea',
         allYuzuReleaseVersions: [],
         availableFirmwareInfos: [],
-        availableKeyInfos: [],
         targetYuzuVersion: "",
         targetFirmwareVersion: "",
         targetKeyName: "",
@@ -16,7 +15,6 @@ const vm = new Vue({
     },
     async created() {
         this.initCurrentVersion()
-        this.updateKeysInfo()
         this.updateAvailableFirmwareInfos()
         await this.updateYuzuConfig()
         this.updateYuzuReleaseVersions()
@@ -67,22 +65,6 @@ const vm = new Vue({
                 }
             })
         },
-        updateKeysInfo() {
-            eel.get_available_keys_info()((data) => {
-                if (data['code'] === 0) {
-                    let info = data['data']
-                    res = []
-                    for (let key in info) {
-                        // console.log(key, info[key]);
-                        res.push(info[key])
-                    }
-                    this.availableKeyInfos = res.reverse()
-                    this.targetKeyName = this.availableKeyInfos[0]['name']
-                } else {
-                    this.topBarMsg = 'key 信息加载异常.'
-                }
-            })
-        },
         installYuzu() {
             this.isRunningInstall = true
             eel.install_yuzu(this.targetYuzuVersion, this.branch)((resp) => {
@@ -97,14 +79,6 @@ const vm = new Vue({
                 if (resp['msg']) {
                     this.topBarMsg = resp['msg']
                 }
-                this.updateYuzuConfig()
-            })
-        },
-        installKeys() {
-            this.isRunningInstall = true
-            eel.install_keys(this.targetKeyName)((resp) => {
-                this.isRunningInstall = false
-                this.topBarMsg = resp['msg']
                 this.updateYuzuConfig()
             })
         },

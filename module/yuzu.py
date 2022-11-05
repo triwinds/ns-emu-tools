@@ -95,42 +95,6 @@ def install_yuzu(target_version, branch='ea'):
     send_notify(f'yuzu {branch} [{target_version}] 安装成功.')
 
 
-def install_key_to_yuzu(target_name=None):
-    send_notify('正在获取 key 信息...')
-    keys_info = get_keys_info()
-    if not target_name and config.yuzu.yuzu_firmware:
-        for k in keys_info:
-            if config.yuzu.yuzu_firmware in k:
-                logger.info(f'key [{k}] maybe suitable for firmware [{config.yuzu.yuzu_firmware}].')
-                target_name = k
-                break
-    if not target_name:
-        idx2name = {}
-        logger.info('Follow keys are available:')
-        for i, name in enumerate(keys_info.keys()):
-            logger.info(f'  {i}: {name}')
-            idx2name[str(i)] = name
-        choose = input('Choose num: ')
-        if choose not in idx2name:
-            raise RuntimeError(f'Not available choose: {choose}')
-        target_name = idx2name[choose]
-    elif config.yuzu.key_file == target_name:
-        logger.info(f'Current key file is same as target file [{target_name}], skip install.')
-        return f'当前的 key 就是 [{target_name}], 跳过安装.'
-    file = download_keys_by_name(target_name)
-    with py7zr.SevenZipFile(file) as zf:
-        zf: py7zr.SevenZipFile = zf
-        keys_path = get_yuzu_user_path().joinpath('keys')
-        keys_path.mkdir(parents=True, exist_ok=True)
-        logger.info(f'Extracting keys to {keys_path}')
-        send_notify('提取 key 至目录...')
-        zf.extractall(keys_path)
-        config.yuzu.key_file = target_name
-        dump_config()
-        logger.info(f'Keys [{target_name}] install successfully.')
-    return f'Keys [{target_name}] 安装完成.'
-
-
 def install_firmware_to_yuzu(firmware_version=None):
     if firmware_version == config.yuzu.yuzu_firmware:
         logger.info(f'Current firmware are same as target version [{firmware_version}], skip install.')
