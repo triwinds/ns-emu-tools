@@ -9,10 +9,9 @@ import logging
 import py7zr
 
 from config import config, dump_config
-from module.common import get_firmware_infos, get_keys_info, download_keys_by_name
 from module.downloader import download
 from module.msg_notifier import send_notify
-from repository.yuzu import get_latest_yuzu_release_info, get_yuzu_release_info_by_version
+from repository.yuzu import get_yuzu_release_info_by_version
 from utils.network import get_finial_url
 
 
