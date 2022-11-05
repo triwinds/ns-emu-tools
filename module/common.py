@@ -59,23 +59,20 @@ def check_and_install_msvc():
 
 
 def check_update(prerelease=False):
-    from repository.my_info import get_latest_release
-    latest_release = get_latest_release(prerelease)
-    latest_tag = latest_release['tag_name']
+    from repository.my_info import get_all_release
     from config import current_version
-    latest_version_num = calc_version_num(latest_tag)
-    current_version_num = calc_version_num(current_version)
-    return latest_version_num > current_version_num, latest_tag
-
-
-def calc_version_num(version_str: str):
-    version_num = 0
-    for s in version_str.split('.'):
-        version_num *= 100
-        num_str = ''.join(ch for ch in s if ch.isdigit())
-        if num_str:
-            version_num += int(num_str)
-    return version_num
+    release_infos = get_all_release()
+    latest_tag_name = None
+    if prerelease:
+        latest_tag_name = release_infos[0]['tag_name']
+    else:
+        for ri in release_infos:
+            if not ri['prerelease']:
+                latest_tag_name = ri['tag_name']
+                break
+    if not latest_tag_name:
+        latest_tag_name = release_infos[0]['tag_name']
+    return current_version != latest_tag_name, latest_tag_name
 
 
 def install_firmware(firmware_version, target_firmware_path):
@@ -111,4 +108,5 @@ if __name__ == '__main__':
     # infos = get_firmware_infos()
     # for info in infos:
     #     print(info)
-    check_and_install_msvc()
+    # check_and_install_msvc()
+    print(check_update())
