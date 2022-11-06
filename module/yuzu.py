@@ -30,40 +30,55 @@ def download_yuzu(target_version, branch):
     logger.info(f'target yuzu path: {yuzu_path}')
     send_notify('开始下载 yuzu...')
     assets = release_info['assets']
+    url = None
     for asset in assets:
         if asset['content_type'] == 'application/x-7z-compressed':
             url = get_finial_url(asset['browser_download_url'])
-            logger.info(f"downloading yuzu from {url}")
-            info = download(url)
-            file = info.files[0]
-            return file.path
+            break
+        elif asset['name'].startswith('Windows-Yuzu-EA-') and asset['name'].endswith('.zip'):
+            url = get_finial_url(asset['browser_download_url'])
+            break
+    if not url:
+        raise RuntimeError('Fail to fetch yuzu download url.')
+    logger.info(f"downloading yuzu from {url}")
+    info = download(url)
+    file = info.files[0]
+    return file.path
+
+
+def unzip_yuzu(package_path: Path):
+    logger.info(f'Unpacking yuzu files...')
+    send_notify('正在解压 yuzu 文件...')
+    if package_path.name.endswith('.zip'):
+        import zipfile
+        with zipfile.ZipFile(package_path, 'r') as zf:
+            zf.extractall(tempfile.gettempdir())
+            return tempfile.gettempdir()
+    elif package_path.name.endswith('.7z'):
+        with py7zr.SevenZipFile(package_path) as zf:
+            zf.extractall(tempfile.gettempdir())
+            return tempfile.gettempdir()
+    logger.info(f'Unknown file format: {package_path}')
+    send_notify('不支持的文件格式, 解压失败.')
 
 
 def install_ea_yuzu(target_version):
     yuzu_path = Path(config.yuzu.yuzu_path)
     yuzu_package_path = download_yuzu(target_version, 'ea')
-    with py7zr.SevenZipFile(yuzu_package_path) as zf:
-        zf: py7zr.SevenZipFile = zf
-        logger.info(f'Unpacking yuzu files...')
-        send_notify('正在解压 yuzu 文件...')
-        zf.extractall(tempfile.gettempdir())
-        tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc-early-access')
-        copy_back_yuzu_files(tmp_dir, yuzu_path)
-        logger.info(f'Yuzu EA of [{target_version}] install successfully.')
+    unzip_yuzu(yuzu_package_path)
+    tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc-early-access')
+    copy_back_yuzu_files(tmp_dir, yuzu_path)
+    logger.info(f'Yuzu EA of [{target_version}] install successfully.')
     os.remove(yuzu_package_path)
 
 
 def install_mainline_yuzu(target_version):
     yuzu_path = Path(config.yuzu.yuzu_path)
     yuzu_package_path = download_yuzu(target_version, 'mainline')
-    with py7zr.SevenZipFile(yuzu_package_path) as zf:
-        zf: py7zr.SevenZipFile = zf
-        logger.info(f'Unpacking yuzu files...')
-        send_notify('正在解压 yuzu 文件...')
-        zf.extractall(tempfile.gettempdir())
-        tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc')
-        copy_back_yuzu_files(tmp_dir, yuzu_path)
-        logger.info(f'Yuzu mainline of [{target_version}] install successfully.')
+    unzip_yuzu(yuzu_package_path)
+    tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc')
+    copy_back_yuzu_files(tmp_dir, yuzu_path)
+    logger.info(f'Yuzu mainline of [{target_version}] install successfully.')
     os.remove(yuzu_package_path)
 
 
