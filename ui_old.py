@@ -3,7 +3,7 @@ gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 
 
-eel.init("web")
+eel.init("web_old")
 
 
 def can_use_chrome():
@@ -24,12 +24,12 @@ def main():
     import_api_modules()
     from module.msg_notifier import update_notifier
     from config import config
-    default_page = f'index.html'
+    default_page = f'index_{config.setting.lastOpenEmuPage}.html'
     update_notifier('eel')
     if can_use_chrome():
-        eel.start(default_page, port=0, size=(1280, 720))
+        eel.start(default_page, port=0)
     else:
-        eel.start(default_page, port=0, mode='user default', size=(1280, 720))
+        eel.start(default_page, port=0, mode='user default')
 
 
 if __name__ == '__main__':
