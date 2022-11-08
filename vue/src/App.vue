@@ -7,6 +7,7 @@
       <v-sheet
           color="secondary"
           class="pa-4"
+          @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"
       >
         <v-avatar
             class="mb-4"
@@ -17,7 +18,7 @@
           <img src="./assets/icon.png" alt="">
         </v-avatar>
 
-        <div>版本：v{{ currentVersion }}</div>
+        <div>版本：v{{ currentVersion }}<v-icon color="info" v-show="hasNewVersion">mdi-new-box</v-icon></div>
       </v-sheet>
 
       <v-divider></v-divider>
@@ -25,25 +26,25 @@
       <v-list>
         <v-list-item link to="/yuzu">
           <v-list-item-icon>
-            <v-icon>mdi-alert-octagon</v-icon>
+            <v-img src="./assets/yuzu.png" max-height="24" max-width="24"></v-img>
           </v-list-item-icon>
           <v-list-item-content>
-            <v-list-item-title>Yuzu</v-list-item-title>
+            <v-list-item-title>Yuzu 模拟器</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 
         <v-list-item link to="/ryujinx">
           <v-list-item-icon>
-            <v-icon>mdi-alert-octagon</v-icon>
+            <v-img src="./assets/ryujinx.png" max-height="24" max-width="24"></v-img>
           </v-list-item-icon>
           <v-list-item-content>
-            <v-list-item-title>Ryujinx</v-list-item-title>
+            <v-list-item-title>Ryujinx 模拟器</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 
         <v-list-item link to="/about">
           <v-list-item-icon>
-            <v-icon>mdi-alert-octagon</v-icon>
+            <v-icon color="info">mdi-information</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title>About</v-list-item-title>
@@ -68,10 +69,12 @@
 export default {
   data: () => ({
     drawer: null,
-    currentVersion: '0.0.1',
+    currentVersion: '未知',
+    hasNewVersion: false,
   }),
   created() {
     this.initCurrentVersion()
+    this.checkUpdate()
   },
   methods: {
     initCurrentVersion() {
@@ -83,6 +86,18 @@ export default {
           this.currentVersion = '未知'
         }
       })
+    },
+    checkUpdate() {
+      window.eel.check_update()((data) => {
+        if (data['code'] === 0 && data['data']) {
+          this.hasNewVersion = true
+        }
+      })
+    },
+    clickTitle() {
+      if (this.hasNewVersion) {
+        window.open('https://github.com/triwinds/ns-emu-tools/releases', '_blank');
+      }
     },
   },
   computed: {
