@@ -1,23 +1,23 @@
 <template>
   <v-app id="inspire" :style="{background: $vuetify.theme.themes[theme].background}">
     <v-navigation-drawer
-      v-model="drawer"
-      app
+        v-model="drawer"
+        app
     >
       <v-sheet
-        color="secondary"
-        class="pa-4"
+          color="secondary"
+          class="pa-4"
       >
         <v-avatar
-          class="mb-4"
-          color="#00000000"
-          size="100"
-          rounded
+            class="mb-4"
+            color="#00000000"
+            size="100"
+            rounded
         >
           <img src="./assets/icon.png" alt="">
         </v-avatar>
 
-        <div>版本：v1.1.1</div>
+        <div>版本：v{{ currentVersion }}</div>
       </v-sheet>
 
       <v-divider></v-divider>
@@ -59,23 +59,36 @@
     </v-app-bar>
 
     <v-main>
-      <router-view />
+      <router-view/>
     </v-main>
   </v-app>
 </template>
 
 <script>
-  export default {
-    data: () => ({
-      drawer: null,
-      menuList: [
-        {}
-      ],
-    }),
-    computed:{
-      theme(){
-        return (this.$vuetify.theme.dark) ? 'dark' : 'light'
-      }
+export default {
+  data: () => ({
+    drawer: null,
+    currentVersion: '0.0.1',
+  }),
+  created() {
+    this.initCurrentVersion()
+  },
+  methods: {
+    initCurrentVersion() {
+      window.eel.get_current_version()((data) => {
+        console.log(data)
+        if (data['code'] === 0) {
+          this.currentVersion = data['data']
+        } else {
+          this.currentVersion = '未知'
+        }
+      })
+    },
+  },
+  computed: {
+    theme() {
+      return (this.$vuetify.theme.dark) ? 'dark' : 'light'
     }
   }
+}
 </script>
