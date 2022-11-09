@@ -14,6 +14,25 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css">
+    <style>
+        html ::-webkit-scrollbar {
+            width: 5px !important;
+            height: 5px !important;
+        }
+
+        html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+            background: transparent !important;
+        }
+
+        html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+            background: transparent !important;
+        }
+
+        html ::-webkit-resizer, html ::-webkit-scrollbar-thumb {
+            background: #0000;
+            border-radius: 3px;
+        }
+    </style>
 </head>
 <body>
 <noscript>

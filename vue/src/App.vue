@@ -5,7 +5,6 @@
         app
     >
       <v-sheet
-          color="secondary"
           class="pa-4"
           @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"
       >
@@ -54,9 +53,9 @@
     </v-navigation-drawer>
 
     <v-app-bar color="primary" app>
-      <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon class="white--text" @click="drawer = !drawer"></v-app-bar-nav-icon>
 
-      <v-toolbar-title>NS EMU TOOLS</v-toolbar-title>
+      <v-toolbar-title class="white--text">NS EMU TOOLS</v-toolbar-title>
     </v-app-bar>
 
     <v-main>
@@ -66,6 +65,8 @@
 </template>
 
 <script>
+import router from "@/router";
+
 export default {
   data: () => ({
     drawer: null,
@@ -75,6 +76,7 @@ export default {
   created() {
     this.initCurrentVersion()
     this.checkUpdate()
+    router.push('/yuzu')
   },
   methods: {
     initCurrentVersion() {

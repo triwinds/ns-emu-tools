@@ -10,13 +10,12 @@ export default new Vuetify({
             dark: {
                 // color palette: https://material-theme.com/docs/reference/color-palette/
                 primary: '#009688',
-                secondary: '#546E7A',
-                accent: '#89ddff',
+                secondary: '#89ddff',
+                accent: '#c792ea',
                 error: '#ff5370',
                 warning: '#ffcb6b',
                 info: '#89ddff',
                 success: '#c3e88d',
-                // active: '#425B67',
                 background: '#263238'
             },
         },
