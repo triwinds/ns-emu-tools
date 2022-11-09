@@ -83,6 +83,9 @@
                 </v-col>
               </v-row>
               <v-divider style="margin-bottom: 15px"></v-divider>
+              <v-btn @click="showConsoleDialog">
+                show console dialog
+              </v-btn>
 
             </v-container>
           </v-card>
@@ -157,6 +160,9 @@ export default {
       } else {
         this.topBarMsg = '检测 yuzu 版本时发生异常'
       }
+    },
+    showConsoleDialog() {
+      this.$store.commit("SET_CONSOLE_DIALOG_FLAG", true)
     },
   },
   computed: {

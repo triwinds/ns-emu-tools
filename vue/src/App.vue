@@ -60,14 +60,17 @@
 
     <v-main>
       <router-view/>
+      <ConsoleDialog></ConsoleDialog>
     </v-main>
   </v-app>
 </template>
 
 <script>
-import router from "@/router";
+// import router from "@/router";
+import ConsoleDialog from "@/components/ConsoleDialog";
 
 export default {
+  components: {ConsoleDialog},
   data: () => ({
     drawer: null,
     currentVersion: '未知',
@@ -76,7 +79,7 @@ export default {
   created() {
     this.initCurrentVersion()
     this.checkUpdate()
-    router.push('/yuzu')
+    // router.push('/yuzu')
   },
   methods: {
     initCurrentVersion() {
