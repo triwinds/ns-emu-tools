@@ -1,23 +1,25 @@
 <template>
   <v-app id="inspire" :style="{background: $vuetify.theme.themes[theme].background}">
     <v-navigation-drawer
-        v-model="drawer"
-        app
+      v-model="drawer"
+      app
     >
       <v-sheet
-          class="pa-4"
-          @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"
+        class="pa-4"
+        @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"
       >
         <v-avatar
-            class="mb-4"
-            color="#00000000"
-            size="100"
-            rounded
+          class="mb-4"
+          color="#00000000"
+          size="100"
+          rounded
         >
           <img src="./assets/icon.png" alt="">
         </v-avatar>
 
-        <div>版本：v{{ currentVersion }}<v-icon color="info" v-show="hasNewVersion">mdi-new-box</v-icon></div>
+        <div>版本：v{{ currentVersion }}
+          <v-icon color="info" v-show="hasNewVersion">mdi-new-box</v-icon>
+        </div>
       </v-sheet>
 
       <v-divider></v-divider>
@@ -63,7 +65,19 @@
 
     <v-app-bar color="primary" app>
       <v-app-bar-nav-icon class="white--text" @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title class="white--text">NS EMU TOOLS</v-toolbar-title>
+      <v-toolbar-title class="white--text" style="min-width: 200px">NS EMU TOOLS</v-toolbar-title>
+      <v-container>
+        <v-btn class="float-right" icon @click="showConsoleDialog">
+          <v-icon color="white">
+            mdi-console
+          </v-icon>
+        </v-btn>
+        <v-btn class="float-right" icon @click="$vuetify.theme.dark = !$vuetify.theme.dark">
+          <v-icon color="white">
+            mdi-brightness-6
+          </v-icon>
+        </v-btn>
+      </v-container>
     </v-app-bar>
 
     <v-main>

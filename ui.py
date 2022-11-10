@@ -1,9 +1,11 @@
+import logging
 import gevent.monkey
 gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
+from config import config
 
 
-
+logger = logging.getLogger(__name__)
 
 
 def can_use_chrome():
@@ -22,12 +24,10 @@ def import_api_modules():
 
 def main(port=0, mode=None):
     import_api_modules()
-    if port:
-        eel.init('vue')
-    else:
-        eel.init("web")
+    logger.info('eel init starting...')
+    eel.init('vue/src') if port else eel.init("web")
+    logger.info('eel init finished.')
     from module.msg_notifier import update_notifier
-    from config import config
     default_page = f'index.html'
     update_notifier('eel-console')
     if mode is None:

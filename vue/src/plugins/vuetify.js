@@ -6,9 +6,9 @@ Vue.use(Vuetify);
 export default new Vuetify({
     theme: {
         dark: true,
+        // color palette: https://material-theme.com/docs/reference/color-palette/
         themes: {
             dark: {
-                // color palette: https://material-theme.com/docs/reference/color-palette/
                 primary: '#009688',
                 secondary: '#89ddff',
                 accent: '#c792ea',
@@ -17,6 +17,16 @@ export default new Vuetify({
                 info: '#89ddff',
                 success: '#c3e88d',
                 background: '#263238'
+            },
+            light: {
+                primary: '#3A66D1',
+                secondary: '#2AA298',
+                accent: '#6F42C1',
+                error: '#d25252',
+                warning: '#E36209',
+                info: '#2AA298',
+                success: '#22863A',
+                background: '#F7F8FA'
             },
         },
     },

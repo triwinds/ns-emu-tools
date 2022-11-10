@@ -16,7 +16,7 @@
 <!--      </template>-->
 
       <v-card>
-        <v-card-title class="text-h5 primary">
+        <v-card-title class="text-h5 primary white--text">
           控制台日志
         </v-card-title>
 

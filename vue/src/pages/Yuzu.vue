@@ -186,7 +186,6 @@ export default {
           let infos = data['data']
           this.availableFirmwareInfos = infos
           this.targetFirmwareVersion = infos[0]['version']
-          this.appendConsoleMessage('固件版本检测完成')
         } else {
           this.showConsoleDialog()
           this.appendConsoleMessage('固件信息加载异常.')
@@ -199,6 +198,7 @@ export default {
         if (data['code'] === 0) {
           this.updateYuzuConfig()
         }
+        this.appendConsoleMessage('固件版本检测完成')
       })
     },
     async detectYuzuVersion() {
