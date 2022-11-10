@@ -41,6 +41,15 @@
           </v-list-item-content>
         </v-list-item>
 
+        <v-list-item link to="/keys">
+          <v-list-item-icon>
+            <v-icon color="amber darken-2">mdi-key-variant</v-icon>
+          </v-list-item-icon>
+          <v-list-item-content>
+            <v-list-item-title>密钥管理</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+
         <v-list-item link to="/about">
           <v-list-item-icon>
             <v-icon color="info">mdi-information</v-icon>
@@ -54,7 +63,6 @@
 
     <v-app-bar color="primary" app>
       <v-app-bar-nav-icon class="white--text" @click="drawer = !drawer"></v-app-bar-nav-icon>
-
       <v-toolbar-title class="white--text">NS EMU TOOLS</v-toolbar-title>
     </v-app-bar>
 

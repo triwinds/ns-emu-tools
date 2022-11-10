@@ -124,11 +124,13 @@
                   </v-btn>
                 </v-col>
               </v-row>
-              <!--              <v-row>-->
-              <!--                <v-col>-->
-              <!--                  <span>安装/更新固件后, 请一并安装相应的 keys:</span>-->
-              <!--                </v-col>-->
-              <!--              </v-row>-->
+              <v-row>
+                <v-col>
+                  <span>安装/更新固件后, 请一并安装相应的 keys:
+                    <router-link to="/keys" class="info--text">密钥管理</router-link>
+                  </span>
+                </v-col>
+              </v-row>
             </v-container>
           </v-card>
         </v-col>
