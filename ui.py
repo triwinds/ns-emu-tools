@@ -16,6 +16,23 @@ def can_use_chrome():
     return chrome_instance_path is not None and os.path.exists(chrome_instance_path)
 
 
+def can_use_edge():
+    from eel import edge
+    return edge.find_path()
+
+
+def start_edge_in_app_mode(page, port, size=(1280, 720)):
+    if port == 0:
+        from utils.network import get_available_port
+        port = get_available_port()
+    url = f'http://localhost:{port}/{page}'
+    import subprocess
+    import sys
+    subprocess.Popen(f'start msedge --app={url}',
+                     stdout=sys.stdout, stderr=sys.stderr, stdin=subprocess.PIPE, shell=True)
+    eel.start(url, port=port, mode=False, size=size)
+
+
 def import_api_modules():
     import api.yuzu_api
     import api.common_api
@@ -31,9 +48,19 @@ def main(port=0, mode=None):
     default_page = f'index.html'
     update_notifier('eel-console')
     if mode is None:
-        mode = 'chrome' if can_use_chrome() else 'user default'
-    eel.start(default_page, port=port, size=(1280, 720), mode=mode)
+        if can_use_chrome():
+            mode = 'chrome'
+        elif can_use_edge():
+            mode = 'edge'
+        else:
+            mode = 'user default'
+    size = (1440, 850)
+    if mode == 'edge':
+        start_edge_in_app_mode(default_page, port, size)
+    else:
+        eel.start(default_page, port=port, size=size, mode=mode)
 
 
 if __name__ == '__main__':
     main(8888, False)
+    # main(0, 'edge')
