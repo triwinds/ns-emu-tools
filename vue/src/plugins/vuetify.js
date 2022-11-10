@@ -1,5 +1,8 @@
 import Vue from 'vue';
 import Vuetify from 'vuetify/lib/framework';
+import 'vuetify/dist/vuetify.min.css'
+import '@mdi/font/css/materialdesignicons.min.css'
+import 'typeface-roboto'
 
 Vue.use(Vuetify);
 
