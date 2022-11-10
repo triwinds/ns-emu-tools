@@ -54,17 +54,23 @@ def start_yuzu():
 @eel.expose
 def install_yuzu(version, branch):
     if not version or version == '':
-        return {'msg': f'无效的版本 {version}'}
+        return error_response(404, f'无效的版本 {version}')
     from module.yuzu import install_yuzu
-    return {'msg': install_yuzu(version, branch)}
+    try:
+        return success_response(msg=install_yuzu(version, branch))
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
 def install_yuzu_firmware(version):
     if not version or version == '':
-        return {'msg': f'无效的版本 {version}'}
+        return error_response(404, f'无效的版本 {version}')
     from module.yuzu import install_firmware_to_yuzu
-    return {'msg': install_firmware_to_yuzu(version)}
+    try:
+        return success_response(msg=install_firmware_to_yuzu(version))
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose

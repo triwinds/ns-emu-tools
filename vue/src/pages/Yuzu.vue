@@ -15,12 +15,31 @@
               </v-row>
               <v-divider style="margin-bottom: 15px"></v-divider>
               <v-row>
+                <v-col>
+                  <span class="text-h6 secondary--text">当前使用的 Yuzu 分支：</span>
+                  <v-tooltip right>
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-btn color="error" large outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
+                             @click="switchYuzuBranch" :disabled='isRunningInstall'>
+                        {{ displayBranch }} 版
+                      </v-btn>
+                    </template>
+                    <span>切换安装分支</span>
+                  </v-tooltip>
+                </v-col>
+              </v-row>
+              <v-row>
                 <v-col cols="7">
-                  <v-text-field label="Yuzu 路径" readonly v-model="yuzuConfig.yuzu_path"></v-text-field>
+                  <v-text-field label="Yuzu 路径" readonly v-model="yuzuConfig.yuzu_path"
+                                style="cursor: default"></v-text-field>
                 </v-col>
                 <v-col cols="5">
-                  <v-btn large color="secondary" outlined style="margin-right: 5px" min-width="120px">修改路径</v-btn>
-                  <v-btn large color="success" outlined min-width="120px">启动 Yuzu</v-btn>
+                  <v-btn large color="secondary" outlined style="margin-right: 5px" min-width="120px"
+                         :disabled='isRunningInstall' @click="modifyYuzuPath">修改路径
+                  </v-btn>
+                  <v-btn large color="success" outlined min-width="120px" :disabled='isRunningInstall'
+                         @click="startYuzu">启动 Yuzu
+                  </v-btn>
                 </v-col>
               </v-row>
               <v-row>
@@ -31,7 +50,7 @@
                   <v-tooltip top>
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
-                             @click="detectYuzuVersion">
+                             @click="detectYuzuVersion" :disabled='isRunningInstall'>
                         {{ yuzuConfig.yuzu_version }}
                       </v-btn>
                     </template>
@@ -41,7 +60,7 @@
                     最新 Yuzu 版本：
                   </span>
                   <span class="text-h6">
-                    {{latestYuzuVersion}}
+                    {{ latestYuzuVersion }}
                   </span>
                 </v-col>
               </v-row>
@@ -51,7 +70,7 @@
                   <v-tooltip top>
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
-                             @click="detectFirmwareVersion">
+                             @click="detectFirmwareVersion" :disabled='isRunningInstall'>
                         {{ yuzuConfig.yuzu_firmware }}
                       </v-btn>
                     </template>
@@ -83,10 +102,33 @@
                 </v-col>
               </v-row>
               <v-divider style="margin-bottom: 15px"></v-divider>
-              <v-btn @click="showConsoleDialog">
-                show console dialog
-              </v-btn>
-
+              <v-row>
+                <v-col cols="7">
+                  <v-text-field label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
+                         @click="installYuzu">
+                    安装 Yuzu
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col cols="7">
+                  <v-text-field label="需要安装的固件版本" v-model="targetFirmwareVersion"></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
+                         @click="installFirmware">
+                    安装固件
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <!--              <v-row>-->
+              <!--                <v-col>-->
+              <!--                  <span>安装/更新固件后, 请一并安装相应的 keys:</span>-->
+              <!--                </v-col>-->
+              <!--              </v-row>-->
             </v-container>
           </v-card>
         </v-col>
@@ -109,11 +151,15 @@ export default {
     branch: 'ea',
     allYuzuReleaseVersions: [],
     availableFirmwareInfos: [],
+    targetYuzuVersion: "",
+    targetFirmwareVersion: "",
+    isRunningInstall: false,
   }),
   created() {
     this.updateYuzuConfig()
     this.updateYuzuReleaseVersions()
     this.updateAvailableFirmwareInfos()
+    this.$store.commit("APPEND_CONSOLE_MESSAGE", "Yuzu 信息加载完成")
   },
   methods: {
     async updateYuzuConfig() {
@@ -127,7 +173,8 @@ export default {
           this.allYuzuReleaseVersions = infos
           this.targetYuzuVersion = infos[0]
         } else {
-          this.topBarMsg = 'yuzu 版本信息加载异常.'
+          this.showConsoleDialog()
+          this.appendConsoleMessage('yuzu 版本信息加载异常.')
         }
       })
     },
@@ -137,12 +184,15 @@ export default {
           let infos = data['data']
           this.availableFirmwareInfos = infos
           this.targetFirmwareVersion = infos[0]['version']
+          this.appendConsoleMessage('固件版本检测完成')
         } else {
-          this.topBarMsg = '固件信息加载异常.'
+          this.showConsoleDialog()
+          this.appendConsoleMessage('固件信息加载异常.')
         }
       })
     },
     async detectFirmwareVersion() {
+      this.cleanAndShowConsoleDialog()
       window.eel.detect_firmware_version("yuzu")((data) => {
         if (data['code'] === 0) {
           this.updateYuzuConfig()
@@ -150,6 +200,7 @@ export default {
       })
     },
     async detectYuzuVersion() {
+      this.cleanAndShowConsoleDialog()
       let previousBranch = this.branch
       let data = await window.eel.detect_yuzu_version()()
       if (data['code'] === 0) {
@@ -157,12 +208,59 @@ export default {
         if (previousBranch !== this.branch) {
           this.updateYuzuReleaseVersions()
         }
+        this.appendConsoleMessage('Yuzu 版本检测完成')
       } else {
-        this.topBarMsg = '检测 yuzu 版本时发生异常'
+        this.appendConsoleMessage('检测 yuzu 版本时发生异常')
       }
     },
-    showConsoleDialog() {
-      this.$store.commit("SET_CONSOLE_DIALOG_FLAG", true)
+    installYuzu() {
+      this.cleanAndShowConsoleDialog()
+      this.isRunningInstall = true
+      window.eel.install_yuzu(this.targetYuzuVersion, this.branch)((resp) => {
+        this.isRunningInstall = false
+        if (resp['code'] === 0) {
+          this.updateYuzuConfig()
+          this.appendConsoleMessage(resp['msg'])
+        } else {
+          this.appendConsoleMessage(resp['msg'])
+        }
+      });
+    },
+    installFirmware() {
+      this.cleanAndShowConsoleDialog()
+      this.isRunningInstall = true
+      window.eel.install_yuzu_firmware(this.targetFirmwareVersion)((resp) => {
+        this.isRunningInstall = false
+        if (resp['msg']) {
+          this.appendConsoleMessage(resp['msg'])
+        }
+        this.updateYuzuConfig()
+      })
+    },
+    modifyYuzuPath() {
+      window.eel.ask_and_update_yuzu_path()((data) => {
+        if (data['code'] === 0) {
+          this.updateYuzuConfig()
+        }
+        this.appendConsoleMessage(data['msg'])
+      })
+    },
+    startYuzu() {
+      window.eel.start_yuzu()((data) => {
+        if (data['code'] === 0) {
+          this.appendConsoleMessage('yuzu 启动成功')
+        } else {
+          this.appendConsoleMessage('yuzu 启动失败')
+        }
+      })
+    },
+    switchYuzuBranch() {
+      window.eel.switch_yuzu_branch()((config) => {
+        this.yuzuConfig = config
+        this.branch = config.branch
+        this.allYuzuReleaseVersions = []
+        this.updateYuzuReleaseVersions()
+      })
     },
   },
   computed: {
@@ -177,6 +275,14 @@ export default {
         return this.availableFirmwareInfos[0]['version']
       }
       return "加载中"
+    },
+    displayBranch: function () {
+      if (this.branch === 'ea') {
+        return 'EA'
+      } else if (this.branch === 'mainline') {
+        return '主线'
+      }
+      return '未知'
     },
   }
 }

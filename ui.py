@@ -3,7 +3,7 @@ gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 
 
-eel.init("web")
+
 
 
 def can_use_chrome():
@@ -22,10 +22,14 @@ def import_api_modules():
 
 def main(port=0, mode=None):
     import_api_modules()
+    if port:
+        eel.init('vue')
+    else:
+        eel.init("web")
     from module.msg_notifier import update_notifier
     from config import config
     default_page = f'index.html'
-    # update_notifier('eel')
+    update_notifier('eel-console')
     if mode is None:
         mode = 'chrome' if can_use_chrome() else 'user default'
     eel.start(default_page, port=port, size=(1280, 720), mode=mode)

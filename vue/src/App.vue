@@ -68,6 +68,7 @@
 <script>
 // import router from "@/router";
 import ConsoleDialog from "@/components/ConsoleDialog";
+import '@/plugins/mixin';
 
 export default {
   components: {ConsoleDialog},
@@ -84,7 +85,6 @@ export default {
   methods: {
     initCurrentVersion() {
       window.eel.get_current_version()((data) => {
-        console.log(data)
         if (data['code'] === 0) {
           this.currentVersion = data['data']
         } else {

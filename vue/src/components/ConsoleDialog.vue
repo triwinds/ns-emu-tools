@@ -20,12 +20,12 @@
           控制台日志
         </v-card-title>
 
-        <div style="padding-left: 10px; padding-right: 10px; padding-top: 10px;">
-          <v-virtual-scroll ref="consoleBox" :items="lines" height="300" item-height="26"
-                            style="background-color: #000; overflow-y: scroll">
+        <div style="padding-left: 10px; padding-right: 10px; padding-top: 10px;" class="flex-grow-0">
+          <v-virtual-scroll ref="consoleBox" :items="$store.state.consoleMessages" height="300" item-height="26"
+                            style="background-color: #000; overflow-y: scroll; overflow-x: scroll;">
             <template v-slot:default="{ item, index }">
               <v-list-item :key="index">
-                <v-list-item-content>{{item}}</v-list-item-content>
+                <v-list-item-content class="white--text" style="white-space: nowrap; display: inline-block;">{{item}}</v-list-item-content>
               </v-list-item>
             </template>
           </v-virtual-scroll>
@@ -53,18 +53,14 @@
     name: 'ConsoleDialog',
     data () {
       return {
-        lines: [],
-        count: 0
+
       }
     },
     created() {
-      setInterval(() => {
-        if (this.count > 20) {
-          this.count = 0
-          this.lines = []
-        }
-        this.lines.push("test" + this.count++)
-      }, 300)
+      // this.showConsoleDialog()
+      // setInterval(() => {
+      //   this.appendConsoleMessage("test" + new Date().getTime())
+      // }, 300)
     },
     methods: {
       closeDialog() {
@@ -72,21 +68,15 @@
       }
     },
     computed: {
-      consoleText() {
-        let str = ''
-        this.lines.forEach((line) => {
-          str += line + '\n'
-        })
-        return str
-      }
+
     },
     updated() {
       this.$nextTick(() => {
         let consoleBox = this.$refs.consoleBox
         if (consoleBox) {
-          // let ele = el.$el
-          console.log(consoleBox.$el.scrollHeight)
-          consoleBox.$el.scrollTop = consoleBox.$el.scrollHeight
+          if (consoleBox.$el.scrollHeight > consoleBox.$el.offsetHeight) {
+            consoleBox.$el.scrollTop = consoleBox.$el.scrollHeight
+          }
         }
       })
     }

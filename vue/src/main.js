@@ -8,9 +8,17 @@ import store from "@/store";
 Vue.config.productionTip = false
 Vue.use(VueRouter)
 
-new Vue({
+const vm = new Vue({
   vuetify,
   router,
   store,
-  render: h => h(App)
+  render: h => h(App),
+  created() {
+    // eslint-disable-next-line no-undef
+    eel.expose(appendConsoleMessage)
+  }
 }).$mount('#app')
+
+function appendConsoleMessage(msg) {
+  vm.$store.commit('APPEND_CONSOLE_MESSAGE', msg)
+}
