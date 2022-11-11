@@ -57,6 +57,7 @@ def check_and_install_msvc():
     process = subprocess.Popen([install_file.path])
     # process.wait()
 
+
 def check_update(prerelease=False):
     from repository.my_info import get_all_release
     from config import current_version

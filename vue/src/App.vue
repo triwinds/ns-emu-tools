@@ -6,7 +6,7 @@
     >
       <v-sheet
         class="pa-4"
-        @click="clickTitle" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"
+        @click="openReleasePage" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"
       >
         <v-avatar
           class="mb-4"
@@ -14,11 +14,14 @@
           size="100"
           rounded
         >
-          <img src="./assets/icon.png" alt="">
+          <img src="./assets/icon.webp" alt="">
         </v-avatar>
 
         <div>版本：v{{ currentVersion }}
-          <v-icon color="info" v-show="hasNewVersion">mdi-new-box</v-icon>
+          <v-icon color="info" v-show="hasNewVersion">{{ svgPath.newBox }}</v-icon>
+        </div>
+        <div v-show="hasNewVersion" class="info--text">
+          点击查看新版本
         </div>
       </v-sheet>
 
@@ -27,7 +30,7 @@
       <v-list>
         <v-list-item link to="/yuzu">
           <v-list-item-icon>
-            <v-img src="./assets/yuzu.png" max-height="24" max-width="24"></v-img>
+            <v-img src="./assets/yuzu.webp" max-height="24" max-width="24"></v-img>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title>Yuzu 模拟器</v-list-item-title>
@@ -36,7 +39,7 @@
 
         <v-list-item link to="/ryujinx">
           <v-list-item-icon>
-            <v-img src="./assets/ryujinx.png" max-height="24" max-width="24"></v-img>
+            <v-img src="./assets/ryujinx.webp" max-height="24" max-width="24"></v-img>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title>Ryujinx 模拟器</v-list-item-title>
@@ -45,7 +48,7 @@
 
         <v-list-item link to="/keys">
           <v-list-item-icon>
-            <v-icon color="amber darken-2">mdi-key-variant</v-icon>
+            <v-icon color="amber darken-2">{{ svgPath.key }}</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title>密钥管理</v-list-item-title>
@@ -54,7 +57,7 @@
 
         <v-list-item link to="/about">
           <v-list-item-icon>
-            <v-icon color="info">mdi-information</v-icon>
+            <v-icon color="info">{{ svgPath.info }}</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title>About</v-list-item-title>
@@ -69,41 +72,57 @@
       <v-container>
         <v-btn class="float-right" icon @click="showConsoleDialog">
           <v-icon color="white">
-            mdi-console
+            {{ svgPath.console }}
           </v-icon>
         </v-btn>
         <v-btn class="float-right" icon @click="$vuetify.theme.dark = !$vuetify.theme.dark">
           <v-icon color="white">
-            mdi-brightness-6
+            {{ svgPath.darkLightSwitch }}
           </v-icon>
         </v-btn>
       </v-container>
     </v-app-bar>
 
     <v-main>
-      <router-view/>
+      <v-container fluid>
+        <v-row class="child-flex">
+          <v-col><router-view/></v-col>
+        </v-row>
+      </v-container>
+      <SpeedDial></SpeedDial>
       <ConsoleDialog></ConsoleDialog>
+      <NewVersionDialog></NewVersionDialog>
     </v-main>
   </v-app>
 </template>
 
 <script>
-// import router from "@/router";
+import router from "@/router";
+import SpeedDial from "@/components/SpeedDial";
 import ConsoleDialog from "@/components/ConsoleDialog";
+import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
+import { mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox } from '@mdi/js'
 
 export default {
-  components: {ConsoleDialog},
+  components: {NewVersionDialog, SpeedDial, ConsoleDialog},
   data: () => ({
     drawer: null,
     currentVersion: '未知',
     hasNewVersion: false,
+    svgPath: {
+      darkLightSwitch: mdiBrightness6,
+      console: mdiConsole,
+      info: mdiInformation,
+      key: mdiKeyVariant,
+      newBox: mdiNewBox,
+    }
   }),
   created() {
     this.initCurrentVersion()
     this.checkUpdate()
     this.initAvailableFirmwareInfos()
-    // router.push('/yuzu')
+    this.gotoLatestOpenEmuPage()
   },
   methods: {
     initCurrentVersion() {
@@ -119,12 +138,19 @@ export default {
       window.eel.check_update()((data) => {
         if (data['code'] === 0 && data['data']) {
           this.hasNewVersion = true
+          this.$bus.$emit('showNewVersionDialog', data['msg'])
         }
       })
     },
-    clickTitle() {
+    openReleasePage() {
       if (this.hasNewVersion) {
         window.open('https://github.com/triwinds/ns-emu-tools/releases', '_blank');
+      }
+    },
+    async gotoLatestOpenEmuPage() {
+      let config = await this.$store.dispatch('loadConfig')
+      if (router.currentRoute.path !== '/' + config.setting.lastOpenEmuPage) {
+        await router.push('/' + config.setting.lastOpenEmuPage)
       }
     },
   },

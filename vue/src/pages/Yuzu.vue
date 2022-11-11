@@ -8,7 +8,9 @@
             <v-container>
               <v-row>
                 <v-col>
-                  <p class="text-h4 primary--text">
+                  <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
+                         style="margin-right: 15px"></v-img>
+                  <p class="text-h4 primary--text float-left">
                     Yuzu 基础信息
                   </p>
                 </v-col>
@@ -96,7 +98,9 @@
             <v-container>
               <v-row>
                 <v-col>
-                  <p class="text-h4 primary--text">
+                  <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
+                         style="margin-right: 15px"></v-img>
+                  <p class="text-h4 primary--text float-left">
                     Yuzu 组件管理
                   </p>
                 </v-col>
@@ -115,7 +119,8 @@
               </v-row>
               <v-row>
                 <v-col cols="7">
-                  <v-text-field label="需要安装的固件版本" v-model="targetFirmwareVersion"></v-text-field>
+                  <v-autocomplete v-model="targetFirmwareVersion" label="需要安装的固件版本"
+                                  :items="availableFirmwareVersions"></v-autocomplete>
                 </v-col>
                 <v-col>
                   <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
@@ -144,25 +149,17 @@
 export default {
   name: "YuzuPage",
   data: () => ({
-    yuzuConfig: {
-      yuzu_path: '',
-      yuzu_version: '',
-      yuzu_firmware: '',
-      branch: '',
-    },
     branch: 'ea',
     allYuzuReleaseVersions: [],
     targetYuzuVersion: "",
     isRunningInstall: false,
   }),
   created() {
-    this.updateYuzuConfig()
     this.updateYuzuReleaseVersions()
-    this.$store.commit("APPEND_CONSOLE_MESSAGE", "Yuzu 信息加载完成")
   },
   methods: {
     async updateYuzuConfig() {
-      this.yuzuConfig = await window.eel.get_yuzu_config()()
+      await this.$store.dispatch('loadConfig')
       this.branch = this.yuzuConfig.branch
     },
     updateYuzuReleaseVersions() {
@@ -241,13 +238,11 @@ export default {
         }
       })
     },
-    switchYuzuBranch() {
-      window.eel.switch_yuzu_branch()((config) => {
-        this.yuzuConfig = config
-        this.branch = config.branch
-        this.allYuzuReleaseVersions = []
-        this.updateYuzuReleaseVersions()
-      })
+    async switchYuzuBranch() {
+      await window.eel.switch_yuzu_branch()()
+      await this.updateYuzuConfig()
+      this.allYuzuReleaseVersions = []
+      this.updateYuzuReleaseVersions()
     },
   },
   computed: {

@@ -41,3 +41,9 @@ def detect_firmware_version(emu_type: str):
         return success_response()
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def get_config():
+    from config import config
+    return success_response(config.to_dict())

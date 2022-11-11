@@ -37,5 +37,14 @@ Vue.mixin({
             }
             return "加载中"
         },
+        availableFirmwareVersions: function () {
+            return this.$store.state.availableFirmwareInfos.map(info => info['version'])
+        },
+        yuzuConfig() {
+            return this.$store.state.config.yuzu
+        },
+        ryujinxConfig() {
+            return this.$store.state.config.ryujinx
+        }
     },
 })

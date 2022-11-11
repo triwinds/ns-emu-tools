@@ -8,7 +8,9 @@
             <v-container>
               <v-row>
                 <v-col>
-                  <p class="text-h4 primary--text">
+                  <v-img src="@/assets/ryujinx.webp" max-height="40" max-width="40" class="float-left"
+                         style="margin-right: 15px"></v-img>
+                  <p class="text-h4 primary--text float-left">
                     Ryujinx 基础信息
                   </p>
                 </v-col>
@@ -96,7 +98,9 @@
             <v-container>
               <v-row>
                 <v-col>
-                  <p class="text-h4 primary--text">
+                  <v-img src="@/assets/ryujinx.webp" max-height="40" max-width="40" class="float-left"
+                         style="margin-right: 15px"></v-img>
+                  <p class="text-h4 primary--text float-left">
                     Ryujinx 组件管理
                   </p>
                 </v-col>
@@ -115,7 +119,8 @@
               </v-row>
               <v-row>
                 <v-col cols="7">
-                  <v-text-field label="需要安装的固件版本" v-model="targetFirmwareVersion"></v-text-field>
+                  <v-autocomplete v-model="targetFirmwareVersion" label="需要安装的固件版本"
+                                  :items="availableFirmwareVersions"></v-autocomplete>
                 </v-col>
                 <v-col>
                   <v-btn class="info--text" large outlined min-width="160px" :disabled='isRunningInstall'
@@ -144,12 +149,6 @@
 export default {
   name: "RyujinxPage",
   data: () => ({
-    ryujinxConfig: {
-      path: '',
-      version: '',
-      firmware: '',
-      branch: '',
-    },
     allRyujinxReleaseInfos: [],
     availableFirmwareInfos: [],
     targetRyujinxVersion: "",
@@ -157,16 +156,9 @@ export default {
     isRunningInstall: false,
   }),
   created() {
-    this.updateRyujinxConfig()
     this.updateRyujinxReleaseInfos()
   },
   methods: {
-    updateRyujinxConfig() {
-      window.eel.get_ryujinx_config()((config) => {
-        this.ryujinxConfig = config
-        this.branch = config.branch
-      })
-    },
     updateRyujinxReleaseInfos() {
       window.eel.get_ryujinx_release_infos()((data) => {
         if (data['code'] === 0) {
@@ -182,7 +174,7 @@ export default {
       this.cleanAndShowConsoleDialog()
       window.eel.detect_ryujinx_version()((data) => {
         if (data['code'] === 0) {
-          this.updateRyujinxConfig()
+          this.$store.dispatch('loadConfig')
         } else {
           this.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
         }
@@ -194,7 +186,7 @@ export default {
       window.eel.install_ryujinx(this.targetRyujinxVersion, this.branch)((resp) => {
         this.isRunningInstall = false
         this.appendConsoleMessage(resp['msg'])
-        this.updateRyujinxConfig()
+        this.$store.dispatch('loadConfig')
       });
     },
     installFirmware() {
@@ -205,13 +197,13 @@ export default {
         if (resp['msg']) {
           this.appendConsoleMessage(resp['msg'])
         }
-        this.updateRyujinxConfig()
+        this.$store.dispatch('loadConfig')
       })
     },
     modifyRyujinxPath() {
       window.eel.ask_and_update_ryujinx_path()((data) => {
         if (data['code'] === 0) {
-          this.updateRyujinxConfig()
+          this.$store.dispatch('loadConfig')
         }
         this.appendConsoleMessage(data['msg'])
       })
@@ -229,15 +221,14 @@ export default {
       this.cleanAndShowConsoleDialog()
       window.eel.detect_firmware_version("ryujinx")((data) => {
         if (data['code'] === 0) {
-          this.updateRyujinxConfig()
+          this.$store.dispatch('loadConfig')
         }
       })
     },
-    switchRyujinxBranch() {
-      window.eel.switch_ryujinx_branch()((config) => {
-        this.ryujinxConfig = config
-        this.branch = config.branch
-      })
+    async switchRyujinxBranch() {
+      await window.eel.switch_ryujinx_branch()()
+      await this.$store.dispatch('loadConfig')
+      this.branch = this.ryujinxConfig.branch
     },
   },
   computed: {

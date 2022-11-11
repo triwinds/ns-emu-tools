@@ -17,6 +17,15 @@ const actions = {
             }
         })
     },
+    async loadConfig(context) {
+        let resp = await window.eel.get_config()()
+        if (resp.code === 0) {
+            let config = resp.data
+            context.commit('UPDATE_CONFIG', config)
+            return config
+        }
+        return {}
+    }
 }
 
 const mutations = {
@@ -39,6 +48,9 @@ const mutations = {
     },
     UPDATE_TARGET_FIRMWARE_VERSION(state, value) {
         state.targetFirmwareVersion = value
+    },
+    UPDATE_CONFIG(state, config) {
+        state.config = config
     }
 }
 
@@ -46,7 +58,24 @@ const state = {
     consoleDialogFlag: false,
     consoleMessages: [],
     availableFirmwareInfos: [],
-    targetFirmwareVersion: ''
+    targetFirmwareVersion: '',
+    config: {
+        yuzu: {
+            yuzu_path: "",
+            yuzu_version: "",
+            yuzu_firmware: "",
+            branch: ""
+        },
+        ryujinx: {
+            path: "",
+            version: "",
+            firmware: "",
+            branch: ""
+        },
+        setting: {
+            lastOpenEmuPage: ""
+        }
+    },
 }
 
 
