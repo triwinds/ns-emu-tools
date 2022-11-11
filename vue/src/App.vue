@@ -84,9 +84,11 @@
     </v-app-bar>
 
     <v-main>
-      <v-container fluid>
+      <v-container fluid style="height: 100%">
         <v-row class="child-flex">
-          <v-col><router-view/></v-col>
+          <v-col>
+            <router-view/>
+          </v-col>
         </v-row>
       </v-container>
       <SpeedDial></SpeedDial>
@@ -102,7 +104,7 @@ import SpeedDial from "@/components/SpeedDial";
 import ConsoleDialog from "@/components/ConsoleDialog";
 import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
-import { mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox } from '@mdi/js'
+import {mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox} from '@mdi/js'
 
 export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
@@ -162,3 +164,24 @@ export default {
   }
 }
 </script>
+
+<style>
+html ::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html ::-webkit-resizer, html ::-webkit-scrollbar-thumb {
+  background: #0000;
+  border-radius: 3px;
+}
+</style>
