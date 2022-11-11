@@ -53,7 +53,7 @@
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
                              @click="detectRyujinxVersion" :disabled='isRunningInstall'>
-                        {{ ryujinxConfig.version }}
+                        {{ ryujinxConfig.version ? ryujinxConfig.version : "未知" }}
                       </v-btn>
                     </template>
                     <span>点击重新检测 Ryujinx 版本</span>
@@ -73,7 +73,7 @@
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
                              @click="detectFirmwareVersion" :disabled='isRunningInstall'>
-                        {{ ryujinxConfig.firmware }}
+                        {{ ryujinxConfig.firmware ? ryujinxConfig.firmware : "未知" }}
                       </v-btn>
                     </template>
                     <span>点击重新检测固件版本</span>
@@ -152,10 +152,9 @@ export default {
     allRyujinxReleaseInfos: [],
     availableFirmwareInfos: [],
     targetRyujinxVersion: "",
-    branch: 'ea',
     isRunningInstall: false,
   }),
-  created() {
+  mounted() {
     this.updateRyujinxReleaseInfos()
   },
   methods: {
@@ -174,7 +173,7 @@ export default {
       this.cleanAndShowConsoleDialog()
       window.eel.detect_ryujinx_version()((data) => {
         if (data['code'] === 0) {
-          this.$store.dispatch('loadConfig')
+          this.updateRyujinxConfig()
         } else {
           this.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
         }
@@ -186,7 +185,7 @@ export default {
       window.eel.install_ryujinx(this.targetRyujinxVersion, this.branch)((resp) => {
         this.isRunningInstall = false
         this.appendConsoleMessage(resp['msg'])
-        this.$store.dispatch('loadConfig')
+        this.updateRyujinxConfig()
       });
     },
     installFirmware() {
@@ -197,13 +196,13 @@ export default {
         if (resp['msg']) {
           this.appendConsoleMessage(resp['msg'])
         }
-        this.$store.dispatch('loadConfig')
+        this.updateRyujinxConfig()
       })
     },
     modifyRyujinxPath() {
       window.eel.ask_and_update_ryujinx_path()((data) => {
         if (data['code'] === 0) {
-          this.$store.dispatch('loadConfig')
+          this.updateRyujinxConfig()
         }
         this.appendConsoleMessage(data['msg'])
       })
@@ -221,15 +220,17 @@ export default {
       this.cleanAndShowConsoleDialog()
       window.eel.detect_firmware_version("ryujinx")((data) => {
         if (data['code'] === 0) {
-          this.$store.dispatch('loadConfig')
+          this.updateRyujinxConfig()
         }
       })
     },
     async switchRyujinxBranch() {
       await window.eel.switch_ryujinx_branch()()
-      await this.$store.dispatch('loadConfig')
-      this.branch = this.ryujinxConfig.branch
+      await this.updateRyujinxConfig()
     },
+    async updateRyujinxConfig() {
+      await this.$store.dispatch('loadConfig')
+    }
   },
   computed: {
     latestRyujinxVersion: function () {
@@ -245,6 +246,9 @@ export default {
         return '正式'
       }
       return '未知'
+    },
+    branch: function (){
+      return this.ryujinxConfig.branch
     },
   }
 }

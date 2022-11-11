@@ -29,7 +29,6 @@ Vue.mixin({
                 if (data['code'] === 0 && data['data']) {
                     this.$store.commit('UPDATE_HAS_NEW_VERSION', true)
                 }
-                console.log(this)
                 if (forceShowDialog || this.$store.state.hasNewVersion) {
                     this.$bus.$emit('showNewVersionDialog',
                         {hasNewVersion: this.$store.state.hasNewVersion, latestVersion: data['msg']})

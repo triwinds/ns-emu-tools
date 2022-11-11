@@ -12,8 +12,22 @@
     >
       <template v-slot:activator>
         <v-btn
-          @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')"
+          v-model="fab"
           color="primary"
+          dark
+          fab
+        >
+          <v-icon v-if="fab">
+            {{ svgPath.close }}
+          </v-icon>
+          <v-icon v-else>
+            {{ svgPath.creation }}
+          </v-icon>
+        </v-btn>
+      </template>
+      <v-btn
+          @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')"
+          color="grey darken-3"
           dark
           fab
         >
@@ -21,11 +35,9 @@
             {{ svgPath.github }}
           </v-icon>
         </v-btn>
-      </template>
       <v-btn
         fab
         dark
-        small
         color="blue darken-1"
         @click="openUrlWithDefaultBrowser('https://t.me/+mxI34BRClLUwZDcx')"
       >
@@ -36,7 +48,7 @@
 </template>
 
 <script>
-import { mdiGithub } from '@mdi/js'
+import { mdiGithub, mdiClose, mdiCreation } from '@mdi/js'
 
 export default {
   name: "SpeedDial",
@@ -52,7 +64,9 @@ export default {
     left: false,
     transition: 'slide-y-reverse-transition',
     svgPath: {
-      github: mdiGithub
+      github: mdiGithub,
+      close: mdiClose,
+      creation: mdiCreation,
     }
   }),
 }
@@ -60,7 +74,7 @@ export default {
 
 <style scoped>
 .v-speed-dial {
-  position: absolute;
+  position: fixed;
 }
 
 .v-btn--floating {

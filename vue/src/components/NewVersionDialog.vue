@@ -57,6 +57,7 @@ export default {
       this.newVersion = info.latestVersion
     },
     openReleasePage() {
+      this.dialog = false
       if (this.$store.state.hasNewVersion) {
         this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
       }

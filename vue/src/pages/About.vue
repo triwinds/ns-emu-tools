@@ -4,7 +4,7 @@
       <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
       <v-col md="10" lg="8" xl="7">
         <v-card>
-          <v-card-title class="text-h3 primary--text">Ns Emu Tools</v-card-title>
+          <v-card-title class="text-h4 primary--text">Ns Emu Tools</v-card-title>
           <v-divider></v-divider>
           <v-spacer></v-spacer>
           <v-card-text class="text-h6 text--primary">
@@ -18,15 +18,16 @@
           </v-card-text>
           <v-card-text class="text-h6 text--primary">
             <div class="info-block">
-              <p class="text-h4 accent--text">项目地址</p>
+              <p class="text-h5 accent--text">项目地址</p>
               <v-icon>{{ svgPath.github }}</v-icon>
               GitHub：<a class="error--text"
                         @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')">
-              triwinds/ns-emu-tools</a>
-              <p class="text--primary">如果您觉得这个软件好用, 可以在 GitHub 上点个 star, 这是对我最大的鼓励。</p>
+              triwinds/ns-emu-tools</a><br>
+              <span class="text--primary">如果您觉得这个软件好用, 可以在 GitHub 上点个 star</span><br>
+              <span class="text--primary">这是对我最大的鼓励。</span>
             </div>
             <div class="info-block">
-              <p class="text-h4 success--text">讨论组</p>
+              <p class="text-h5 success--text">讨论组</p>
               <div class="line-group">
                 <div class="line-item" style="padding-top: 7px">
                   <v-img src="@/assets/telegram.webp" max-height="20" max-width="20"
@@ -40,7 +41,7 @@
               </div>
             </div>
             <div class="info-block">
-              <p class="text-h4 warning--text">Credits</p>
+              <p class="text-h5 warning--text">Credits</p>
               <div class="line-group" v-for="(item, index) in credits" :key="index">
                 <div class="line-item">
                   <v-icon>{{ svgPath.github }}</v-icon>

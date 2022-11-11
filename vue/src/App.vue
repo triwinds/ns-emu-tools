@@ -110,7 +110,6 @@ export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
   data: () => ({
     drawer: null,
-    hasNewVersion: false,
     svgPath: {
       darkLightSwitch: mdiBrightness6,
       console: mdiConsole,
@@ -134,7 +133,8 @@ export default {
     },
     async gotoLatestOpenEmuPage() {
       let config = await this.$store.dispatch('loadConfig')
-      if (router.currentRoute.path !== '/' + config.setting.lastOpenEmuPage) {
+      if (router.currentRoute.path === '/'
+        && router.currentRoute.path !== '/' + config.setting.lastOpenEmuPage) {
         await router.push('/' + config.setting.lastOpenEmuPage)
       }
     },
@@ -142,6 +142,9 @@ export default {
   computed: {
     theme() {
       return (this.$vuetify.theme.dark) ? 'dark' : 'light'
+    },
+    hasNewVersion() {
+      return this.$store.state.hasNewVersion
     }
   }
 }

@@ -53,7 +53,7 @@
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
                              @click="detectYuzuVersion" :disabled='isRunningInstall'>
-                        {{ yuzuConfig.yuzu_version }}
+                        {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version : '未知' }}
                       </v-btn>
                     </template>
                     <span>点击重新检测 Yuzu 版本</span>
@@ -73,7 +73,7 @@
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
                              @click="detectFirmwareVersion" :disabled='isRunningInstall'>
-                        {{ yuzuConfig.yuzu_firmware }}
+                        {{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : '未知' }}
                       </v-btn>
                     </template>
                     <span>点击重新检测固件版本</span>
