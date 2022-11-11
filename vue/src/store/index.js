@@ -24,7 +24,12 @@ const mutations = {
         state.consoleDialogFlag = value;
     },
     APPEND_CONSOLE_MESSAGE(state, value) {
-        state.consoleMessages.push(value)
+        if (value && value.startsWith('下载速度: ') && state.consoleMessages.length > 0
+            && state.consoleMessages[state.consoleMessages.length - 1].startsWith('下载速度: ')) {
+            Vue.set(state.consoleMessages, state.consoleMessages.length - 1, value)
+        } else {
+            state.consoleMessages.push(value)
+        }
     },
     CLEAR_CONSOLE_MESSAGES(state) {
         state.consoleMessages = []

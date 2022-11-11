@@ -27,9 +27,9 @@ def get_ryujinx_download_url(target_version: str, branch: str):
 
 
 def install_ryujinx_by_version(target_version: str, branch: str):
-    if config.ryujinx.version == target_version:
+    if config.ryujinx.version == target_version and detect_current_branch() == branch:
         logger.info(f'Current ryujinx version is same as target version [{target_version}], skip install.')
-        return f'当前就是 [{target_version}] 版本的 ryujinx , 跳过安装.'
+        return f'当前就是 {branch} [{target_version}] 版本的 ryujinx , 跳过安装.'
     send_notify('正在获取 ryujinx 版本信息...')
     download_url = get_ryujinx_download_url(target_version, branch)
     if not download_url:
@@ -149,16 +149,23 @@ def start_ryujinx():
         raise RuntimeError(f'Ryujinx not exist in [{rj_path}]')
 
 
+def detect_current_branch():
+    rj_path = get_ryujinx_exe_path()
+    if not rj_path:
+        return None
+    if rj_path.name.endswith('Ava.exe'):
+        return 'ava'
+    else:
+        return 'mainline'
+
+
 def detect_ryujinx_version():
     send_notify('正在检测 Ryujinx 版本...')
     rj_path = get_ryujinx_exe_path()
     if not rj_path:
         send_notify('未能找到 Ryujinx 程序')
         return None
-    if rj_path.name.endswith('Ava.exe'):
-        config.ryujinx.branch = 'ava'
-    else:
-        config.ryujinx.branch = 'mainline'
+    config.ryujinx.branch = detect_current_branch()
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     subprocess.Popen([rj_path], startupinfo=st_inf, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
