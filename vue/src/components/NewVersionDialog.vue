@@ -55,7 +55,7 @@ export default {
       this.newVersion = newVersion
     },
     openReleasePage() {
-      window.open('https://github.com/triwinds/ns-emu-tools/releases', '_blank');
+      this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
     },
   }
 }

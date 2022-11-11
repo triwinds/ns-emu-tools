@@ -47,3 +47,9 @@ def detect_firmware_version(emu_type: str):
 def get_config():
     from config import config
     return success_response(config.to_dict())
+
+
+@eel.expose
+def open_url_in_default_browser(url):
+    import webbrowser
+    webbrowser.open(url, new=0, autoraise=True)

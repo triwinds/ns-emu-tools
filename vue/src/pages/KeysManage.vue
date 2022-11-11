@@ -16,23 +16,24 @@
         <div class="text-h4 accent--text">获取密钥</div>
         <v-divider style="margin-bottom: 15px"></v-divider>
         <p class="text--primary">你可以跟随
-          <a href="https://yuzu-emu.org/help/quickstart/#dumping-prodkeys-and-titlekeys" target="_blank"
-             rel="noopener noreferrer" class="info--text">yuzu 的官方教程</a>
+          <a @click="openUrlWithDefaultBrowser('https://yuzu-emu.org/help/quickstart/#dumping-prodkeys-and-titlekeys')"
+             class="info--text">yuzu 的官方教程</a>
           从 switch 中提取 keys 文件.
         </p>
         <p class="text--primary">也可以在贴吧或者 qq 群等地方找到其他大佬分享的 keys 文件.</p>
         <p class="text--primary">下面是两位大佬分享的 keys:</p>
         <p class="text--primary">1. 由 文无 大佬提供的
-          <a href="https://url11.ctfile.com/d/18719411-48103523-6faacf?49760005" target="_blank"
-             rel="noopener noreferrer" class="info--text">城通网盘</a>(访问密码：7257),
-          原帖地址: <a href="https://tieba.baidu.com/p/7799545671" target="_blank" rel="noopener noreferrer"
+          <a @click="openUrlWithDefaultBrowser('https://url11.ctfile.com/d/18719411-48103523-6faacf?49760005')"
+             class="info--text">城通网盘</a>(访问密码：7257),
+          原帖地址: <a @click="openUrlWithDefaultBrowser('https://tieba.baidu.com/p/7799545671')"
                        class="info--text">百度贴吧</a>
         </p>
         <p class="text--primary">2. 由 PrincessAkira 大佬提供的
-          <a href="https://drive.google.com/drive/folders/1KAym-RpGIDuJiSmMLmpCtGVbhLm4VjTZ" target="_blank"
-             rel="noopener noreferrer" class="info--text">GDrive(需代理)</a>
-          原地址: <a href="https://github.com/PrincessAkira/road-to-yuzu-without-switch" target="_blank"
-                     rel="noopener noreferrer" class="info--text">GitHub</a>
+          <a
+            @click="openUrlWithDefaultBrowser('https://drive.google.com/drive/folders/1KAym-RpGIDuJiSmMLmpCtGVbhLm4VjTZ')"
+            class="info--text">GDrive(需代理)</a>
+          原地址: <a @click="openUrlWithDefaultBrowser('https://github.com/PrincessAkira/road-to-yuzu-without-switch')"
+                     class="info--text">GitHub</a>
         </p>
         <div id="root">
           <div class="text-h4 accent--text">添加 keys 到模拟器</div>

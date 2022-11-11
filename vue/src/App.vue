@@ -123,6 +123,7 @@ export default {
     this.checkUpdate()
     this.initAvailableFirmwareInfos()
     this.gotoLatestOpenEmuPage()
+    this.appendConsoleMessage('启动时间：' + new Date().toLocaleString())
   },
   methods: {
     initCurrentVersion() {
@@ -144,7 +145,7 @@ export default {
     },
     openReleasePage() {
       if (this.hasNewVersion) {
-        window.open('https://github.com/triwinds/ns-emu-tools/releases', '_blank');
+        this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
       }
     },
     async gotoLatestOpenEmuPage() {

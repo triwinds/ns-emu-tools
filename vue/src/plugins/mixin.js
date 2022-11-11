@@ -21,6 +21,9 @@ Vue.mixin({
                 this.updateAvailableFirmwareInfos()
             }
         },
+        openUrlWithDefaultBrowser(url) {
+            window.eel.open_url_in_default_browser(url)()
+        }
     },
     computed: {
         targetFirmwareVersion: {
