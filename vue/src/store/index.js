@@ -25,10 +25,25 @@ const actions = {
             return config
         }
         return {}
-    }
+    },
+    initCurrentVersion(context) {
+        window.eel.get_current_version()((data) => {
+            if (data['code'] === 0) {
+                context.commit('UPDATE_CURRENT_VERSION', data['data'])
+            } else {
+                context.commit('UPDATE_CURRENT_VERSION', '未知')
+            }
+        })
+    },
 }
 
 const mutations = {
+    UPDATE_CURRENT_VERSION(state, value) {
+        state.currentVersion = value
+    },
+    UPDATE_HAS_NEW_VERSION(state, value) {
+        state.hasNewVersion = value
+    },
     SET_CONSOLE_DIALOG_FLAG(state, value) {
         state.consoleDialogFlag = value;
     },
@@ -59,6 +74,8 @@ const state = {
     consoleMessages: [],
     availableFirmwareInfos: [],
     targetFirmwareVersion: '',
+    currentVersion: '',
+    hasNewVersion: false,
     config: {
         yuzu: {
             yuzu_path: "",

@@ -23,7 +23,19 @@ Vue.mixin({
         },
         openUrlWithDefaultBrowser(url) {
             window.eel.open_url_in_default_browser(url)()
-        }
+        },
+        checkUpdate(forceShowDialog) {
+            window.eel.check_update()((data) => {
+                if (data['code'] === 0 && data['data']) {
+                    this.$store.commit('UPDATE_HAS_NEW_VERSION', true)
+                }
+                console.log(this)
+                if (forceShowDialog || this.$store.state.hasNewVersion) {
+                    this.$bus.$emit('showNewVersionDialog',
+                        {hasNewVersion: this.$store.state.hasNewVersion, latestVersion: data['msg']})
+                }
+            })
+        },
     },
     computed: {
         targetFirmwareVersion: {

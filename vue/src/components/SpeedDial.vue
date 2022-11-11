@@ -12,7 +12,7 @@
     >
       <template v-slot:activator>
         <v-btn
-          v-model="fab"
+          @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')"
           color="primary"
           dark
           fab
@@ -27,6 +27,7 @@
         dark
         small
         color="blue darken-1"
+        @click="openUrlWithDefaultBrowser('https://t.me/+mxI34BRClLUwZDcx')"
       >
         <v-img src="@/assets/telegram.webp" max-height="24" max-width="24"></v-img>
       </v-btn>

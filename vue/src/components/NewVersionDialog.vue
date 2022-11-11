@@ -10,7 +10,8 @@
         </v-card-title>
 
         <v-card-text style="margin-top: 30px">
-          <p class="text-h6 text--primary">检测到新版本 [{{newVersion}}], 是否查看更新?</p>
+          <p class="text-h6 text--primary" v-show="$store.state.hasNewVersion">检测到新版本 [{{newVersion}}], 是否查看更新?</p>
+          <p class="text-h6 text--primary" v-show="!$store.state.hasNewVersion">当前版本已经是最新版本</p>
         </v-card-text>
 
         <v-divider></v-divider>
@@ -21,6 +22,7 @@
             color="primary"
             text
             @click="dialog = false"
+            v-show="$store.state.hasNewVersion"
           >
             取消
           </v-btn>
@@ -43,19 +45,21 @@ export default {
   data() {
     return {
       dialog: false,
-      newVersion: ''
+      newVersion: '',
     }
   },
   mounted() {
     this.$bus.$on('showNewVersionDialog', this.showNewVersionDialog);
   },
   methods: {
-    showNewVersionDialog(newVersion) {
+    showNewVersionDialog(info) {
       this.dialog = true
-      this.newVersion = newVersion
+      this.newVersion = info.latestVersion
     },
     openReleasePage() {
-      this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
+      if (this.$store.state.hasNewVersion) {
+        this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
+      }
     },
   }
 }

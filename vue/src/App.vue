@@ -17,7 +17,7 @@
           <img src="./assets/icon.webp" alt="">
         </v-avatar>
 
-        <div>版本：v{{ currentVersion }}
+        <div>版本：v{{ $store.state.currentVersion }}
           <v-icon color="info" v-show="hasNewVersion">{{ svgPath.newBox }}</v-icon>
         </div>
         <div v-show="hasNewVersion" class="info--text">
@@ -110,7 +110,6 @@ export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
   data: () => ({
     drawer: null,
-    currentVersion: '未知',
     hasNewVersion: false,
     svgPath: {
       darkLightSwitch: mdiBrightness6,
@@ -121,30 +120,13 @@ export default {
     }
   }),
   created() {
-    this.initCurrentVersion()
-    this.checkUpdate()
+    this.$store.dispatch('initCurrentVersion')
+    this.checkUpdate(false)
     this.initAvailableFirmwareInfos()
     this.gotoLatestOpenEmuPage()
     this.appendConsoleMessage('启动时间：' + new Date().toLocaleString())
   },
   methods: {
-    initCurrentVersion() {
-      window.eel.get_current_version()((data) => {
-        if (data['code'] === 0) {
-          this.currentVersion = data['data']
-        } else {
-          this.currentVersion = '未知'
-        }
-      })
-    },
-    checkUpdate() {
-      window.eel.check_update()((data) => {
-        if (data['code'] === 0 && data['data']) {
-          this.hasNewVersion = true
-          this.$bus.$emit('showNewVersionDialog', data['msg'])
-        }
-      })
-    },
     openReleasePage() {
       if (this.hasNewVersion) {
         this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
