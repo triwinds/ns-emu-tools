@@ -152,15 +152,12 @@ export default {
     },
     branch: 'ea',
     allYuzuReleaseVersions: [],
-    availableFirmwareInfos: [],
     targetYuzuVersion: "",
-    targetFirmwareVersion: "",
     isRunningInstall: false,
   }),
   created() {
     this.updateYuzuConfig()
     this.updateYuzuReleaseVersions()
-    this.updateAvailableFirmwareInfos()
     this.$store.commit("APPEND_CONSOLE_MESSAGE", "Yuzu 信息加载完成")
   },
   methods: {
@@ -177,18 +174,6 @@ export default {
         } else {
           this.showConsoleDialog()
           this.appendConsoleMessage('yuzu 版本信息加载异常.')
-        }
-      })
-    },
-    updateAvailableFirmwareInfos() {
-      window.eel.get_available_firmware_infos()((data) => {
-        if (data['code'] === 0) {
-          let infos = data['data']
-          this.availableFirmwareInfos = infos
-          this.targetFirmwareVersion = infos[0]['version']
-        } else {
-          this.showConsoleDialog()
-          this.appendConsoleMessage('固件信息加载异常.')
         }
       })
     },
@@ -269,12 +254,6 @@ export default {
     latestYuzuVersion: function () {
       if (this.allYuzuReleaseVersions.length > 0) {
         return this.allYuzuReleaseVersions[0]
-      }
-      return "加载中"
-    },
-    latestFirmwareVersion: function () {
-      if (this.availableFirmwareInfos.length > 0) {
-        return this.availableFirmwareInfos[0]['version']
       }
       return "加载中"
     },

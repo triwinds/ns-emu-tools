@@ -102,6 +102,7 @@ export default {
   created() {
     this.initCurrentVersion()
     this.checkUpdate()
+    this.initAvailableFirmwareInfos()
     // router.push('/yuzu')
   },
   methods: {

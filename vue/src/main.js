@@ -4,6 +4,7 @@ import vuetify from './plugins/vuetify'
 import VueRouter from "vue-router";
 import router from "@/router";
 import store from "@/store";
+import '@/plugins/mixin'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
