@@ -33,12 +33,14 @@ def get_global_options():
             'split': '16',
             'max-connection-per-server': '16',
             'min-split-size': '4M',
+            'disable-ipv6': 'true',
         }
     else:
         global_options = {
             'split': '4',
             'max-connection-per-server': '4',
             'min-split-size': '12M',
+            'disable-ipv6': 'true',
         }
     return global_options
 
