@@ -185,7 +185,9 @@ export default {
       window.eel.install_ryujinx(this.targetRyujinxVersion, this.branch)((resp) => {
         this.isRunningInstall = false
         this.appendConsoleMessage(resp['msg'])
-        this.updateRyujinxConfig()
+        if (resp['code'] === 0) {
+          this.updateRyujinxConfig()
+        }
       });
     },
     installFirmware() {
@@ -193,10 +195,10 @@ export default {
       this.isRunningInstall = true
       window.eel.install_ryujinx_firmware(this.targetFirmwareVersion)((resp) => {
         this.isRunningInstall = false
-        if (resp['msg']) {
-          this.appendConsoleMessage(resp['msg'])
+        this.appendConsoleMessage(resp['msg'])
+        if (resp['code'] === 0) {
+          this.updateRyujinxConfig()
         }
-        this.updateRyujinxConfig()
       })
     },
     modifyRyujinxPath() {

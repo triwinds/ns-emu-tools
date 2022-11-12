@@ -65,7 +65,10 @@ def install_ryujinx(version, branch):
     if not version or version == '':
         return {'msg': f'无效的版本 {version}'}
     from module.ryujinx import install_ryujinx_by_version
-    return {'msg': install_ryujinx_by_version(version, branch)}
+    try:
+        return success_response(msg=install_ryujinx_by_version(version, branch))
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose
@@ -73,7 +76,10 @@ def install_ryujinx_firmware(version):
     if not version or version == '':
         return {'msg': f'无效的版本 {version}'}
     from module.ryujinx import install_firmware_to_ryujinx
-    return {'msg': install_firmware_to_ryujinx(version)}
+    try:
+        return success_response(msg=install_firmware_to_ryujinx(version))
+    except Exception as e:
+        return exception_response(e)
 
 
 @eel.expose

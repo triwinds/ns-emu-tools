@@ -47,12 +47,18 @@ const mutations = {
     SET_CONSOLE_DIALOG_FLAG(state, value) {
         state.consoleDialogFlag = value;
     },
-    APPEND_CONSOLE_MESSAGE(state, value) {
-        if (value && value.startsWith('下载速度: ') && state.consoleMessages.length > 0
-            && state.consoleMessages[state.consoleMessages.length - 1].startsWith('下载速度: ')) {
-            Vue.set(state.consoleMessages, state.consoleMessages.length - 1, value)
-        } else {
-            state.consoleMessages.push(value)
+    APPEND_CONSOLE_MESSAGE(state, message) {
+        if (!message) {
+            return
+        }
+        let splits = message.split('\n')
+        for (let value of splits) {
+            if (value && value.startsWith('下载速度: ') && state.consoleMessages.length > 0
+                && state.consoleMessages[state.consoleMessages.length - 1].startsWith('下载速度: ')) {
+                Vue.set(state.consoleMessages, state.consoleMessages.length - 1, value)
+            } else {
+                state.consoleMessages.push(value)
+            }
         }
     },
     CLEAR_CONSOLE_MESSAGES(state) {
