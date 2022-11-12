@@ -156,6 +156,7 @@ export default {
   }),
   created() {
     this.updateYuzuReleaseVersions()
+    window.eel.update_last_open_emu_page('yuzu')()
   },
   methods: {
     async updateYuzuConfig() {

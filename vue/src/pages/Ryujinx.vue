@@ -156,6 +156,7 @@ export default {
   }),
   mounted() {
     this.updateRyujinxReleaseInfos()
+    window.eel.update_last_open_emu_page('ryujinx')()
   },
   methods: {
     updateRyujinxReleaseInfos() {
