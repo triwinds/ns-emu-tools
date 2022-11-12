@@ -29,7 +29,7 @@ def start_edge_in_app_mode(page, port, size=(1280, 720)):
     import subprocess
     import sys
     subprocess.Popen(f'start msedge --app={url}',
-                     stdout=sys.stdout, stderr=sys.stderr, stdin=subprocess.PIPE, shell=True)
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, shell=True)
     eel.start(url, port=port, mode=False, size=size)
 
 
