@@ -27,7 +27,7 @@ def init_aria2():
     logger.info(f'starting aria2 daemon at port {port}')
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
-    aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
+    aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port), '--disable-ipv6=true',
                                       '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level', 'info'],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
     aria2 = aria2p.API(
@@ -74,7 +74,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
         if info.error_code == '13':
             logger.info('file already exist.')
         else:
-            logger.info('info.error_code: {info.error_code}')
+            logger.info(f'info.error_code: {info.error_code}')
     else:
         logger.info(f'progress: {info.progress_string()}, total size: {info.total_length_string()}')
     send_notify('下载完成')
