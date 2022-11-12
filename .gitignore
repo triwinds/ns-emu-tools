@@ -215,3 +215,4 @@ config.json
 yuzu-config.json
 download/
 output/
+web/
