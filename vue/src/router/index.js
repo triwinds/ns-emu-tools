@@ -3,6 +3,7 @@ import Yuzu from "@/pages/Yuzu";
 import Ryujinx from "@/pages/Ryujinx";
 import About from "@/pages/About";
 import KeysManagement from "@/pages/KeysManagement";
+import Settings from "@/pages/Settings";
 
 export default new VueRouter({
     routes: [
@@ -18,6 +19,9 @@ export default new VueRouter({
         },{
             path: '/keys',
             component: KeysManagement
+        },{
+            path: '/settings',
+            component: Settings
         },
     ]
 })

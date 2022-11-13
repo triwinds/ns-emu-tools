@@ -55,6 +55,15 @@
           </v-list-item-content>
         </v-list-item>
 
+        <v-list-item link to="/settings">
+          <v-list-item-icon>
+            <v-icon color="blue-grey lighten-3">{{ svgPath.cog }}</v-icon>
+          </v-list-item-icon>
+          <v-list-item-content>
+            <v-list-item-title>设置</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+
         <v-list-item link to="/about">
           <v-list-item-icon>
             <v-icon color="info">{{ svgPath.info }}</v-icon>
@@ -104,7 +113,7 @@ import SpeedDial from "@/components/SpeedDial";
 import ConsoleDialog from "@/components/ConsoleDialog";
 import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
-import {mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox} from '@mdi/js'
+import {mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog} from '@mdi/js'
 
 export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
@@ -116,6 +125,7 @@ export default {
       info: mdiInformation,
       key: mdiKeyVariant,
       newBox: mdiNewBox,
+      cog: mdiCog,
     }
   }),
   created() {
@@ -134,8 +144,8 @@ export default {
     async gotoLatestOpenEmuPage() {
       let config = await this.$store.dispatch('loadConfig')
       if (router.currentRoute.path === '/'
-        && router.currentRoute.path !== '/' + config.setting.lastOpenEmuPage) {
-        await router.push('/' + config.setting.lastOpenEmuPage)
+        && router.currentRoute.path !== '/' + config.ui.lastOpenEmuPage) {
+        await router.push('/' + config.ui.lastOpenEmuPage)
       }
     },
   },

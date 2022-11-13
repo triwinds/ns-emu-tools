@@ -1,4 +1,5 @@
 import urllib.request
+from config import config
 import logging
 
 
@@ -51,13 +52,18 @@ def init_download_options_with_proxy():
 
 
 def get_finial_url(origin_url: str):
-    if is_using_proxy():
+    if is_using_proxy() or config.setting.network.useOriginalUrlDirectly:
+        logger.info(f'using origin url: {origin_url}')
+        return origin_url
+    if config.setting.network.requestGithubApiDirectly and origin_url.startswith('https://api.github.com'):
+        logger.info(f'using origin url: {origin_url}')
         return origin_url
     for k in url_override_map:
         if origin_url.startswith(k):
             new_url = origin_url.replace(k, url_override_map[k])
-            logger.info(f'new url: {new_url}')
+            logger.info(f'using new url: {new_url}')
             return new_url
+    logger.info(f'using origin url: {origin_url}')
     return origin_url
 
 

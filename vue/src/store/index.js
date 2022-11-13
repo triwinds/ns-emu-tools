@@ -23,6 +23,8 @@ const actions = {
             let config = resp.data
             context.commit('UPDATE_CONFIG', config)
             return config
+        } else {
+            console.log(`fail to get config, resp: ${resp}`)
         }
         return {}
     },
@@ -53,6 +55,9 @@ const mutations = {
         }
         let splits = message.split('\n')
         for (let value of splits) {
+            if (value.length < 1) {
+                continue
+            }
             if (value && value.startsWith('下载速度: ') && state.consoleMessages.length > 0
                 && state.consoleMessages[state.consoleMessages.length - 1].startsWith('下载速度: ')) {
                 Vue.set(state.consoleMessages, state.consoleMessages.length - 1, value)
@@ -96,8 +101,12 @@ const state = {
             branch: ""
         },
         setting: {
-            lastOpenEmuPage: ""
-        }
+            lastOpenEmuPage: "",
+            network: {
+                useOriginalUrlDirectly: false,
+                requestGithubApiDirectly: false
+            }
+        },
     },
 }
 

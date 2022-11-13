@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict
 from pathlib import Path
 from dataclasses_json import dataclass_json, Undefined
 import logging
@@ -54,10 +54,19 @@ class RyujinxConfig:
     branch: Optional[str] = 'ava'
 
 
+
 @dataclass_json
+@dataclass
+class NetworkSetting:
+    useOriginalUrlDirectly: Optional[bool] = False
+    requestGithubApiDirectly: Optional[bool] = False
+
+
+@dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu'
+    network: NetworkSetting = NetworkSetting()
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -120,5 +129,11 @@ def update_last_open_emu_page(page: str):
     dump_config()
 
 
+def update_setting(setting: Dict[str, object]):
+    logger.info(f'updating settings: {setting}')
+    config.setting = CommonSetting.from_dict(setting)
+    dump_config()
+
+
 __all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version', 'update_ryujinx_path',
-           'update_last_open_emu_page']
+           'update_last_open_emu_page', 'update_setting']

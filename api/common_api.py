@@ -1,3 +1,5 @@
+from typing import Dict
+
 import eel
 from api.common_response import success_response, exception_response, error_response
 from config import current_version
@@ -53,3 +55,10 @@ def get_config():
 def open_url_in_default_browser(url):
     import webbrowser
     webbrowser.open(url, new=0, autoraise=True)
+
+
+@eel.expose
+def update_setting(setting: Dict[str, object]):
+    from config import config, update_setting
+    update_setting(setting)
+    return success_response(config.to_dict())
