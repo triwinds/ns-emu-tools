@@ -34,7 +34,8 @@ def init_aria2():
         aria2p.Client(
             host="http://localhost",
             port=port,
-            secret="123456"
+            secret="123456",
+            timeout=0.1
         )
     )
     global_options = get_global_options()
