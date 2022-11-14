@@ -5,9 +5,8 @@ from functools import lru_cache
 from pathlib import Path
 from module.msg_notifier import send_notify
 from module.downloader import download_path
-import requests
 import bs4
-from utils.network import get_finial_url
+from utils.network import get_finial_url, session
 import logging
 from module.downloader import download
 
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 @lru_cache(1)
 def get_firmware_infos():
     base_url = 'https://archive.org/download/nintendo-switch-global-firmwares/'
-    resp = requests.get(get_finial_url(base_url))
+    resp = session.get(get_finial_url(base_url))
     soup = bs4.BeautifulSoup(resp.text, features="html.parser")
     a_tags = soup.select('#maincontent > div > div > pre > table > tbody > tr > td > a')
     archive_versions = []

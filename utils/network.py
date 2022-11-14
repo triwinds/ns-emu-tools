@@ -1,6 +1,8 @@
 import urllib.request
 from config import config
 import logging
+import requests
+import requests_cache
 
 
 logger = logging.getLogger(__name__)
@@ -12,6 +14,9 @@ url_override_map = {
     'https://api.github.com': 'https://cfrp.e6ex.com/ghapi',
     'https://aka.ms/vs': 'https://nsarchive.e6ex.com/msvc'
 }
+
+
+session = requests_cache.CachedSession(expire_after=360)
 
 
 def is_using_proxy():

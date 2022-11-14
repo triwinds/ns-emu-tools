@@ -3,12 +3,9 @@ import gevent.monkey
 gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 from config import config
-import requests
-import requests_cache
 
 
 logger = logging.getLogger(__name__)
-requests_cache.install_cache()
 
 
 def can_use_chrome():

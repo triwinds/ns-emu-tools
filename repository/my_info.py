@@ -1,9 +1,8 @@
-import requests
-from utils.network import get_finial_url
+from utils.network import get_finial_url, session
 
 
 def get_all_release():
-    resp = requests.get(get_finial_url('https://api.github.com/repos/triwinds/ns-emu-tools/releases'))
+    resp = session.get(get_finial_url('https://api.github.com/repos/triwinds/ns-emu-tools/releases'))
     return resp.json()
 
 
