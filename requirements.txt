@@ -9,3 +9,4 @@ pywin32
 psutil
 gevent
 httplib2
+requests-cache
