@@ -39,6 +39,9 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
  - 添加 wiki
  - 完善异常处理
+ - Yuzu 金手指管理
+ - Python embeddable 打包
+ - 集成 LibHac
 
 ## Credits
 
