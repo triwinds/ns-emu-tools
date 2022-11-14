@@ -149,7 +149,6 @@
 export default {
   name: "YuzuPage",
   data: () => ({
-    branch: 'ea',
     allYuzuReleaseVersions: [],
     targetYuzuVersion: "",
     isRunningInstall: false,
@@ -161,7 +160,6 @@ export default {
   methods: {
     async updateYuzuConfig() {
       await this.$store.dispatch('loadConfig')
-      this.branch = this.yuzuConfig.branch
     },
     updateYuzuReleaseVersions() {
       window.eel.get_all_yuzu_release_versions()((data) => {
@@ -260,6 +258,9 @@ export default {
         return '主线'
       }
       return '未知'
+    },
+    branch() {
+      return this.$store.state.config.yuzu.branch
     },
   }
 }

@@ -144,8 +144,8 @@ export default {
     async gotoLatestOpenEmuPage() {
       let config = await this.$store.dispatch('loadConfig')
       if (router.currentRoute.path === '/'
-        && router.currentRoute.path !== '/' + config.ui.lastOpenEmuPage) {
-        await router.push('/' + config.ui.lastOpenEmuPage)
+        && router.currentRoute.path !== '/' + config.setting.lastOpenEmuPage) {
+        await router.push('/' + config.setting.lastOpenEmuPage)
       }
     },
   },
