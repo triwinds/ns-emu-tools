@@ -52,12 +52,33 @@ def init_download_options_with_proxy():
 
 
 def get_finial_url(origin_url: str):
-    if is_using_proxy() or config.setting.network.useOriginalUrlDirectly:
+    network_setting = config.setting.network
+    if origin_url.startswith('https://api.github.com'):
+        return get_finial_url_with_mode(origin_url, network_setting.githubApiMode)
+    return get_finial_url_with_mode(origin_url, network_setting.cdnMode)
+
+
+def get_finial_url_with_mode(origin_url: str, mode: str):
+    """
+    get_finial_url_with_mode
+    :param origin_url: origin_url
+    :param mode: auto-detect, cdn, direct
+    :return: url
+    """
+    if mode == 'direct':
         logger.info(f'using origin url: {origin_url}')
         return origin_url
-    if config.setting.network.requestGithubApiDirectly and origin_url.startswith('https://api.github.com'):
-        logger.info(f'using origin url: {origin_url}')
-        return origin_url
+    elif mode == 'cdn':
+        return get_override_url(origin_url)
+    else:
+        if is_using_proxy():
+            logger.info(f'using origin url: {origin_url}')
+            return origin_url
+        else:
+            return get_override_url(origin_url)
+
+
+def get_override_url(origin_url):
     for k in url_override_map:
         if origin_url.startswith(k):
             new_url = origin_url.replace(k, url_override_map[k])

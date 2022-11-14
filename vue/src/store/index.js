@@ -103,8 +103,8 @@ const state = {
         setting: {
             lastOpenEmuPage: "",
             network: {
-                useOriginalUrlDirectly: false,
-                requestGithubApiDirectly: false
+                cdnMode: 'auto-detect',
+                githubApiMode: 'direct'
             }
         },
     },

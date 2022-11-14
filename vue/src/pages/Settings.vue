@@ -12,16 +12,20 @@
             <v-row>
               <v-col><p class="success--text text-h5">网络设置</p></v-col>
             </v-row>
-            <v-switch
-              v-model="setting.network.useOriginalUrlDirectly"
-              inset
-              label="不使用 Cloudflare 代理"
-            ></v-switch>
-            <v-switch
-              v-model="setting.network.requestGithubApiDirectly"
-              inset
-              label="直接访问 GitHub api"
-            ></v-switch>
+            <v-select
+              v-model="setting.network.cdnMode"
+              :items="availableNetworkMode"
+              item-text="name"
+              item-value="value"
+              label="下载源 CDN 配置"
+            ></v-select>
+            <v-select
+              v-model="setting.network.githubApiMode"
+              :items="availableNetworkMode"
+              item-text="name"
+              item-value="value"
+              label="GitHub Api CDN 配置"
+            ></v-select>
           </v-container>
         </v-card>
       </v-col>
@@ -38,7 +42,12 @@ export default {
   data() {
     return {
       setting: store.state.config.setting,
-      inited: false
+      inited: false,
+      availableNetworkMode: [
+        {name: '依据系统代理自动决定', value: 'auto-detect'},
+        {name: '使用 CDN', value: 'cdn'},
+        {name: '直连', value: 'direct'},
+      ]
     }
   },
   async mounted() {

@@ -54,12 +54,11 @@ class RyujinxConfig:
     branch: Optional[str] = 'ava'
 
 
-
 @dataclass_json
 @dataclass
 class NetworkSetting:
-    useOriginalUrlDirectly: Optional[bool] = False
-    requestGithubApiDirectly: Optional[bool] = False
+    cdnMode: Optional[str] = 'auto-detect'
+    githubApiMode: Optional[str] = 'direct'
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
