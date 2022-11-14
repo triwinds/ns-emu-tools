@@ -44,7 +44,7 @@ export default {
       setting: store.state.config.setting,
       inited: false,
       availableNetworkMode: [
-        {name: '依据系统代理自动决定', value: 'auto-detect'},
+        {name: '根据系统代理自动决定', value: 'auto-detect'},
         {name: '使用 CDN', value: 'cdn'},
         {name: '直连', value: 'direct'},
       ]

@@ -4,9 +4,7 @@ import logging
 import requests
 import requests_cache
 
-
 logger = logging.getLogger(__name__)
-
 
 url_override_map = {
     'https://github.com': 'https://nsarchive.e6ex.com/gh',
@@ -15,8 +13,19 @@ url_override_map = {
     'https://aka.ms/vs': 'https://nsarchive.e6ex.com/msvc'
 }
 
-
 session = requests_cache.CachedSession(expire_after=360)
+
+options_on_proxy = {
+    'split': '16',
+    'max-connection-per-server': '16',
+    'min-split-size': '4M',
+}
+
+options_on_cdn = {
+    'split': '4',
+    'max-connection-per-server': '4',
+    'min-split-size': '12M',
+}
 
 
 def is_using_proxy():
@@ -34,26 +43,17 @@ def get_proxy_option():
 
 
 def get_global_options():
-    if is_using_proxy():
-        global_options = {
-            'split': '16',
-            'max-connection-per-server': '16',
-            'min-split-size': '4M',
-        }
-    else:
-        global_options = {
-            'split': '4',
-            'max-connection-per-server': '4',
-            'min-split-size': '12M',
-        }
-    return global_options
+    return {}
 
 
 def init_download_options_with_proxy():
     if is_using_proxy():
-        return {'all-proxy': iter(get_proxies().values()).__next__()}
+        options = {'all-proxy': iter(get_proxies().values()).__next__()}
+        if config.setting.network.cdnMode == 'cdn':
+            options.update(options_on_cdn)
+        return options
     else:
-        return {}
+        return options_on_cdn
 
 
 def get_finial_url(origin_url: str):
