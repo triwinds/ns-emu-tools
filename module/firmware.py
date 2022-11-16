@@ -51,7 +51,7 @@ def find_target_firmware_file(firmware_files, key_path):
     logger.info(f'scanning firmware files...')
     send_notify('开始扫描固件文件...')
     for file in firmware_files:
-        process = subprocess.Popen(f'{str(hactool_path)} -t  keygen -k {str(key_path)} -t nca {str(file)}',
+        process = subprocess.Popen(f'"{str(hactool_path)}" -t  keygen -k "{str(key_path)}" -t nca "{str(file)}"',
                                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
         lines = process.communicate()[0].decode("utf-8").splitlines()
         title_id = None
@@ -72,7 +72,7 @@ def extract_version(target_file, key_path):
     logger.info(f'decrypt file: {target_file}')
     send_notify(f'开始解析目标固件文件: {target_file}')
     tmp_path = Path(tempfile.gettempdir()).joinpath('nst/')
-    process = subprocess.Popen(f'{str(hactool_path)} -t  keygen -k "{str(key_path)}" -t nca "{str(target_file)}" '
+    process = subprocess.Popen(f'"{str(hactool_path)}" -t  keygen -k "{str(key_path)}" -t nca "{str(target_file)}" '
                                f'--romfsdir="{str(tmp_path)}"', shell=True,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     process.wait()

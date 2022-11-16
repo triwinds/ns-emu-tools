@@ -32,10 +32,10 @@ def init_aria2():
                                      stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
     aria2 = aria2p.API(
         aria2p.Client(
-            host="http://localhost",
+            host="http://127.0.0.1",
             port=port,
             secret="123456",
-            timeout=0.1
+            timeout=3
         )
     )
     global_options = get_global_options()
