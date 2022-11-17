@@ -55,6 +55,26 @@
           </v-list-item-content>
         </v-list-item>
 
+
+        <v-list-group
+          :value="true"
+        >
+          <template v-slot:activator>
+            <v-list-item-icon>
+              <v-icon color="blue lighten-2">{{ svgPath.testTube }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title class="text--primary">实验性功能</v-list-item-title>
+          </template>
+          <v-list-item link to="/yuzuCheatsManagement" style="padding-left: 30px">
+            <v-list-item-icon>
+              <v-icon color="indigo accent-2">{{ svgPath.memory }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content>
+              <v-list-item-title class="text--primary">Yuzu 金手指管理</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list-group>
+
         <v-list-item link to="/settings">
           <v-list-item-icon>
             <v-icon color="blue-grey lighten-3">{{ svgPath.cog }}</v-icon>
@@ -94,9 +114,9 @@
 
     <v-main>
       <v-container fluid style="height: 100%">
-        <v-row class="child-flex">
-          <v-col>
-            <router-view/>
+        <v-row class="child-flex" style="height: 100%">
+          <v-col style="height: 100%">
+            <router-view style="height: 100%"/>
           </v-col>
         </v-row>
       </v-container>
@@ -113,7 +133,10 @@ import SpeedDial from "@/components/SpeedDial";
 import ConsoleDialog from "@/components/ConsoleDialog";
 import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
-import {mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog} from '@mdi/js'
+import {
+  mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog, mdiTestTube,
+  mdiMemory
+} from '@mdi/js'
 
 export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
@@ -126,6 +149,8 @@ export default {
       key: mdiKeyVariant,
       newBox: mdiNewBox,
       cog: mdiCog,
+      testTube: mdiTestTube,
+      memory: mdiMemory
     }
   }),
   created() {
@@ -161,14 +186,14 @@ export default {
 </script>
 
 <style>
-html ::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
+html ::-webkit-resizer, html ::-webkit-scrollbar-thumb {
+  background: #aaa;
+  border-radius: 3px;
 }
 
-html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
-  background: transparent !important;
+html ::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
 }
 
 html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
@@ -176,7 +201,11 @@ html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
 }
 
 html ::-webkit-resizer, html ::-webkit-scrollbar-thumb {
-  background: #0000;
+  background: #aaa;
   border-radius: 3px;
+}
+
+html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 </style>

@@ -37,6 +37,7 @@ def import_api_modules():
     import api.yuzu_api
     import api.common_api
     import api.ryujinx_api
+    import api.cheats_api
 
 
 def main(port=0, mode=None):

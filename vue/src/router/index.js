@@ -4,6 +4,7 @@ import Ryujinx from "@/pages/Ryujinx";
 import About from "@/pages/About";
 import KeysManagement from "@/pages/KeysManagement";
 import Settings from "@/pages/Settings";
+import YuzuCheatsManagement from "@/pages/YuzuCheatsManagement";
 
 export default new VueRouter({
     routes: [
@@ -22,6 +23,9 @@ export default new VueRouter({
         },{
             path: '/settings',
             component: Settings
+        },{
+            path: '/yuzuCheatsManagement',
+            component: YuzuCheatsManagement
         },
     ]
 })
