@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.1.9'
+current_version = '0.2.0'
 
 
 console = logging.StreamHandler()

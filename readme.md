@@ -9,7 +9,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/triwinds/ns-emu-tools?style=for-the-badge)
 ![GitHub](https://img.shields.io/github/license/triwinds/ns-emu-tools?style=for-the-badge)
 
-## Feature
+## Features
 
  - 支持安装 Yuzu EA/正式 版模拟器
  - 支持 Yuzu 版本检测及更新
@@ -19,6 +19,7 @@
  - 支持安装及更新 NS 固件至模拟器
  - 支持固件版本检测 (感谢 [a709560839](https://tieba.baidu.com/home/main?id=tb.1.f9804802.YmDokXJSRkAJB0xF8XfaCQ&fr=pb) 提供的思路)
  - 管理模拟器密钥
+ - Yuzu 金手指管理
  - aria2 多线程下载
 
 ## 下载
@@ -39,7 +40,6 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
  - 添加 wiki
  - 完善异常处理
- - Yuzu 金手指管理
  - Python embeddable 打包
  - 集成 LibHac
 
