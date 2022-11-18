@@ -76,7 +76,7 @@
                         {{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : '未知' }}
                       </v-btn>
                     </template>
-                    <span>点击重新检测固件版本</span>
+                    <span>点击重新检测固件版本, 需安装密钥后使用</span>
                   </v-tooltip>
                   <span class="text-h6 secondary--text">
                     最新固件版本：
