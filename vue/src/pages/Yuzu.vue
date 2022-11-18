@@ -221,6 +221,12 @@ export default {
       })
     },
     modifyYuzuPath() {
+      this.cleanAndShowConsoleDialog()
+      this.appendConsoleMessage('=============================================')
+      this.appendConsoleMessage('安装/更新模拟器时会删除目录下除模拟器用户数据外的其他文件')
+      this.appendConsoleMessage('请确保您选择的目录下没有除模拟器外的其他文件')
+      this.appendConsoleMessage('建议新建目录单独存放')
+      this.appendConsoleMessage('=============================================')
       window.eel.ask_and_update_yuzu_path()((data) => {
         if (data['code'] === 0) {
           this.updateYuzuConfig()
