@@ -1,9 +1,9 @@
 import logging
 import gevent.monkey
+
 gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 from config import config
-
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,15 @@ def can_use_chrome():
 
 
 def can_use_edge():
-    from eel import edge
-    return edge.find_path()
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Edge\BLBeacon', 0, winreg.KEY_READ)
+        with key:
+            version: str = winreg.QueryValueEx(key, 'version')[0]
+            logger.info(f'Edge version: {version}')
+            return int(version.split('.')[0]) > 70
+    except:
+        return False
 
 
 def start_edge_in_app_mode(page, port, size=(1280, 720)):
