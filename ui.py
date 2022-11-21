@@ -41,10 +41,7 @@ def start_edge_in_app_mode(page, port, size=(1280, 720)):
 
 
 def import_api_modules():
-    import api.yuzu_api
-    import api.common_api
-    import api.ryujinx_api
-    import api.cheats_api
+    import api
 
 
 def main(port=0, mode=None):
