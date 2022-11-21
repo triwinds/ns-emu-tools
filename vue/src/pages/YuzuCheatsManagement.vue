@@ -41,7 +41,7 @@
             <v-virtual-scroll
               :items="cheatItems"
               :item-height="35"
-              height="340"
+              :height="cheatItemBoxHeight"
             >
               <template v-slot:default="{ item }">
                 <v-list-item>
@@ -77,11 +77,19 @@ export default {
       cheatFiles: [],
       selectedCheatFile: '',
       cheatItems: [],
+      cheatItemBoxHeight: 340,
     }
   },
   async created() {
     this.$store.commit('CLEAR_CONSOLE_MESSAGES', true)
     await this.scanCheatsFolders()
+  },
+  mounted() {
+    this.updateCheatItemBoxHeight()
+    window.addEventListener('resize', this.updateCheatItemBoxHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateCheatItemBoxHeight);
   },
   methods: {
     async scanCheatsFolders() {
@@ -91,6 +99,9 @@ export default {
         return this.cheatsFolders
       }
       return []
+    },
+    updateCheatItemBoxHeight() {
+      this.cheatItemBoxHeight = window.innerHeight - 510
     },
     concatFolderItemName(item) {
       return `[${item.game_id}] ${item.game_name ? item.game_name : '未能识别的游戏'}`

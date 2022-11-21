@@ -186,26 +186,30 @@ export default {
 </script>
 
 <style>
-html ::-webkit-resizer, html ::-webkit-scrollbar-thumb {
+html ::-webkit-scrollbar {
+  width: 0 ;
+  height: 0 ;
+}
+div::-webkit-resizer, div::-webkit-scrollbar-thumb {
   background: #aaa;
   border-radius: 3px;
 }
 
-html ::-webkit-scrollbar {
+div::-webkit-scrollbar {
   width: 5px !important;
   height: 5px !important;
 }
 
-html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+div::-webkit-scrollbar-corner, div ::-webkit-scrollbar-track {
   background: transparent !important;
 }
 
-html ::-webkit-resizer, html ::-webkit-scrollbar-thumb {
+div::-webkit-resizer, div ::-webkit-scrollbar-thumb {
   background: #aaa;
   border-radius: 3px;
 }
 
-html ::-webkit-scrollbar-corner, html ::-webkit-scrollbar-track {
+div::-webkit-scrollbar-corner, div ::-webkit-scrollbar-track {
   background: transparent !important;
 }
 </style>
