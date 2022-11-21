@@ -21,12 +21,8 @@ def get_game_data():
     res = {}
     try:
         from xml.etree import ElementTree
-        resp = session.get('https://cdn.jsdelivr.net/gh/amakvana/YuzuModDownloader@main/assets/GameTitleIDs.xml')
-        resp.encoding = 'utf-8'
-        tree = ElementTree.fromstring(resp.text)
-        games = tree.iter('games').__next__()
-        for game in games.iter('game'):
-            res[game.find('title_id').text] = game.find('title_name').text
+        resp = session.get('https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json')
+        return resp.json()
     except Exception as e:
         logger.warning(f'fail to load game data, ex: {e}')
     return res
