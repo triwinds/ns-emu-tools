@@ -1,0 +1,34 @@
+name: Manual build webview
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-latest']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+    - run: |
+        cd vue
+        npm install
+        npm run build
+    - run: |
+        python -m venv venv
+        venv\Scripts\activate.ps1
+        pip install -r requirements.txt pyinstaller pywebview
+        pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" "./ui_webview.py" --additional-hooks-dir=".\\hooks" --name "NsEmuTools-webview"
+    - uses: actions/upload-artifact@v2
+      with:
+        path: dist/NsEmuTools-webview.exe
+        name: NsEmuTools-webview
