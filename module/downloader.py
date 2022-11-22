@@ -35,7 +35,7 @@ def init_aria2():
             host="http://127.0.0.1",
             port=port,
             secret="123456",
-            timeout=3
+            timeout=10
         )
     )
     global_options = get_global_options()
@@ -61,6 +61,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
     if download_in_background:
         return info
     info = aria2.get_download(info.gid)
+    retry_count = 0
     while info.is_active:
         print(f'\rprogress: {info.progress_string()}, '
                     f'connections: {info.connections}, '
@@ -69,7 +70,12 @@ def download(url, save_dir=None, options=None, download_in_background=False):
         send_notify(f'下载速度: {info.download_speed_string()}, '
                     f'{info.completed_length_string()}/{info.total_length_string()}')
         time.sleep(0.3)
-        info = aria2.get_download(info.gid)
+        try:
+            info = aria2.get_download(info.gid)
+        except Exception as e:
+            retry_count += 1
+            if retry_count > 15:
+                raise e
     print('\r')
     if info.error_code != '0':
         if info.error_code == '13':
