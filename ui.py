@@ -44,10 +44,11 @@ def import_api_modules():
     import api
 
 
-def main(port=0, mode=None):
+def main(port=0, mode=None, dev=False):
     import_api_modules()
     logger.info('eel init starting...')
-    eel.init('vue/src') if port else eel.init("web")
+    eel.init('vue/src') if dev else eel.init("web")
+    shutdown_delay = 114514 if dev else 1
     logger.info('eel init finished.')
     from module.msg_notifier import update_notifier
     default_page = f'index.html'
@@ -63,9 +64,9 @@ def main(port=0, mode=None):
     if mode == 'edge':
         start_edge_in_app_mode(default_page, port, size)
     else:
-        eel.start(default_page, port=port, size=size, mode=mode)
+        eel.start(default_page, port=port, size=size, mode=mode, shutdown_delay=shutdown_delay)
 
 
 if __name__ == '__main__':
-    main(8888, False)
+    main(8888, False, True)
     # main(0, 'edge')

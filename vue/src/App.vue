@@ -84,6 +84,15 @@
           </v-list-item-content>
         </v-list-item>
 
+        <v-list-item link to="/faq">
+          <v-list-item-icon>
+            <v-icon color="light-green darken-2">{{ svgPath.help }}</v-icon>
+          </v-list-item-icon>
+          <v-list-item-content>
+            <v-list-item-title>常见问题</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+
         <v-list-item link to="/about">
           <v-list-item-icon>
             <v-icon color="info">{{ svgPath.info }}</v-icon>
@@ -135,7 +144,7 @@ import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
 import {
   mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog, mdiTestTube,
-  mdiMemory
+  mdiMemory, mdiCommentQuestionOutline
 } from '@mdi/js'
 
 export default {
@@ -150,7 +159,8 @@ export default {
       newBox: mdiNewBox,
       cog: mdiCog,
       testTube: mdiTestTube,
-      memory: mdiMemory
+      memory: mdiMemory,
+      help: mdiCommentQuestionOutline,
     }
   }),
   created() {
