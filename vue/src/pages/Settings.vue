@@ -13,11 +13,11 @@
               <v-col><p class="success--text text-h5">网络设置</p></v-col>
             </v-row>
             <v-select
-              v-model="setting.network.cdnMode"
+              v-model="setting.network.firmwareSource"
               :items="availableNetworkMode"
               item-text="name"
               item-value="value"
-              label="下载源 CDN 配置"
+              label="固件下载源配置"
             ></v-select>
             <v-select
               v-model="setting.network.githubApiMode"
@@ -25,6 +25,13 @@
               item-text="name"
               item-value="value"
               label="GitHub Api CDN 配置"
+            ></v-select>
+            <v-select
+              v-model="setting.network.githubDownloadSource"
+              :items="availableGithubDownloadSource"
+              item-text="name"
+              item-value="value"
+              label="GitHub 下载源配置"
             ></v-select>
           </v-container>
         </v-card>
@@ -45,7 +52,13 @@ export default {
       inited: false,
       availableNetworkMode: [
         {name: '根据系统代理自动决定', value: 'auto-detect'},
-        {name: '使用 CDN', value: 'cdn'},
+        {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'cdn'},
+        {name: '直连', value: 'direct'},
+      ],
+      availableGithubDownloadSource: [
+        {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'self'},
+        {name: '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供', value: 'zhiliao'},
+        {name: '[韩国 首尔] - 该公益加速源由 [ghproxy] 提供', value: 'ghproxy'},
         {name: '直连', value: 'direct'},
       ]
     }

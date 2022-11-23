@@ -103,8 +103,9 @@ const state = {
         setting: {
             lastOpenEmuPage: "",
             network: {
-                cdnMode: 'auto-detect',
-                githubApiMode: 'direct'
+                firmwareSource: 'auto-detect',
+                githubApiMode: 'direct',
+                githubDownloadSource: "self"
             }
         },
     },

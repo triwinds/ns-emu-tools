@@ -5,7 +5,7 @@ from pathlib import Path
 
 from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version
-from utils.network import get_finial_url
+from utils.network import get_github_download_url
 from module.msg_notifier import send_notify
 from config import config, dump_config
 import logging
@@ -35,7 +35,7 @@ def install_ryujinx_by_version(target_version: str, branch: str):
     if not download_url:
         send_notify(f'获取 ryujinx 下载链接失败')
         raise RuntimeError(f'No download url found with version: {target_version}')
-    download_url = get_finial_url(download_url)
+    download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
     info = download(download_url)

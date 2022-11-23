@@ -12,7 +12,7 @@ from config import config, dump_config
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
-from utils.network import get_finial_url
+from utils.network import get_github_download_url
 
 
 logger = logging.getLogger(__name__)
@@ -33,10 +33,10 @@ def download_yuzu(target_version, branch):
     url = None
     for asset in assets:
         if asset['content_type'] == 'application/x-7z-compressed':
-            url = get_finial_url(asset['browser_download_url'])
+            url = get_github_download_url(asset['browser_download_url'])
             break
         elif asset['name'].startswith('Windows-Yuzu-EA-') and asset['name'].endswith('.zip'):
-            url = get_finial_url(asset['browser_download_url'])
+            url = get_github_download_url(asset['browser_download_url'])
             break
     if not url:
         raise RuntimeError('Fail to fetch yuzu download url.')

@@ -57,8 +57,9 @@ class RyujinxConfig:
 @dataclass_json
 @dataclass
 class NetworkSetting:
-    cdnMode: Optional[str] = 'auto-detect'
+    firmwareSource: Optional[str] = 'auto-detect'
     githubApiMode: Optional[str] = 'direct'
+    githubDownloadSource: Optional[str] = 'self'
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
