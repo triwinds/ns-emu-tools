@@ -12,15 +12,11 @@
           <p>2. 安装 Yuzu/Ryujinx 模拟器（如果检测到缺少 msvc 运行库的话会自动运行 msvc 的安装程序，msvc 装完后记得重启一下）</p>
           <p>3. 安装固件并配置相应的密钥文件</p>
           <p>这些东西装完之后模拟器就安装好了。</p>
-          <p>
-            ps. 不同游戏对不同版本的模拟器兼容程度不一样，新版本模拟器对老游戏的支持不一定好，可以在贴吧里面找找别人是用什么版本
-            的模拟器和固件通关的，依此来决定你应该使用什么版本。
-          </p>
         </template>
       </FaqGroup>
 
       <FaqGroup>
-        <template v-slot:title>Yuzu/Ryujinx 信息加载失败</template>
+        <template v-slot:title>Yuzu/Ryujinx 最新版本信息加载失败</template>
         <template v-slot:content>
           <p>yuzu/ryujinx 的 release 数据需要从 GitHub api 中获取，而接口调用失败时就会出现这个问题。</p>
           <p><b>这个问题可能由以下两种原因产生:</b></p>
@@ -28,15 +24,15 @@
           <p>2.如果你使用的是共享的 ip (比如用了某些公用的梯子或某些运营商的公共出口)，可能是当前 ip 使用的频率达到 GitHub 的使用上限(大概每小时 60 次).</p>
           <p><b>解决方法:</b></p>
           <p>1. 在设置中将 GitHub api 改为 "使用 CDN"；如果还是不行，那说明 CDN 也被屏蔽了，挂个梯子直连吧。</p>
-          <p>2. 如果是用梯子的话可以尝试换个节点, 或者等一段时间, GitHub 自动会解除封禁</p>
+          <p>2. 如果是用梯子的话可以尝试换个节点, 或者等一段时间, GitHub 会自动解除封禁（最多只封 1h）</p>
         </template>
       </FaqGroup>
 
       <FaqGroup>
         <template v-slot:title>下载时出错，download 文件夹下没有任何东西</template>
         <template v-slot:content>
-          <p>特殊地区/时期 Cloudflare 服务器会因为某些原因被屏蔽，可以在设置中切换下载源，如果还是不行就只能使用代理软件了。</p>
-          <p>或前往下一小节中提到的 整合贴 中下载。</p>
+          <p>特殊地区/时期 Cloudflare 服务器会因为某些原因被屏蔽，可以在设置中切换下载源，如果还是不行就需要使用代理软件了。</p>
+          <p>或者前往下一小节中提到的 整合贴 中下载整合包。</p>
         </template>
       </FaqGroup>
 
@@ -73,6 +69,45 @@
       </FaqGroup>
 
       <FaqGroup>
+        <template v-slot:title>点击安装后出现 “当前的 xxx 就是 [yyy], 跳过安装.”</template>
+        <template v-slot:content>
+          <p>这是由于记录中的版本和你选择的版本一致，为了避免重复下载/安装，这里会跳过安装过程。</p>
+          <p>如果你确认你选择的版本没有安装过，那可能是因为你用的是别人的配置文件。</p>
+          <p>可以删除目录下的 config.json 文件，然后重启程序(这会重置你的设置及记录).</p>
+          <p>这个时候点安装就应该正常了。</p>
+        </template>
+      </FaqGroup>
+
+      <FaqGroup>
+        <template v-slot:title>关于模拟器版本检测</template>
+        <template v-slot:content>
+          <p>模拟器版本检测的原理是启动模拟器，然后根据窗口标题确定正在使用的模拟器是什么版本，再将检测到的版本和分支信息保存到程序的记录中。</p>
+          <p>ps.这个功能仅用于更新记录的版本号，不影响模拟器及程序的使用。</p>
+        </template>
+      </FaqGroup>
+
+      <FaqGroup>
+        <template v-slot:title>关于固件版本检测</template>
+        <template v-slot:content>
+          <p>固件版本检测的原理是使用配置的密钥去解密固件文件，从而获取版本号。因此，这个功能需要你正确的配置了固件和相应的密钥后才能使用</p>
+          <p>ps.这个功能仅用于更新记录的版本号，不影响程序的使用。</p>
+        </template>
+      </FaqGroup>
+
+      <FaqGroup>
+        <template v-slot:title>游戏与模拟器的兼容问题</template>
+        <template v-slot:content>
+          <p>
+            不同游戏对不同版本的模拟器兼容程度不一样，新版本模拟器对老游戏的支持不一定好，可以在贴吧里面找找别人是用什么版本
+            的模拟器和固件通关的，依此来决定你应该使用什么版本。
+          </p>
+          <p>
+            对于新游戏，模拟器会渐渐完善相关的支持，可以等一段时间后更新试试。
+          </p>
+        </template>
+      </FaqGroup>
+
+      <FaqGroup>
         <template v-slot:title>其它问题反馈</template>
         <template v-slot:content>
           <p>如果你遇到的问题不属于上面的任何一个，可以在
@@ -97,7 +132,7 @@ export default {
 
 <style scoped>
 p {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 30px !important;
   margin-bottom: 16px !important;
 }

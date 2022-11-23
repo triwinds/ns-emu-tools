@@ -1,7 +1,7 @@
 <template>
   <v-list-group>
     <template v-slot:activator>
-      <v-list-item-title><span class="text-h5 info--text"><slot name="title"></slot></span></v-list-item-title>
+      <v-list-item-title><span class="info--text" style="font-size: 22px"><slot name="title"></slot></span></v-list-item-title>
     </template>
     <v-list-item>
       <v-list-item-content>
