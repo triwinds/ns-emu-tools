@@ -69,7 +69,8 @@ def install_ea_yuzu(target_version):
     tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc-early-access')
     copy_back_yuzu_files(tmp_dir, yuzu_path)
     logger.info(f'Yuzu EA of [{target_version}] install successfully.')
-    os.remove(yuzu_package_path)
+    if config.setting.download.autoDeleteAfterInstall:
+        os.remove(yuzu_package_path)
 
 
 def install_mainline_yuzu(target_version):
@@ -79,7 +80,8 @@ def install_mainline_yuzu(target_version):
     tmp_dir = Path(tempfile.gettempdir()).joinpath('yuzu-windows-msvc')
     copy_back_yuzu_files(tmp_dir, yuzu_path)
     logger.info(f'Yuzu mainline of [{target_version}] install successfully.')
-    os.remove(yuzu_package_path)
+    if config.setting.download.autoDeleteAfterInstall:
+        os.remove(yuzu_package_path)
 
 
 def copy_back_yuzu_files(tmp_dir: Path, yuzu_path: Path, ):

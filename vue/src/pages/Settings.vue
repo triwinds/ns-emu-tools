@@ -33,6 +33,11 @@
               item-value="value"
               label="GitHub 下载源配置"
             ></v-select>
+            <v-divider style="margin-bottom: 10px"></v-divider>
+            <v-row>
+              <v-col><p class="success--text text-h5">下载设置</p></v-col>
+            </v-row>
+            <v-switch v-model="setting.download.autoDeleteAfterInstall" label="安装完成后自动删除下载的安装包"></v-switch>
           </v-container>
         </v-card>
       </v-col>

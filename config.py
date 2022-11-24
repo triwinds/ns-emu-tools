@@ -62,11 +62,18 @@ class NetworkSetting:
     githubDownloadSource: Optional[str] = 'self'
 
 
+@dataclass_json
+@dataclass
+class DownloadSetting:
+    autoDeleteAfterInstall: Optional[bool] = True
+
+
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu'
     network: NetworkSetting = NetworkSetting()
+    download: DownloadSetting = DownloadSetting()
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)

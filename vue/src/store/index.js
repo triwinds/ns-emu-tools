@@ -106,6 +106,9 @@ const state = {
                 firmwareSource: 'auto-detect',
                 githubApiMode: 'direct',
                 githubDownloadSource: "self"
+            },
+            download: {
+                autoDeleteAfterInstall: true
             }
         },
     },

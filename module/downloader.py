@@ -80,6 +80,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
     if info.error_code != '0':
         if info.error_code == '13':
             logger.info('file already exist.')
+            send_notify('文件已存在, 跳过下载.')
         else:
             logger.error(f'info.error_code: {info.error_code}, error message: {info.error_message}')
             raise RuntimeError(f'下载出错, error_code: {info.error_code}, error message: {info.error_message}')

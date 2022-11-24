@@ -4,7 +4,7 @@ import subprocess
 from functools import lru_cache
 from pathlib import Path
 from module.msg_notifier import send_notify
-from module.downloader import download_path
+from config import config
 import bs4
 from utils.network import get_finial_url, session
 import logging
@@ -99,7 +99,8 @@ def install_firmware(firmware_version, target_firmware_path):
         logger.info(f'Unzipping firmware files to {firmware_path}')
         zf.extractall(firmware_path)
         logger.info(f'Firmware of [{firmware_version}] install successfully.')
-    os.remove(file.path)
+    if config.setting.download.autoDeleteAfterInstall:
+        os.remove(file.path)
     return firmware_version
 
 
