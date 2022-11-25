@@ -117,7 +117,7 @@ def install_firmware_to_yuzu(firmware_version=None):
         send_notify(f'当前的 固件 就是 [{firmware_version}], 跳过安装.')
         return
     from module.common import install_firmware
-    new_version = install_firmware(firmware_version, get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
+    new_version = install_firmware(firmware_version, get_yuzu_nand_path().joinpath(r'system\Contents\registered'))
     if new_version:
         config.yuzu.yuzu_firmware = new_version
         dump_config()
@@ -203,10 +203,52 @@ def open_yuzu_keys_folder():
     subprocess.Popen(f'explorer "{str(keys_path.absolute())}"')
 
 
+def _get_yuzu_data_storage_config(user_path: Path):
+    config_path = user_path.joinpath('config/qt-config.ini')
+    if config_path.exists():
+        import configparser
+        yuzu_qt_config = configparser.ConfigParser()
+        yuzu_qt_config.read(str(config_path.absolute()))
+        # data = {section: dict(yuzu_qt_config[section]) for section in yuzu_qt_config.sections()}
+        # print(data)
+        data_storage = yuzu_qt_config['Data%20Storage']
+        logger.debug(dict(data_storage))
+        return data_storage
+
+
+def get_yuzu_nand_path():
+    user_path = get_yuzu_user_path()
+    nand_path = user_path.joinpath('nand')
+    try:
+        data_storage = _get_yuzu_data_storage_config(user_path)
+        if data_storage:
+            path_str = data_storage.get('nand_directory').replace('\\\\', '\\')
+            nand_path = Path(path_str)
+            logger.info(f'use nand path from yuzu config: {nand_path}')
+    except Exception as e:
+        logger.warning(f'fail in parse yuzu qt-config, error msg: {str(e)}')
+    return nand_path
+
+
+def get_yuzu_load_path():
+    user_path = get_yuzu_user_path()
+    load_path = user_path.joinpath('load')
+    try:
+        data_storage = _get_yuzu_data_storage_config(user_path)
+        if data_storage:
+            path_str = data_storage.get('load_directory').replace('\\\\', '\\')
+            load_path = Path(path_str)
+            logger.info(f'use load path from yuzu config: {load_path}')
+    except Exception as e:
+        logger.warning(f'fail in parse yuzu qt-config, error msg: {str(e)}')
+    return load_path
+
+
 if __name__ == '__main__':
     # install_yuzu('1220', 'mainline')
     # install_firmware_to_yuzu()
     # install_key_to_yuzu()
-    print(detect_yuzu_version())
+    # print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
     # open_yuzu_keys_folder()
+    print(get_yuzu_nand_path())

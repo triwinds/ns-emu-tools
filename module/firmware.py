@@ -14,8 +14,8 @@ def detect_firmware_version(emu_type: str):
     firmware_files = []
     version = None
     if emu_type == 'yuzu':
-        from module.yuzu import get_yuzu_user_path
-        firmware_path = get_yuzu_user_path().joinpath(r'nand\system\Contents\registered')
+        from module.yuzu import get_yuzu_nand_path, get_yuzu_user_path
+        firmware_path = get_yuzu_nand_path().joinpath(r'system\Contents\registered')
         key_path = get_yuzu_user_path().joinpath(r'keys/prod.keys')
         for file in firmware_path.glob('*.nca'):
             if not file.name.endswith('.cnmt.nca'):

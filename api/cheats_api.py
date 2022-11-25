@@ -8,9 +8,9 @@ import eel
 @eel.expose
 def scan_all_cheats_folder():
     from module.cheats import scan_all_cheats_folder
-    from module.yuzu import get_yuzu_user_path
+    from module.yuzu import get_yuzu_load_path
     try:
-        return success_response(scan_all_cheats_folder(get_yuzu_user_path().joinpath('load')))
+        return success_response(scan_all_cheats_folder(get_yuzu_load_path()))
     except Exception as e:
         return exception_response(e)
 
