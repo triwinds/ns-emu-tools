@@ -113,7 +113,7 @@
             {{ svgPath.console }}
           </v-icon>
         </v-btn>
-        <v-btn class="float-right" icon @click="$vuetify.theme.dark = !$vuetify.theme.dark">
+        <v-btn class="float-right" icon @click="switchDarkLight">
           <v-icon color="white">
             {{ svgPath.darkLightSwitch }}
           </v-icon>
@@ -167,7 +167,7 @@ export default {
     this.$store.dispatch('initCurrentVersion')
     this.checkUpdate(false)
     this.initAvailableFirmwareInfos()
-    this.gotoLatestOpenEmuPage()
+    this.applyUiConfig()
     this.appendConsoleMessage('启动时间：' + new Date().toLocaleString())
   },
   methods: {
@@ -176,13 +176,18 @@ export default {
         this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
       }
     },
-    async gotoLatestOpenEmuPage() {
+    async applyUiConfig() {
       let config = await this.$store.dispatch('loadConfig')
       if (router.currentRoute.path === '/'
-        && router.currentRoute.path !== '/' + config.setting.lastOpenEmuPage) {
-        await router.push('/' + config.setting.lastOpenEmuPage)
+        && router.currentRoute.path !== '/' + config.setting.ui.lastOpenEmuPage) {
+        await router.push('/' + config.setting.ui.lastOpenEmuPage)
       }
+      this.$vuetify.theme.dark = config.setting.ui.dark
     },
+    switchDarkLight() {
+      this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+      window.eel.update_dark_state(this.$vuetify.theme.dark)()
+    }
   },
   computed: {
     theme() {

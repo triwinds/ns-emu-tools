@@ -36,6 +36,12 @@ def update_last_open_emu_page(page):
 
 
 @eel.expose
+def update_dark_state(dark):
+    from config import update_dark_state
+    update_dark_state(dark)
+
+
+@eel.expose
 def detect_firmware_version(emu_type: str):
     from module.firmware import detect_firmware_version
     try:

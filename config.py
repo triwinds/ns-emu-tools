@@ -68,10 +68,17 @@ class DownloadSetting:
     autoDeleteAfterInstall: Optional[bool] = True
 
 
+@dataclass_json
+@dataclass
+class UiSetting:
+    lastOpenEmuPage: Optional[str] = 'yuzu',
+    dark: Optional[bool] = True
+
+
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
-    lastOpenEmuPage: Optional[str] = 'yuzu'
+    ui: UiSetting = UiSetting()
     network: NetworkSetting = NetworkSetting()
     download: DownloadSetting = DownloadSetting()
 
@@ -129,10 +136,18 @@ def update_ryujinx_path(new_ryujinx_path: str):
 
 def update_last_open_emu_page(page: str):
     if page == 'ryujinx':
-        config.setting.lastOpenEmuPage = 'ryujinx'
+        config.setting.ui.lastOpenEmuPage = 'ryujinx'
     else:
-        config.setting.lastOpenEmuPage = 'yuzu'
-    logger.info(f'update lastOpenEmuPage to {config.setting.lastOpenEmuPage}')
+        config.setting.ui.lastOpenEmuPage = 'yuzu'
+    logger.info(f'update lastOpenEmuPage to {config.setting.ui.lastOpenEmuPage}')
+    dump_config()
+
+
+def update_dark_state(dark: bool):
+    if dark is None:
+        dark = True
+    config.setting.ui.dark = dark
+    logger.info(f'update dark to {config.setting.ui.dark}')
     dump_config()
 
 

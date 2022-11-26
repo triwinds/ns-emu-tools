@@ -101,7 +101,10 @@ const state = {
             branch: ""
         },
         setting: {
-            lastOpenEmuPage: "",
+            ui: {
+                lastOpenEmuPage: "",
+                dark: true
+            },
             network: {
                 firmwareSource: 'auto-detect',
                 githubApiMode: 'direct',
