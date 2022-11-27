@@ -16,7 +16,7 @@ jobs:
         python-version: '3.10'
         architecture: x64
     - name: Install dependencies
-      run: pip install requests
+      run: pip install requests requests_cache
     - name: run update_game_data.py
       run: |
         python update_game_data.py
