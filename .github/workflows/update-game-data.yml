@@ -1,0 +1,29 @@
+name: Update game data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        architecture: x64
+    - name: Install dependencies
+      run: pip install requests
+    - name: run update_game_data.py
+      run: |
+        python update_game_data.py
+    - name: Commit changes
+      uses: EndBug/add-and-commit@v9
+      with:
+        author_name: github-actions
+        author_email: 41898282+github-actions[bot]@users.noreply.github.com
+        message: 'game data auto update by git action'
+        add: '.'
