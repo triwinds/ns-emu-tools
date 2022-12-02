@@ -222,7 +222,7 @@ def get_yuzu_nand_path():
     try:
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
-            path_str = data_storage.get('nand_directory').replace('\\\\', '\\')
+            path_str = data_storage.get('nand_directory')
             from utils.common import escape_yuzu_path
             nand_path = Path(escape_yuzu_path(path_str))
             logger.info(f'use nand path from yuzu config: {nand_path}')
@@ -237,7 +237,7 @@ def get_yuzu_load_path():
     try:
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
-            path_str = data_storage.get('load_directory').replace('\\\\', '\\')
+            path_str = data_storage.get('load_directory')
             load_path = Path(escape_yuzu_path(path_str))
             logger.info(f'use load path from yuzu config: {load_path}')
     except Exception as e:
