@@ -12,7 +12,7 @@ from module.msg_notifier import send_notify
 logger = logging.getLogger(__name__)
 cheat_item_re = re.compile(r'\[(.*?)]\n+([\n\ra-z0-9A-Z\s]+)', re.MULTILINE)
 multi_new_line_re = re.compile('(\r\n|\n){2,}')
-cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.txt$')
+cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.[tT][xX][tT]$')
 game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
 
 
@@ -39,7 +39,7 @@ def scan_all_cheats_folder(mod_path) -> List[Dict[str, str]]:
         if game_id_re.match(game_id) is None:
             continue
         has_cheat_file = False
-        for file in folder.glob('*.txt'):
+        for file in folder.glob('*.[tT][xX][tT]'):
             if cheat_file_re.match(file.name):
                 has_cheat_file = True
                 break
@@ -77,7 +77,7 @@ def list_all_cheat_files_from_folder(folder_path: str):
     if not folder.exists():
         raise RuntimeError(f'目录 {folder} 不存在.')
     res = []
-    for txt_file in folder.glob('*.txt'):
+    for txt_file in folder.glob('*.[tT][xX][tT]'):
         if cheat_file_re.match(txt_file.name):
             res.append({
                 'path': str(txt_file.absolute()),
