@@ -20,7 +20,6 @@ game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
 def get_game_data():
     res = {}
     try:
-        from xml.etree import ElementTree
         resp = session.get('https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json')
         return resp.json()
     except Exception as e:
