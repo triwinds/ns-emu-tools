@@ -1,3 +1,7 @@
+import re
+
+
+path_unicode_re = re.compile(r'\\x([\da-z]{4})')
 
 
 def callback(hwnd, strings):
@@ -14,3 +18,9 @@ def get_all_window_name():
     win_list = []  # list of strings containing win handles and window titles
     win32gui.EnumWindows(callback, win_list)  # populate list
     return win_list
+
+
+def escape_yuzu_path(raw_path_in_config: str):
+    raw_path_in_config = raw_path_in_config.replace("'", "\'")
+    raw_path_in_config = path_unicode_re.sub(r'\\u\1', raw_path_in_config)
+    return eval(f"'{raw_path_in_config}'")

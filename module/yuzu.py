@@ -223,7 +223,8 @@ def get_yuzu_nand_path():
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
             path_str = data_storage.get('nand_directory').replace('\\\\', '\\')
-            nand_path = Path(path_str)
+            from utils.common import escape_yuzu_path
+            nand_path = Path(escape_yuzu_path(path_str))
             logger.info(f'use nand path from yuzu config: {nand_path}')
     except Exception as e:
         logger.warning(f'fail in parse yuzu qt-config, error msg: {str(e)}')
@@ -237,7 +238,7 @@ def get_yuzu_load_path():
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
             path_str = data_storage.get('load_directory').replace('\\\\', '\\')
-            load_path = Path(path_str)
+            load_path = Path(escape_yuzu_path(path_str))
             logger.info(f'use load path from yuzu config: {load_path}')
     except Exception as e:
         logger.warning(f'fail in parse yuzu qt-config, error msg: {str(e)}')
@@ -251,4 +252,7 @@ if __name__ == '__main__':
     # print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
     # open_yuzu_keys_folder()
-    print(get_yuzu_nand_path())
+    # print(get_yuzu_nand_path())
+    from utils.common import escape_yuzu_path
+    test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
+    print(escape_yuzu_path(test_str))
