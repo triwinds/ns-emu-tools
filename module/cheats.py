@@ -30,6 +30,7 @@ def get_game_data():
 
 def scan_all_cheats_folder(mod_path) -> List[Dict[str, str]]:
     root = Path(mod_path)
+    logger.info(f'scanning cheats under path: {root}')
     cheats_folders = root.glob('**/cheats')
     game_data = get_game_data()
     res = []

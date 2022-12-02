@@ -216,3 +216,4 @@ yuzu-config.json
 download/
 output/
 web/
+http_cache.sqlite

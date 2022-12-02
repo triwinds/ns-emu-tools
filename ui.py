@@ -44,7 +44,14 @@ def import_api_modules():
     import api
 
 
+def log_system_version():
+    import sys
+    version = sys.getwindowsversion()
+    logger.info(f'windows version: {version}')
+
+
 def main(port=0, mode=None, dev=False):
+    log_system_version()
     import_api_modules()
     logger.info('eel init starting...')
     eel.init('vue/src') if dev else eel.init("web")
