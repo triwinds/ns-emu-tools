@@ -23,7 +23,7 @@ def main():
     global port
     import_api_modules()
     logger.info('eel init starting...')
-    eel.init('vue/src') if port else eel.init("web")
+    eel.init('vue/public') if port else eel.init("web")
     logger.info('eel init finished.')
     from module.msg_notifier import update_notifier
     update_notifier('eel-console')

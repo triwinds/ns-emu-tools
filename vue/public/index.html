@@ -10,6 +10,10 @@
         if ('<%= process.env.VUE_APP_EEL_BASE_URI %>' !== '.') {
             eel.set_host('<%= process.env.VUE_APP_EEL_BASE_URI %>')
         }
+        eel.expose(appendConsoleMessage)
+        function appendConsoleMessage(msg) {
+            window.$vm.$store.commit('APPEND_CONSOLE_MESSAGE', msg)
+        }
     </script>
     <title>NS EMU TOOLS</title>
 </head>

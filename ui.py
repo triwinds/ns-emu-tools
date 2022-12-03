@@ -54,7 +54,7 @@ def main(port=0, mode=None, dev=False):
     log_system_version()
     import_api_modules()
     logger.info('eel init starting...')
-    eel.init('vue/src') if dev else eel.init("web")
+    eel.init('vue/public') if dev else eel.init("web")
     shutdown_delay = 114514 if dev else 1
     logger.info('eel init finished.')
     from module.msg_notifier import update_notifier
