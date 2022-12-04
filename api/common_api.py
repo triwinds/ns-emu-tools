@@ -68,3 +68,12 @@ def update_setting(setting: Dict[str, object]):
     from config import config, update_setting
     update_setting(setting)
     return success_response(config.to_dict())
+
+
+@eel.expose
+def get_net_release_info_by_tag(tag: str):
+    from repository.my_info import get_release_info_by_tag
+    try:
+        return success_response(get_release_info_by_tag(tag))
+    except Exception as e:
+        return exception_response(e)

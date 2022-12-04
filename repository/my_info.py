@@ -12,3 +12,9 @@ def get_latest_release(prerelease=False):
         data = get_all_release()
         release_list = data if prerelease else [i for i in data if i['prerelease'] is False]
         return release_list[0]
+
+
+def get_release_info_by_tag(tag: str):
+    with session.cache_disabled():
+        resp = session.get(get_finial_url(f'https://api.github.com/repos/triwinds/ns-emu-tools/releases/tags/{tag}'))
+        return resp.json()
