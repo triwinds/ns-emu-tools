@@ -15,6 +15,5 @@ def get_latest_release(prerelease=False):
 
 
 def get_release_info_by_tag(tag: str):
-    with session.cache_disabled():
-        resp = session.get(get_finial_url(f'https://api.github.com/repos/triwinds/ns-emu-tools/releases/tags/{tag}'))
-        return resp.json()
+    resp = session.get(get_finial_url(f'https://api.github.com/repos/triwinds/ns-emu-tools/releases/tags/{tag}'))
+    return resp.json()

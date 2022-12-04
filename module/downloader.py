@@ -48,6 +48,8 @@ def init_aria2():
 def download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
     tmp = init_download_options_with_proxy()
+    tmp['auto-file-renaming'] = 'false'
+    tmp['allow-overwrite'] = 'false'
     if options is not None:
         tmp.update(options)
     options = tmp
@@ -55,8 +57,6 @@ def download(url, save_dir=None, options=None, download_in_background=False):
         options['dir'] = save_dir
     else:
         options['dir'] = str(download_path)
-    options['auto-file-renaming'] = 'false'
-    options['allow-overwrite'] = 'false'
     info = aria2.add_uris([url], options=options)
     if download_in_background:
         return info

@@ -77,3 +77,12 @@ def get_net_release_info_by_tag(tag: str):
         return success_response(get_release_info_by_tag(tag))
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def download_net_by_tag(tag: str):
+    from module.common import download_net_by_tag
+    try:
+        return success_response(download_net_by_tag(tag))
+    except Exception as e:
+        return exception_response(e)

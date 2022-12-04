@@ -34,9 +34,9 @@
           <v-btn
             color="primary"
             text
-            @click="dialog = false"
+            @click="downloadNET"
           >
-            取消
+            下载最新版本
           </v-btn>
           <v-btn
             color="primary"
@@ -44,6 +44,13 @@
             @click="openReleasePage"
           >
             前往发布页
+          </v-btn>
+          <v-btn
+            color="primary"
+            text
+            @click="dialog = false"
+          >
+            取消
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -88,6 +95,17 @@ export default {
           this.releaseDescriptionHtml = converter.makeHtml(resp.data.body)
         } else {
           this.releaseDescriptionHtml = '<p>加载失败</p>'
+        }
+      })
+    },
+    downloadNET() {
+      this.cleanAndShowConsoleDialog()
+      window.eel.download_net_by_tag(this.newVersion)((resp) => {
+        if (resp.code === 0) {
+          this.appendConsoleMessage('NET 下载完成')
+        } else {
+          this.appendConsoleMessage(resp.msg)
+          this.appendConsoleMessage('NET 下载失败')
         }
       })
     },
