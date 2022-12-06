@@ -57,23 +57,6 @@ def check_and_install_msvc():
     # process.wait()
 
 
-def check_update(prerelease=False):
-    from repository.my_info import get_all_release
-    from config import current_version
-    release_infos = get_all_release()
-    latest_tag_name = None
-    if prerelease:
-        latest_tag_name = release_infos[0]['tag_name']
-    else:
-        for ri in release_infos:
-            if not ri['prerelease']:
-                latest_tag_name = ri['tag_name']
-                break
-    if not latest_tag_name:
-        latest_tag_name = release_infos[0]['tag_name']
-    return current_version != latest_tag_name, latest_tag_name
-
-
 def install_firmware(firmware_version, target_firmware_path):
     send_notify('正在获取固件信息...')
     firmware_infos = get_firmware_infos()
@@ -102,30 +85,6 @@ def install_firmware(firmware_version, target_firmware_path):
     if config.setting.download.autoDeleteAfterInstall:
         os.remove(file.path)
     return firmware_version
-
-
-def download_net_by_tag(tag: str):
-    from repository.my_info import get_release_info_by_tag
-    from utils.network import get_github_download_url
-    import sys
-    release_info = get_release_info_by_tag(tag)
-    logger.info(f'start download NET release by tag: {tag}, release name: {release_info.get("name")}')
-    execute_path = Path(sys.argv[0])
-    logger.info(f'execute_path: {execute_path}')
-    target_file_name = execute_path.name if execute_path.name == 'NsEmuTools-console.exe' else 'NsEmuTools.exe'
-    logger.info(f'target_file_name: {target_file_name}')
-    for asset in release_info['assets']:
-        if target_file_name == asset['name']:
-            logger.info(f'start download {target_file_name}, version: [{tag}]')
-            send_notify(f'开始下载 {target_file_name}, 版本: [{tag}]')
-            info = download(get_github_download_url(asset['browser_download_url']), options={'allow-overwrite': 'true'})
-            filepath = info.files[0].path.absolute()
-            logger.info(f'{target_file_name} of [{tag}] downloaded to {filepath}')
-            send_notify(f'{target_file_name} 版本: [{tag}] 已下载至')
-            send_notify(f'{filepath}')
-            return
-    logger.warning(f'{target_file_name} not found in release_info')
-    send_notify(f'未能在 Release 中找到相应的文件')
 
 
 if __name__ == '__main__':

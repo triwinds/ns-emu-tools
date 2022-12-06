@@ -34,6 +34,13 @@
           <v-btn
             color="primary"
             text
+            @click="updateNET"
+          >
+            自动更新
+          </v-btn>
+          <v-btn
+            color="primary"
+            text
             @click="downloadNET"
           >
             下载最新版本
@@ -109,6 +116,10 @@ export default {
         }
       })
     },
+    async updateNET() {
+      this.cleanAndShowConsoleDialog()
+      window.eel.update_net_by_tag(this.newVersion)
+    }
   }
 }
 </script>

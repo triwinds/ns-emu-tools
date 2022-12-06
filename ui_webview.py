@@ -5,6 +5,7 @@ import gevent.monkey
 gevent.monkey.patch_ssl()
 gevent.monkey.patch_socket()
 import eel
+import webview
 
 logger = logging.getLogger(__name__)
 default_page = f'index.html'
@@ -17,6 +18,13 @@ def import_api_modules():
 
 def start_eel():
     eel.start(default_page, port=port, mode=False)
+
+
+def close_all_windows():
+    if webview.windows:
+        logger.info('Closing all windows...')
+        for win in webview.windows:
+            win.destroy()
 
 
 def main():
@@ -32,7 +40,6 @@ def main():
         port = get_available_port()
     url = f'http://localhost:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')
-    import webview
     webview.create_window('NS EMU TOOLS', url, width=1440, height=850, resizable=False)
     webview.start(func=start_eel)
 
