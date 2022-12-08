@@ -1,9 +1,8 @@
-from utils.network import get_finial_url, session
+from utils.network import request_github_api
 
 
 def get_all_ryujinx_release_infos():
-    resp = session.get(get_finial_url('https://api.github.com/repos/Ryujinx/release-channel-master/releases'))
-    return resp.json()
+    return request_github_api('https://api.github.com/repos/Ryujinx/release-channel-master/releases')
 
 
 def get_latest_ryujinx_release_info():
@@ -11,5 +10,4 @@ def get_latest_ryujinx_release_info():
 
 
 def get_ryujinx_release_info_by_version(version):
-    url = get_finial_url(f'https://api.github.com/repos/Ryujinx/release-channel-master/releases/tags/{version}')
-    return session.get(url).json()
+    return request_github_api(f'https://api.github.com/repos/Ryujinx/release-channel-master/releases/tags/{version}')

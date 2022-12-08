@@ -1,10 +1,9 @@
-from utils.network import get_finial_url, session
+from utils.network import request_github_api, session
 
 
 def get_all_release():
     with session.cache_disabled():
-        resp = session.get(get_finial_url('https://api.github.com/repos/triwinds/ns-emu-tools/releases'))
-        return resp.json()
+        return request_github_api('https://api.github.com/repos/triwinds/ns-emu-tools/releases')
 
 
 def get_latest_release(prerelease=False):
@@ -15,5 +14,4 @@ def get_latest_release(prerelease=False):
 
 
 def get_release_info_by_tag(tag: str):
-    resp = session.get(get_finial_url(f'https://api.github.com/repos/triwinds/ns-emu-tools/releases/tags/{tag}'))
-    return resp.json()
+    return request_github_api(f'https://api.github.com/repos/triwinds/ns-emu-tools/releases/tags/{tag}')

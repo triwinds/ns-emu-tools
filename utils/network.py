@@ -32,6 +32,8 @@ options_on_cdn = {
     'min-split-size': '12M',
 }
 
+github_api_fallback_flag = False
+
 
 def is_using_proxy():
     proxies = get_proxies()
@@ -122,3 +124,28 @@ def get_available_port() -> int:
         if not is_port_in_use(port):
             break
     return port
+
+
+def request_github_api(url: str):
+    global github_api_fallback_flag
+    logger.info(f'requesting github api: {url}')
+    from module.msg_notifier import send_notify
+    if config.setting.network.githubApiMode != 'cdn' and not github_api_fallback_flag:
+        try:
+            resp = session.get(url, timeout=5)
+            data = resp.json()
+            if isinstance(data, dict) and 'message' in data:
+                logger.warning(f'github api message: {data["message"]}')
+                send_notify(f'github api message: {data["message"]}')
+                send_notify(f'当前 IP 可能已达到 GitHub api 当前时段的使用上限, 尝试转用 CDN')
+                send_notify(f'如果在多次使用中看到这个提示，可以直接在设置中将 GitHub api 设置为使用 cdn，以避免不必要的重试')
+                github_api_fallback_flag = True
+            else:
+                return data
+        except Exception as e:
+            logger.warning(f'Error occur when requesting github api, msg: {str(e)}')
+            send_notify(f'直连 GitHub api 时出现异常, 尝试转用 CDN')
+            send_notify(f'如果在多次使用中看到这个提示，可以直接在设置中将 GitHub api 设置为使用 cdn，以避免不必要的重试')
+            github_api_fallback_flag = True
+    url = get_override_url(url)
+    return session.get(url).json()
