@@ -6,6 +6,7 @@ import aria2p
 from pathlib import Path
 import os
 from module.msg_notifier import send_notify
+from config import config
 from utils.network import get_available_port, get_global_options, init_download_options_with_proxy
 
 aria2: Optional[aria2p.API] = None
@@ -27,9 +28,12 @@ def init_aria2():
     logger.info(f'starting aria2 daemon at port {port}')
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
-    aria2_process = subprocess.Popen([aria2_path, '--enable-rpc', '--rpc-listen-port', str(port), '--disable-ipv6=true',
-                                      '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level', 'info'],
-                                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
+    cli = [aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),
+           '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level=info']
+    if config.setting.download.disableAria2Ipv6:
+        cli.append('--disable-ipv6=true')
+    logger.info(f'aria2 cli: {cli}')
+    aria2_process = subprocess.Popen(cli, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
     aria2 = aria2p.API(
         aria2p.Client(
             host="http://127.0.0.1",
