@@ -27,3 +27,12 @@ def update_net_by_tag(tag: str):
         return success_response(update_self_by_tag(tag))
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def load_change_log():
+    from repository.my_info import load_change_log
+    try:
+        return success_response(load_change_log())
+    except Exception as e:
+        exception_response(e)
