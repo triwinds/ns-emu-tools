@@ -11,7 +11,7 @@
 
     <v-card>
       <v-card-title class="text-h5 primary white--text">
-        变更日志
+        更新日志
       </v-card-title>
 
       <div style=" padding: 15px; overflow-y: auto; max-height: 50vh">

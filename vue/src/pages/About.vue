@@ -19,7 +19,7 @@
               <template v-slot:activator="{on, attrs}">
                 <v-btn color="info" v-bind="attrs" v-on="on" @click="loadChangeLog"
                        outlined style="margin-left: 10px">
-                  变更日志
+                  更新日志
                 </v-btn>
               </template>
               <template v-slot:content>
