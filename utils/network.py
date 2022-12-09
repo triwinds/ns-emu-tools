@@ -19,7 +19,7 @@ github_override_map = {
     'zhiliao': 'https://proxy.zyun.vip/https://github.com',
 }
 
-session = requests_cache.CachedSession(expire_after=360)
+session = requests_cache.CachedSession(cache_control=True)
 
 options_on_proxy = {
     'split': '16',
