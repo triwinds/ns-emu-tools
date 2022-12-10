@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.2.2-fix'
+current_version = '0.2.3'
 
 
 console = logging.StreamHandler()
@@ -66,6 +66,7 @@ class NetworkSetting:
 @dataclass
 class DownloadSetting:
     autoDeleteAfterInstall: Optional[bool] = True
+    disableAria2Ipv6: Optional[bool] = True
 
 
 @dataclass_json

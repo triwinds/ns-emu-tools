@@ -15,6 +15,17 @@
             <v-btn color="primary" @click="checkUpdate(true)">
               检测新版本
             </v-btn>
+            <ChangeLogDialog>
+              <template v-slot:activator="{on, attrs}">
+                <v-btn color="info" v-bind="attrs" v-on="on" @click="loadChangeLog"
+                       outlined style="margin-left: 10px">
+                  更新日志
+                </v-btn>
+              </template>
+              <template v-slot:content>
+                <div class="text--primary" v-html="changeLogHtml"></div>
+              </template>
+            </ChangeLogDialog>
           </v-card-text>
           <v-card-text class="text-h6 text--primary">
             <div class="info-block">
@@ -64,9 +75,12 @@
 
 <script>
 import {mdiGithub} from "@mdi/js";
+import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
+import * as showdown from 'showdown';
 
 export default {
   name: "AboutPage",
+  components: {ChangeLogDialog},
   data() {
     return {
       svgPath: {
@@ -77,9 +91,22 @@ export default {
         {name: 'Ryujinx', link: 'https://github.com/Ryujinx/Ryujinx', description: 'Ryujinx 模拟器'},
         {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
         {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},
-      ]
+      ],
+      changeLogHtml: '<p>加载中...</p>',
     }
   },
+  methods: {
+    loadChangeLog() {
+      window.eel.load_change_log()((resp) => {
+        if (resp.code === 0) {
+          const converter = new showdown.Converter()
+          this.changeLogHtml = converter.makeHtml(resp.data)
+        } else {
+          this.changeLogHtml = '<p>加载失败。</p>'
+        }
+      })
+    },
+  }
 }
 </script>
 

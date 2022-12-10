@@ -111,7 +111,8 @@ const state = {
                 githubDownloadSource: "self"
             },
             download: {
-                autoDeleteAfterInstall: true
+                autoDeleteAfterInstall: true,
+                disableAria2Ipv6: true,
             }
         },
     },

@@ -64,6 +64,19 @@
                   <span class="text-h6">
                     {{ latestRyujinxVersion }}
                   </span>
+                  <ChangeLogDialog>
+                    <template v-slot:activator="{on, attrs}">
+                      <span v-bind="attrs" v-on="on" @click="loadChangeLog"
+                            style="margin-left: 10px">
+                        <v-icon color="warning">
+                          {{ svgPath.mdiTimelineQuestionOutline }}
+                        </v-icon>
+                      </span>
+                    </template>
+                    <template v-slot:content>
+                      <div class="text--primary" v-html="changeLogHtml"></div>
+                    </template>
+                  </ChangeLogDialog>
                 </v-col>
               </v-row>
               <v-row>
@@ -146,13 +159,23 @@
 </template>
 
 <script>
+import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
+import * as showdown from "showdown";
+import {mdiTimelineQuestionOutline} from '@mdi/js';
+
+
 export default {
   name: "RyujinxPage",
+  components: {ChangeLogDialog},
   data: () => ({
     allRyujinxReleaseInfos: [],
     availableFirmwareInfos: [],
     targetRyujinxVersion: "",
     isRunningInstall: false,
+    changeLogHtml: '<p>加载中...</p>',
+    svgPath: {
+      mdiTimelineQuestionOutline
+    }
   }),
   mounted() {
     this.updateRyujinxReleaseInfos()
@@ -239,7 +262,17 @@ export default {
     },
     async updateRyujinxConfig() {
       await this.$store.dispatch('loadConfig')
-    }
+    },
+    loadChangeLog() {
+      window.eel.load_ryujinx_change_log()((resp) => {
+        if (resp.code === 0) {
+          const converter = new showdown.Converter()
+          this.changeLogHtml = converter.makeHtml(resp.data)
+        } else {
+          this.changeLogHtml = '<p>加载失败。</p>'
+        }
+      })
+    },
   },
   computed: {
     latestRyujinxVersion: function () {
@@ -256,7 +289,7 @@ export default {
       }
       return '未知'
     },
-    branch: function (){
+    branch: function () {
       return this.ryujinxConfig.branch
     },
   }

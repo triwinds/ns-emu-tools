@@ -57,23 +57,6 @@ def check_and_install_msvc():
     # process.wait()
 
 
-def check_update(prerelease=False):
-    from repository.my_info import get_all_release
-    from config import current_version
-    release_infos = get_all_release()
-    latest_tag_name = None
-    if prerelease:
-        latest_tag_name = release_infos[0]['tag_name']
-    else:
-        for ri in release_infos:
-            if not ri['prerelease']:
-                latest_tag_name = ri['tag_name']
-                break
-    if not latest_tag_name:
-        latest_tag_name = release_infos[0]['tag_name']
-    return current_version != latest_tag_name, latest_tag_name
-
-
 def install_firmware(firmware_version, target_firmware_path):
     send_notify('正在获取固件信息...')
     firmware_infos = get_firmware_infos()

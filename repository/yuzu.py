@@ -1,22 +1,21 @@
-from utils.network import get_finial_url, session
+from utils.network import request_github_api
 
 
 def get_all_yuzu_release_infos():
-    resp = session.get(get_finial_url('https://api.github.com/repos/pineappleEA/pineapple-src/releases'))
-
-    res = [item for item in resp.json() if item['author']['login'] == 'pineappleEA']
+    data = request_github_api('https://api.github.com/repos/pineappleEA/pineapple-src/releases')
+    res = [item for item in data if item['author']['login'] == 'pineappleEA']
     return res
 
 
 def get_all_yuzu_release_versions(branch: str):
     res = []
     if branch.lower() == 'mainline':
-        resp = session.get(get_finial_url('https://api.github.com/repos/yuzu-emu/yuzu-mainline/releases'))
-        for item in resp.json():
+        data = request_github_api('https://api.github.com/repos/yuzu-emu/yuzu-mainline/releases')
+        for item in data:
             res.append(item['tag_name'][11:])
     else:
-        resp = session.get(get_finial_url('https://api.github.com/repos/pineappleEA/pineapple-src/releases'))
-        for item in resp.json():
+        data = request_github_api('https://api.github.com/repos/pineappleEA/pineapple-src/releases')
+        for item in data:
             if item['author']['login'] == 'pineappleEA':
                 res.append(item['tag_name'][3:])
     return res
@@ -28,10 +27,10 @@ def get_latest_yuzu_release_info():
 
 def get_yuzu_release_info_by_version(version, branch='ea'):
     if branch.lower() == 'mainline':
-        url = get_finial_url(f'https://api.github.com/repos/yuzu-emu/yuzu-mainline/releases/tags/mainline-0-{version}')
+        url = f'https://api.github.com/repos/yuzu-emu/yuzu-mainline/releases/tags/mainline-0-{version}'
     else:
-        url = get_finial_url(f'https://api.github.com/repos/pineappleEA/pineapple-src/releases/tags/EA-{version}')
-    return session.get(url).json()
+        url = f'https://api.github.com/repos/pineappleEA/pineapple-src/releases/tags/EA-{version}'
+    return request_github_api(url)
 
 
 if __name__ == '__main__':

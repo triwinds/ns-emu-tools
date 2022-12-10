@@ -23,13 +23,6 @@ def get_current_version():
 
 
 @eel.expose
-def check_update():
-    from module.common import check_update
-    has_update, latest_version = check_update()
-    return success_response(has_update, latest_version)
-
-
-@eel.expose
 def update_last_open_emu_page(page):
     from config import update_last_open_emu_page
     update_last_open_emu_page(page)
@@ -68,3 +61,12 @@ def update_setting(setting: Dict[str, object]):
     from config import config, update_setting
     update_setting(setting)
     return success_response(config.to_dict())
+
+
+@eel.expose
+def get_net_release_info_by_tag(tag: str):
+    from repository.my_info import get_release_info_by_tag
+    try:
+        return success_response(get_release_info_by_tag(tag))
+    except Exception as e:
+        return exception_response(e)

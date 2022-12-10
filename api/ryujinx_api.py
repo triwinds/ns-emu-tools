@@ -94,3 +94,12 @@ def switch_ryujinx_branch():
     dump_config()
     return config.ryujinx.to_dict()
 
+
+@eel.expose
+def load_ryujinx_change_log():
+    from repository.ryujinx import load_ryujinx_change_log
+    try:
+        return success_response(load_ryujinx_change_log())
+    except Exception as e:
+        return exception_response(e)
+
