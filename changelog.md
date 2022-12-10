@@ -1,5 +1,24 @@
 # Change Log
 
+## 0.2.3
+ - 新增自动更新功能 (建议使用 webview 版本)
+ - 当直连 GitHub api 出现问题时尝试使用 CDN 进行重试
+ - `设置` 页面中新增开关 aria2 ipv6 的选项
+ - `About` 页面中新增查看 更新日志 的按钮
+ - `Ryujinx` 页面中新增查看 更新日志 的按钮
+ - 更新缓存配置, 根据 HTTP 响应中的 Cache Control 进行缓存
+
+### 关于 webview 版本
+
+由于 js/css 语法的兼容性问题, 一些浏览器上可能无法正确展示页面, 所以这里提供一个使用 webview 打包的版本。
+
+这个版本不依赖于用户环境中的浏览器, 而是使用 [Microsoft Edge WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+打开界面, 这个组件已经预置在较新版本的系统当中(通过 Windows Update 推送), 因此这些系统无需进行额外下载。如果你的系统中没有这个组件, 
+可以从 [这里](https://developer.microsoft.com/zh-cn/microsoft-edge/webview2/#download-section) 下载。
+
+此外, 由于浏览器的安全限制, 程序无法主动关闭打开的浏览器页面, 因此只有 webview 版本能在更新时自动关闭打开的窗口,
+其余版本则需要手动关闭之前打开的页面。
+
 ## 0.2.2-fix
  - 修复未能正确转义 Yuzu 配置中的 Unicode 字符的问题 (#11)
 
