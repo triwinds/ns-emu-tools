@@ -67,7 +67,7 @@ def main(port=0, mode=None, dev=False):
             mode = 'edge'
         else:
             mode = 'user default'
-    size = (1440, 850)
+    size = (1440, 900)
     logger.info(f'browser mode: {mode}')
     if mode == 'edge':
         start_edge_in_app_mode(default_page, port, size)
