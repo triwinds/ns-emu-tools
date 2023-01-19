@@ -164,6 +164,7 @@ export default {
     }
   }),
   created() {
+    this.setupWebsocketConnectivityCheck()
     this.$store.dispatch('initCurrentVersion')
     this.checkUpdate(false)
     this.initAvailableFirmwareInfos()
@@ -187,6 +188,21 @@ export default {
     switchDarkLight() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
       window.eel.update_dark_state(this.$vuetify.theme.dark)()
+    },
+    setupWebsocketConnectivityCheck() {
+      setInterval(() => {
+        try {
+          let ws = window.eel._websocket
+          if (ws.readyState === ws.CLOSED || ws.readyState === ws.CLOSING) {
+            this.cleanAndShowConsoleDialog()
+            this.appendConsoleMessage('程序后端连接出错, 请关闭当前页面并重启程序以解决这个问题。')
+          }
+        } catch (e) {
+          console.log(e)
+          this.cleanAndShowConsoleDialog()
+          this.appendConsoleMessage('程序后端连接出错, 请关闭当前页面并重启程序以解决这个问题。')
+        }
+      }, 5000)
     }
   },
   computed: {
