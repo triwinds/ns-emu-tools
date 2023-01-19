@@ -18,16 +18,9 @@
               <v-divider style="margin-bottom: 15px"></v-divider>
               <v-row>
                 <v-col>
-                  <span class="text-h6 secondary--text">当前使用的 Ryujinx 分支：</span>
-                  <v-tooltip right>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn color="error" large outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
-                             @click="switchRyujinxBranch" :disabled='isRunningInstall'>
-                        {{ displayBranch }} 版
-                      </v-btn>
-                    </template>
-                    <span>切换安装分支</span>
-                  </v-tooltip>
+                  <v-select outlined v-model="selectedBranch" :items="availableBranch"
+                            @change="switchRyujinxBranch" color="error" item-color="error"
+                            label="当前使用的 Ryujinx 分支"></v-select>
                 </v-col>
               </v-row>
               <v-row>
@@ -64,7 +57,7 @@
                   <span class="text-h6">
                     {{ latestRyujinxVersion }}
                   </span>
-                  <ChangeLogDialog>
+                  <ChangeLogDialog v-if="selectedBranch === 'ava' || selectedBranch === 'mainline'">
                     <template v-slot:activator="{on, attrs}">
                       <span v-bind="attrs" v-on="on" @click="loadChangeLog"
                             style="margin-left: 10px">
@@ -173,12 +166,27 @@ export default {
     targetRyujinxVersion: "",
     isRunningInstall: false,
     changeLogHtml: '<p>加载中...</p>',
+    availableBranch: [
+      {
+        text: '正式版 (老 UI)',
+        value: 'mainline'
+      },{
+        text: 'AVA 版 (新 UI)',
+        value: 'ava'
+      },{
+        text: 'LDN 版 (联机版本)',
+        value: 'ldn'
+      },
+    ],
+    selectedBranch: '',
     svgPath: {
       mdiTimelineQuestionOutline
     }
   }),
   mounted() {
     this.updateRyujinxReleaseInfos()
+    this.updateRyujinxConfig()
+    this.selectedBranch = this.ryujinxConfig.branch
     window.eel.update_last_open_emu_page('ryujinx')()
   },
   methods: {
@@ -198,6 +206,8 @@ export default {
       window.eel.detect_ryujinx_version()((data) => {
         if (data['code'] === 0) {
           this.updateRyujinxConfig()
+          this.updateRyujinxReleaseInfos()
+          this.appendConsoleMessage('Ryujinx 版本检测完成')
         } else {
           this.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
         }
@@ -206,7 +216,7 @@ export default {
     installRyujinx() {
       this.cleanAndShowConsoleDialog()
       this.isRunningInstall = true
-      window.eel.install_ryujinx(this.targetRyujinxVersion, this.branch)((resp) => {
+      window.eel.install_ryujinx(this.targetRyujinxVersion, this.selectedBranch)((resp) => {
         this.isRunningInstall = false
         this.appendConsoleMessage(resp['msg'])
         if (resp['code'] === 0) {
@@ -257,11 +267,14 @@ export default {
       })
     },
     async switchRyujinxBranch() {
-      await window.eel.switch_ryujinx_branch()()
+      await window.eel.switch_ryujinx_branch(this.selectedBranch)()
       await this.updateRyujinxConfig()
+      await this.updateRyujinxReleaseInfos()
+      // console.log(this.selectedBranch)
     },
     async updateRyujinxConfig() {
       await this.$store.dispatch('loadConfig')
+      this.selectedBranch = this.ryujinxConfig.branch
     },
     loadChangeLog() {
       window.eel.load_ryujinx_change_log()((resp) => {
@@ -280,17 +293,6 @@ export default {
         return this.allRyujinxReleaseInfos[0]['tag_name']
       }
       return "加载中"
-    },
-    displayBranch: function () {
-      if (this.branch === 'ava') {
-        return 'ava'
-      } else if (this.branch === 'mainline') {
-        return '正式'
-      }
-      return '未知'
-    },
-    branch: function () {
-      return this.ryujinxConfig.branch
     },
   }
 }
