@@ -23,7 +23,7 @@ jobs:
         python-version: '3.10'
     - uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 18
     - run: |
         cd vue
         npm install
