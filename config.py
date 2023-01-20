@@ -10,6 +10,7 @@ import sys
 
 
 current_version = '0.2.4'
+user_agent = f'ns-emu-tools/{current_version}'
 
 
 console = logging.StreamHandler()
@@ -159,4 +160,4 @@ def update_setting(setting: Dict[str, object]):
 
 
 __all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version', 'update_ryujinx_path',
-           'update_last_open_emu_page', 'update_setting']
+           'update_last_open_emu_page', 'update_setting', 'user_agent']
