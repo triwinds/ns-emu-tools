@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 from module.downloader import download
-from repository.ryujinx import get_ryujinx_release_info_by_version
+from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
 from utils.network import get_github_download_url
 from module.msg_notifier import send_notify
 from config import config, dump_config
@@ -16,25 +16,37 @@ logger = logging.getLogger(__name__)
 
 
 def get_ryujinx_download_url(target_version: str, branch: str):
-    release_info = get_ryujinx_release_info_by_version(target_version)
-    assets = release_info['assets']
-    for asset in assets:
-        name: str = asset['name']
-        if branch == 'mainline' and name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
-            return asset['browser_download_url']
-        elif branch == 'ava' and name.startswith('test-ava-ryujinx-') and name.endswith('-win_x64.zip'):
-            return asset['browser_download_url']
+    if branch in {'mainline', 'ava'}:
+        release_info = get_ryujinx_release_info_by_version(target_version)
+        assets = release_info['assets']
+        for asset in assets:
+            name: str = asset['name']
+            if branch == 'mainline' and name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
+                return asset['browser_download_url']
+            elif branch == 'ava' and name.startswith('test-ava-ryujinx-') and name.endswith('-win_x64.zip'):
+                return asset['browser_download_url']
+    elif branch == 'ldn':
+        release_info = get_ldn_ryujinx_release_info_by_version(target_version)
+        assets = release_info['assets']
+        ava_ldn_url, mainline_ldn_url = None, None
+        for asset in assets:
+            name: str = asset['name']
+            if name.startswith('ava-ryujinx-') and name.endswith('-win_x64.zip'):
+                ava_ldn_url = asset['browser_download_url']
+            elif name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
+                mainline_ldn_url = asset['browser_download_url']
+        return ava_ldn_url or mainline_ldn_url
 
 
 def install_ryujinx_by_version(target_version: str, branch: str):
-    if config.ryujinx.version == target_version and detect_current_branch() == branch:
+    if config.ryujinx.version == target_version and config.ryujinx.branch == branch:
         logger.info(f'Current ryujinx version is same as target version [{target_version}], skip install.')
         return f'当前就是 {branch} [{target_version}] 版本的 ryujinx , 跳过安装.'
     send_notify('正在获取 ryujinx 版本信息...')
     download_url = get_ryujinx_download_url(target_version, branch)
     if not download_url:
         send_notify(f'获取 ryujinx 下载链接失败')
-        raise RuntimeError(f'No download url found with version: {target_version}')
+        raise RuntimeError(f'No download url found with branch: {branch}, version: {target_version}')
     download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
@@ -59,12 +71,12 @@ def install_ryujinx_by_version(target_version: str, branch: str):
         config.ryujinx.version = target_version
         config.ryujinx.branch = branch
         dump_config()
-        logger.info(f'Ryujinx of [{target_version}] install successfully.')
+        logger.info(f'Ryujinx {branch} of [{target_version}] install successfully.')
     if config.setting.download.autoDeleteAfterInstall:
         os.remove(file.path)
     from module.common import check_and_install_msvc
     check_and_install_msvc()
-    return f'Ryujinx [{target_version}] 安装完成.'
+    return f'Ryujinx {branch} [{target_version}] 安装完成.'
 
 
 def install_firmware_to_ryujinx(firmware_version=None):
@@ -184,6 +196,10 @@ def detect_ryujinx_version():
         logger.exception('error occur in get_all_window_name')
     kill_all_ryujinx_instance()
     if version:
+        if 'ldn' in version:
+            idx = version.index('ldn')
+            version = version[idx+3:]
+            config.ryujinx.branch = 'ldn'
         config.ryujinx.version = version
         dump_config()
         return version
@@ -195,3 +211,4 @@ if __name__ == '__main__':
     # install_firmware_to_ryujinx('15.0.0')
     # open_ryujinx_keys_folder()
     detect_ryujinx_version()
+    # install_ryujinx_by_version('3.0.1', 'ldn')

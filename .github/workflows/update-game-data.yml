@@ -3,7 +3,7 @@ name: Update game data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: '0 0 * * 0'
 
 jobs:
   build:
@@ -25,5 +25,5 @@ jobs:
       with:
         author_name: github-actions
         author_email: 41898282+github-actions[bot]@users.noreply.github.com
-        message: 'game data auto update by git action'
+        message: 'game data auto update'
         add: '.'
