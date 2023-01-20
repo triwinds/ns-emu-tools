@@ -1,7 +1,6 @@
 import urllib.request
-from config import config
+from config import config, current_version
 import logging
-import requests
 import requests_cache
 
 logger = logging.getLogger(__name__)
@@ -20,6 +19,7 @@ github_override_map = {
 }
 
 session = requests_cache.CachedSession(cache_control=True)
+session.headers.update({'User-Agent': f'ns-emu-tools {current_version}'})
 
 options_on_proxy = {
     'split': '16',
