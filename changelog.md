@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.2.4
+ - 新增对 Ryujinx LDN 版本的支持 (#5)
+ - 当 eel websocket 断开后在界面提示重启程序 (#16)
+ - nodejs 版本更新至 18, 更新前端相关依赖的版本
+
 ## 0.2.3
  - 新增自动更新功能 (建议使用 webview 版本)
  - 当直连 GitHub api 出现问题时尝试使用 CDN 进行重试
