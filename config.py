@@ -30,11 +30,13 @@ config_path = Path('config.json')
 config = None
 
 
-# def log_exception(exctype, value, traceback):
-#     logger.error(f'error: {exctype, value, traceback}')
-#
-#
-# sys.excepthook = log_exception
+def log_versions():
+    import platform
+    logger.info(f'system version: {platform.platform()}')
+    logger.info(f'current version: {current_version}')
+
+
+log_versions()
 
 
 @dataclass_json
