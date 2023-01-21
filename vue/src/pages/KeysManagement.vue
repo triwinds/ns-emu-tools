@@ -1,9 +1,6 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      <v-col md="10" lg="8">
-        <v-card>
+  <SimplePage>
+    <v-card>
           <v-container id="main-container" style="margin-top: 15px;">
             <v-row>
               <v-col>
@@ -59,15 +56,14 @@
             </div>
           </v-container>
         </v-card>
-      </v-col>
-      <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-    </v-row>
-  </v-container>
+  </SimplePage>
 </template>
 
 <script>
+import SimplePage from "@/components/SimplePage";
 export default {
   name: "KeysManagement",
+  components: {SimplePage},
   methods: {
     openYuzuKeyFolder() {
       window.eel.open_yuzu_keys_folder()(() => {

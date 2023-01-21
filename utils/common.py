@@ -1,7 +1,7 @@
 import re
 
 
-path_unicode_re = re.compile(r'\\x([\da-z]{4})')
+path_unicode_re = re.compile(r'\\x([\da-f]{4})')
 
 
 def callback(hwnd, strings):
@@ -20,7 +20,8 @@ def get_all_window_name():
     return win_list
 
 
-def escape_yuzu_path(raw_path_in_config: str):
-    raw_path_in_config = raw_path_in_config.replace("'", "\'")
+def decode_yuzu_path(raw_path_in_config: str):
+    # raw_path_in_config = raw_path_in_config.replace("'", "\'")
     raw_path_in_config = path_unicode_re.sub(r'\\u\1', raw_path_in_config)
-    return eval(f"'{raw_path_in_config}'")
+    # return eval(f"'{raw_path_in_config}'")
+    return raw_path_in_config.encode().decode("unicode-escape")

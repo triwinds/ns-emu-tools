@@ -9,7 +9,8 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.2.4'
+current_version = '0.2.5'
+user_agent = f'ns-emu-tools/{current_version}'
 
 
 console = logging.StreamHandler()
@@ -29,11 +30,13 @@ config_path = Path('config.json')
 config = None
 
 
-# def log_exception(exctype, value, traceback):
-#     logger.error(f'error: {exctype, value, traceback}')
-#
-#
-# sys.excepthook = log_exception
+def log_versions():
+    import platform
+    logger.info(f'system version: {platform.platform()}')
+    logger.info(f'current version: {current_version}')
+
+
+log_versions()
 
 
 @dataclass_json
@@ -67,6 +70,7 @@ class NetworkSetting:
 class DownloadSetting:
     autoDeleteAfterInstall: Optional[bool] = True
     disableAria2Ipv6: Optional[bool] = True
+    removeOldAria2LogFile: Optional[bool] = True
 
 
 @dataclass_json
@@ -159,4 +163,4 @@ def update_setting(setting: Dict[str, object]):
 
 
 __all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version', 'update_ryujinx_path',
-           'update_last_open_emu_page', 'update_setting']
+           'update_last_open_emu_page', 'update_setting', 'user_agent']

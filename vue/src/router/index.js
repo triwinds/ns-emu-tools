@@ -6,6 +6,7 @@ import KeysManagement from "@/pages/KeysManagement";
 import Settings from "@/pages/Settings";
 import YuzuCheatsManagement from "@/pages/YuzuCheatsManagement";
 import FAQ from "@/pages/FAQ";
+import OtherLinks from "@/pages/OtherLinks";
 
 export default new VueRouter({
     routes: [
@@ -30,6 +31,9 @@ export default new VueRouter({
         },{
             path: '/faq',
             component: FAQ
+        },{
+            path: '/otherLinks',
+            component: OtherLinks
         },
     ]
 })

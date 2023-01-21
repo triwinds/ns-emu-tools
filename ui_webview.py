@@ -6,6 +6,8 @@ gevent.monkey.patch_ssl()
 gevent.monkey.patch_socket()
 import eel
 import webview
+from config import config
+from utils.webview2 import check_runtime_components
 
 logger = logging.getLogger(__name__)
 default_page = f'index.html'
@@ -28,6 +30,8 @@ def close_all_windows():
 
 
 def main():
+    if check_runtime_components():
+        return
     global port
     import_api_modules()
     logger.info('eel init starting...')

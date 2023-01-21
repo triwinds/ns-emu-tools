@@ -1,10 +1,6 @@
 <template>
-  <div>
-    <v-container>
-      <v-row>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-        <v-col md="10" lg="8">
-          <v-card class="mx-auto">
+  <SimplePage>
+    <v-card class="mx-auto" style="margin-bottom: 10px">
             <v-container>
               <v-row>
                 <v-col>
@@ -88,13 +84,7 @@
               </v-row>
             </v-container>
           </v-card>
-        </v-col>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      </v-row>
-      <v-row>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-        <v-col md="10" lg="8">
-          <v-card class="mx-auto">
+    <v-card class="mx-auto">
             <v-container>
               <v-row>
                 <v-col>
@@ -138,16 +128,14 @@
               </v-row>
             </v-container>
           </v-card>
-        </v-col>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      </v-row>
-    </v-container>
-  </div>
+  </SimplePage>
 </template>
 
 <script>
+import SimplePage from "@/components/SimplePage";
 export default {
   name: "YuzuPage",
+  components: {SimplePage},
   data: () => ({
     allYuzuReleaseVersions: [],
     targetYuzuVersion: "",

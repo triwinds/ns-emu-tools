@@ -26,6 +26,9 @@ def init_aria2():
     port = get_available_port()
     send_notify(f'starting aria2 daemon at port {port}')
     logger.info(f'starting aria2 daemon at port {port}')
+    if config.setting.download.removeOldAria2LogFile and os.path.exists('aria2.log'):
+        logger.info('removing old aria2 logs.')
+        os.remove('aria2.log')
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     cli = [aria2_path, '--enable-rpc', '--rpc-listen-port', str(port),

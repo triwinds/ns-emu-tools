@@ -1,5 +1,5 @@
 import urllib.request
-from config import config, current_version
+from config import config, user_agent
 import logging
 import requests_cache
 
@@ -19,7 +19,7 @@ github_override_map = {
 }
 
 session = requests_cache.CachedSession(cache_control=True)
-session.headers.update({'User-Agent': f'ns-emu-tools {current_version}'})
+session.headers.update({'User-Agent': user_agent})
 
 options_on_proxy = {
     'split': '16',
@@ -51,7 +51,9 @@ def get_proxy_option():
 
 
 def get_global_options():
-    return {}
+    return {
+        'user-agent': user_agent
+    }
 
 
 def init_download_options_with_proxy():

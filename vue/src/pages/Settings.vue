@@ -1,9 +1,6 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      <v-col md="10" lg="8">
-        <v-card>
+  <SimplePage>
+    <v-card>
           <v-card-title class="text-h4 primary--text">
             设置
           </v-card-title>
@@ -39,19 +36,19 @@
             </v-row>
             <v-switch v-model="setting.download.autoDeleteAfterInstall" label="安装完成后自动删除下载的安装包"></v-switch>
             <v-switch v-model="setting.download.disableAria2Ipv6" label="aria2 禁用 IPV6 (重启程序后生效)"></v-switch>
+            <v-switch v-model="setting.download.removeOldAria2LogFile" label="启动 aria2 前删除旧的日志"></v-switch>
           </v-container>
         </v-card>
-      </v-col>
-      <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-    </v-row>
-  </v-container>
+  </SimplePage>
 </template>
 
 <script>
 import store from "@/store";
+import SimplePage from "@/components/SimplePage";
 
 export default {
   name: "SettingsPage",
+  components: {SimplePage},
   data() {
     return {
       setting: store.state.config.setting,
