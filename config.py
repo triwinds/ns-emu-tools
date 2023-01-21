@@ -70,6 +70,7 @@ class NetworkSetting:
 class DownloadSetting:
     autoDeleteAfterInstall: Optional[bool] = True
     disableAria2Ipv6: Optional[bool] = True
+    removeOldAria2LogFile: Optional[bool] = True
 
 
 @dataclass_json
