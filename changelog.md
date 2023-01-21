@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.2.5
+ - webview 版本增加运行前环境检测，并自动下载缺失的组件
+ - 替换不安全的 Unicode decode 方式
+ - 新增配置项: 在启动 aria2 前自动删除旧的日志
+ - 更新 UA 标识
+ - 添加 `其它资源` 页面
+
+ps. 现在的 webview 版本应该可以在没安装过 Microsoft Edge WebView2 的系统中运行了. 
+如果您之前遇到过 webview 版本打不开的问题, 可以试试这个版本, 还有问题的话可以在 issue 中反馈.
+
 ## 0.2.4
  - 新增对 Ryujinx LDN 版本的支持 (#5)
  - 当 eel websocket 断开后在界面提示重启程序 (#16)
