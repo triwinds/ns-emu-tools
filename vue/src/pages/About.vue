@@ -1,9 +1,6 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      <v-col md="10" lg="8" xl="7">
-        <v-card>
+  <SimplePage>
+    <v-card>
           <v-card-title class="text-h4 primary--text">Ns Emu Tools</v-card-title>
           <v-divider></v-divider>
           <v-spacer></v-spacer>
@@ -67,20 +64,18 @@
 
           </v-card-text>
         </v-card>
-      </v-col>
-      <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-    </v-row>
-  </v-container>
+  </SimplePage>
 </template>
 
 <script>
 import {mdiGithub} from "@mdi/js";
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import * as showdown from 'showdown';
+import SimplePage from "@/components/SimplePage";
 
 export default {
   name: "AboutPage",
-  components: {ChangeLogDialog},
+  components: {SimplePage, ChangeLogDialog},
   data() {
     return {
       svgPath: {

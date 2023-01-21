@@ -1,10 +1,6 @@
 <template>
-  <div>
-    <v-container>
-      <v-row>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-        <v-col md="10" lg="8">
-          <v-card class="mx-auto">
+  <SimplePage>
+    <v-card class="mx-auto" style="margin-bottom: 10px">
             <v-container>
               <v-row>
                 <v-col>
@@ -94,13 +90,7 @@
               </v-row>
             </v-container>
           </v-card>
-        </v-col>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      </v-row>
-      <v-row>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-        <v-col md="10" lg="8">
-          <v-card class="mx-auto">
+    <v-card class="mx-auto">
             <v-container>
               <v-row>
                 <v-col>
@@ -144,22 +134,37 @@
               </v-row>
             </v-container>
           </v-card>
-        </v-col>
-        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>
-      </v-row>
-    </v-container>
-  </div>
+  </SimplePage>
+<!--  <div>-->
+<!--    <v-container>-->
+<!--      <v-row>-->
+<!--        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>-->
+<!--        <v-col md="10" lg="8">-->
+
+<!--        </v-col>-->
+<!--        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>-->
+<!--      </v-row>-->
+<!--      <v-row>-->
+<!--        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>-->
+<!--        <v-col md="10" lg="8">-->
+
+<!--        </v-col>-->
+<!--        <v-col v-show="$vuetify.breakpoint.mdAndUp"></v-col>-->
+<!--      </v-row>-->
+<!--    </v-container>-->
+<!--  </div>-->
 </template>
 
 <script>
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import * as showdown from "showdown";
 import {mdiTimelineQuestionOutline} from '@mdi/js';
+import SimplePage from "@/components/SimplePage";
 
 
 export default {
   name: "RyujinxPage",
-  components: {ChangeLogDialog},
+  components: {SimplePage, ChangeLogDialog},
   data: () => ({
     allRyujinxReleaseInfos: [],
     availableFirmwareInfos: [],
