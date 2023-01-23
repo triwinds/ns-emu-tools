@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from pathlib import Path
 from dataclasses_json import dataclass_json, Undefined
 import logging
@@ -80,12 +80,19 @@ class UiSetting:
     dark: Optional[bool] = True
 
 
+@dataclass_json
+@dataclass
+class CloudflareSpeedTestSetting:
+    override_hostnames: Optional[str] = 'nsarchive.e6ex.com,proxy.zyun.vip'
+
+
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
     ui: UiSetting = UiSetting()
     network: NetworkSetting = NetworkSetting()
     download: DownloadSetting = DownloadSetting()
+    cfst: CloudflareSpeedTestSetting = CloudflareSpeedTestSetting()
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)

@@ -73,6 +73,14 @@
               <v-list-item-title class="text--primary">Yuzu 金手指管理</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item link to="/cloudflareST" style="padding-left: 30px">
+            <v-list-item-icon>
+              <v-icon color="error">{{ svgPath.speedmeter }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content>
+              <v-list-item-title class="text--primary">Cloudflare 节点选优</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
         </v-list-group>
 
         <v-list-item link to="/settings">
@@ -153,8 +161,9 @@ import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
 import {
   mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog, mdiTestTube,
-  mdiMemory, mdiCommentQuestionOutline, mdiLinkVariant
+  mdiMemory, mdiCommentQuestionOutline, mdiLinkVariant, mdiSpeedometer
 } from '@mdi/js'
+import Vue from "vue";
 
 export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
@@ -170,11 +179,12 @@ export default {
       testTube: mdiTestTube,
       memory: mdiMemory,
       help: mdiCommentQuestionOutline,
-      link: mdiLinkVariant
+      link: mdiLinkVariant,
+      speedmeter: mdiSpeedometer
     }
   }),
   created() {
-    this.setupWebsocketConnectivityCheck()
+    if (!Vue.config.devtools) this.setupWebsocketConnectivityCheck()
     this.$store.dispatch('initCurrentVersion')
     this.checkUpdate(false)
     this.initAvailableFirmwareInfos()

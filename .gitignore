@@ -217,3 +217,4 @@ download/
 output/
 web/
 http_cache.sqlite
+**/CloudflareSpeedTest/
