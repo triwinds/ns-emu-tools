@@ -8,7 +8,8 @@ import logging
 
 import py7zr
 
-from config import config, dump_config
+from config import config, dump_config, YuzuConfig
+from storage import storage, add_yuzu_history
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
@@ -243,6 +244,24 @@ def get_yuzu_load_path():
     except Exception as e:
         logger.warning(f'fail in parse yuzu qt-config, error msg: {str(e)}')
     return load_path
+
+
+def update_yuzu_path(new_yuzu_path: str):
+    new_path = Path(new_yuzu_path)
+    if not new_path.exists():
+        logger.info(f'create directory: {new_path}')
+        new_path.mkdir(parents=True, exist_ok=True)
+    if new_path.absolute() == Path(config.yuzu.yuzu_path).absolute():
+        logger.info(f'No different with old yuzu path, skip update.')
+        return
+    add_yuzu_history(config.yuzu)
+    logger.info(f'setting yuzu path to {new_path}')
+    cfg = storage.yuzu_history.get(str(new_path.absolute()), YuzuConfig())
+    cfg.yuzu_path = str(new_path.absolute())
+    config.yuzu = cfg
+    if cfg.yuzu_path not in storage.yuzu_history:
+        add_yuzu_history(cfg)
+    dump_config()
 
 
 if __name__ == '__main__':

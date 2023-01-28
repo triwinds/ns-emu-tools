@@ -116,36 +116,6 @@ def dump_config():
         f.write(config.to_json(ensure_ascii=False, indent=2))
 
 
-def update_yuzu_path(new_yuzu_path: str):
-    new_path = Path(new_yuzu_path)
-    if not new_path.exists():
-        logger.info(f'create directory: {new_path}')
-        new_path.mkdir(parents=True, exist_ok=True)
-    if new_path.absolute() == Path(config.yuzu.yuzu_path).absolute():
-        logger.info(f'No different with old yuzu path, skip update.')
-        return
-    logger.info(f'setting yuzu path to {new_path}')
-    cfg = YuzuConfig()
-    cfg.yuzu_path = str(new_path.absolute())
-    config.yuzu = cfg
-    dump_config()
-
-
-def update_ryujinx_path(new_ryujinx_path: str):
-    new_path = Path(new_ryujinx_path)
-    if not new_path.exists():
-        logger.info(f'create directory: {new_path}')
-        new_path.mkdir(parents=True, exist_ok=True)
-    if new_path.absolute() == Path(config.ryujinx.path).absolute():
-        logger.info(f'No different with old ryujinx path, skip update.')
-        return
-    logger.info(f'setting ryujinx path to {new_path}')
-    cfg = RyujinxConfig()
-    cfg.path = str(new_path.absolute())
-    config.ryujinx = cfg
-    dump_config()
-
-
 def update_last_open_emu_page(page: str):
     if page == 'ryujinx':
         config.setting.ui.lastOpenEmuPage = 'ryujinx'
@@ -169,5 +139,5 @@ def update_setting(setting: Dict[str, object]):
     dump_config()
 
 
-__all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version', 'update_ryujinx_path',
+__all__ = ['config', 'dump_config', 'YuzuConfig', 'current_version', 'RyujinxConfig', 'update_dark_state',
            'update_last_open_emu_page', 'update_setting', 'user_agent']

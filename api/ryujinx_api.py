@@ -26,11 +26,18 @@ def ask_and_update_ryujinx_path():
     folder = ask_folder()
     logger.info(f'select folder: {folder}')
     if folder:
-        from config import update_ryujinx_path
+        from module.ryujinx import update_ryujinx_path
         update_ryujinx_path(folder)
         return success_response(msg=f'修改 ryujinx 目录至 {folder}')
     else:
         return error_response(100, '修改已取消')
+
+
+@eel.expose
+def update_ryujinx_path(folder: str):
+    from module.ryujinx import update_ryujinx_path
+    update_ryujinx_path(folder)
+    return success_response(msg=f'修改 ryujinx 目录至 {folder}')
 
 
 @eel.expose

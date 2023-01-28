@@ -70,3 +70,26 @@ def get_net_release_info_by_tag(tag: str):
         return success_response(get_release_info_by_tag(tag))
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def load_history_path(emu_type: str):
+    from storage import storage
+    from config import config
+    emu_type = emu_type.lower()
+    if emu_type == 'yuzu':
+        return success_response(list(_merge_to_set(storage.yuzu_history.keys(), config.yuzu.yuzu_path)))
+    else:
+        return success_response(list(_merge_to_set(storage.ryujinx_history.keys(), config.ryujinx.path)))
+
+
+def _merge_to_set(*cols):
+    from collections.abc import Iterable
+    s = set()
+    for c in cols:
+        if isinstance(c, Iterable) and not isinstance(c, str):
+            for i in c:
+                s.add(i)
+        else:
+            s.add(c)
+    return s

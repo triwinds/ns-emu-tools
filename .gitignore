@@ -218,3 +218,4 @@ output/
 web/
 http_cache.sqlite
 **/CloudflareSpeedTest/
+storage.json
