@@ -13,6 +13,7 @@ from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
 from utils.network import get_github_download_url
+from utils.common import decode_yuzu_path
 
 
 logger = logging.getLogger(__name__)
@@ -223,7 +224,6 @@ def get_yuzu_nand_path():
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
             path_str = data_storage.get('nand_directory')
-            from utils.common import decode_yuzu_path
             nand_path = Path(decode_yuzu_path(path_str))
             logger.info(f'use nand path from yuzu config: {nand_path}')
     except Exception as e:
@@ -252,7 +252,7 @@ if __name__ == '__main__':
     # print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
     # open_yuzu_keys_folder()
-    # print(get_yuzu_nand_path())
-    from utils.common import decode_yuzu_path
-    test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
-    print(decode_yuzu_path(test_str))
+    print(get_yuzu_load_path())
+    # from utils.common import decode_yuzu_path
+    # test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
+    # print(decode_yuzu_path(test_str))
