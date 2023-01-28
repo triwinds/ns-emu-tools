@@ -36,13 +36,15 @@ if not storage:
 
 
 def add_yuzu_history(yuzu_config: YuzuConfig, dump=True):
-    storage.yuzu_history[yuzu_config.yuzu_path] = yuzu_config
+    yuzu_path = Path(yuzu_config.yuzu_path)
+    storage.yuzu_history[str(yuzu_path.absolute())] = yuzu_config
     if dump:
         dump_storage()
 
 
 def add_ryujinx_history(ryujinx_config: RyujinxConfig, dump=True):
-    storage.ryujinx_history[ryujinx_config.path] = ryujinx_config
+    ryujinx_path = Path(ryujinx_config.path)
+    storage.ryujinx_history[str(ryujinx_path.absolute())] = ryujinx_config
     if dump:
         dump_storage()
 
