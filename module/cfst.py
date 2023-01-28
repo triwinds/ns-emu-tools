@@ -91,7 +91,7 @@ def install_ip_to_hosts(ip: str, host_names: List[str]):
         logger.info(f'updated hosts: {hosts}')
         send_notify('hosts 文件更新完成, 请重启程序使修改生效.')
     except Exception as e:
-        logger.error(f'fail in update hosts, exception: {e}')
+        logger.error(f'fail in update hosts, exception: {str(e)}')
         send_notify('hosts 文件更新失败, 请使用管理员权限重新启动程序.')
 
 
@@ -122,7 +122,7 @@ def remove_cloudflare_hosts():
         logger.info(f'updated hosts: {hosts}')
         send_notify('hosts 文件更新完成, 请重启程序使修改生效.')
     except Exception as e:
-        logger.error(f'fail in update hosts, exception: {e}')
+        logger.error(f'fail in update hosts, exception: {str(e)}')
         send_notify('hosts 文件更新失败, 请使用管理员权限重新启动程序.')
 
 
