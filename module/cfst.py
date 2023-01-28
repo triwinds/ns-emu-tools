@@ -1,12 +1,12 @@
-from typing import List
-from config import config
-from module.downloader import download
-from utils.network import get_github_download_url
-from module.msg_notifier import send_notify
-from pathlib import Path
 import logging
 import subprocess
+from pathlib import Path
+from typing import List
 
+from config import config
+from module.downloader import download
+from module.msg_notifier import send_notify
+from utils.network import get_github_download_url
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,8 @@ def install_ip_to_hosts(ip: str, host_names: List[str]):
 
 
 def optimize_cloudflare_hosts():
+    if not check_is_admin():
+        raise RuntimeError('更新 hosts 需要管理员权限，请使用管理员权限重新启动程序.')
     exe_path = Path('CloudflareSpeedTest/CloudflareST.exe')
     if not exe_path.exists():
         download_cfst()
@@ -109,6 +111,8 @@ def optimize_cloudflare_hosts():
 
 
 def remove_cloudflare_hosts():
+    if not check_is_admin():
+        raise RuntimeError('更新 hosts 需要管理员权限，请使用管理员权限重新启动程序.')
     try:
         logger.info('removing ip from hosts...')
         send_notify('正在删除 hosts 文件中的相关配置...')
@@ -126,7 +130,17 @@ def remove_cloudflare_hosts():
         send_notify('hosts 文件更新失败, 请使用管理员权限重新启动程序.')
 
 
+def check_is_admin():
+    import ctypes
+    import os
+    try:
+        return os.getuid() == 0
+    except AttributeError:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+
+
 if __name__ == '__main__':
     # optimize_cloudflare_hosts()
+    # print(check_is_admin())
     remove_cloudflare_hosts()
     install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
