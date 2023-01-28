@@ -9,8 +9,16 @@
       <v-card-text class="text--primary body-1">
         <div ref="text-box" id="text-box" v-html="mdHtml"></div>
       </v-card-text>
-      <v-btn block outlined x-large color="success" @click="optimizeCloudflareHosts()">测速并应用至 hosts</v-btn>
-      <v-btn block outlined x-large color="error" @click="removeCloudflareHosts()">移除添加的配置</v-btn>
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-btn block outlined x-large color="success" @click="optimizeCloudflareHosts()">测速并应用至 hosts</v-btn>
+          </v-col>
+          <v-col>
+            <v-btn block outlined x-large color="error" @click="removeCloudflareHosts()">移除添加的配置</v-btn>
+          </v-col>
+        </v-row>
+      </v-container>
     </v-card>
   </SimplePage>
 </template>
