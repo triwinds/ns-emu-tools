@@ -42,7 +42,7 @@ log_versions()
 @dataclass_json
 @dataclass
 class YuzuConfig:
-    yuzu_path: Optional[str] = 'D:/Yuzu'
+    yuzu_path: Optional[str] = 'D:\\Yuzu'
     yuzu_version: Optional[str] = None
     yuzu_firmware: Optional[str] = None
     branch: Optional[str] = 'ea'
@@ -51,7 +51,7 @@ class YuzuConfig:
 @dataclass_json
 @dataclass
 class RyujinxConfig:
-    path: Optional[str] = 'D:/Ryujinx'
+    path: Optional[str] = 'D:\\Ryujinx'
     version: Optional[str] = None
     firmware: Optional[str] = None
     branch: Optional[str] = 'ava'
@@ -106,6 +106,8 @@ class Config:
 if os.path.exists(config_path):
     with open(config_path, 'r', encoding='utf-8') as f:
         config = Config.from_dict(json.load(f))
+        config.yuzu.yuzu_path = str(Path(config.yuzu.yuzu_path).absolute())
+        config.ryujinx.path = str(Path(config.ryujinx.path).absolute())
 if not config:
     config = Config()
 
