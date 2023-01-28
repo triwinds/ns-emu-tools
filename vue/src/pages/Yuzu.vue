@@ -1,138 +1,140 @@
 <template>
   <SimplePage>
     <v-card class="mx-auto" style="margin-bottom: 10px">
-            <v-container>
-              <v-row>
-                <v-col>
-                  <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
-                         style="margin-right: 15px"></v-img>
-                  <p class="text-h4 primary--text float-left">
-                    Yuzu 基础信息
-                  </p>
-                </v-col>
-              </v-row>
-              <v-divider style="margin-bottom: 15px"></v-divider>
-              <v-row>
-                <v-col>
-                  <span class="text-h6 secondary--text">当前使用的 Yuzu 分支：</span>
-                  <v-tooltip right>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn color="error" large outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
-                             @click="switchYuzuBranch" :disabled='isRunningInstall'>
-                        {{ displayBranch }} 版
-                      </v-btn>
-                    </template>
-                    <span>切换安装分支</span>
-                  </v-tooltip>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col cols="7">
-                  <v-text-field label="Yuzu 路径" readonly v-model="yuzuConfig.yuzu_path"
-                                style="cursor: default"></v-text-field>
-                </v-col>
-                <v-col cols="5">
-                  <v-btn large color="secondary" outlined style="margin-right: 5px" min-width="120px"
-                         :disabled='isRunningInstall' @click="modifyYuzuPath">修改路径
-                  </v-btn>
-                  <v-btn large color="success" outlined min-width="120px" :disabled='isRunningInstall'
-                         @click="startYuzu">启动 Yuzu
-                  </v-btn>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
+                   style="margin-right: 15px"></v-img>
+            <p class="text-h4 primary--text float-left">
+              Yuzu 基础信息
+            </p>
+          </v-col>
+        </v-row>
+        <v-divider style="margin-bottom: 15px"></v-divider>
+        <v-row>
+          <v-col>
+            <span class="text-h6 secondary--text">当前使用的 Yuzu 分支：</span>
+            <v-tooltip right>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn color="error" large outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
+                       @click="switchYuzuBranch" :disabled='isRunningInstall'>
+                  {{ displayBranch }} 版
+                </v-btn>
+              </template>
+              <span>切换安装分支</span>
+            </v-tooltip>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="7">
+            <v-autocomplete label="Yuzu 路径" v-model="selectedYuzuPath" :items="historyPathList"
+                            @change="updateYuzuPath"
+                            style="cursor: default"></v-autocomplete>
+          </v-col>
+          <v-col cols="5">
+            <v-btn large color="secondary" outlined style="margin-right: 5px" min-width="120px"
+                   :disabled='isRunningInstall' @click="modifyYuzuPath">修改路径
+            </v-btn>
+            <v-btn large color="success" outlined min-width="120px" :disabled='isRunningInstall'
+                   @click="startYuzu">启动 Yuzu
+            </v-btn>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
                   <span class="text-h6 secondary--text">
                     当前 Yuzu 版本：
                   </span>
-                  <v-tooltip top>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
-                             @click="detectYuzuVersion" :disabled='isRunningInstall'>
-                        {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version : '未知' }}
-                      </v-btn>
-                    </template>
-                    <span>点击重新检测 Yuzu 版本</span>
-                  </v-tooltip>
-                  <span class="text-h6 secondary--text">
+            <v-tooltip top>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
+                       @click="detectYuzuVersion" :disabled='isRunningInstall'>
+                  {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version : '未知' }}
+                </v-btn>
+              </template>
+              <span>点击重新检测 Yuzu 版本</span>
+            </v-tooltip>
+            <span class="text-h6 secondary--text">
                     最新 Yuzu 版本：
                   </span>
-                  <span class="text-h6">
+            <span class="text-h6">
                     {{ latestYuzuVersion }}
                   </span>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <span class="text-h6 secondary--text">当前固件版本：</span>
-                  <v-tooltip top>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
-                             @click="detectFirmwareVersion" :disabled='isRunningInstall'>
-                        {{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : '未知' }}
-                      </v-btn>
-                    </template>
-                    <span>点击重新检测固件版本, 需安装密钥后使用</span>
-                  </v-tooltip>
-                  <span class="text-h6 secondary--text">
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
+            <span class="text-h6 secondary--text">当前固件版本：</span>
+            <v-tooltip top>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
+                       @click="detectFirmwareVersion" :disabled='isRunningInstall'>
+                  {{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : '未知' }}
+                </v-btn>
+              </template>
+              <span>点击重新检测固件版本, 需安装密钥后使用</span>
+            </v-tooltip>
+            <span class="text-h6 secondary--text">
                     最新固件版本：
                   </span>
-                  <span class="text-h6">
+            <span class="text-h6">
                     {{ latestFirmwareVersion }}
                   </span>
-                </v-col>
-              </v-row>
-            </v-container>
-          </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-card>
     <v-card class="mx-auto">
-            <v-container>
-              <v-row>
-                <v-col>
-                  <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
-                         style="margin-right: 15px"></v-img>
-                  <p class="text-h4 primary--text float-left">
-                    Yuzu 组件管理
-                  </p>
-                </v-col>
-              </v-row>
-              <v-divider style="margin-bottom: 15px"></v-divider>
-              <v-row>
-                <v-col cols="7">
-                  <v-text-field label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
-                         @click="installYuzu">
-                    安装 Yuzu
-                  </v-btn>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col cols="7">
-                  <v-autocomplete v-model="targetFirmwareVersion" label="需要安装的固件版本"
-                                  :items="availableFirmwareVersions"></v-autocomplete>
-                </v-col>
-                <v-col>
-                  <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
-                         @click="installFirmware">
-                    安装固件
-                  </v-btn>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
+                   style="margin-right: 15px"></v-img>
+            <p class="text-h4 primary--text float-left">
+              Yuzu 组件管理
+            </p>
+          </v-col>
+        </v-row>
+        <v-divider style="margin-bottom: 15px"></v-divider>
+        <v-row>
+          <v-col cols="7">
+            <v-text-field label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"></v-text-field>
+          </v-col>
+          <v-col>
+            <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
+                   @click="installYuzu">
+              安装 Yuzu
+            </v-btn>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="7">
+            <v-autocomplete v-model="targetFirmwareVersion" label="需要安装的固件版本"
+                            :items="availableFirmwareVersions"></v-autocomplete>
+          </v-col>
+          <v-col>
+            <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
+                   @click="installFirmware">
+              安装固件
+            </v-btn>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
                   <span>安装/更新固件后, 请一并安装相应的 keys:
                     <router-link to="/keys" class="info--text">密钥管理</router-link>
                   </span>
-                </v-col>
-              </v-row>
-            </v-container>
-          </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-card>
   </SimplePage>
 </template>
 
 <script>
 import SimplePage from "@/components/SimplePage";
+
 export default {
   name: "YuzuPage",
   components: {SimplePage},
@@ -140,16 +142,39 @@ export default {
     allYuzuReleaseVersions: [],
     targetYuzuVersion: "",
     isRunningInstall: false,
+    historyPathList: [],
+    selectedYuzuPath: '',
   }),
   created() {
     this.updateYuzuReleaseVersions()
+    this.loadHistoryPathList()
     window.eel.update_last_open_emu_page('yuzu')()
+    this.selectedYuzuPath = this.yuzuConfig.yuzu_path
   },
   methods: {
     async updateYuzuConfig() {
       await this.$store.dispatch('loadConfig')
     },
+    async updateYuzuPath() {
+      await window.eel.update_yuzu_path(this.selectedYuzuPath)()
+      let oldBranch = this.yuzuConfig.branch
+      await this.updateYuzuConfig()
+      await this.loadHistoryPathList()
+      this.selectedYuzuPath = this.yuzuConfig.yuzu_path
+
+      if (oldBranch !== this.yuzuConfig.branch) {
+        this.updateYuzuReleaseVersions()
+      }
+    },
+    async loadHistoryPathList() {
+      let data = await window.eel.load_history_path('yuzu')()
+      if (data.code === 0) {
+        this.historyPathList = data.data
+      }
+    },
     updateYuzuReleaseVersions() {
+      this.allYuzuReleaseVersions = []
+      this.targetYuzuVersion = ""
       window.eel.get_all_yuzu_release_versions()((data) => {
         if (data['code'] === 0) {
           let infos = data['data']
@@ -208,19 +233,25 @@ export default {
         this.updateYuzuConfig()
       })
     },
-    modifyYuzuPath() {
+    async modifyYuzuPath() {
       this.cleanAndShowConsoleDialog()
       this.appendConsoleMessage('=============================================')
       this.appendConsoleMessage('安装/更新模拟器时会删除目录下除模拟器用户数据外的其他文件')
       this.appendConsoleMessage('请确保您选择的目录下没有除模拟器外的其他文件')
       this.appendConsoleMessage('建议新建目录单独存放')
       this.appendConsoleMessage('=============================================')
-      window.eel.ask_and_update_yuzu_path()((data) => {
-        if (data['code'] === 0) {
-          this.updateYuzuConfig()
+      let data = await window.eel.ask_and_update_yuzu_path()()
+      if (data['code'] === 0) {
+        let oldBranch = this.yuzuConfig.branch
+        await this.updateYuzuConfig()
+        if (oldBranch !== this.yuzuConfig.branch) {
+          this.updateYuzuReleaseVersions()
         }
-        this.appendConsoleMessage(data['msg'])
-      })
+        await this.loadHistoryPathList()
+        this.selectedYuzuPath = this.yuzuConfig.yuzu_path
+      }
+      this.appendConsoleMessage(data['msg'])
+      this.loadHistoryPathList()
     },
     startYuzu() {
       window.eel.start_yuzu()((data) => {

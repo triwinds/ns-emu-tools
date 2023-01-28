@@ -25,11 +25,18 @@ def ask_and_update_yuzu_path():
     folder = ask_folder()
     logger.info(f'select folder: {folder}')
     if folder:
-        from config import update_yuzu_path
+        from module.yuzu import update_yuzu_path
         update_yuzu_path(folder)
         return success_response(msg=f'修改 yuzu 目录至 {folder}')
     else:
         return error_response(100, '修改已取消')
+
+
+@eel.expose
+def update_yuzu_path(folder: str):
+    from module.yuzu import update_yuzu_path
+    update_yuzu_path(folder)
+    return success_response(msg=f'修改 yuzu 目录至 {folder}')
 
 
 @eel.expose

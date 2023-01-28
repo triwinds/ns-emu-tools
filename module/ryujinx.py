@@ -7,7 +7,8 @@ from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
 from utils.network import get_github_download_url
 from module.msg_notifier import send_notify
-from config import config, dump_config
+from config import config, dump_config, RyujinxConfig
+from storage import storage, add_ryujinx_history
 import logging
 import os
 
@@ -203,6 +204,24 @@ def detect_ryujinx_version():
         config.ryujinx.version = version
         dump_config()
         return version
+
+
+def update_ryujinx_path(new_ryujinx_path: str):
+    new_path = Path(new_ryujinx_path)
+    if not new_path.exists():
+        logger.info(f'create directory: {new_path}')
+        new_path.mkdir(parents=True, exist_ok=True)
+    if new_path.absolute() == Path(config.ryujinx.path).absolute():
+        logger.info(f'No different with old ryujinx path, skip update.')
+        return
+    add_ryujinx_history(config.ryujinx)
+    logger.info(f'setting ryujinx path to {new_path}')
+    cfg = storage.ryujinx_history.get(str(new_path.absolute()), RyujinxConfig())
+    cfg.path = str(new_path.absolute())
+    config.ryujinx = cfg
+    if cfg.path not in storage.ryujinx_history:
+        add_ryujinx_history(cfg)
+    dump_config()
 
 
 if __name__ == '__main__':

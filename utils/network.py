@@ -30,7 +30,7 @@ options_on_proxy = {
 options_on_cdn = {
     'split': '4',
     'max-connection-per-server': '4',
-    'min-split-size': '12M',
+    'min-split-size': '8M',
 }
 
 github_api_fallback_flag = False

@@ -7,7 +7,10 @@
           <v-divider></v-divider>
           <v-container>
             <v-row>
-              <v-col><p class="success--text text-h5">网络设置</p></v-col>
+              <v-col>
+                <p class="success--text text-h5">网络设置</p>
+                <span class="body-2 info--text">Cloudflare 源下载速度慢可以看看 <router-link to="/cloudflareST">这个</router-link></span>
+              </v-col>
             </v-row>
             <v-select
               v-model="setting.network.firmwareSource"

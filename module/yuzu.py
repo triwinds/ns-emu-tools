@@ -8,11 +8,13 @@ import logging
 
 import py7zr
 
-from config import config, dump_config
+from config import config, dump_config, YuzuConfig
+from storage import storage, add_yuzu_history
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
 from utils.network import get_github_download_url
+from utils.common import decode_yuzu_path
 
 
 logger = logging.getLogger(__name__)
@@ -223,7 +225,6 @@ def get_yuzu_nand_path():
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
             path_str = data_storage.get('nand_directory')
-            from utils.common import decode_yuzu_path
             nand_path = Path(decode_yuzu_path(path_str))
             logger.info(f'use nand path from yuzu config: {nand_path}')
     except Exception as e:
@@ -245,6 +246,24 @@ def get_yuzu_load_path():
     return load_path
 
 
+def update_yuzu_path(new_yuzu_path: str):
+    new_path = Path(new_yuzu_path)
+    if not new_path.exists():
+        logger.info(f'create directory: {new_path}')
+        new_path.mkdir(parents=True, exist_ok=True)
+    if new_path.absolute() == Path(config.yuzu.yuzu_path).absolute():
+        logger.info(f'No different with old yuzu path, skip update.')
+        return
+    add_yuzu_history(config.yuzu)
+    logger.info(f'setting yuzu path to {new_path}')
+    cfg = storage.yuzu_history.get(str(new_path.absolute()), YuzuConfig())
+    cfg.yuzu_path = str(new_path.absolute())
+    config.yuzu = cfg
+    if cfg.yuzu_path not in storage.yuzu_history:
+        add_yuzu_history(cfg)
+    dump_config()
+
+
 if __name__ == '__main__':
     # install_yuzu('1220', 'mainline')
     # install_firmware_to_yuzu()
@@ -252,7 +271,7 @@ if __name__ == '__main__':
     # print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
     # open_yuzu_keys_folder()
-    # print(get_yuzu_nand_path())
-    from utils.common import decode_yuzu_path
-    test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
-    print(decode_yuzu_path(test_str))
+    print(get_yuzu_load_path())
+    # from utils.common import decode_yuzu_path
+    # test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
+    # print(decode_yuzu_path(test_str))

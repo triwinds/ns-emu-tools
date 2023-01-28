@@ -7,6 +7,7 @@ import Settings from "@/pages/Settings";
 import YuzuCheatsManagement from "@/pages/YuzuCheatsManagement";
 import FAQ from "@/pages/FAQ";
 import OtherLinks from "@/pages/OtherLinks";
+import CloudflareST from "@/pages/CloudflareST";
 
 export default new VueRouter({
     routes: [
@@ -34,6 +35,9 @@ export default new VueRouter({
         },{
             path: '/otherLinks',
             component: OtherLinks
+        },{
+            path: '/cloudflareST',
+            component: CloudflareST
         },
     ]
 })

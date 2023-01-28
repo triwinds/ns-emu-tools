@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from pathlib import Path
 from dataclasses_json import dataclass_json, Undefined
 import logging
@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.2.5'
+current_version = '0.2.6'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
@@ -42,7 +42,7 @@ log_versions()
 @dataclass_json
 @dataclass
 class YuzuConfig:
-    yuzu_path: Optional[str] = 'D:/Yuzu'
+    yuzu_path: Optional[str] = 'D:\\Yuzu'
     yuzu_version: Optional[str] = None
     yuzu_firmware: Optional[str] = None
     branch: Optional[str] = 'ea'
@@ -51,7 +51,7 @@ class YuzuConfig:
 @dataclass_json
 @dataclass
 class RyujinxConfig:
-    path: Optional[str] = 'D:/Ryujinx'
+    path: Optional[str] = 'D:\\Ryujinx'
     version: Optional[str] = None
     firmware: Optional[str] = None
     branch: Optional[str] = 'ava'
@@ -80,12 +80,19 @@ class UiSetting:
     dark: Optional[bool] = True
 
 
+@dataclass_json
+@dataclass
+class CloudflareSpeedTestSetting:
+    override_hostnames: Optional[str] = 'nsarchive.e6ex.com,proxy.zyun.vip'
+
+
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
     ui: UiSetting = UiSetting()
     network: NetworkSetting = NetworkSetting()
     download: DownloadSetting = DownloadSetting()
+    cfst: CloudflareSpeedTestSetting = CloudflareSpeedTestSetting()
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -99,6 +106,8 @@ class Config:
 if os.path.exists(config_path):
     with open(config_path, 'r', encoding='utf-8') as f:
         config = Config.from_dict(json.load(f))
+        config.yuzu.yuzu_path = str(Path(config.yuzu.yuzu_path).absolute())
+        config.ryujinx.path = str(Path(config.ryujinx.path).absolute())
 if not config:
     config = Config()
 
@@ -107,36 +116,6 @@ def dump_config():
     logger.info(f'saving config to {config_path.absolute()}')
     with open(config_path, 'w', encoding='utf-8') as f:
         f.write(config.to_json(ensure_ascii=False, indent=2))
-
-
-def update_yuzu_path(new_yuzu_path: str):
-    new_path = Path(new_yuzu_path)
-    if not new_path.exists():
-        logger.info(f'create directory: {new_path}')
-        new_path.mkdir(parents=True, exist_ok=True)
-    if new_path.absolute() == Path(config.yuzu.yuzu_path).absolute():
-        logger.info(f'No different with old yuzu path, skip update.')
-        return
-    logger.info(f'setting yuzu path to {new_path}')
-    cfg = YuzuConfig()
-    cfg.yuzu_path = str(new_path.absolute())
-    config.yuzu = cfg
-    dump_config()
-
-
-def update_ryujinx_path(new_ryujinx_path: str):
-    new_path = Path(new_ryujinx_path)
-    if not new_path.exists():
-        logger.info(f'create directory: {new_path}')
-        new_path.mkdir(parents=True, exist_ok=True)
-    if new_path.absolute() == Path(config.ryujinx.path).absolute():
-        logger.info(f'No different with old ryujinx path, skip update.')
-        return
-    logger.info(f'setting ryujinx path to {new_path}')
-    cfg = RyujinxConfig()
-    cfg.path = str(new_path.absolute())
-    config.ryujinx = cfg
-    dump_config()
 
 
 def update_last_open_emu_page(page: str):
@@ -162,5 +141,5 @@ def update_setting(setting: Dict[str, object]):
     dump_config()
 
 
-__all__ = ['config', 'dump_config', 'update_yuzu_path', 'current_version', 'update_ryujinx_path',
+__all__ = ['config', 'dump_config', 'YuzuConfig', 'current_version', 'RyujinxConfig', 'update_dark_state',
            'update_last_open_emu_page', 'update_setting', 'user_agent']
