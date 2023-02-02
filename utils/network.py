@@ -1,6 +1,7 @@
 import urllib.request
 from config import config, user_agent
 import logging
+import os
 import requests_cache
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,10 @@ github_override_map = {
     'ghproxy': 'https://ghproxy.com/https://github.com',
     'zhiliao': 'https://proxy.zyun.vip/https://github.com',
 }
+
+if config.setting.network.useDoh:
+    from utils.doh import install_doh
+    install_doh()
 
 session = requests_cache.CachedSession(cache_control=True)
 session.headers.update({'User-Agent': user_agent})
@@ -43,11 +48,13 @@ def is_using_proxy():
 
 
 def get_proxies():
-    return urllib.request.getproxies()
-
-
-def get_proxy_option():
-    return {'all-proxy': iter(get_proxies().values()).__next__()}
+    proxies = {}
+    if os.name == 'nt':
+        proxies.update(urllib.request.getproxies_registry())
+    proxies.update(urllib.request.getproxies())
+    if 'no' in proxies:
+        del proxies['no']
+    return proxies
 
 
 def get_global_options():
