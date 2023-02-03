@@ -106,7 +106,7 @@ def install_firmware_to_ryujinx(firmware_version=None):
 def clear_ryujinx_folder(ryujinx_path: Path):
     send_notify('清除旧版 ryujinx 文件...')
     for path in ryujinx_path.glob('*'):
-        if path.name == 'portable':
+        if path.name.lower().strip() == 'portable':
             continue
         logger.debug(f'removing path: {path}')
         if path.is_dir():
