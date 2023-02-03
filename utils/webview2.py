@@ -25,11 +25,10 @@ def get_dot_net_version():
     finally:
         if net_key:
             winreg.CloseKey(net_key)
-    logger.info(f'dot net version: {version}')
     return version
 
 
-def is_chromium():
+def is_chromium(verbose=False):
     def edge_build(key_type, key, description=''):
         try:
             windows_key = None
@@ -60,7 +59,8 @@ def is_chromium():
             for key_type in ('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE'):
                 build = edge_build(key_type, item['key'], item['description'])
                 if _is_new_version('86.0.622.0', build):  # Webview2 86.0.622.0
-                    logger.info(f'webview2 version: {build}, description: {item["description"]}')
+                    if verbose:
+                        logger.info(f'webview2 version: {build}, description: {item["description"]}')
                     return True
 
     except Exception as e:
@@ -68,18 +68,24 @@ def is_chromium():
     return False
 
 
-def check_runtime_components():
+def ensure_runtime_components():
     flag = False
     version = get_dot_net_version()
+    logger.info(f'dot net version: {version}')
     if version < 394802:  # .NET 4.6.2
         install_dot_net()
         flag = True
-    if not is_chromium():
+    if not is_chromium(verbose=True):
         install_webview2()
         flag = True
     if flag:
         show_msgbox('重启程序', '组件安装完成后, 请重新启动程序.', 0)
     return flag
+
+
+def can_use_webview():
+    version = get_dot_net_version()
+    return version >= 394802 and is_chromium()
 
 
 def show_msgbox(title, content, style):

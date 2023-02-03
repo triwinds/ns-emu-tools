@@ -11,3 +11,4 @@ gevent
 httplib2
 requests-cache
 dnspython[doh]
+pywebview
