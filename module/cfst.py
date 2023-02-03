@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import time
 from pathlib import Path
 from typing import List
 
@@ -7,6 +8,7 @@ from config import config
 from module.downloader import download
 from module.msg_notifier import send_notify
 from utils.network import get_github_download_url
+from module.hosts import Hosts
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +88,8 @@ def install_ip_to_hosts(ip: str, host_names: List[str]):
         logger.info(f'new_entry: {new_entry}')
         send_notify(f'使用 ip: {ip}')
         hosts.add([new_entry], force=True)
-        hosts.write()
+        write_hosts(hosts)
         subprocess.Popen(['ipconfig', '/flushdns'], stdout=subprocess.DEVNULL).wait()
-        logger.info(f'updated hosts: {hosts}')
         send_notify('hosts 文件更新完成, 请重启程序使修改生效.')
     except Exception as e:
         logger.error(f'fail in update hosts, exception: {str(e)}')
@@ -96,8 +97,6 @@ def install_ip_to_hosts(ip: str, host_names: List[str]):
 
 
 def optimize_cloudflare_hosts():
-    if not check_is_admin():
-        raise RuntimeError('更新 hosts 需要管理员权限，请使用管理员权限重新启动程序.')
     exe_path = Path('CloudflareSpeedTest/CloudflareST.exe')
     if not exe_path.exists():
         download_cfst()
@@ -111,8 +110,6 @@ def optimize_cloudflare_hosts():
 
 
 def remove_cloudflare_hosts():
-    if not check_is_admin():
-        raise RuntimeError('更新 hosts 需要管理员权限，请使用管理员权限重新启动程序.')
     try:
         logger.info('removing ip from hosts...')
         send_notify('正在删除 hosts 文件中的相关配置...')
@@ -121,26 +118,34 @@ def remove_cloudflare_hosts():
         host_names = get_override_host_names()
         for hn in host_names:
             hosts.remove_all_matching(name=hn)
-        hosts.write()
+        write_hosts(hosts)
         subprocess.Popen(['ipconfig', '/flushdns'], stdout=subprocess.DEVNULL).wait()
-        logger.info(f'updated hosts: {hosts}')
         send_notify('hosts 文件更新完成, 请重启程序使修改生效.')
     except Exception as e:
         logger.error(f'fail in update hosts, exception: {str(e)}')
         send_notify('hosts 文件更新失败, 请使用管理员权限重新启动程序.')
 
 
-def check_is_admin():
-    import ctypes
+def write_hosts(hosts: Hosts):
     import os
-    try:
-        return os.getuid() == 0
-    except AttributeError:
-        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    from utils.admin import check_is_admin
+    if check_is_admin():
+        hosts.write()
+        logger.info(f'updated hosts: {hosts}')
+    if os.name == 'nt':
+        from utils.admin import run_with_admin_privilege
+        tmp_hosts = str(Path('tmp_hosts').absolute())
+        hosts.write(tmp_hosts)
+        sys_hosts = str(Path(hosts.determine_hosts_path()).absolute())
+        ret = run_with_admin_privilege('cmd', f'/c move "{tmp_hosts}" "{sys_hosts}"')
+        if ret == 42:
+            logger.info(f'updated hosts: {hosts}')
+            return
+    raise RuntimeError(f'Unable to write hosts file.')
 
 
 if __name__ == '__main__':
     # optimize_cloudflare_hosts()
     # print(check_is_admin())
     remove_cloudflare_hosts()
-    install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
+    # install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
