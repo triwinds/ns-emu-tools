@@ -63,7 +63,7 @@ class NetworkSetting:
     firmwareSource: Optional[str] = 'auto-detect'
     githubApiMode: Optional[str] = 'direct'
     githubDownloadSource: Optional[str] = 'self'
-    useDoh: Optional[bool] = False
+    useDoh: Optional[bool] = True
 
 
 @dataclass_json

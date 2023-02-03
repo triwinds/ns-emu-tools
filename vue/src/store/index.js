@@ -114,7 +114,7 @@ const state = {
                 autoDeleteAfterInstall: true,
                 disableAria2Ipv6: true,
                 removeOldAria2LogFile: true,
-                useDoh: false,
+                useDoh: true,
             }
         },
     },
