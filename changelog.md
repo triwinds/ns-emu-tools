@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.2.7
+ - 优化 CloudflareST 授权流程，仅在写入 hosts 时请求管理员权限
+ - 修复在 windowed 打包方式下 CloudflareST 控制台显示不正常的问题
+ - 访问 api 时默认启用 DNS over HTTPS (可在设置中关闭)
+ - 指定 aria2 使用 Aliyun / DNSPod 的 DNS 服务器
+ - 修复因路径大小写原因误删 Ryujinx 的 portable 文件夹的问题 (#23)
+ - 合并 webview 进入 main.py
+
 ## 0.2.6
  - 新增试验性功能: Cloudflare 节点选优
  - 修复 yuzu mod 文件夹路径获取错误的问题 (#19)
