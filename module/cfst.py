@@ -1,8 +1,12 @@
 import logging
+import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import List
+
+import psutil
 
 from config import config
 from module.downloader import download
@@ -11,6 +15,10 @@ from utils.network import get_github_download_url
 from module.hosts import Hosts
 
 logger = logging.getLogger(__name__)
+script_template = """@echo off
+cd /d <cfst_path>
+CloudflareST.exe -p 0 -url "https://cloudflaremirrors.com/archlinux/images/latest/Arch-Linux-x86_64-basic.qcow2"
+"""
 
 
 def download_cfst():
@@ -37,11 +45,14 @@ def run_cfst():
         raise RuntimeError('CloudflareSpeedTest not exist.')
     logger.info('starting CloudflareSpeedTest...')
     send_notify('正在运行 CloudflareSpeedTest...')
-    p = subprocess.Popen(['CloudflareSpeedTest/CloudflareST.exe', '-p', '0', '-url',
-                          'https://cloudflaremirrors.com/archlinux/images/latest/Arch-Linux-x86_64-basic.qcow2'],
-                         cwd='./CloudflareSpeedTest',
-                         creationflags=subprocess.CREATE_NEW_CONSOLE)
-    p.wait()
+    script_path = Path('CloudflareSpeedTest/cfst.bat')
+    with open(script_path, 'w') as f:
+        f.write(script_template.replace('<cfst_path>', str(exe_path.absolute().parent)))
+    subprocess.Popen(f'start cmd /c {str(script_path.absolute())}', shell=True)
+    time.sleep(1)
+    for p in psutil.process_iter():
+        if p.name() == 'CloudflareST.exe':
+            p.wait()
 
 
 def get_fastest_ip_from_result():
@@ -145,7 +156,8 @@ def write_hosts(hosts: Hosts):
 
 
 if __name__ == '__main__':
+    run_cfst()
     # optimize_cloudflare_hosts()
     # print(check_is_admin())
-    remove_cloudflare_hosts()
+    # remove_cloudflare_hosts()
     # install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
