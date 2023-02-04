@@ -4,6 +4,7 @@ import gevent.monkey
 gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 from config import config
+from utils.network import get_available_port
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,9 @@ def main(port=0, mode=None, dev=False):
             mode = 'user default'
     size = (1440, 900)
     logger.info(f'browser mode: {mode}')
+    if port == 0:
+        port = get_available_port()
+        logger.info(f'starting eel at port: {port}')
     if mode == 'edge':
         start_edge_in_app_mode(default_page, port, size)
     else:

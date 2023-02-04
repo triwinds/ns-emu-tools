@@ -143,7 +143,7 @@ def write_hosts(hosts: Hosts):
     if check_is_admin():
         hosts.write()
         logger.info(f'updated hosts: {hosts}')
-    if os.name == 'nt':
+    elif os.name == 'nt':
         from utils.admin import run_with_admin_privilege
         tmp_hosts = str(Path('tmp_hosts').absolute())
         hosts.write(tmp_hosts)
