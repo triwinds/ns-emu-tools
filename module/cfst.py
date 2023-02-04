@@ -1,14 +1,24 @@
+import logging
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
 from typing import List
+
+import psutil
+
 from config import config
 from module.downloader import download
-from utils.network import get_github_download_url
 from module.msg_notifier import send_notify
-from pathlib import Path
-import logging
-import subprocess
-
+from utils.network import get_github_download_url
+from module.hosts import Hosts
 
 logger = logging.getLogger(__name__)
+script_template = """@echo off
+cd /d <cfst_path>
+CloudflareST.exe -p 0 -url "https://cloudflaremirrors.com/archlinux/images/latest/Arch-Linux-x86_64-basic.qcow2"
+"""
 
 
 def download_cfst():
@@ -35,11 +45,14 @@ def run_cfst():
         raise RuntimeError('CloudflareSpeedTest not exist.')
     logger.info('starting CloudflareSpeedTest...')
     send_notify('正在运行 CloudflareSpeedTest...')
-    p = subprocess.Popen(['CloudflareSpeedTest/CloudflareST.exe', '-p', '0', '-url',
-                          'https://cloudflaremirrors.com/archlinux/images/latest/Arch-Linux-x86_64-basic.qcow2'],
-                         cwd='./CloudflareSpeedTest',
-                         creationflags=subprocess.CREATE_NEW_CONSOLE)
-    p.wait()
+    script_path = Path('CloudflareSpeedTest/cfst.bat')
+    with open(script_path, 'w') as f:
+        f.write(script_template.replace('<cfst_path>', str(exe_path.absolute().parent)))
+    subprocess.Popen(f'start cmd /c {str(script_path.absolute())}', shell=True)
+    time.sleep(1)
+    for p in psutil.process_iter():
+        if p.name() == 'CloudflareST.exe':
+            p.wait()
 
 
 def get_fastest_ip_from_result():
@@ -86,9 +99,8 @@ def install_ip_to_hosts(ip: str, host_names: List[str]):
         logger.info(f'new_entry: {new_entry}')
         send_notify(f'使用 ip: {ip}')
         hosts.add([new_entry], force=True)
-        hosts.write()
+        write_hosts(hosts)
         subprocess.Popen(['ipconfig', '/flushdns'], stdout=subprocess.DEVNULL).wait()
-        logger.info(f'updated hosts: {hosts}')
         send_notify('hosts 文件更新完成, 请重启程序使修改生效.')
     except Exception as e:
         logger.error(f'fail in update hosts, exception: {str(e)}')
@@ -117,16 +129,35 @@ def remove_cloudflare_hosts():
         host_names = get_override_host_names()
         for hn in host_names:
             hosts.remove_all_matching(name=hn)
-        hosts.write()
+        write_hosts(hosts)
         subprocess.Popen(['ipconfig', '/flushdns'], stdout=subprocess.DEVNULL).wait()
-        logger.info(f'updated hosts: {hosts}')
         send_notify('hosts 文件更新完成, 请重启程序使修改生效.')
     except Exception as e:
         logger.error(f'fail in update hosts, exception: {str(e)}')
         send_notify('hosts 文件更新失败, 请使用管理员权限重新启动程序.')
 
 
+def write_hosts(hosts: Hosts):
+    import os
+    from utils.admin import check_is_admin
+    if check_is_admin():
+        hosts.write()
+        logger.info(f'updated hosts: {hosts}')
+    elif os.name == 'nt':
+        from utils.admin import run_with_admin_privilege
+        tmp_hosts = str(Path('tmp_hosts').absolute())
+        hosts.write(tmp_hosts)
+        sys_hosts = str(Path(hosts.determine_hosts_path()).absolute())
+        ret = run_with_admin_privilege('cmd', f'/c move "{tmp_hosts}" "{sys_hosts}"')
+        if ret == 42:
+            logger.info(f'updated hosts: {hosts}')
+            return
+    raise RuntimeError(f'Unable to write hosts file.')
+
+
 if __name__ == '__main__':
+    run_cfst()
     # optimize_cloudflare_hosts()
-    remove_cloudflare_hosts()
-    install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
+    # print(check_is_admin())
+    # remove_cloudflare_hosts()
+    # install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())

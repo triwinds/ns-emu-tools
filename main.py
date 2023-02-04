@@ -1,5 +1,6 @@
-from config import config
+from config import config, dump_config
 import argparse
+from utils.webview2 import ensure_runtime_components, can_use_webview, show_msgbox
 
 
 def start_ui(mode=None):
@@ -7,12 +8,35 @@ def start_ui(mode=None):
     ui.main(mode=mode)
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-m",
         "--mode",
-        help="指定使用的浏览器",
+        choices=['webview', 'browser', 'chrome', 'edge', 'user default'],
+        help="指定 ui 启动方式",
     )
     args = parser.parse_args()
-    start_ui(args.mode)
+    ui_mode = args.mode or config.setting.ui.mode
+    if ui_mode == 'browser':
+        ui_mode = None
+    if ui_mode != 'webview':
+        start_ui(ui_mode)
+        return
+    if can_use_webview():
+        import ui_webview
+        ui_webview.main()
+        return
+    ret = show_msgbox('部分组件缺失',
+                      '由于部分组件缺失，无法以 webview 方式启动，是否安装相关组件？\n'
+                      '(选否将以浏览器方式启动，老版本的浏览器可能存在兼容性问题，不推荐)', 4)
+    if ret == 7:
+        config.setting.ui.mode = 'browser'
+        dump_config()
+        start_ui(ui_mode)
+        return
+    ensure_runtime_components()
+
+
+if __name__ == '__main__':
+    main()

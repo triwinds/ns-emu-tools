@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.2.6'
+current_version = '0.2.7'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
@@ -63,6 +63,7 @@ class NetworkSetting:
     firmwareSource: Optional[str] = 'auto-detect'
     githubApiMode: Optional[str] = 'direct'
     githubDownloadSource: Optional[str] = 'self'
+    useDoh: Optional[bool] = True
 
 
 @dataclass_json
@@ -77,7 +78,8 @@ class DownloadSetting:
 @dataclass
 class UiSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu',
-    dark: Optional[bool] = True
+    dark: Optional[bool] = True,
+    mode: Optional[str] = 'webview'
 
 
 @dataclass_json
