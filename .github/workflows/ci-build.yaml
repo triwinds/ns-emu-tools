@@ -34,8 +34,8 @@ jobs:
         pip install -r requirements.txt pyinstaller==5.6.2
         pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./main.py" --name "NsEmuTools"
         pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./main.py" --name "NsEmuTools-console"
-        pip install pywebview
-        pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./ui_webview.py" --name "NsEmuTools-webview"
+#        pip install pywebview
+#        pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./ui_webview.py" --name "NsEmuTools-webview"
     - uses: actions/upload-artifact@v3
       with:
         path: dist/NsEmuTools.exe
@@ -44,16 +44,10 @@ jobs:
       with:
         path: dist/NsEmuTools-console.exe
         name: NsEmuTools-console
-    - uses: actions/upload-artifact@v3
-      with:
-        path: dist/NsEmuTools-webview.exe
-        name: NsEmuTools-webview
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true
         files: |
-          dist/NsEmuTools.exe
-          dist/NsEmuTools-console.exe
-          dist/NsEmuTools-webview.exe
+          dist/*.exe
