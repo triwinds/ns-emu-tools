@@ -58,6 +58,7 @@ def main():
     from module.external.bat_scripts import create_scripts
     create_scripts()
     ui_mode = args.mode or config.setting.ui.mode
+    logger.info(f'ui mode: {ui_mode}')
     if ui_mode is None or ui_mode == 'auto':
         ui_mode = 'webview' if can_use_webview() else 'browser'
     if ui_mode == 'browser':
