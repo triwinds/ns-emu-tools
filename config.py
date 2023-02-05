@@ -79,7 +79,7 @@ class DownloadSetting:
 class UiSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu',
     dark: Optional[bool] = True,
-    mode: Optional[str] = 'webview'
+    mode: Optional[str] = 'auto'
 
 
 @dataclass_json

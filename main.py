@@ -1,3 +1,5 @@
+import sys
+
 from config import config, dump_config
 import argparse
 from utils.webview2 import ensure_runtime_components, can_use_webview, show_msgbox
@@ -19,6 +21,14 @@ def start_webview_ui():
     return 0
 
 
+def try_start_webview():
+    try:
+        return start_webview_ui()
+    except Exception as e:
+        logger.error('Error occur in start_webview_ui', e)
+        return fallback_to_browser()
+
+
 def fallback_to_browser():
     config.setting.ui.mode = 'browser'
     dump_config()
@@ -33,26 +43,30 @@ def main():
         choices=['webview', 'browser', 'chrome', 'edge', 'user default'],
         help="指定 ui 启动方式",
     )
+    parser.add_argument(
+        "--switch-mode",
+        choices=['auto', 'webview', 'browser', 'chrome', 'edge', 'user default'],
+        help="切换 ui 启动方式",
+    )
     args = parser.parse_args()
+    logger.info(f'args: {args}')
+    if args.switch_mode is not None:
+        logger.info(f'switch mode: {args.switch_mode}')
+        config.setting.ui.mode = args.switch_mode
+        dump_config()
+        return 0
+    from module.external.bat_scripts import create_scripts
+    create_scripts()
     ui_mode = args.mode or config.setting.ui.mode
+    if ui_mode is None or ui_mode == 'auto':
+        ui_mode = 'webview' if can_use_webview() else 'browser'
     if ui_mode == 'browser':
-        ui_mode = None
-    if ui_mode != 'webview':
+        return start_ui(None)
+    elif ui_mode == 'webview':
+        return try_start_webview()
+    else:
         return start_ui(ui_mode)
-    if can_use_webview():
-        try:
-            return start_webview_ui()
-        except Exception as e:
-            logger.error('Error occur in start_webview_ui', e)
-            fallback_to_browser()
-    ret = show_msgbox('部分组件缺失',
-                      '由于部分组件缺失，无法以 webview 方式启动，是否安装相关组件？\n'
-                      '(选否将以浏览器方式启动，老版本的浏览器可能存在兼容性问题，不推荐)', 4)
-    if ret == 7:
-        return fallback_to_browser()
-    ensure_runtime_components()
-    return 0
 
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())

@@ -103,7 +103,8 @@ const state = {
         setting: {
             ui: {
                 lastOpenEmuPage: "",
-                dark: true
+                dark: true,
+                mode: 'auto'
             },
             network: {
                 firmwareSource: 'auto-detect',
