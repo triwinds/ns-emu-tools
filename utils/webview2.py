@@ -58,7 +58,7 @@ def is_chromium(verbose=False):
         for item in build_versions:
             for key_type in ('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE'):
                 build = edge_build(key_type, item['key'], item['description'])
-                if _is_new_version('86.0.622.0', build):  # Webview2 86.0.622.0
+                if _is_new_version('105.0.0.0', build):
                     if verbose:
                         logger.info(f'webview2 version: {build}, description: {item["description"]}')
                     return True

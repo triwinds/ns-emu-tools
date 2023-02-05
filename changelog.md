@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.2.8
+ - 调整 ui 启动逻辑
+ - 启动后自动创建 `切换 UI 启动模式.bat` 用于切换启动模式
+ - 添加启动参数 `--switch-mode` 用于切换启动模式
+
 ## 0.2.7
  - 优化 CloudflareST 授权流程，仅在写入 hosts 时请求管理员权限
  - 修复在 windowed 打包方式下 CloudflareST 控制台显示不正常的问题

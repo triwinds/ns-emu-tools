@@ -35,12 +35,19 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 本项目的发布受 [AGPL-3.0](https://github.com/triwinds/ns-emu-tools/blob/main/LICENSE) 许可认证。
 
-## TODO
+## 启动参数
 
- - 添加 wiki
- - 完善异常处理
- - Python embeddable 打包
- - 集成 LibHac
+```
+usage: NsEmuTools-console.exe [-h] [-m {webview,browser,chrome,edge,user default}]
+                              [--switch-mode {auto,webview,browser,chrome,edge,user default}]
+
+options:
+  -h, --help            show this help message and exit
+  -m {webview,browser,chrome,edge,user default}, --mode {webview,browser,chrome,edge,user default}
+                        指定 ui 启动方式
+  --switch-mode {auto,webview,browser,chrome,edge,user default}
+                        切换 ui 启动方式
+```
 
 ## Credits
 
