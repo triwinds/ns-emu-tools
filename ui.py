@@ -1,7 +1,4 @@
 import logging
-import gevent.monkey
-
-gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 from config import config
 from utils.network import get_available_port
@@ -73,5 +70,9 @@ def main(port=0, mode=None, dev=False):
 
 
 if __name__ == '__main__':
+    import gevent.monkey
+
+    gevent.monkey.patch_ssl()
+    gevent.monkey.patch_socket()
     main(8888, False, True)
     # main(0, 'edge')
