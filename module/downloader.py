@@ -57,7 +57,7 @@ def init_aria2():
 
 def download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
-    tmp = init_download_options_with_proxy()
+    tmp = init_download_options_with_proxy(url)
     tmp['auto-file-renaming'] = 'false'
     tmp['allow-overwrite'] = 'false'
     if options is not None:

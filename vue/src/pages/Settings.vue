@@ -85,6 +85,7 @@ export default {
       availableGithubDownloadSource: [
         {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'self'},
         {name: '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供', value: 'zhiliao'},
+        {name: '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供', value: 'nuaa'},
         {name: '[韩国 首尔] - 该公益加速源由 [ghproxy] 提供', value: 'ghproxy'},
         {name: '直连', value: 'direct'},
       ],
