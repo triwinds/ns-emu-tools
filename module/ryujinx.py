@@ -3,6 +3,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from exception.common_exception import VersionNotFoundException
 from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
 from utils.network import get_github_download_url
@@ -20,9 +21,7 @@ def get_ryujinx_download_url(target_version: str, branch: str):
     if branch in {'mainline', 'ava'}:
         release_info = get_ryujinx_release_info_by_version(target_version)
         if 'tag_name' not in release_info:
-            logger.error(f'fail to get release info of version {target_version} on branch {branch}')
-            send_notify(f'无法获取 {branch} 分支的 [{target_version}] 版本信息')
-            raise RuntimeError(f'fail to get release info of version {target_version} on branch {branch}')
+            raise VersionNotFoundException(target_version, branch, 'ryujinx')
         assets = release_info['assets']
         for asset in assets:
             name: str = asset['name']
@@ -33,9 +32,7 @@ def get_ryujinx_download_url(target_version: str, branch: str):
     elif branch == 'ldn':
         release_info = get_ldn_ryujinx_release_info_by_version(target_version)
         if 'tag_name' not in release_info:
-            logger.error(f'fail to get release info of version {target_version} on branch {branch}')
-            send_notify(f'无法获取 {branch} 分支的 [{target_version}] 版本信息')
-            raise RuntimeError(f'fail to get release info of version {target_version} on branch {branch}')
+            raise VersionNotFoundException(target_version, branch, 'ryujinx')
         assets = release_info['assets']
         ava_ldn_url, mainline_ldn_url = None, None
         for asset in assets:
