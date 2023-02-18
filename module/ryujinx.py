@@ -183,6 +183,8 @@ def detect_ryujinx_version():
     rj_path = get_ryujinx_exe_path()
     if not rj_path:
         send_notify('未能找到 Ryujinx 程序')
+        config.ryujinx.version = None
+        dump_config()
         return None
     config.ryujinx.branch = detect_current_branch()
     st_inf = subprocess.STARTUPINFO()
@@ -206,9 +208,9 @@ def detect_ryujinx_version():
             idx = version.index('ldn')
             version = version[idx+3:]
             config.ryujinx.branch = 'ldn'
-        config.ryujinx.version = version
-        dump_config()
-        return version
+    config.ryujinx.version = version
+    dump_config()
+    return version
 
 
 def update_ryujinx_path(new_ryujinx_path: str):

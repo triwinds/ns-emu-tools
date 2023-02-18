@@ -130,6 +130,8 @@ def detect_yuzu_version():
     yz_path = Path(config.yuzu.yuzu_path).joinpath('yuzu.exe')
     if not yz_path.exists():
         send_notify('未能找到 yuzu 程序')
+        config.yuzu.yuzu_version = None
+        dump_config()
         return None
     kill_all_yuzu_instance()
     st_inf = subprocess.STARTUPINFO()
@@ -158,10 +160,10 @@ def detect_yuzu_version():
         logger.exception('error occur in get_all_window_name')
     kill_all_yuzu_instance()
     if version:
-        config.yuzu.yuzu_version = version
         config.yuzu.branch = branch
-        dump_config()
-        return version
+    config.yuzu.yuzu_version = version
+    dump_config()
+    return version
 
 
 def kill_all_yuzu_instance():
