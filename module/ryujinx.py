@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 def get_ryujinx_download_url(target_version: str, branch: str):
     if branch in {'mainline', 'ava'}:
         release_info = get_ryujinx_release_info_by_version(target_version)
+        if 'tag_name' not in release_info:
+            logger.error(f'fail to get release info of version {target_version} on branch {branch}')
+            send_notify(f'无法获取 {branch} 分支的 [{target_version}] 版本信息')
+            raise RuntimeError(f'fail to get release info of version {target_version} on branch {branch}')
         assets = release_info['assets']
         for asset in assets:
             name: str = asset['name']
@@ -28,6 +32,10 @@ def get_ryujinx_download_url(target_version: str, branch: str):
                 return asset['browser_download_url']
     elif branch == 'ldn':
         release_info = get_ldn_ryujinx_release_info_by_version(target_version)
+        if 'tag_name' not in release_info:
+            logger.error(f'fail to get release info of version {target_version} on branch {branch}')
+            send_notify(f'无法获取 {branch} 分支的 [{target_version}] 版本信息')
+            raise RuntimeError(f'fail to get release info of version {target_version} on branch {branch}')
         assets = release_info['assets']
         ava_ldn_url, mainline_ldn_url = None, None
         for asset in assets:
