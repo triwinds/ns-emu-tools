@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 hactool_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('hactool.exe')
 
 
-def detect_firmware_version(emu_type: str):
+def _detect_firmware_version(emu_type: str):
     firmware_files = []
     version = None
     if emu_type == 'yuzu':
@@ -38,13 +38,21 @@ def detect_firmware_version(emu_type: str):
     target_file = find_target_firmware_file(firmware_files, key_path)
     if target_file:
         version = extract_version(target_file, key_path)
-    if version:
+    return version
+
+
+def detect_firmware_version(emu_type: str):
+    version = None
+    try:
+        version = _detect_firmware_version(emu_type)
+    except Exception as e:
+        raise e
+    finally:
         if emu_type == 'yuzu':
             config.yuzu.yuzu_firmware = version
         else:
             config.ryujinx.firmware = version
         dump_config()
-    return version
 
 
 def find_target_firmware_file(firmware_files, key_path):

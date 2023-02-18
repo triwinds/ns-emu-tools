@@ -1,7 +1,8 @@
 import ipaddress
 import logging
-import os
 import sys
+import time
+from typing import Dict, List
 
 import dns.message
 import dns.query
@@ -22,7 +23,19 @@ DOH_SERVER = '223.5.5.5'
 resolver = dns.resolver.Resolver(configure=False)
 resolver.nameservers = ["223.5.5.5", '119.29.29.29']
 
-doh_cache = {}
+
+class DnsCacheItem:
+    expire_at: float = 0
+    answer = None
+
+    def __repr__(self):
+        return f'DnsCacheItem(expire_at={self.expire_at}, answer={self.answer})'
+
+    def __str__(self):
+        return self.__repr__()
+
+
+dns_cache: Dict[str, List[DnsCacheItem]] = {}
 
 
 def is_ip_address(hostname: str):
@@ -31,6 +44,33 @@ def is_ip_address(hostname: str):
         return True
     except:
         return False
+
+
+def update_dns_cache(name: str, answer):
+    item = DnsCacheItem()
+    item.expire_at = time.time() + answer.ttl
+    item.answer = answer
+    available_items = _get_available_items(name)
+    available_items.append(item)
+    # logger.debug(f'update dns cache [{name}]: {available_items}')
+    dns_cache[name] = available_items
+
+
+def _get_available_items(name: str):
+    now = time.time()
+    cached_items = dns_cache.get(name, [])
+    available_items = [item for item in cached_items if item.expire_at > now]
+    return available_items
+
+
+def take_from_dns_cache(name: str):
+    res = []
+    available_items = _get_available_items(name)
+    available_answers = [item.answer for item in available_items]
+    for answer in available_answers:
+        for ip in answer:
+            res.append(ip.address)
+    return res
 
 
 def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", fallback=True, verbose=False):
@@ -47,8 +87,9 @@ def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", f
     if is_ip_address(name):
         return [name]
 
-    retval = doh_cache.get(name)
-    if retval is not None:
+    retval = take_from_dns_cache(name)
+    if retval:
+        logger.debug(f'use dns answer from cache: {retval}')
         return retval
 
     try:
@@ -58,27 +99,26 @@ def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", f
             # print(f'[{name}] doh answer: {resp.answer}')
             logger.debug(f'doh answer: {resp.answer}')
             if not resp.answer:
-                doh_cache[name] = retval
                 return []
             retval = []
             for answer in resp.answer:
+                update_dns_cache(name, answer)
                 for item in answer:
                     retval.append(item.address)
     except Exception as ex:
         if verbose:
             logger.debug("Exception occurred: '%s'" % ex)
 
-    if retval is None and fallback:
-        answer = resolver.resolve(name, dns.rdatatype.from_text(record_type))
-        logger.debug(f'dns resolver answer: {answer}')
+    if not retval and fallback:
+        answer: dns.resolver.Answer = resolver.resolve(name, dns.rdatatype.from_text(record_type))
+        update_dns_cache(name, answer)
+        logger.debug(f'dns resolver answer: {answer.rrset}')
         retval = []
         for item in answer:
             retval.append(item.address)
 
     if not PY3 and retval:
         retval = [_.encode() for _ in retval]
-
-    doh_cache[name] = retval
     return retval
 
 
@@ -102,6 +142,9 @@ def install_doh():
 
 
 if __name__ == '__main__':
+    # print(query_address('google.com'))
+    # print(query_address('google.com'))
+    # time.sleep(60)
     # print(query_address('google.com'))
     install_doh()
     print(requests.get('http://t.tt'))

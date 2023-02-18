@@ -1,10 +1,6 @@
 import logging
-import gevent.monkey
-
-gevent.monkey.patch_all(httplib=True, subprocess=False)
 import eel
 from config import config
-from utils.network import get_available_port
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +60,7 @@ def main(port=0, mode=None, dev=False):
     size = (1440, 900)
     logger.info(f'browser mode: {mode}')
     if port == 0:
+        from utils.network import get_available_port
         port = get_available_port()
         logger.info(f'starting eel at port: {port}')
     if mode == 'edge':
@@ -73,5 +70,9 @@ def main(port=0, mode=None, dev=False):
 
 
 if __name__ == '__main__':
+    import gevent.monkey
+
+    gevent.monkey.patch_ssl()
+    gevent.monkey.patch_socket()
     main(8888, False, True)
     # main(0, 'edge')

@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.2.9
+ - 添加新 GitHub 下载源 nuaa.cf, 并更新在其它 GitHub 下载源中使用的 UA
+ - 更正尝试下载一个不存在的 Ryujinx 版本时所展示的文本
+ - 集成 sentry sdk 收集异常信息 (可通过 `--no-sentry` 启动参数将其禁用)
+ - 使 DNS 缓存遵循返回的 ttl 设定
+ - 当 yuzu/ryujinx/固件 版本检测失败时, 将记录中的版本号重置为 `未知`
+
+ps. 目前 Ryujinx LDN 只能下载 3.0.1 及之后的版本。如果需要更久之前的版本，请前往 Ryujinx 官网下载。
+
 ## 0.2.8
  - 调整 ui 启动逻辑
  - 启动后自动创建 `切换 UI 启动模式.bat` 用于切换启动模式

@@ -15,6 +15,7 @@ from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
 from utils.network import get_github_download_url
 from utils.common import decode_yuzu_path
+from exception.common_exception import VersionNotFoundException
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +25,7 @@ def download_yuzu(target_version, branch):
     send_notify('正在获取 yuzu 版本信息...')
     release_info = get_yuzu_release_info_by_version(target_version, branch)
     if not release_info.get('tag_name'):
-        logger.error(f'fail to get release info of version {target_version} on branch {branch}')
-        send_notify(f'无法获取 {branch} 分支的 [{target_version}] 版本信息')
-        raise RuntimeError(f'fail to get release info of version {target_version} on branch {branch}')
+        raise VersionNotFoundException(target_version, branch, 'yuzu')
     logger.info(f'target yuzu version: {target_version}')
     yuzu_path = Path(config.yuzu.yuzu_path)
     logger.info(f'target yuzu path: {yuzu_path}')
@@ -131,6 +130,8 @@ def detect_yuzu_version():
     yz_path = Path(config.yuzu.yuzu_path).joinpath('yuzu.exe')
     if not yz_path.exists():
         send_notify('未能找到 yuzu 程序')
+        config.yuzu.yuzu_version = None
+        dump_config()
         return None
     kill_all_yuzu_instance()
     st_inf = subprocess.STARTUPINFO()
@@ -159,10 +160,10 @@ def detect_yuzu_version():
         logger.exception('error occur in get_all_window_name')
     kill_all_yuzu_instance()
     if version:
-        config.yuzu.yuzu_version = version
         config.yuzu.branch = branch
-        dump_config()
-        return version
+    config.yuzu.yuzu_version = version
+    dump_config()
+    return version
 
 
 def kill_all_yuzu_instance():

@@ -17,6 +17,7 @@ github_override_map = {
     'self': 'https://nsarchive.e6ex.com/gh',
     'ghproxy': 'https://ghproxy.com/https://github.com',
     'zhiliao': 'https://proxy.zyun.vip/https://github.com',
+    'nuaa': 'https://download.nuaa.cf',
 }
 
 if config.setting.network.useDoh:
@@ -33,11 +34,13 @@ options_on_proxy = {
 }
 
 options_on_cdn = {
-    'split': '4',
-    'max-connection-per-server': '4',
-    'min-split-size': '8M',
+    'split': '8',
+    'max-connection-per-server': '8',
+    'min-split-size': '4M',
 }
 
+chrome_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' \
+            'Chrome/110.0.0.0 Safari/537.36'
 github_api_fallback_flag = False
 
 
@@ -58,19 +61,17 @@ def get_proxies():
 
 
 def get_global_options():
-    return {
-        'user-agent': user_agent
-    }
+    return {}
 
 
-def init_download_options_with_proxy():
+def init_download_options_with_proxy(url):
+    options = {'user-agent': user_agent if 'e6ex.com' in url else chrome_ua}
     if is_using_proxy():
-        options = {'all-proxy': iter(get_proxies().values()).__next__()}
-        if config.setting.network.firmwareSource == 'cdn':
-            options.update(options_on_cdn)
-        return options
+        options['all-proxy'] = iter(get_proxies().values()).__next__()
+        options.update(options_on_proxy)
     else:
-        return options_on_cdn
+        options.update(options_on_cdn)
+    return options
 
 
 def get_github_download_url(origin_url: str):
@@ -144,9 +145,9 @@ def request_github_api(url: str):
         try:
             resp = session.get(url, timeout=5)
             data = resp.json()
-            if isinstance(data, dict) and 'message' in data:
-                logger.warning(f'github api message: {data["message"]}')
-                send_notify(f'github api message: {data["message"]}')
+            if isinstance(data, dict) and 'message' in data and 'API rate limit exceeded' in data["message"]:
+                logger.warning(f'GitHub API response message: {data["message"]}')
+                send_notify(f'GitHub API response message: {data["message"]}')
                 send_notify(f'当前 IP 可能已达到 GitHub api 当前时段的使用上限, 尝试转用 CDN')
                 send_notify(f'如果在多次使用中看到这个提示，可以直接在设置中将 GitHub api 设置为使用 cdn，以避免不必要的重试')
                 github_api_fallback_flag = True

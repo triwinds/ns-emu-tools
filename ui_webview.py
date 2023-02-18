@@ -1,9 +1,4 @@
 import logging
-
-import gevent.monkey
-
-gevent.monkey.patch_ssl()
-gevent.monkey.patch_socket()
 import eel
 import webview
 from config import config
@@ -49,4 +44,8 @@ def main():
 
 
 if __name__ == '__main__':
+    import gevent.monkey
+
+    gevent.monkey.patch_ssl()
+    gevent.monkey.patch_socket()
     main()

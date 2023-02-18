@@ -2,20 +2,21 @@
   <div class="text-center">
     <v-dialog
       v-model="dialog"
-      width="700"
+      width="850"
     >
       <v-card>
         <v-card-title class="text-h5 primary white--text">
-          版本检测
+          {{ $store.state.hasNewVersion ? '更新日志' : '版本检测' }}
         </v-card-title>
 
-        <v-card-text style="margin-top: 30px">
+        <div style="padding: 15px;">
           <p class="text-h6 text--primary" v-show="!$store.state.hasNewVersion">当前版本已经是最新版本</p>
           <div v-show="$store.state.hasNewVersion" >
-            <p class="text-h6 text--primary">[{{newVersion}}] 更新内容:</p>
-            <div v-html="releaseDescriptionHtml" class="info--text" style="font-size: 16px"></div>
+<!--            <p class="text-h6 text&#45;&#45;primary">[{{newVersion}}] 更新内容:</p>-->
+            <div v-html="releaseDescriptionHtml" class="text--primary"
+                 style="max-height: 300px; overflow-y: auto"></div>
           </div>
-        </v-card-text>
+        </div>
 
         <v-divider></v-divider>
 
@@ -96,10 +97,12 @@ export default {
       }
     },
     loadReleaseDescription() {
-      window.eel.get_net_release_info_by_tag(this.newVersion)((resp) => {
+      window.eel.load_change_log()((resp) => {
+        console.log(resp.data)
         if (resp.code === 0) {
           const converter = new showdown.Converter()
-          this.releaseDescriptionHtml = converter.makeHtml(resp.data.body)
+          let rawMd = resp.data.replace('# Change Log\n\n', '')
+          this.releaseDescriptionHtml = converter.makeHtml(rawMd)
         } else {
           this.releaseDescriptionHtml = '<p>加载失败</p>'
         }

@@ -3,6 +3,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from exception.common_exception import VersionNotFoundException
 from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
 from utils.network import get_github_download_url
@@ -19,6 +20,8 @@ logger = logging.getLogger(__name__)
 def get_ryujinx_download_url(target_version: str, branch: str):
     if branch in {'mainline', 'ava'}:
         release_info = get_ryujinx_release_info_by_version(target_version)
+        if 'tag_name' not in release_info:
+            raise VersionNotFoundException(target_version, branch, 'ryujinx')
         assets = release_info['assets']
         for asset in assets:
             name: str = asset['name']
@@ -28,6 +31,8 @@ def get_ryujinx_download_url(target_version: str, branch: str):
                 return asset['browser_download_url']
     elif branch == 'ldn':
         release_info = get_ldn_ryujinx_release_info_by_version(target_version)
+        if 'tag_name' not in release_info:
+            raise VersionNotFoundException(target_version, branch, 'ryujinx')
         assets = release_info['assets']
         ava_ldn_url, mainline_ldn_url = None, None
         for asset in assets:
@@ -178,6 +183,8 @@ def detect_ryujinx_version():
     rj_path = get_ryujinx_exe_path()
     if not rj_path:
         send_notify('未能找到 Ryujinx 程序')
+        config.ryujinx.version = None
+        dump_config()
         return None
     config.ryujinx.branch = detect_current_branch()
     st_inf = subprocess.STARTUPINFO()
@@ -201,9 +208,9 @@ def detect_ryujinx_version():
             idx = version.index('ldn')
             version = version[idx+3:]
             config.ryujinx.branch = 'ldn'
-        config.ryujinx.version = version
-        dump_config()
-        return version
+    config.ryujinx.version = version
+    dump_config()
+    return version
 
 
 def update_ryujinx_path(new_ryujinx_path: str):

@@ -1,10 +1,13 @@
-import sys
-
-from config import config, dump_config
 import argparse
-from utils.webview2 import ensure_runtime_components, can_use_webview, show_msgbox
 import logging
+import gevent.monkey
 
+gevent.monkey.patch_ssl()
+gevent.monkey.patch_socket()
+
+import sys
+from config import config, dump_config
+from utils.webview2 import can_use_webview
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,7 @@ def fallback_to_browser():
     return start_ui(None)
 
 
-def main():
+def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-m",
@@ -48,15 +51,32 @@ def main():
         choices=['auto', 'webview', 'browser', 'chrome', 'edge', 'user default'],
         help="切换 ui 启动方式",
     )
+    parser.add_argument(
+        "--no-sentry",
+        action='store_true',
+        help="禁用 sentry",
+    )
+    return parser
+
+
+def main():
+    parser = create_parser()
     args = parser.parse_args()
     logger.info(f'args: {args}')
+
     if args.switch_mode is not None:
         logger.info(f'switch mode: {args.switch_mode}')
         config.setting.ui.mode = args.switch_mode
         dump_config()
         return 0
+
     from module.external.bat_scripts import create_scripts
     create_scripts()
+
+    if not args.no_sentry:
+        from module.sentry import init_sentry
+        init_sentry()
+
     ui_mode = args.mode or config.setting.ui.mode
     logger.info(f'ui mode: {ui_mode}')
     if ui_mode is None or ui_mode == 'auto':

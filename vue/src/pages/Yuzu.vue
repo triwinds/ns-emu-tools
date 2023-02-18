@@ -188,10 +188,8 @@ export default {
     },
     async detectFirmwareVersion() {
       this.cleanAndShowConsoleDialog()
-      window.eel.detect_firmware_version("yuzu")((data) => {
-        if (data['code'] === 0) {
-          this.updateYuzuConfig()
-        }
+      window.eel.detect_firmware_version("yuzu")(() => {
+        this.updateYuzuConfig()
         this.appendConsoleMessage('固件版本检测完成')
       })
     },
@@ -199,8 +197,8 @@ export default {
       this.cleanAndShowConsoleDialog()
       let previousBranch = this.branch
       let data = await window.eel.detect_yuzu_version()()
+      await this.updateYuzuConfig()
       if (data['code'] === 0) {
-        await this.updateYuzuConfig()
         if (previousBranch !== this.branch) {
           this.updateYuzuReleaseVersions()
         }

@@ -276,10 +276,8 @@ export default {
     },
     async detectFirmwareVersion() {
       this.cleanAndShowConsoleDialog()
-      window.eel.detect_firmware_version("ryujinx")((data) => {
-        if (data['code'] === 0) {
-          this.updateRyujinxConfig()
-        }
+      window.eel.detect_firmware_version("ryujinx")(() => {
+        this.updateRyujinxConfig()
       })
     },
     async switchRyujinxBranch() {
