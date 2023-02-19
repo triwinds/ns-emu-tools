@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 @lru_cache(1)
 def get_firmware_infos():
     base_url = 'https://archive.org/download/nintendo-switch-global-firmwares/'
-    resp = session.get(get_finial_url(base_url))
+    resp = session.get(get_finial_url(base_url), timeout=5)
     soup = bs4.BeautifulSoup(resp.text, features="html.parser")
     a_tags = soup.select('#maincontent > div > div > pre > table > tbody > tr > td > a')
     archive_versions = []
