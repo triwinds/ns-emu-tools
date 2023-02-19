@@ -1,8 +1,10 @@
 import ipaddress
 import logging
+import socket
 import sys
 import time
 from typing import Dict, List
+from config import config
 
 import dns.message
 import dns.query
@@ -22,6 +24,9 @@ DOH_SERVER = '223.5.5.5'
 
 resolver = dns.resolver.Resolver(configure=False)
 resolver.nameservers = ["223.5.5.5", '119.29.29.29']
+
+
+try_ipv6 = connection.HAS_IPV6 and not config.setting.download.disableAria2Ipv6
 
 
 class DnsCacheItem:
@@ -56,16 +61,17 @@ def update_dns_cache(name: str, answer):
     dns_cache[name] = available_items
 
 
-def _get_available_items(name: str):
+def _get_available_items(name: str, record_type: str = 'A'):
+    rdtype = dns.rdatatype.from_text(record_type)
     now = time.time()
     cached_items = dns_cache.get(name, [])
-    available_items = [item for item in cached_items if item.expire_at > now]
+    available_items = [item for item in cached_items if item.expire_at > now and item.answer.rdtype == rdtype]
     return available_items
 
 
-def take_from_dns_cache(name: str):
+def take_from_dns_cache(name: str, record_type: str = 'A'):
     res = []
-    available_items = _get_available_items(name)
+    available_items = _get_available_items(name, record_type)
     available_answers = [item.answer for item in available_items]
     for answer in available_answers:
         for ip in answer:
@@ -73,7 +79,7 @@ def take_from_dns_cache(name: str):
     return res
 
 
-def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", fallback=True, verbose=False):
+def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", fallback=True, verbose=True):
     """
     Returns domain name query results retrieved by using DNS over HTTPS protocol
 
@@ -87,7 +93,7 @@ def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", f
     if is_ip_address(name):
         return [name]
 
-    retval = take_from_dns_cache(name)
+    retval = take_from_dns_cache(name, record_type)
     if retval:
         logger.debug(f'use dns answer from cache: {retval}')
         return retval
@@ -97,11 +103,13 @@ def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", f
             q = dns.message.make_query(name, dns.rdatatype.from_text(record_type))
             resp = dns.query.https(q, server, session=session)
             # print(f'[{name}] doh answer: {resp.answer}')
-            logger.debug(f'doh answer: {resp.answer}')
+            logger.debug(f'doh answer of [{name} in {record_type}]: {resp.answer}')
             if not resp.answer:
                 return []
             retval = []
             for answer in resp.answer:
+                if answer.rdtype not in {dns.rdatatype.AAAA, dns.rdatatype.A}:
+                    continue
                 update_dns_cache(name, answer)
                 for item in answer:
                     retval.append(item.address)
@@ -122,18 +130,38 @@ def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", f
     return retval
 
 
+def _try_connect(addresses, port, *args, **kwargs):
+    global try_ipv6
+    for ip in addresses:
+        try:
+            sock: socket.socket = _orig_create_connection((ip, port), *args, **kwargs)
+            # logger.debug(f'connected to {sock.getpeername()}')
+            return sock
+        except:
+            pass
+
+
 def patched_create_connection(address, *args, **kwargs):
     """Wrap urllib3's create_connection to resolve the name elsewhere"""
     # resolve hostname to an ip address; use your own
     # resolver here, as otherwise the system resolver will be used.
+    global try_ipv6
     host, port = address
     if host.strip() == DOH_SERVER:
         return _orig_create_connection((DOH_SERVER, port), *args, **kwargs)
+    if try_ipv6:
+        addresses = query_address(host, 'AAAA')
+        sock = _try_connect(addresses, port, *args, **kwargs)
+        if sock:
+            return sock
+        elif addresses:
+            logger.debug(f'IPv6 disabled in DoH.')
+            try_ipv6 = False
     addresses = query_address(host)
-    if not addresses:
-        return _orig_create_connection(address, *args, **kwargs)
-    hostname = addresses[0]
-    return _orig_create_connection((hostname, port), *args, **kwargs)
+    sock = _try_connect(addresses, port, *args, **kwargs)
+    if sock:
+        return sock
+    return _orig_create_connection(address, *args, **kwargs)
 
 
 def install_doh():
@@ -147,4 +175,5 @@ if __name__ == '__main__':
     # time.sleep(60)
     # print(query_address('google.com'))
     install_doh()
-    print(requests.get('http://t.tt'))
+    print(requests.get('https://nsarchive.e6ex.com', timeout=5).text)
+    print(requests.get('https://cfrp.e6ex.com', timeout=5).text)
