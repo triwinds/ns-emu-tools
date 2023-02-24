@@ -13,3 +13,4 @@ requests-cache
 dnspython[doh]
 pywebview
 sentry-sdk
+xmltodict
