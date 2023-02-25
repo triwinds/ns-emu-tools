@@ -4,7 +4,7 @@ from config import current_version
 
 def sampler(sample_data):
     if 'wsgi_environ' in sample_data and sample_data['wsgi_environ']['PATH_INFO'] == '/index.html':
-        return 1
+        return 0.1
     return 0
 
 
