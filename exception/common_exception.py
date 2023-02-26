@@ -12,3 +12,8 @@ class VersionNotFoundException(Exception):
         self.emu_type = emu_type
         self.msg = f'Fail to get release info of version [{target_version}] on branch [{branch}]'
         super().__init__(self.msg)
+
+
+class Md5NotMatchException(Exception):
+    def __init__(self):
+        super().__init__('MD5 not match')

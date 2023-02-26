@@ -99,7 +99,7 @@
         <v-divider style="margin-bottom: 15px"></v-divider>
         <v-row>
           <v-col cols="7">
-            <v-text-field label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"></v-text-field>
+            <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"></v-text-field>
           </v-col>
           <v-col>
             <v-btn class="info--text" large outlined min-width="120px" :disabled='isRunningInstall'
@@ -110,7 +110,7 @@
         </v-row>
         <v-row>
           <v-col cols="7">
-            <v-autocomplete v-model="targetFirmwareVersion" label="需要安装的固件版本"
+            <v-autocomplete hide-details v-model="targetFirmwareVersion" label="需要安装的固件版本"
                             :items="availableFirmwareVersions"></v-autocomplete>
           </v-col>
           <v-col>

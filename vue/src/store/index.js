@@ -109,13 +109,14 @@ const state = {
             network: {
                 firmwareSource: 'auto-detect',
                 githubApiMode: 'direct',
-                githubDownloadSource: "self"
+                githubDownloadSource: "self",
+                useDoh: true,
             },
             download: {
                 autoDeleteAfterInstall: true,
                 disableAria2Ipv6: true,
                 removeOldAria2LogFile: true,
-                useDoh: true,
+                verifyFirmwareMd5: true,
             }
         },
     },

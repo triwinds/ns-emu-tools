@@ -14,7 +14,7 @@
         <v-divider style="margin-bottom: 15px"></v-divider>
         <v-row>
           <v-col>
-            <v-select outlined v-model="selectedBranch" :items="availableBranch"
+            <v-select outlined v-model="selectedBranch" :items="availableBranch" hide-details
                       @change="switchRyujinxBranch" color="error" item-color="error"
                       label="当前使用的 Ryujinx 分支"></v-select>
           </v-col>
@@ -105,7 +105,7 @@
         <v-divider style="margin-bottom: 15px"></v-divider>
         <v-row>
           <v-col cols="7">
-            <v-text-field label="需要安装的 Ryujinx 版本" v-model="targetRyujinxVersion"></v-text-field>
+            <v-text-field hide-details label="需要安装的 Ryujinx 版本" v-model="targetRyujinxVersion"></v-text-field>
           </v-col>
           <v-col>
             <v-btn class="info--text" large outlined min-width="160px" :disabled='isRunningInstall'
@@ -116,7 +116,7 @@
         </v-row>
         <v-row>
           <v-col cols="7">
-            <v-autocomplete v-model="targetFirmwareVersion" label="需要安装的固件版本"
+            <v-autocomplete hide-details v-model="targetFirmwareVersion" label="需要安装的固件版本"
                             :items="availableFirmwareVersions"></v-autocomplete>
           </v-col>
           <v-col>

@@ -27,12 +27,15 @@ def init_aria2():
     send_notify(f'starting aria2 daemon at port {port}')
     logger.info(f'starting aria2 daemon at port {port}')
     if config.setting.download.removeOldAria2LogFile and os.path.exists('aria2.log'):
-        logger.info('removing old aria2 logs.')
-        os.remove('aria2.log')
+        try:
+            logger.info('removing old aria2 logs.')
+            os.remove('aria2.log')
+        except:
+            pass
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     cli = [aria2_path, '--enable-rpc', '--rpc-listen-port', str(port), '--async-dns=true',
-           '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level=info']
+           '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level=info', f'--stop-with-process={os.getpid()}']
     if config.setting.download.disableAria2Ipv6:
         cli.append('--disable-ipv6=true')
         cli.append('--async-dns-server=223.5.5.5,119.29.29.29')
@@ -51,11 +54,21 @@ def init_aria2():
     global_options = get_global_options()
     logger.info(f'aria2 global options: {global_options}')
     aria2.set_global_options(global_options)
-    import atexit
-    atexit.register(shutdown_aria2)
 
 
 def download(url, save_dir=None, options=None, download_in_background=False):
+    origin_no_proxy = os.environ.get('no_proxy')
+    os.environ['no_proxy'] = '127.0.0.1,localhost'
+    try:
+        return _download(url, save_dir, options, download_in_background)
+    finally:
+        if origin_no_proxy is None:
+            del os.environ['no_proxy']
+        else:
+            os.environ['no_proxy'] = origin_no_proxy
+
+
+def _download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
     tmp = init_download_options_with_proxy(url)
     tmp['auto-file-renaming'] = 'false'
@@ -99,12 +112,6 @@ def download(url, save_dir=None, options=None, download_in_background=False):
     send_notify('下载完成')
     aria2.autopurge()
     return info
-
-
-def shutdown_aria2():
-    if aria2_process:
-        # logger.info('Shutdown aria2...')
-        aria2_process.kill()
 
 
 if __name__ == '__main__':

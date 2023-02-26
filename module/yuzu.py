@@ -117,7 +117,7 @@ def install_firmware_to_yuzu(firmware_version=None):
         logger.info(f'Current firmware are same as target version [{firmware_version}], skip install.')
         send_notify(f'当前的 固件 就是 [{firmware_version}], 跳过安装.')
         return
-    from module.common import install_firmware
+    from module.firmware import install_firmware
     new_version = install_firmware(firmware_version, get_yuzu_nand_path().joinpath(r'system\Contents\registered'))
     if new_version:
         config.yuzu.yuzu_firmware = new_version

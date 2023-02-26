@@ -94,7 +94,7 @@ def install_firmware_to_ryujinx(firmware_version=None):
     shutil.rmtree(firmware_path, ignore_errors=True)
     firmware_path.mkdir(parents=True, exist_ok=True)
     tmp_dir = firmware_path.joinpath('tmp/')
-    from module.common import install_firmware
+    from module.firmware import install_firmware
     new_version = install_firmware(firmware_version, tmp_dir)
     if new_version:
         for path in tmp_dir.glob('*.nca'):

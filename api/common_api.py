@@ -4,7 +4,7 @@ import eel
 from api.common_response import success_response, exception_response, error_response
 from config import current_version
 import logging
-from module.common import get_firmware_infos
+from module.firmware import get_firmware_infos
 
 logger = logging.getLogger(__name__)
 

@@ -1,43 +1,11 @@
-import os
-import shutil
-import subprocess
-from functools import lru_cache
-from pathlib import Path
-from module.msg_notifier import send_notify
-from config import config
-import bs4
-from utils.network import get_finial_url, session
 import logging
-from module.downloader import download
+import os
+import subprocess
+from pathlib import Path
+
+from utils.network import get_finial_url
 
 logger = logging.getLogger(__name__)
-
-
-@lru_cache(1)
-def get_firmware_infos():
-    base_url = 'https://archive.org/download/nintendo-switch-global-firmwares/'
-    resp = session.get(get_finial_url(base_url))
-    soup = bs4.BeautifulSoup(resp.text, features="html.parser")
-    a_tags = soup.select('#maincontent > div > div > pre > table > tbody > tr > td > a')
-    archive_versions = []
-    for a in a_tags:
-        name = a.text
-        if name.startswith('Firmware ') and name.endswith('.zip'):
-            size = a.parent.next_sibling.next_sibling.next_sibling.next_sibling.text
-            version = name[9:-4]
-            version_num = 0
-            for num in version.split('.'):
-                version_num *= 100
-                version_num += int(''.join(ch for ch in num if ch.isdigit()))
-            archive_versions.append({
-                'name': name,
-                'version': version,
-                'size': size,
-                'url': base_url + a.attrs['href'],
-                'version_num': version_num,
-            })
-    archive_versions = sorted(archive_versions, key=lambda x: x['version_num'], reverse=True)
-    return archive_versions
 
 
 def check_and_install_msvc():
@@ -55,36 +23,6 @@ def check_and_install_msvc():
     logger.info('install msvc...')
     process = subprocess.Popen([install_file.path])
     # process.wait()
-
-
-def install_firmware(firmware_version, target_firmware_path):
-    send_notify('正在获取固件信息...')
-    firmware_infos = get_firmware_infos()
-    target_info = None
-    if firmware_version:
-        firmware_map = {fi['version']: fi for fi in firmware_infos}
-        target_info = firmware_map.get(firmware_version)
-    if not target_info:
-        logger.info(f'Target firmware version [{firmware_version}] not found, skip install.')
-        send_notify(f'Target firmware version [{firmware_version}] not found, skip install.')
-        return
-    url = get_finial_url(target_info['url'])
-    send_notify(f'开始下载固件...')
-    logger.info(f"downloading firmware of [{firmware_version}] from {url}")
-    info = download(url)
-    file = info.files[0]
-    import zipfile
-    with zipfile.ZipFile(file.path, 'r') as zf:
-        firmware_path = target_firmware_path
-        shutil.rmtree(firmware_path, ignore_errors=True)
-        firmware_path.mkdir(parents=True, exist_ok=True)
-        send_notify(f'开始解压安装固件...')
-        logger.info(f'Unzipping firmware files to {firmware_path}')
-        zf.extractall(firmware_path)
-        logger.info(f'Firmware of [{firmware_version}] install successfully.')
-    if config.setting.download.autoDeleteAfterInstall:
-        os.remove(file.path)
-    return firmware_version
 
 
 if __name__ == '__main__':
