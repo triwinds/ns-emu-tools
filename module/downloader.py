@@ -57,6 +57,18 @@ def init_aria2():
 
 
 def download(url, save_dir=None, options=None, download_in_background=False):
+    origin_no_proxy = os.environ.get('no_proxy')
+    os.environ['no_proxy'] = '127.0.0.1,localhost'
+    try:
+        return _download(url, save_dir, options, download_in_background)
+    finally:
+        if origin_no_proxy is None:
+            del os.environ['no_proxy']
+        else:
+            os.environ['no_proxy'] = origin_no_proxy
+
+
+def _download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
     tmp = init_download_options_with_proxy(url)
     tmp['auto-file-renaming'] = 'false'
