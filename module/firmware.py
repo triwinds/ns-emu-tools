@@ -165,7 +165,7 @@ def install_firmware(firmware_version, target_firmware_path):
     file = info.files[0]
     if config.setting.download.verifyFirmwareMd5 and not check_file_md5(file.path, target_info['md5']):
         logger.info(f'firmware md5 not match, removing file [{file}]...')
-        os.remove(file)
+        os.remove(file.path)
         from exception.common_exception import Md5NotMatchException
         raise Md5NotMatchException()
     import zipfile
