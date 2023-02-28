@@ -14,7 +14,7 @@
           size="100"
           rounded
         >
-          <img src="./assets/icon.webp" alt="">
+          <img src="./assets/icon.png" alt="">
         </v-avatar>
 
         <div>版本：v{{ $store.state.currentVersion }}
@@ -154,6 +154,8 @@
 </template>
 
 <script>
+import 'core-js/stable';
+import 'regenerator-runtime/runtime';
 import router from "@/router";
 import SpeedDial from "@/components/SpeedDial";
 import ConsoleDialog from "@/components/ConsoleDialog";
