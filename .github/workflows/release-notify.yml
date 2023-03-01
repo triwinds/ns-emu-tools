@@ -1,6 +1,7 @@
 name: Release notify
 
 on:
+  workflow_dispatch:
   release:
     types: [released]
 
@@ -10,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: send telegram message on release
-        uses: appleboy/telegram-action@master
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          message: |
-            New release of ${{ github.event.release.tag_name }}:
-            
-            ${{ github.event.release.body }}
-            
-            Release page: [${{ github.event.release.tag_name }}](${{ github.event.release.html_url }})
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install requests
+      - name: run send_release_notify.py
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TG_SEND_TO: ${{ secrets.TELEGRAM_TO }}
+        run: |
+          python send_release_notify.py
