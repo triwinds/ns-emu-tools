@@ -119,6 +119,15 @@ def get_current_cfst_version():
         return f.read()
 
 
+def get_cf_hostnames():
+    default_list = ['nsarchive.e6ex.com', 'proxy.zyun.vip', 'download.nuaa.cf']
+    hostnames = get_override_host_names()
+    for hn in default_list:
+        if hn not in hostnames:
+            hostnames.append(hn)
+    return hostnames
+
+
 def optimize_cloudflare_hosts():
     if target_cfst_version != get_current_cfst_version():
         logger.info(f'cfst version changed, target version: {target_cfst_version}, '
@@ -133,10 +142,7 @@ def optimize_cloudflare_hosts():
     run_cfst()
     show_result()
     fastest_ip = get_fastest_ip_from_result()
-    host_names = get_override_host_names()
-    if not host_names:
-        host_names = ['nsarchive.e6ex.com']
-    install_ip_to_hosts(fastest_ip, host_names)
+    install_ip_to_hosts(fastest_ip, get_cf_hostnames())
 
 
 def remove_cloudflare_hosts():
@@ -145,8 +151,8 @@ def remove_cloudflare_hosts():
         send_notify('正在删除 hosts 文件中的相关配置...')
         from module.hosts import Hosts, HostsEntry
         hosts = Hosts()
-        host_names = get_override_host_names()
-        for hn in host_names:
+        hostnames = get_cf_hostnames()
+        for hn in hostnames:
             hosts.remove_all_matching(name=hn)
         write_hosts(hosts)
         subprocess.Popen(['ipconfig', '/flushdns'], stdout=subprocess.DEVNULL).wait()
@@ -177,7 +183,7 @@ def write_hosts(hosts: Hosts):
 
 if __name__ == '__main__':
     # run_cfst()
-    # optimize_cloudflare_hosts()
+    optimize_cloudflare_hosts()
     # print(check_is_admin())
     # remove_cloudflare_hosts()
-    install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
+    # install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
