@@ -49,6 +49,7 @@
     "> 1%",
     "last 2 versions",
     "not dead",
-    "ie >= 11"
+    "Chrome >= 51",
+    "Firefox >= 54"
   ]
 }
