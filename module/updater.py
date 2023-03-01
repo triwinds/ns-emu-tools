@@ -11,6 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 script_template = """@echo off
+chcp>nul 2>nul 65001
 echo 开始准备更新
 timeout /t 5 /nobreak
 if exist "<old_exe>" (
@@ -78,7 +79,7 @@ def update_self_by_tag(tag: str):
         .replace('<old_exe>', str(Path(sys.argv[0]).absolute()))\
         .replace('<new_exe>', str(new_exe_path)).replace('<target_place>', str(target_path))
     logger.info(f'creating update script')
-    with open('update.bat', 'w') as f:
+    with open('update.bat', 'w', encoding='utf-8') as f:
         f.write(script)
     script_path = Path(sys.argv[0]).parent.joinpath('update.bat').absolute()
     logger.info(f'execute script')

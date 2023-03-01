@@ -249,8 +249,7 @@ export default {
     async askAndUpdateRyujinxPath() {
       this.cleanAndShowConsoleDialog()
       this.appendConsoleMessage('=============================================')
-      this.appendConsoleMessage('安装/更新模拟器时会删除目录下除模拟器用户数据外的其他文件')
-      this.appendConsoleMessage('请确保您选择的目录下没有除模拟器外的其他文件')
+      this.appendConsoleMessage('选择的目录将作为存放模拟器的根目录')
       this.appendConsoleMessage('建议新建目录单独存放')
       this.appendConsoleMessage('=============================================')
       let data = await window.eel.ask_and_update_ryujinx_path()();
