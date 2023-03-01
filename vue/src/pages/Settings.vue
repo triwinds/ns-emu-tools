@@ -56,7 +56,7 @@
           <v-col><p class="success--text text-h5">下载设置</p></v-col>
         </v-row>
         <v-switch v-model="setting.download.autoDeleteAfterInstall" label="安装完成后自动删除下载的安装包"></v-switch>
-        <v-switch v-model="setting.download.disableAria2Ipv6" label="aria2 禁用 IPV6 (重启程序后生效)"></v-switch>
+        <v-switch v-model="setting.download.disableAria2Ipv6" label="aria2 禁用 IPv6 (重启程序后生效)"></v-switch>
         <v-switch v-model="setting.download.removeOldAria2LogFile" label="启动 aria2 前删除旧的日志"></v-switch>
         <v-switch v-model="setting.download.verifyFirmwareMd5" label="固件下载完成后校验 md5"></v-switch>
       </v-container>
