@@ -19,6 +19,8 @@ script_template = """@echo off
 cd /d <cfst_path>
 CloudflareST.exe -p 0 -url "https://cloudflaremirrors.com/archlinux/images/latest/Arch-Linux-x86_64-basic.qcow2"
 """
+target_cfst_version = 'v2.2.2'
+version_file = Path('CloudflareSpeedTest/cfst_version')
 
 
 def download_cfst():
@@ -27,7 +29,7 @@ def download_cfst():
         logger.info('downloading CloudflareSpeedTest...')
         send_notify('开始下载 CloudflareSpeedTest...')
         url = get_github_download_url('https://github.com/XIU2/CloudflareSpeedTest/releases/download'
-                                      '/v2.1.0/CloudflareST_windows_amd64.zip')
+                                      f'/{target_cfst_version}/CloudflareST_windows_amd64.zip')
         info = download(url)
         filepath = info.files[0].path
     import zipfile
@@ -35,6 +37,9 @@ def download_cfst():
     send_notify('正在解压 CloudflareSpeedTest...')
     with zipfile.ZipFile(filepath, 'r') as zf:
         zf.extractall('CloudflareSpeedTest')
+    os.remove(filepath)
+    with version_file.open('w') as f:
+        f.write(target_cfst_version)
 
 
 def run_cfst():
@@ -107,7 +112,21 @@ def install_ip_to_hosts(ip: str, host_names: List[str]):
         send_notify('hosts 文件更新失败, 请使用管理员权限重新启动程序.')
 
 
+def get_current_cfst_version():
+    if not version_file.exists():
+        return
+    with version_file.open() as f:
+        return f.read()
+
+
 def optimize_cloudflare_hosts():
+    if target_cfst_version != get_current_cfst_version():
+        logger.info(f'cfst version changed, target version: {target_cfst_version}, '
+                    f'current version: {get_current_cfst_version()}')
+        logger.info(f'removing old cfst...')
+        send_notify('CloudflareSpeedTest 版本已更新, 正在切换至新版本')
+        import shutil
+        shutil.rmtree('CloudflareSpeedTest', ignore_errors=True)
     exe_path = Path('CloudflareSpeedTest/CloudflareST.exe')
     if not exe_path.exists():
         download_cfst()
@@ -143,6 +162,7 @@ def write_hosts(hosts: Hosts):
     if check_is_admin():
         hosts.write()
         logger.info(f'updated hosts: {hosts}')
+        return
     elif os.name == 'nt':
         from utils.admin import run_with_admin_privilege
         tmp_hosts = str(Path('tmp_hosts').absolute())
@@ -156,8 +176,8 @@ def write_hosts(hosts: Hosts):
 
 
 if __name__ == '__main__':
-    run_cfst()
+    # run_cfst()
     # optimize_cloudflare_hosts()
     # print(check_is_admin())
     # remove_cloudflare_hosts()
-    # install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
+    install_ip_to_hosts(get_fastest_ip_from_result(), get_override_host_names())
