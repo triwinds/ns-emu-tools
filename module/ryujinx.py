@@ -45,7 +45,8 @@ def get_ryujinx_download_url(target_version: str, branch: str):
 
 
 def install_ryujinx_by_version(target_version: str, branch: str):
-    if config.ryujinx.version == target_version and config.ryujinx.branch == branch:
+    if config.ryujinx.version == target_version and \
+            (branch == 'ldn' or detect_current_branch() == branch):
         logger.info(f'Current ryujinx version is same as target version [{target_version}], skip install.')
         return f'当前就是 {branch} [{target_version}] 版本的 ryujinx , 跳过安装.'
     send_notify('正在获取 ryujinx 版本信息...')
