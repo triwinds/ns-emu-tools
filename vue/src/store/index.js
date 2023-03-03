@@ -77,11 +77,15 @@ const mutations = {
     },
     UPDATE_CONFIG(state, config) {
         state.config = config
+    },
+    PERSISTENT_CONSOLE_DIALOG(state, value) {
+        state.persistentConsoleDialog = value
     }
 }
 
 const state = {
     consoleDialogFlag: false,
+    persistentConsoleDialog: false,
     consoleMessages: [],
     availableFirmwareInfos: [],
     targetFirmwareVersion: '',

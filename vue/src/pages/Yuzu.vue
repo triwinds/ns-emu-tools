@@ -210,8 +210,10 @@ export default {
     installYuzu() {
       this.cleanAndShowConsoleDialog()
       this.isRunningInstall = true
+      this.$store.commit('PERSISTENT_CONSOLE_DIALOG', true)
       window.eel.install_yuzu(this.targetYuzuVersion, this.branch)((resp) => {
         this.isRunningInstall = false
+        this.$store.commit('PERSISTENT_CONSOLE_DIALOG', false)
         if (resp['code'] === 0) {
           this.updateYuzuConfig()
           this.appendConsoleMessage(resp['msg'])
@@ -223,8 +225,10 @@ export default {
     installFirmware() {
       this.cleanAndShowConsoleDialog()
       this.isRunningInstall = true
+      this.$store.commit('PERSISTENT_CONSOLE_DIALOG', true)
       window.eel.install_yuzu_firmware(this.targetFirmwareVersion)((resp) => {
         this.isRunningInstall = false
+        this.$store.commit('PERSISTENT_CONSOLE_DIALOG', false)
         if (resp['msg']) {
           this.appendConsoleMessage(resp['msg'])
         }

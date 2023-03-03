@@ -3,17 +3,8 @@
     <v-dialog
       v-model="$store.state.consoleDialogFlag"
       max-width="900"
+      :persistent="$store.state.persistentConsoleDialog"
     >
-<!--      <template v-slot:activator="{ on, attrs }">-->
-<!--        <v-btn-->
-<!--          color="red lighten-2"-->
-<!--          dark-->
-<!--          v-bind="attrs"-->
-<!--          v-on="on"-->
-<!--        >-->
-<!--          Click Me-->
-<!--        </v-btn>-->
-<!--      </template>-->
 
       <v-card>
         <v-card-title class="text-h5 primary white--text">
@@ -39,6 +30,7 @@
             color="primary"
             text
             @click="closeDialog"
+            :disabled="$store.state.persistentConsoleDialog"
           >
             关闭
           </v-btn>
