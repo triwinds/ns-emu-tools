@@ -227,8 +227,10 @@ export default {
     installRyujinx() {
       this.cleanAndShowConsoleDialog()
       this.isRunningInstall = true
+      this.$store.commit('PERSISTENT_CONSOLE_DIALOG', true)
       window.eel.install_ryujinx(this.targetRyujinxVersion, this.selectedBranch)((resp) => {
         this.isRunningInstall = false
+        this.$store.commit('PERSISTENT_CONSOLE_DIALOG', false)
         this.appendConsoleMessage(resp['msg'])
         if (resp['code'] === 0) {
           this.updateRyujinxConfig()
@@ -238,8 +240,10 @@ export default {
     installFirmware() {
       this.cleanAndShowConsoleDialog()
       this.isRunningInstall = true
+      this.$store.commit('PERSISTENT_CONSOLE_DIALOG', true)
       window.eel.install_ryujinx_firmware(this.targetFirmwareVersion)((resp) => {
         this.isRunningInstall = false
+        this.$store.commit('PERSISTENT_CONSOLE_DIALOG', false)
         this.appendConsoleMessage(resp['msg'])
         if (resp['code'] === 0) {
           this.updateRyujinxConfig()

@@ -3,17 +3,8 @@
     <v-dialog
       v-model="$store.state.consoleDialogFlag"
       max-width="900"
+      :persistent="$store.state.persistentConsoleDialog"
     >
-<!--      <template v-slot:activator="{ on, attrs }">-->
-<!--        <v-btn-->
-<!--          color="red lighten-2"-->
-<!--          dark-->
-<!--          v-bind="attrs"-->
-<!--          v-on="on"-->
-<!--        >-->
-<!--          Click Me-->
-<!--        </v-btn>-->
-<!--      </template>-->
 
       <v-card>
         <v-card-title class="text-h5 primary white--text">
@@ -38,7 +29,24 @@
           <v-btn
             color="primary"
             text
+            @click="pauseDownload"
+            v-if="$store.state.persistentConsoleDialog"
+          >
+            暂停下载任务
+          </v-btn>
+          <v-btn
+            color="primary"
+            text
+            @click="stopDownload"
+            v-if="$store.state.persistentConsoleDialog"
+          >
+            中断并删除下载任务
+          </v-btn>
+          <v-btn
+            color="primary"
+            text
             @click="closeDialog"
+            :disabled="$store.state.persistentConsoleDialog"
           >
             关闭
           </v-btn>
@@ -65,7 +73,17 @@
     methods: {
       closeDialog() {
         this.$store.commit('SET_CONSOLE_DIALOG_FLAG', false)
-      }
+      },
+      stopDownload() {
+        window.eel.stop_download()((resp) => {
+          console.log(resp)
+        })
+      },
+      pauseDownload() {
+        window.eel.pause_download()((resp) => {
+          console.log(resp)
+        })
+      },
     },
     computed: {
 
