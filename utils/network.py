@@ -40,7 +40,7 @@ options_on_proxy = {
 options_on_cdn = {
     'split': '8',
     'max-connection-per-server': '8',
-    'min-split-size': '4M',
+    'min-split-size': '12M',
 }
 
 chrome_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' \

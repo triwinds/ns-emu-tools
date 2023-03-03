@@ -8,6 +8,7 @@ import os
 from module.msg_notifier import send_notify
 from config import config
 from utils.network import get_available_port, get_global_options, init_download_options_with_proxy
+from exception.download_exception import *
 
 aria2: Optional[aria2p.API] = None
 aria2_process: Optional[subprocess.Popen] = None
@@ -56,6 +57,18 @@ def init_aria2():
     aria2.set_global_options(global_options)
 
 
+def stop_download():
+    if not aria2:
+        return False
+    return aria2.remove_all()
+
+
+def pause_download():
+    if not aria2:
+        return False
+    return aria2.pause_all(force=True)
+
+
 def download(url, save_dir=None, options=None, download_in_background=False):
     origin_no_proxy = os.environ.get('no_proxy')
     os.environ['no_proxy'] = '127.0.0.1,localhost'
@@ -70,6 +83,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
 
 def _download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
+    send_notify('如果遇到下载失败或卡住的问题, 可以尝试在设置中换个下载源, 如果还是不行就挂个梯子')
     tmp = init_download_options_with_proxy(url)
     tmp['auto-file-renaming'] = 'false'
     tmp['allow-overwrite'] = 'false'
@@ -100,17 +114,30 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
             if retry_count > 15:
                 raise e
     print('\r')
+    if info.is_paused:
+        raise DownloadPaused()
     if info.error_code != '0':
         if info.error_code == '13':
             logger.info('file already exist.')
             send_notify('文件已存在, 跳过下载.')
+        elif info.error_code == '31':
+            if not info.is_complete:
+                logger.info(f'remove downloading files due to download interrupted.')
+                for file in info.files:
+                    if file.path.exists():
+                        logger.debug(f'remove file: {file.path}')
+                        os.remove(file.path)
+            raise DownloadInterrupted()
         else:
+            print(info)
             logger.error(f'info.error_code: {info.error_code}, error message: {info.error_message}')
             raise RuntimeError(f'下载出错, error_code: {info.error_code}, error message: {info.error_message}')
     else:
         logger.info(f'progress: {info.progress_string()}, total size: {info.total_length_string()}')
+    if not info.is_complete:
+        raise DownloadNotCompleted(info.name, info.status)
     send_notify('下载完成')
-    aria2.autopurge()
+    aria2.purge()
     return info
 
 

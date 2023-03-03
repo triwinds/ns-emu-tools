@@ -73,6 +73,24 @@ def get_net_release_info_by_tag(tag: str):
 
 
 @eel.expose
+def stop_download():
+    from module.downloader import stop_download
+    try:
+        return success_response(stop_download())
+    except Exception as e:
+        return exception_response(e)
+
+
+@eel.expose
+def pause_download():
+    from module.downloader import pause_download
+    try:
+        return success_response(pause_download())
+    except Exception as e:
+        return exception_response(e)
+
+
+@eel.expose
 def load_history_path(emu_type: str):
     from storage import storage
     from config import config
