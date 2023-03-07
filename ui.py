@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 import eel
 from config import config
 
@@ -20,9 +21,27 @@ def can_use_edge():
         with key:
             version: str = winreg.QueryValueEx(key, 'version')[0]
             logger.info(f'Edge version: {version}')
-            return int(version.split('.')[0]) > 70
+            return int(version.split('.')[0]) > 70 and _find_edge_win() is not None
     except:
         return False
+
+
+def _find_edge_win() -> Optional[str]:
+    import winreg as reg
+    import os
+    reg_path = r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe'
+    for install_type in reg.HKEY_CURRENT_USER, reg.HKEY_LOCAL_MACHINE:
+        try:
+            reg_key = reg.OpenKey(install_type, reg_path, 0, reg.KEY_READ)
+            edge_path = reg.QueryValue(reg_key, None)
+            reg_key.Close()
+            if not os.path.isfile(edge_path):
+                continue
+        except WindowsError:
+            edge_path = None
+        else:
+            break
+    return edge_path
 
 
 def start_edge_in_app_mode(page, port, size=(1280, 720)):
@@ -31,8 +50,7 @@ def start_edge_in_app_mode(page, port, size=(1280, 720)):
         port = get_available_port()
     url = f'http://localhost:{port}/{page}'
     import subprocess
-    import sys
-    subprocess.Popen(f'start msedge --app={url}',
+    subprocess.Popen(f'"{_find_edge_win()}" --app={url}',
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, shell=True)
     eel.start(url, port=port, mode=False, size=size)
 
@@ -70,9 +88,9 @@ def main(port=0, mode=None, dev=False):
 
 
 if __name__ == '__main__':
-    import gevent.monkey
-
-    gevent.monkey.patch_ssl()
-    gevent.monkey.patch_socket()
-    main(8888, False, True)
-    # main(0, 'edge')
+    # import gevent.monkey
+    #
+    # gevent.monkey.patch_ssl()
+    # gevent.monkey.patch_socket()
+    # main(8888, False, True)
+    main(0, 'edge')
