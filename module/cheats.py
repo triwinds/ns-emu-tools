@@ -10,7 +10,7 @@ from module.msg_notifier import send_notify
 
 
 logger = logging.getLogger(__name__)
-cheat_item_re = re.compile(r'\[(.*?)]\n+([\n\ra-z0-9A-Z\s]+)', re.MULTILINE)
+cheat_item_re = re.compile(r'\[(.*?)][\n\r]+([\n\ra-z0-9A-Z\s]+)', re.MULTILINE)
 multi_new_line_re = re.compile('(\r\n|\n){2,}')
 cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.[tT][xX][tT]$')
 game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
@@ -60,8 +60,9 @@ def save_cheat_map_to_txt(cheats_map: Dict, txt_path: Path):
 
 
 def parse_cheat_file(cheat_file: Path):
-    with open(cheat_file, 'r', encoding='utf-8') as f:
-        data = f.read()
+    from utils.string_util import auto_decode
+    with open(cheat_file, 'rb') as f:
+        data = auto_decode(f.read())
     groups = cheat_item_re.findall(data)
     res = {}
     for item in groups:
