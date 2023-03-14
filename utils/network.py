@@ -25,7 +25,7 @@ if config.setting.network.useDoh:
     from utils.doh import install_doh
     install_doh()
 
-session = requests_cache.CachedSession(cache_control=True)
+session = requests_cache.CachedSession(cache_control=True, backend='memory')
 session.headers.update({'User-Agent': user_agent})
 session.mount('https://cfrp.e6ex.com', HTTPAdapter(max_retries=5))
 session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
