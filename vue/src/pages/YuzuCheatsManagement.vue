@@ -14,9 +14,13 @@
               :item-text="concatFolderItemName"
               item-value="cheats_path"
               label="选择游戏 mod 目录"
+              hide-details
             ></v-select>
           </v-col>
         </v-row>
+        <div style="padding: 30px" v-if="selectedFolder === ''">
+          <div class="body-1 text--primary" v-html="descriptionHtml"></div>
+        </div>
         <v-row v-show="selectedFolder !== ''">
           <v-col>
             <v-select
@@ -25,6 +29,7 @@
               label="选择金手指文件"
               item-text="name"
               item-value="path"
+              hide-details
             ></v-select>
           </v-col>
         </v-row>
@@ -65,6 +70,19 @@
 
 <script>
 import SimplePage from "@/components/SimplePage";
+import * as showdown from 'showdown'
+
+let mdDescription = `
+这个模块是对 Yuzu 金手指功能的一个补充，目标是实现类似 Ryujinx 对金手指中单个作弊项进行开关的功能.
+
+在使用前请先阅读以下说明：
+
+1. 请先确认金手指文件已经可以在 Yuzu 中被识别，如果 Yuzu 不能识别你的金手指，那么这里也不能
+2. 如果不清楚如何在 Yuzu 中添加金手指，可以在 B 站上搜索相关教程
+3. 某些金手指中的前面的一些公共的作弊项是必须启用的，请不要关闭这些作弊项（这些项目一般都在文件的最上面
+4. 修改后需要重启游戏才会生效
+5. 点击保存时会自动备份原来的金手指文件，如果出现问题，可以自行用这些备份文件来还原
+`
 
 export default {
   name: "YuzuCheatsManagement",
@@ -78,6 +96,7 @@ export default {
       selectedCheatFile: '',
       cheatItems: [],
       cheatItemBoxHeight: 340,
+      descriptionHtml: ''
     }
   },
   async created() {
@@ -87,6 +106,8 @@ export default {
   mounted() {
     this.updateCheatItemBoxHeight()
     window.addEventListener('resize', this.updateCheatItemBoxHeight);
+    const converter = new showdown.Converter({strikethrough: true})
+    this.descriptionHtml = converter.makeHtml(mdDescription)
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.updateCheatItemBoxHeight);

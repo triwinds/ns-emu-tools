@@ -1,7 +1,8 @@
 import re
 import shutil
+import string
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 from utils.network import session
 import logging
 import time
@@ -10,7 +11,7 @@ from module.msg_notifier import send_notify
 
 
 logger = logging.getLogger(__name__)
-cheat_item_re = re.compile(r'\[(.*?)]\n+([\n\ra-z0-9A-Z\s]+)', re.MULTILINE)
+cheat_item_re = re.compile(r'\[(.*?)][\n\r]+([\n\ra-z0-9A-Z\s]+)', re.MULTILINE)
 multi_new_line_re = re.compile('(\r\n|\n){2,}')
 cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.[tT][xX][tT]$')
 game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
@@ -56,19 +57,69 @@ def save_cheat_map_to_txt(cheats_map: Dict, txt_path: Path):
         for cheat_title in cheats_map:
             cheat_content = cheats_map[cheat_title]
             f.write(f'[{cheat_title}]\n')
-            f.write(f'{cheat_content}\n\n')
+            f.write(f'{cheat_content}\n')
 
 
-def parse_cheat_file(cheat_file: Path):
-    with open(cheat_file, 'r', encoding='utf-8') as f:
-        data = f.read()
-    groups = cheat_item_re.findall(data)
+def _parse_ryujinx_cheat_file():
+    # ryujinx: https://github.com/Ryujinx/Ryujinx/blob/master/Ryujinx.HLE/HOS/ModLoader.cs#L312
+    pass
+
+
+def _parse_yuzu_cheat_file(cheat_file: Path):
+    # yuzu: https://github.com/yuzu-emu/yuzu/blob/master/src/core/memory/cheat_engine.cpp#L100
+    from utils.string_util import auto_decode
+    with open(cheat_file, 'rb') as f:
+        data = auto_decode(f.read()).strip()
+    if not data:
+        return {}
     res = {}
-    for item in groups:
-        title, content = item
-        content = multi_new_line_re.sub('\n', content).rstrip().lstrip()
-        res[title] = content
+    entry = {'title': 'Default', 'ops': []}
+    i = 0
+    while i < len(data):
+        c = data[i]
+        i += 1
+        if c in string.whitespace:
+            continue
+        elif c in '{[':
+            if entry['title'] != 'Default' or entry.get('ops'):
+                res[entry['title']] = _convert_ops_to_content(entry.get('ops'))
+            title, i = _find_next(data, ']}', i)
+            if not title:
+                return res
+            entry = {'title': title, 'ops': []}
+        elif c in string.hexdigits:
+            if entry is None:
+                return res
+            s = c + data[i:i+7]
+            if not all(c in string.hexdigits for c in s):
+                return res
+            ops = entry.get('ops', [])
+            ops.append(s)
+            entry['ops'] = ops
+            i += 7
+    if entry['title'] != 'Default' or entry.get('ops'):
+        res[entry['title']] = _convert_ops_to_content(entry['ops'])
     return res
+
+
+def _convert_ops_to_content(ops: List[str]):
+    if not ops:
+        return '\n'
+    content = ''
+    for i, op in enumerate(ops):
+        content += op
+        content += '\n' if i % 3 == 2 else ' '
+    return content
+
+
+def _find_next(s, tc, i):
+    si = i
+    while i < len(s):
+        c = s[i]
+        if c in tc:
+            return s[si:i], i
+        i += 1
+    return None, si
 
 
 def list_all_cheat_files_from_folder(folder_path: str):
@@ -93,11 +144,11 @@ def load_cheat_chunk_info(cheat_file_path: str):
     if not chunk_folder.exists():
         chunk_folder.mkdir(parents=True, exist_ok=True)
     chunk_file = chunk_folder.joinpath(cheat_file.name[:16] + '_chunk.txt')
-    current_cheat_map = parse_cheat_file(cheat_file)
+    current_cheat_map = _parse_yuzu_cheat_file(cheat_file)
     logger.debug(f'current_cheat_map size: {len(current_cheat_map)}, '
                  f'current_cheat_map titles: {current_cheat_map.keys()}')
     if chunk_file.exists():
-        chunk_cheat_map = parse_cheat_file(chunk_file)
+        chunk_cheat_map = _parse_yuzu_cheat_file(chunk_file)
         logger.debug(f'chunk_cheat_map titles: {chunk_cheat_map.keys()}')
         chunk_cheat_map.update(current_cheat_map)
         logger.info('chunk_cheat_map updated.')
@@ -134,7 +185,7 @@ def update_current_cheats(enable_titles: List[str], cheat_file_path: str):
     logger.info(f'backup {cheat_file} to {backup_file}')
     send_notify(f'原文件已备份至 {backup_file}')
     cheat_map = {}
-    chunk_map = parse_cheat_file(chunk_file)
+    chunk_map = _parse_yuzu_cheat_file(chunk_file)
     logger.debug(f'chunk_map size: {len(chunk_map)}, '
                  f'chunk_map titles: {chunk_map.keys()}')
     for title in enable_titles:
@@ -162,7 +213,7 @@ def main():
     # cheats_folders = scan_all_cheats_folder(r'D:\Yuzu\user\load')
     # print(cheats_folders)
     # backup_original_cheats(cheats_folders)
-    map = parse_cheat_file(Path(r'D:\Yuzu\user\load\010074F013262000\jinshouzi\cheats_chunk\03EE3DBAC10CACB8_1668698421771.txt'))
+    map = _parse_yuzu_cheat_file(Path(r'D:\Yuzu\user\load\0100F3400332C000\jinshouzhi\cheats_chunk\E3938FA78579C1CA_chunk.txt'))
     print(map)
     # print(get_game_data())
 
