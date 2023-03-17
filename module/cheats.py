@@ -69,11 +69,11 @@ def _parse_yuzu_cheat_file(cheat_file: Path):
     # yuzu: https://github.com/yuzu-emu/yuzu/blob/master/src/core/memory/cheat_engine.cpp#L100
     from utils.string_util import auto_decode
     with open(cheat_file, 'rb') as f:
-        data = auto_decode(f.read())
+        data = auto_decode(f.read()).strip()
     if not data:
         return {}
     res = {}
-    entry: Optional[Dict] = None
+    entry = {'title': 'Default', 'ops': []}
     i = 0
     while i < len(data):
         c = data[i]
@@ -81,12 +81,12 @@ def _parse_yuzu_cheat_file(cheat_file: Path):
         if c in string.whitespace:
             continue
         elif c in '{[':
-            if entry is not None:
-                res[entry['title']] = _convert_ops_to_content(entry['ops'])
+            if entry['title'] != 'Default' or entry.get('ops'):
+                res[entry['title']] = _convert_ops_to_content(entry.get('ops'))
             title, i = _find_next(data, ']}', i)
             if not title:
                 return res
-            entry = {'title': title}
+            entry = {'title': title, 'ops': []}
         elif c in string.hexdigits:
             if entry is None:
                 return res
@@ -97,14 +97,14 @@ def _parse_yuzu_cheat_file(cheat_file: Path):
             ops.append(s)
             entry['ops'] = ops
             i += 7
-    if entry is not None:
+    if entry['title'] != 'Default' or entry.get('ops'):
         res[entry['title']] = _convert_ops_to_content(entry['ops'])
     return res
 
 
 def _convert_ops_to_content(ops: List[str]):
     if not ops:
-        return ''
+        return '\n'
     content = ''
     for i, op in enumerate(ops):
         content += op
@@ -213,7 +213,7 @@ def main():
     # cheats_folders = scan_all_cheats_folder(r'D:\Yuzu\user\load')
     # print(cheats_folders)
     # backup_original_cheats(cheats_folders)
-    map = _parse_yuzu_cheat_file(Path(r'D:\Yuzu\user\load\010074F013262000\jinshouzi\cheats_chunk\03EE3DBAC10CACB8_1668698421771.txt'))
+    map = _parse_yuzu_cheat_file(Path(r'D:\Yuzu\user\load\0100F3400332C000\jinshouzhi\cheats_chunk\E3938FA78579C1CA_chunk.txt'))
     print(map)
     # print(get_game_data())
 

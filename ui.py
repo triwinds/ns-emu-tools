@@ -92,5 +92,4 @@ if __name__ == '__main__':
     #
     # gevent.monkey.patch_ssl()
     # gevent.monkey.patch_socket()
-    # main(8888, False, True)
-    main(0, 'edge')
+    main(8888, False, True)
