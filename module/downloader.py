@@ -125,12 +125,11 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
             if not info.is_complete:
                 logger.info(f'remove downloading files due to download interrupted.')
                 for file in info.files:
-                    if file.path.exists():
+                    if file.path.exists() and file.path.is_file():
                         logger.debug(f'remove file: {file.path}')
                         os.remove(file.path)
             raise DownloadInterrupted()
         else:
-            print(info)
             logger.error(f'info.error_code: {info.error_code}, error message: {info.error_message}')
             raise RuntimeError(f'下载出错, error_code: {info.error_code}, error message: {info.error_message}')
     else:
