@@ -61,6 +61,7 @@ def install_ryujinx_by_version(target_version: str, branch: str):
     file = info.files[0]
     ryujinx_path = Path(config.ryujinx.path)
     ryujinx_path.mkdir(parents=True, exist_ok=True)
+    kill_all_ryujinx_instance(ryujinx_path)
     clear_ryujinx_folder(ryujinx_path)
     import zipfile
     with zipfile.ZipFile(file.path, 'r') as zf:
@@ -72,8 +73,11 @@ def install_ryujinx_by_version(target_version: str, branch: str):
         ryujinx_tmp_dir = tmp_dir.joinpath('publish')
         logger.info(f'Copy back ryujinx files...')
         send_notify('安装 ryujinx 文件至目录...')
-        kill_all_ryujinx_instance()
-        shutil.copytree(ryujinx_tmp_dir, ryujinx_path, dirs_exist_ok=True)
+        try:
+            shutil.copytree(ryujinx_tmp_dir, ryujinx_path, dirs_exist_ok=True)
+        except Exception as e:
+            from exception.install_exception import FailToCopyFiles
+            raise FailToCopyFiles(e, 'Ryujinx 文件复制失败')
         shutil.rmtree(tmp_dir)
         config.ryujinx.version = target_version
         config.ryujinx.branch = branch
@@ -116,11 +120,15 @@ def clear_ryujinx_folder(ryujinx_path: Path):
         os.remove(path)
 
 
-def kill_all_ryujinx_instance():
+def kill_all_ryujinx_instance(ryujinx_path: Path = None):
     import psutil
     kill_flag = False
     for p in psutil.process_iter():
         if p.name().startswith('Ryujinx.'):
+            if ryujinx_path is not None:
+                process_path = Path(p.exe()).parent.absolute()
+                if ryujinx_path.absolute() != process_path:
+                    continue
             send_notify(f'关闭 Ryujinx 进程 [{p.pid}]')
             logger.info(f'kill Ryujinx process [{p.pid}]')
             p.kill()
@@ -182,6 +190,7 @@ def detect_ryujinx_version():
         config.ryujinx.version = None
         dump_config()
         return None
+    kill_all_ryujinx_instance()
     config.ryujinx.branch = detect_current_branch()
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
@@ -232,5 +241,6 @@ if __name__ == '__main__':
     # clear_ryujinx_folder(Path(config.ryujinx.path))
     # install_firmware_to_ryujinx('15.0.0')
     # open_ryujinx_keys_folder()
-    detect_ryujinx_version()
+    # detect_ryujinx_version()
     # install_ryujinx_by_version('3.0.1', 'ldn')
+    kill_all_ryujinx_instance(Path(config.ryujinx.path))
