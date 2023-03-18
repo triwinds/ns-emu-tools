@@ -30,6 +30,7 @@ session.headers.update({'User-Agent': user_agent})
 session.mount('https://cfrp.e6ex.com', HTTPAdapter(max_retries=5))
 session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
 session.mount('https://api.github.com', HTTPAdapter(max_retries=5))
+session.mount('https://cdn.jsdelivr.net', HTTPAdapter(max_retries=5))
 
 options_on_proxy = {
     'split': '16',

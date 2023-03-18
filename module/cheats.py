@@ -17,11 +17,11 @@ cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.[tT][xX][tT]$')
 game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
 
 
-@lru_cache(1)
+# @lru_cache(1)
 def get_game_data():
     res = {}
     try:
-        resp = session.get('https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json')
+        resp = session.get('https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json', timeout=5)
         return resp.json()
     except Exception as e:
         logger.warning(f'fail to load game data, ex: {e}')
@@ -32,7 +32,7 @@ def scan_all_cheats_folder(mod_path) -> List[Dict[str, str]]:
     root = Path(mod_path)
     logger.info(f'scanning cheats under path: {root}')
     cheats_folders = root.glob('**/cheats')
-    game_data = get_game_data()
+    # game_data = get_game_data()
     res = []
     for folder in cheats_folders:
         game_id = folder.parent.parent.name
@@ -47,7 +47,7 @@ def scan_all_cheats_folder(mod_path) -> List[Dict[str, str]]:
             res.append({
                 'game_id': game_id,
                 'cheats_path': str(folder.absolute()),
-                'game_name': game_data.get(game_id)
+                # 'game_name': game_data.get(game_id)
             })
     return res
 
