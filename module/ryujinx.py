@@ -168,8 +168,8 @@ def start_ryujinx():
         logger.info(f'starting Ryujinx from: {rj_path}')
         subprocess.Popen([rj_path])
     else:
-        logger.error(f'Ryujinx not exist in [{rj_path}]')
-        raise RuntimeError(f'Ryujinx not exist in [{rj_path}]')
+        logger.error(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
+        raise RuntimeError(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
 
 
 def detect_current_branch():
