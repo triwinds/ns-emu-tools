@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # DOH_SERVER = '120.53.53.53'
 # aliyun https://dns.alidns.com
 DOH_SERVER = '223.5.5.5'
+session = requests.Session()
 
 resolver = dns.resolver.Resolver(configure=False)
 resolver.nameservers = ["223.5.5.5", '119.29.29.29']
@@ -99,20 +100,19 @@ def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", f
         return retval
 
     try:
-        with requests.sessions.Session() as session:
-            q = dns.message.make_query(name, dns.rdatatype.from_text(record_type))
-            resp = dns.query.https(q, server, session=session)
-            # print(f'[{name}] doh answer: {resp.answer}')
-            logger.debug(f'doh answer of [{name} in {record_type}]: {resp.answer}')
-            if not resp.answer:
-                return []
-            retval = []
-            for answer in resp.answer:
-                if answer.rdtype not in {dns.rdatatype.AAAA, dns.rdatatype.A}:
-                    continue
-                update_dns_cache(name, answer)
-                for item in answer:
-                    retval.append(item.address)
+        q = dns.message.make_query(name, dns.rdatatype.from_text(record_type))
+        resp = dns.query.https(q, server, session=session)
+        # print(f'[{name}] doh answer: {resp.answer}')
+        logger.debug(f'doh answer of [{name} in {record_type}]: {resp.answer}')
+        if not resp.answer:
+            return []
+        retval = []
+        for answer in resp.answer:
+            if answer.rdtype not in {dns.rdatatype.AAAA, dns.rdatatype.A}:
+                continue
+            update_dns_cache(name, answer)
+            for item in answer:
+                retval.append(item.address)
     except Exception as ex:
         if verbose:
             logger.debug("Exception occurred: '%s'" % ex)
