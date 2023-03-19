@@ -90,8 +90,13 @@ def copy_back_yuzu_files(tmp_dir: Path, yuzu_path: Path, ):
         os.remove(useless_file)
     logger.info(f'Copy back yuzu files...')
     send_notify('安装 yuzu 文件至目录...')
-    kill_all_yuzu_instance()
-    shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
+    kill_all_yuzu_instance(yuzu_path)
+    try:
+        shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
+        time.sleep(0.5)
+    except Exception as e:
+        from exception.install_exception import FailToCopyFiles
+        raise FailToCopyFiles(e, 'Yuzu 文件复制失败')
     shutil.rmtree(tmp_dir)
 
 
@@ -166,11 +171,15 @@ def detect_yuzu_version():
     return version
 
 
-def kill_all_yuzu_instance():
+def kill_all_yuzu_instance(yuzu_path: Path = None):
     import psutil
     kill_flag = False
     for p in psutil.process_iter():
         if p.name() == 'yuzu.exe':
+            if yuzu_path is not None:
+                process_path = Path(p.exe()).parent.absolute()
+                if yuzu_path.absolute() != process_path:
+                    continue
             send_notify(f'关闭 yuzu 进程 [{p.pid}]')
             logger.info(f'kill yuzu.exe [{p.pid}]')
             p.kill()

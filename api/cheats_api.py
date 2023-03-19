@@ -49,3 +49,12 @@ def open_cheat_mod_folder(folder_path: str):
         return success_response(open_cheat_mod_folder(folder_path))
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def get_game_data():
+    from module.cheats import get_game_data
+    try:
+        return success_response(get_game_data())
+    except Exception as e:
+        return exception_response(e)

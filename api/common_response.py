@@ -2,6 +2,7 @@ import logging
 from module.msg_notifier import send_notify
 from exception.common_exception import *
 from exception.download_exception import *
+from exception.install_exception import *
 
 
 logger = logging.getLogger(__name__)
@@ -51,12 +52,20 @@ def download_not_completed_handler(ex: DownloadNotCompleted):
     return error_response(603, str(ex))
 
 
+def fail_to_copy_files_handler(ex: FailToCopyFiles):
+    logger.exception(ex.raw_exception)
+    send_notify(f'{ex.msg}, 这可能是由于相关文件被占用或者没有相关目录的写入权限造成的')
+    send_notify(f'请检查相关程序是否已经关闭, 或者重启一下系统试试')
+    return error_response(701, str(ex))
+
+
 exception_handler_map = {
     VersionNotFoundException: version_not_found_handler,
     Md5NotMatchException: md5_not_found_handler,
     DownloadInterrupted: download_interrupted_handler,
     DownloadPaused: download_paused_handler,
     DownloadNotCompleted: download_not_completed_handler,
+    FailToCopyFiles: fail_to_copy_files_handler,
 }
 
 

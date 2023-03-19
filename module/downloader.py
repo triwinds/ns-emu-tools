@@ -84,6 +84,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
 def _download(url, save_dir=None, options=None, download_in_background=False):
     init_aria2()
     send_notify('如果遇到下载失败或卡住的问题, 可以尝试在设置中换个下载源, 如果还是不行就挂个梯子')
+    send_notify('如果你的网络支持 IPv6, 也可以尝试在设置中允许 aria2 使用 IPv6, 看看能不能解决问题')
     tmp = init_download_options_with_proxy(url)
     tmp['auto-file-renaming'] = 'false'
     tmp['allow-overwrite'] = 'false'
@@ -125,12 +126,11 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
             if not info.is_complete:
                 logger.info(f'remove downloading files due to download interrupted.')
                 for file in info.files:
-                    if file.path.exists():
+                    if file.path.exists() and file.path.is_file():
                         logger.debug(f'remove file: {file.path}')
                         os.remove(file.path)
             raise DownloadInterrupted()
         else:
-            print(info)
             logger.error(f'info.error_code: {info.error_code}, error message: {info.error_message}')
             raise RuntimeError(f'下载出错, error_code: {info.error_code}, error message: {info.error_message}')
     else:

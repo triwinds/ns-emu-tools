@@ -15,6 +15,7 @@
               item-value="cheats_path"
               label="选择游戏 mod 目录"
               hide-details
+              :disabled="!cheatsInited"
             ></v-select>
           </v-col>
         </v-row>
@@ -89,14 +90,15 @@ export default {
   components: {SimplePage},
   data() {
     return {
-      selected: false,
+      cheatsInited: false,
       cheatsFolders: [],
       selectedFolder: '',
       cheatFiles: [],
       selectedCheatFile: '',
       cheatItems: [],
-      cheatItemBoxHeight: 340,
-      descriptionHtml: ''
+      cheatItemBoxHeight: 410,
+      descriptionHtml: '',
+      gameDataInited: false,
     }
   },
   async created() {
@@ -117,15 +119,28 @@ export default {
       let resp = await window.eel.scan_all_cheats_folder()()
       if (resp.code === 0 && resp.data) {
         this.cheatsFolders = resp.data
+        window.eel.get_game_data()((resp) => {
+          this.gameDataInited = true
+          if (resp.code === 0) {
+            let nl = []
+            for (let item of this.cheatsFolders) {
+              item.game_name = resp.data[item.game_id]
+              nl.push(item)
+            }
+            this.cheatsFolders = nl;
+          }
+        });
+        this.cheatsInited = true
         return this.cheatsFolders
       }
       return []
     },
     updateCheatItemBoxHeight() {
-      this.cheatItemBoxHeight = window.innerHeight - 510
+      this.cheatItemBoxHeight = window.innerHeight - 440
     },
     concatFolderItemName(item) {
-      return `[${item.game_id}] ${item.game_name ? item.game_name : '未能识别的游戏'}`
+      let gameName = item.game_name ? item.game_name : this.gameDataInited ? '未知游戏' : '游戏信息加载中...'
+      return `[${item.game_id}] ${gameName}`
     },
     listAllCheatFilesFromFolder(selectedFolder) {
       window.eel.list_all_cheat_files_from_folder(selectedFolder)((resp) => {
