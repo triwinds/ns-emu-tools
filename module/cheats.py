@@ -3,7 +3,7 @@ import shutil
 import string
 from pathlib import Path
 from typing import List, Dict, Optional
-from utils.network import session
+from utils.network import get_durable_cache_session
 import logging
 import time
 from functools import lru_cache
@@ -21,7 +21,8 @@ game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
 def get_game_data():
     res = {}
     try:
-        resp = session.get('https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json', timeout=5)
+        resp = get_durable_cache_session().get(
+            'https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json', timeout=5)
         return resp.json()
     except Exception as e:
         logger.warning(f'fail to load game data, ex: {e}')

@@ -9,7 +9,7 @@ import xmltodict
 from functools import lru_cache
 from config import config
 from module.downloader import download
-from utils.network import get_finial_url, session
+from utils.network import get_finial_url, get_durable_cache_session
 
 logger = logging.getLogger(__name__)
 hactool_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('hactool.exe')
@@ -108,7 +108,7 @@ def get_firmware_infos():
     import urllib.parse
     base_url = 'https://archive.org/download/nintendo-switch-global-firmwares/'
     url = base_url + 'nintendo-switch-global-firmwares_files.xml'
-    resp = session.get(get_finial_url(url), timeout=5)
+    resp = get_durable_cache_session().get(get_finial_url(url), timeout=5)
     data = xmltodict.parse(resp.text)
     files = data['files']['file']
     res = []

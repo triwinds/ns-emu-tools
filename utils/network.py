@@ -4,6 +4,7 @@ import logging
 import os
 import requests_cache
 from requests.adapters import HTTPAdapter
+from gevent.lock import RLock
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,30 @@ session.headers.update({'User-Agent': user_agent})
 session.mount('https://cfrp.e6ex.com', HTTPAdapter(max_retries=5))
 session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
 session.mount('https://api.github.com', HTTPAdapter(max_retries=5))
-session.mount('https://cdn.jsdelivr.net', HTTPAdapter(max_retries=5))
+
+
+_durable_cache_session = None
+request_lock = RLock()
+
+
+def get_durable_cache_session():
+    global _durable_cache_session
+    if not _durable_cache_session:
+        _durable_cache_session = requests_cache.CachedSession(cache_control=True)
+        _durable_cache_session.mount('https://cdn.jsdelivr.net', HTTPAdapter(max_retries=5))
+        _durable_cache_session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
+        origin_get = _durable_cache_session.get
+
+        def sync_get(url: str, params=None, **kwargs):
+            request_lock.acquire()
+            try:
+                return origin_get(url, params, **kwargs)
+            finally:
+                request_lock.release()
+
+        _durable_cache_session.get = sync_get
+    return _durable_cache_session
+
 
 options_on_proxy = {
     'split': '16',
