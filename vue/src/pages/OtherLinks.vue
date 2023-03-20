@@ -68,9 +68,15 @@ export default {
           title: '金手指合集',
           description: '由 Switch 520 整理的金手指合集',
         },{
-          link: 'https://xxxxx520.com/48675.html',
+          link: 'http://www.ffhome.com/works/1814.html',
           title: 'FFHOME Nintendo Switch Game Manager',
           description: '软件全称 FFHOME Nintendo Switch Game Manager，它是一款整理（处理）你拥有的NSP格式、XCI格式游戏文件的一款小工具，包括文件信息查看、批量更名和文件处理等功能。',
+          subLinks: [
+            {
+              name: '备用',
+              link: 'https://xxxxx520.com/48675.html'
+            }
+          ]
         },
       ],
     }
