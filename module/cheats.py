@@ -2,26 +2,27 @@ import re
 import shutil
 import string
 from pathlib import Path
-from typing import List, Dict, Optional
-from utils.network import session
+from typing import List, Dict
+from utils.network import get_durable_cache_session
 import logging
 import time
-from functools import lru_cache
+from utils.string_util import auto_decode
 from module.msg_notifier import send_notify
 
 
 logger = logging.getLogger(__name__)
 cheat_item_re = re.compile(r'\[(.*?)][\n\r]+([\n\ra-z0-9A-Z\s]+)', re.MULTILINE)
 multi_new_line_re = re.compile('(\r\n|\n){2,}')
-cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.[tT][xX][tT]$')
+cheat_file_re = re.compile(r'^[\dA-Za-z]{16}.txt$')
 game_id_re = re.compile(r'^[\dA-Za-z]{16}$')
+cheat_name_re = re.compile(r'\{.*?}')
 
 
-# @lru_cache(1)
 def get_game_data():
     res = {}
     try:
-        resp = session.get('https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json', timeout=5)
+        resp = get_durable_cache_session().get(
+            'https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json', timeout=5)
         return resp.json()
     except Exception as e:
         logger.warning(f'fail to load game data, ex: {e}')
@@ -67,7 +68,6 @@ def _parse_ryujinx_cheat_file():
 
 def _parse_yuzu_cheat_file(cheat_file: Path):
     # yuzu: https://github.com/yuzu-emu/yuzu/blob/master/src/core/memory/cheat_engine.cpp#L100
-    from utils.string_util import auto_decode
     with open(cheat_file, 'rb') as f:
         data = auto_decode(f.read()).strip()
     if not data:
@@ -127,13 +127,23 @@ def list_all_cheat_files_from_folder(folder_path: str):
     if not folder.exists():
         raise RuntimeError(f'目录 {folder} 不存在.')
     res = []
-    for txt_file in folder.glob('*.[tT][xX][tT]'):
+    for txt_file in folder.glob('*.txt'):
         if cheat_file_re.match(txt_file.name):
+            name = _read_cheat_name(txt_file)
             res.append({
                 'path': str(txt_file.absolute()),
-                'name': txt_file.name
+                'name': name
             })
     return res
+
+
+def _read_cheat_name(txt_file: Path):
+    with txt_file.open('rb') as f:
+        text = auto_decode(f.read())
+        res = cheat_name_re.findall(text)
+        if res:
+            return f'{txt_file.name} - {res[0]}'
+    return txt_file.name
 
 
 def load_cheat_chunk_info(cheat_file_path: str):

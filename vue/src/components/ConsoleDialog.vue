@@ -1,9 +1,9 @@
 <template>
   <div class="text-center">
     <v-dialog
-      v-model="$store.state.consoleDialogFlag"
-      max-width="900"
-      :persistent="$store.state.persistentConsoleDialog"
+        v-model="$store.state.consoleDialogFlag"
+        max-width="900"
+        :persistent="$store.state.persistentConsoleDialog"
     >
 
       <v-card>
@@ -12,14 +12,7 @@
         </v-card-title>
 
         <div style="padding-left: 10px; padding-right: 10px; padding-top: 10px;" class="flex-grow-0">
-          <v-virtual-scroll ref="consoleBox" :items="$store.state.consoleMessages" height="300" item-height="26"
-                            style="background-color: #000; overflow-y: scroll; overflow-x: scroll;">
-            <template v-slot:default="{ item, index }">
-              <v-list-item :key="index">
-                <v-list-item-content class="white--text" style="white-space: nowrap; display: inline-block;">{{item}}</v-list-item-content>
-              </v-list-item>
-            </template>
-          </v-virtual-scroll>
+          <textarea id="consoleBox" :value="logText" readonly rows="15"></textarea>
         </div>
 
         <v-divider></v-divider>
@@ -27,26 +20,26 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn
-            color="primary"
-            text
-            @click="pauseDownload"
-            v-if="$store.state.persistentConsoleDialog"
+              color="primary"
+              text
+              @click="pauseDownload"
+              v-if="$store.state.persistentConsoleDialog"
           >
             暂停下载任务
           </v-btn>
           <v-btn
-            color="primary"
-            text
-            @click="stopDownload"
-            v-if="$store.state.persistentConsoleDialog"
+              color="primary"
+              text
+              @click="stopDownload"
+              v-if="$store.state.persistentConsoleDialog"
           >
             中断并删除下载任务
           </v-btn>
           <v-btn
-            color="primary"
-            text
-            @click="closeDialog"
-            :disabled="$store.state.persistentConsoleDialog"
+              color="primary"
+              text
+              @click="closeDialog"
+              :disabled="$store.state.persistentConsoleDialog"
           >
             关闭
           </v-btn>
@@ -57,46 +50,82 @@
 </template>
 
 <script>
-  export default {
-    name: 'ConsoleDialog',
-    data () {
-      return {
-
-      }
+export default {
+  name: 'ConsoleDialog',
+  data() {
+    return {}
+  },
+  created() {
+    // this.showConsoleDialog()
+    // setInterval(() => {
+    //   this.appendConsoleMessage("test" + new Date().getTime())
+    // }, 300)
+  },
+  methods: {
+    closeDialog() {
+      this.$store.commit('SET_CONSOLE_DIALOG_FLAG', false)
     },
-    created() {
-      // this.showConsoleDialog()
-      // setInterval(() => {
-      //   this.appendConsoleMessage("test" + new Date().getTime())
-      // }, 300)
-    },
-    methods: {
-      closeDialog() {
-        this.$store.commit('SET_CONSOLE_DIALOG_FLAG', false)
-      },
-      stopDownload() {
-        window.eel.stop_download()((resp) => {
-          console.log(resp)
-        })
-      },
-      pauseDownload() {
-        window.eel.pause_download()((resp) => {
-          console.log(resp)
-        })
-      },
-    },
-    computed: {
-
-    },
-    updated() {
-      this.$nextTick(() => {
-        let consoleBox = this.$refs.consoleBox
-        if (consoleBox) {
-          if (consoleBox.$el.scrollHeight > consoleBox.$el.offsetHeight) {
-            consoleBox.$el.scrollTop = consoleBox.$el.scrollHeight
-          }
-        }
+    stopDownload() {
+      window.eel.stop_download()((resp) => {
+        console.log(resp)
       })
+    },
+    pauseDownload() {
+      window.eel.pause_download()((resp) => {
+        console.log(resp)
+      })
+    },
+  },
+  computed: {
+    logText() {
+      let text = ''
+      for (let line of this.$store.state.consoleMessages) {
+        text += line + '\n'
+      }
+      return text
     }
+  },
+  updated() {
+    this.$nextTick(() => {
+      let consoleBox = document.getElementById("consoleBox")
+      if (consoleBox) {
+        consoleBox.scrollTop = consoleBox.scrollHeight
+      }
+    })
   }
+}
 </script>
+
+<style scoped>
+#consoleBox {
+  background-color: #000;
+  width: 100%;
+  color: white;
+  overflow-x: scroll;
+  overflow-y: scroll;
+  resize: none;
+}
+
+#consoleBox::-webkit-resizer, #consoleBox::-webkit-scrollbar-thumb {
+  background: #aaa;
+  border-radius: 3px;
+}
+
+#consoleBox::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+#consoleBox::-webkit-scrollbar-corner, #consoleBox ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+#consoleBox::-webkit-resizer, #consoleBox ::-webkit-scrollbar-thumb {
+  background: #aaa;
+  border-radius: 3px;
+}
+
+#consoleBox::-webkit-scrollbar-corner, #consoleBox ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+</style>
