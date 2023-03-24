@@ -75,7 +75,7 @@ def main(port=0, mode=None, dev=False):
             mode = 'edge'
         else:
             mode = 'user default'
-    size = (1440, 900)
+    size = (1440, 850)
     logger.info(f'browser mode: {mode}')
     if port == 0:
         from utils.network import get_available_port

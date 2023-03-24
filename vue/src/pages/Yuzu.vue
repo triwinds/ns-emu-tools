@@ -68,19 +68,16 @@
             <span class="text-h6 secondary--text">当前固件版本：</span>
             <v-tooltip top>
               <template v-slot:activator="{ on, attrs }">
-                <v-btn color="warning" outlined style="margin-right: 15px" v-bind="attrs" v-on="on"
+                <v-btn color="warning" outlined v-bind="attrs" v-on="on"
                        @click="detectFirmwareVersion" :disabled='isRunningInstall'>
                   {{ yuzuConfig.yuzu_firmware ? yuzuConfig.yuzu_firmware : '未知' }}
                 </v-btn>
               </template>
               <span>点击重新检测固件版本, 需安装密钥后使用</span>
             </v-tooltip>
-            <span class="text-h6 secondary--text">
-                    最新固件版本：
-                  </span>
-            <span class="text-h6">
-                    {{ latestFirmwareVersion }}
-                  </span>
+            <span class="text-h7 secondary--text">
+              （如果固件能用就没必要更新）
+            </span>
           </v-col>
         </v-row>
       </v-container>
