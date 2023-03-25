@@ -12,10 +12,10 @@
       <v-container>
         <v-row>
           <v-col>
-            <v-btn block outlined x-large color="success" @click="optimizeCloudflareHosts()">测速并应用至 hosts</v-btn>
+            <v-btn block outlined color="success" @click="optimizeCloudflareHosts()">测速并应用至 hosts</v-btn>
           </v-col>
           <v-col>
-            <v-btn block outlined x-large color="error" @click="removeCloudflareHosts()">移除添加的配置</v-btn>
+            <v-btn block outlined color="error" @click="removeCloudflareHosts()">移除添加的配置</v-btn>
           </v-col>
         </v-row>
       </v-container>
