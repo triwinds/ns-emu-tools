@@ -96,21 +96,23 @@ def install_firmware_to_ryujinx(firmware_version=None):
         send_notify(f'当前的 固件 就是 [{firmware_version}], 跳过安装.')
         return
     firmware_path = get_ryujinx_user_folder().joinpath(r'bis\system\Contents\registered')
-    shutil.rmtree(firmware_path, ignore_errors=True)
-    firmware_path.mkdir(parents=True, exist_ok=True)
-    tmp_dir = firmware_path.joinpath('tmp/')
-    from module.firmware import install_firmware
-    new_version = install_firmware(firmware_version, tmp_dir)
-    if new_version:
-        for path in tmp_dir.glob('*.nca'):
-            name = path.name[:-9] + '.nca' if path.name.endswith('.cnmt.nca') else path.name
-            nca_dir = firmware_path.joinpath(name)
-            nca_dir.mkdir()
-            path.rename(nca_dir.joinpath('00'))
+    tmp_dir = firmware_path.parent.joinpath('tmp/')
+    try:
+        from module.firmware import install_firmware
+        new_version = install_firmware(firmware_version, tmp_dir)
+        if new_version:
+            shutil.rmtree(firmware_path, ignore_errors=True)
+            firmware_path.mkdir(parents=True, exist_ok=True)
+            for path in tmp_dir.glob('*.nca'):
+                name = path.name[:-9] + '.nca' if path.name.endswith('.cnmt.nca') else path.name
+                nca_dir = firmware_path.joinpath(name)
+                nca_dir.mkdir()
+                path.rename(nca_dir.joinpath('00'))
+            config.ryujinx.firmware = new_version
+            dump_config()
+            send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 Ryujinx.')
+    finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        config.ryujinx.firmware = new_version
-        dump_config()
-        send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 Ryujinx.')
 
 
 def clear_ryujinx_folder(ryujinx_path: Path):
