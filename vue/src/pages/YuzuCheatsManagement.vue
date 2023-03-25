@@ -136,7 +136,7 @@ export default {
       return []
     },
     updateCheatItemBoxHeight() {
-      this.cheatItemBoxHeight = window.innerHeight - 440
+      this.cheatItemBoxHeight = window.innerHeight - 390
     },
     concatFolderItemName(item) {
       let gameName = item.game_name ? item.game_name : this.gameDataInited ? '未知游戏' : '游戏信息加载中...'

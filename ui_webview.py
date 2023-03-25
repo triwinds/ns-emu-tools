@@ -39,7 +39,7 @@ def main():
         port = get_available_port()
     url = f'http://localhost:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')
-    webview.create_window('NS EMU TOOLS', url, width=1440, height=850, text_select=True)
+    webview.create_window('NS EMU TOOLS', url, width=1280, height=850, text_select=True)
     webview.start(func=start_eel)
 
 

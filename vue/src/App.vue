@@ -138,10 +138,10 @@
       </v-container>
     </v-app-bar>
 
-    <v-main>
-      <v-container fluid style="height: 100%">
-        <v-row class="child-flex" style="height: 100%">
-          <v-col style="height: 100%">
+    <v-main style="overflow-y: hidden">
+      <v-container fluid style="height: 100%; padding: 0; margin-top: 5px">
+        <v-row class="child-flex" style="height: 100%; margin-bottom: 0">
+          <v-col style="height: 100%; padding-bottom: 0">
             <router-view style="height: 100%"/>
           </v-col>
         </v-row>
