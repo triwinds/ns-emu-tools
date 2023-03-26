@@ -39,8 +39,9 @@ def init_aria2():
            '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level=info', f'--stop-with-process={os.getpid()}']
     if config.setting.download.disableAria2Ipv6:
         cli.append('--disable-ipv6=true')
-        cli.append('--async-dns-server=223.5.5.5,119.29.29.29')
-    else:
+        if config.setting.network.useDoh:
+            cli.append('--async-dns-server=223.5.5.5,119.29.29.29')
+    elif config.setting.network.useDoh:
         cli.append('--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29')
     logger.info(f'aria2 cli: {cli}')
     aria2_process = subprocess.Popen(cli, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
