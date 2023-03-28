@@ -41,6 +41,7 @@ def get_durable_cache_session():
     global _durable_cache_session
     if not _durable_cache_session:
         _durable_cache_session = requests_cache.CachedSession(cache_control=True)
+        _durable_cache_session.headers.update({'User-Agent': user_agent})
         _durable_cache_session.mount('https://cdn.jsdelivr.net', HTTPAdapter(max_retries=5))
         _durable_cache_session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
         origin_get = _durable_cache_session.get
