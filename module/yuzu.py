@@ -274,6 +274,29 @@ def update_yuzu_path(new_yuzu_path: str):
     dump_config()
 
 
+def get_yuzu_commit_logs():
+    from utils.network import request_github_api
+    resp = request_github_api('https://api.github.com/repos/yuzu-emu/yuzu/commits')
+    markdown = '# Recent commits of yuzu-emu/yuzu\n\n'
+    last_date = ''
+    for commit_info in resp:
+        commit_date = commit_info['commit']['author']['date'].split('T')[0]
+        if last_date != commit_date:
+            markdown += f'## {commit_date}\n\n'
+            last_date = commit_date
+        msg: str = commit_info['commit']['message']
+        lines = msg.splitlines()
+        if len(lines) > 1:
+            content = '\n\n'.join(lines[1:])
+            markdown += f"""<details><summary>{lines[0]}</summary>
+{content}
+</details>\n\n"""
+        else:
+            markdown += f' - {lines[0]}\n\n'
+    # print(markdown)
+    return markdown
+
+
 if __name__ == '__main__':
     # install_yuzu('1220', 'mainline')
     # install_firmware_to_yuzu()
@@ -281,7 +304,8 @@ if __name__ == '__main__':
     # print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
     # open_yuzu_keys_folder()
-    print(get_yuzu_load_path())
+    # print(get_yuzu_load_path())
     # from utils.common import decode_yuzu_path
     # test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
     # print(decode_yuzu_path(test_str))
+    get_yuzu_commit_logs()
