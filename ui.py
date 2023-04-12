@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 import eel
-from config import config
+from config import config, dump_config
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +50,13 @@ def start_edge_in_app_mode(page, port, size=(1280, 720)):
         port = get_available_port()
     url = f'http://localhost:{port}/{page}'
     import subprocess
-    subprocess.Popen(f'"{_find_edge_win()}" --app={url}',
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, shell=True)
+    try:
+        subprocess.Popen(f'"{_find_edge_win()}" --app={url}',
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, shell=True)
+    except Exception as e:
+        logger.info(f'Fail to start Edge with full path, fallback with "start" command, exception: {str(e)}')
+        subprocess.Popen(f'start msedge --app={url}',
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, shell=True)
     eel.start(url, port=port, mode=False, size=size)
 
 
@@ -82,7 +87,14 @@ def main(port=0, mode=None, dev=False):
         port = get_available_port()
         logger.info(f'starting eel at port: {port}')
     if mode == 'edge':
-        start_edge_in_app_mode(default_page, port, size)
+        try:
+            start_edge_in_app_mode(default_page, port, size)
+        except Exception as e:
+            logger.info(f'Fail to start with Edge, fallback to default browser, exception: {str(e)}')
+            mode = 'user default'
+            config.setting.ui.mode = mode
+            dump_config()
+            eel.start(default_page, port=port, size=size, mode=mode, shutdown_delay=shutdown_delay)
     else:
         eel.start(default_page, port=port, size=size, mode=mode, shutdown_delay=shutdown_delay)
 
