@@ -139,11 +139,8 @@ def detect_yuzu_version():
         dump_config()
         return None
     kill_all_yuzu_instance()
-    st_inf = subprocess.STARTUPINFO()
-    st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     send_notify(f'正在启动 yuzu ...')
-    subprocess.Popen(['powershell', 'Start-Process', f'"{str(yz_path.absolute())}"', '-WindowStyle', 'Hidden'],
-                     startupinfo=st_inf)
+    subprocess.Popen([yz_path.absolute()])
     time.sleep(3)
     version = None
     branch = None
