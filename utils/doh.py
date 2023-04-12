@@ -12,6 +12,8 @@ import dns.rdatatype
 import dns.resolver
 import requests
 from urllib3.util import connection
+from urllib.parse import urlparse
+from gevent.lock import RLock
 
 _orig_create_connection = connection.create_connection
 PY3 = sys.version_info >= (3, 0)
@@ -20,8 +22,12 @@ logger = logging.getLogger(__name__)
 # DNSPod https://doh.pub
 # DOH_SERVER = '120.53.53.53'
 # aliyun https://dns.alidns.com
-DOH_SERVER = '223.5.5.5'
+# DOH_SERVER = '223.5.5.5'
+# iQDNS https://iqiq.io/servers.html
+DOH_SERVER = 'https://cn-east.iqiqzz.com/dns-query'
+doh_server_name = urlparse(DOH_SERVER).netloc or DOH_SERVER
 session = requests.Session()
+query_lock = RLock()
 
 resolver = dns.resolver.Resolver(configure=False)
 resolver.nameservers = ["223.5.5.5", '119.29.29.29']
@@ -81,6 +87,14 @@ def take_from_dns_cache(name: str, record_type: str = 'A'):
 
 
 def query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", fallback=True, verbose=True):
+    query_lock.acquire()
+    try:
+        return _query_address(name, record_type, server, path, fallback, verbose)
+    finally:
+        query_lock.release()
+
+
+def _query_address(name, record_type='A', server=DOH_SERVER, path="/dns-query", fallback=True, verbose=True):
     """
     Returns domain name query results retrieved by using DNS over HTTPS protocol
 
@@ -147,8 +161,8 @@ def patched_create_connection(address, *args, **kwargs):
     # resolver here, as otherwise the system resolver will be used.
     global try_ipv6
     host, port = address
-    if host.strip() == DOH_SERVER:
-        return _orig_create_connection((DOH_SERVER, port), *args, **kwargs)
+    if host.strip() == doh_server_name:
+        return _orig_create_connection((doh_server_name, port), *args, **kwargs)
     if try_ipv6:
         addresses = query_address(host, 'AAAA')
         sock = _try_connect(addresses, port, *args, **kwargs)
@@ -170,10 +184,11 @@ def install_doh():
 
 
 if __name__ == '__main__':
-    # print(query_address('google.com'))
+    print(query_address('google.com'))
+    print(query_address('archive.org'))
     # print(query_address('google.com'))
     # time.sleep(60)
     # print(query_address('google.com'))
-    install_doh()
-    print(requests.get('https://nsarchive.e6ex.com', timeout=5).text)
-    print(requests.get('https://cfrp.e6ex.com', timeout=5).text)
+    # install_doh()
+    # print(requests.get('https://nsarchive.e6ex.com', timeout=5).text)
+    # print(requests.get('https://cfrp.e6ex.com', timeout=5).text)
