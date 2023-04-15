@@ -119,7 +119,7 @@ def get_current_cfst_version():
 
 
 def get_cf_hostnames():
-    default_list = ['nsarchive.e6ex.com', 'proxy.zyun.vip', 'download.nuaa.cf']
+    default_list = ['nsarchive.e6ex.com']
     hostnames = get_override_host_names()
     for hn in default_list:
         if hn not in hostnames:
