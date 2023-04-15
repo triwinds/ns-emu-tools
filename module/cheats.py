@@ -8,6 +8,7 @@ import logging
 import time
 from utils.string_util import auto_decode
 from module.msg_notifier import send_notify
+from exception.common_exception import IgnoredException
 
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ def _find_next(s, tc, i):
 def list_all_cheat_files_from_folder(folder_path: str):
     folder = Path(folder_path)
     if not folder.exists():
-        raise RuntimeError(f'目录 {folder} 不存在.')
+        raise IgnoredException(f'目录 {folder} 不存在.')
     res = []
     for txt_file in folder.glob('*.txt'):
         if cheat_file_re.match(txt_file.name):
@@ -149,7 +150,7 @@ def _read_cheat_name(txt_file: Path):
 def load_cheat_chunk_info(cheat_file_path: str):
     cheat_file = Path(cheat_file_path)
     if not cheat_file.exists():
-        raise RuntimeError(f'文件 {cheat_file} 不存在.')
+        raise IgnoredException(f'文件 {cheat_file} 不存在.')
     chunk_folder = cheat_file.parent.parent.joinpath('cheats_chunk')
     if not chunk_folder.exists():
         chunk_folder.mkdir(parents=True, exist_ok=True)
@@ -183,13 +184,13 @@ def load_cheat_chunk_info(cheat_file_path: str):
 def update_current_cheats(enable_titles: List[str], cheat_file_path: str):
     cheat_file = Path(cheat_file_path)
     if not cheat_file.exists():
-        raise RuntimeError(f'文件 {cheat_file} 不存在.')
+        raise IgnoredException(f'文件 {cheat_file} 不存在.')
     chunk_folder = cheat_file.parent.parent.joinpath('cheats_chunk')
     if not chunk_folder.exists():
-        raise RuntimeError(f'仓库目录 {chunk_folder} 不存在.')
+        raise IgnoredException(f'仓库目录 {chunk_folder} 不存在.')
     chunk_file = chunk_folder.joinpath(cheat_file.name[:16] + '_chunk.txt')
     if not chunk_file.exists():
-        raise RuntimeError(f'仓库文件 {chunk_file} 不存在.')
+        raise IgnoredException(f'仓库文件 {chunk_file} 不存在.')
     backup_file = chunk_folder.joinpath(f'{cheat_file.name[:16]}_{int(time.time()*1000)}.txt')
     shutil.copy2(cheat_file, backup_file)
     logger.info(f'backup {cheat_file} to {backup_file}')
@@ -212,7 +213,7 @@ def update_current_cheats(enable_titles: List[str], cheat_file_path: str):
 def open_cheat_mod_folder(folder_path: str):
     folder = Path(folder_path)
     if not folder.exists():
-        raise RuntimeError(f'目录 {folder} 不存在.')
+        raise IgnoredException(f'目录 {folder} 不存在.')
     import subprocess
     parent_folder = folder.parent
     logger.info(f'open folder [{parent_folder}] in explorer')

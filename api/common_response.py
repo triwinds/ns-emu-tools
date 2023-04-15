@@ -59,6 +59,11 @@ def fail_to_copy_files_handler(ex: FailToCopyFiles):
     return error_response(701, str(ex))
 
 
+def ignored_exception_handler(ex: IgnoredException):
+    logger.info(f'{str(ex)}')
+    return error_response(801, str(ex))
+
+
 exception_handler_map = {
     VersionNotFoundException: version_not_found_handler,
     Md5NotMatchException: md5_not_found_handler,
@@ -66,6 +71,7 @@ exception_handler_map = {
     DownloadPaused: download_paused_handler,
     DownloadNotCompleted: download_not_completed_handler,
     FailToCopyFiles: fail_to_copy_files_handler,
+    IgnoredException: ignored_exception_handler,
 }
 
 

@@ -15,7 +15,7 @@ from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
 from module.network import get_github_download_url
 from utils.common import decode_yuzu_path
-from exception.common_exception import VersionNotFoundException
+from exception.common_exception import VersionNotFoundException, IgnoredException
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def download_yuzu(target_version, branch):
             url = get_github_download_url(asset['browser_download_url'])
             break
     if not url:
-        raise RuntimeError('Fail to fetch yuzu download url.')
+        raise IgnoredException('Fail to fetch yuzu download url.')
     logger.info(f"downloading yuzu from {url}")
     info = download(url)
     file = info.files[0]
@@ -192,7 +192,7 @@ def start_yuzu():
         subprocess.Popen([yz_path])
     else:
         logger.error(f'yuzu not exist in [{yz_path}]')
-        raise RuntimeError(f'yuzu not exist in [{yz_path}]')
+        raise IgnoredException(f'yuzu not exist in [{yz_path}]')
 
 
 def get_yuzu_user_path():
