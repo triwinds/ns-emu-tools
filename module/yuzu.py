@@ -13,7 +13,7 @@ from storage import storage, add_yuzu_history
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
-from utils.network import get_github_download_url
+from module.network import get_github_download_url
 from utils.common import decode_yuzu_path
 from exception.common_exception import VersionNotFoundException
 
@@ -272,7 +272,7 @@ def update_yuzu_path(new_yuzu_path: str):
 
 
 def get_yuzu_commit_logs():
-    from utils.network import request_github_api
+    from module.network import request_github_api
     resp = request_github_api('https://api.github.com/repos/yuzu-emu/yuzu/commits')
     markdown = '# Recent commits of yuzu-emu/yuzu\n\n'
     last_date = ''

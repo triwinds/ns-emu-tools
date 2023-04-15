@@ -101,6 +101,15 @@ def load_history_path(emu_type: str):
         return success_response(list(_merge_to_set(storage.ryujinx_history.keys(), config.ryujinx.path)))
 
 
+@eel.expose
+def get_github_mirrors():
+    from module.network import get_github_mirrors
+    try:
+        return success_response(get_github_mirrors())
+    except Exception as e:
+        return exception_response(e)
+
+
 def _merge_to_set(*cols):
     from collections.abc import Iterable
     s = set()

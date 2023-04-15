@@ -1,6 +1,3 @@
-import os
-import time
-
 from module.downloader import download
 from module.msg_notifier import send_notify
 import sys
@@ -49,7 +46,7 @@ def check_update(prerelease=False):
 
 def download_net_by_tag(tag: str):
     from repository.my_info import get_release_info_by_tag
-    from utils.network import get_github_download_url
+    from module.network import get_github_download_url
     release_info = get_release_info_by_tag(tag)
     logger.info(f'start download NET release by tag: {tag}, release name: {release_info.get("name")}')
     execute_path = Path(sys.argv[0])

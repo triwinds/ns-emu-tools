@@ -46,7 +46,7 @@ def _find_edge_win() -> Optional[str]:
 
 def start_edge_in_app_mode(page, port, size=(1280, 720)):
     if port == 0:
-        from utils.network import get_available_port
+        from module.network import get_available_port
         port = get_available_port()
     url = f'http://localhost:{port}/{page}'
     import subprocess
@@ -83,7 +83,7 @@ def main(port=0, mode=None, dev=False):
     size = (1280, 850)
     logger.info(f'browser mode: {mode}')
     if port == 0:
-        from utils.network import get_available_port
+        from module.network import get_available_port
         port = get_available_port()
         logger.info(f'starting eel at port: {port}')
     if mode == 'edge':

@@ -6,7 +6,7 @@ from pathlib import Path
 from exception.common_exception import VersionNotFoundException
 from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
-from utils.network import get_github_download_url
+from module.network import get_github_download_url
 from module.msg_notifier import send_notify
 from config import config, dump_config, RyujinxConfig
 from storage import storage, add_ryujinx_history

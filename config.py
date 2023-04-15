@@ -62,7 +62,7 @@ class RyujinxConfig:
 class NetworkSetting:
     firmwareSource: Optional[str] = 'auto-detect'
     githubApiMode: Optional[str] = 'direct'
-    githubDownloadSource: Optional[str] = 'self'
+    githubDownloadMirror: Optional[str] = 'cloudflare_load_balance'
     useDoh: Optional[bool] = True
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 import os
 from module.msg_notifier import send_notify
 from config import config
-from utils.network import get_available_port, get_global_options, init_download_options_with_proxy
+from module.network import get_available_port, get_global_options, init_download_options_with_proxy
 from exception.download_exception import *
 
 aria2: Optional[aria2p.API] = None

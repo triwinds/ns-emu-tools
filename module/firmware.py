@@ -2,14 +2,14 @@ import subprocess
 import os
 from pathlib import Path
 import logging
-from config import config, dump_config
+from config import dump_config
 import shutil
 from module.msg_notifier import send_notify
 import xmltodict
 from functools import lru_cache
 from config import config
 from module.downloader import download
-from utils.network import get_finial_url, get_durable_cache_session
+from module.network import get_finial_url, get_durable_cache_session
 
 logger = logging.getLogger(__name__)
 hactool_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('hactool.exe')

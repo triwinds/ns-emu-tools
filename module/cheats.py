@@ -3,7 +3,7 @@ import shutil
 import string
 from pathlib import Path
 from typing import List, Dict
-from utils.network import get_durable_cache_session
+from module.network import get_durable_cache_session
 import logging
 import time
 from utils.string_util import auto_decode

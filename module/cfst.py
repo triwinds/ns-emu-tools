@@ -1,7 +1,6 @@
 import logging
 import os
 import subprocess
-import sys
 import time
 from pathlib import Path
 from typing import List
@@ -11,7 +10,7 @@ import psutil
 from config import config
 from module.downloader import download
 from module.msg_notifier import send_notify
-from utils.network import get_github_download_url
+from module.network import get_github_download_url
 from module.hosts import Hosts
 
 logger = logging.getLogger(__name__)

@@ -30,12 +30,13 @@
             hide-details
         ></v-select>
         <v-select
-            v-model="setting.network.githubDownloadSource"
+            v-model="setting.network.githubDownloadMirror"
             :items="availableGithubDownloadSource"
             item-text="name"
             item-value="value"
             label="GitHub 下载源配置"
-            hide-details
+            persistent-hint
+            hint="如果速度可以接受，希望大家尽量多使用前面的美国节点，避免流量都集中到亚洲公益节点，减少成本压力运营才能更持久~"
         ></v-select>
         <v-switch v-model="setting.network.useDoh">
           <template v-slot:label>
@@ -86,13 +87,7 @@ export default {
         {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'cdn'},
         {name: '直连', value: 'direct'},
       ],
-      availableGithubDownloadSource: [
-        {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'self'},
-        {name: '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供', value: 'zhiliao'},
-        {name: '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供', value: 'nuaa'},
-        {name: '[韩国 首尔] - 该公益加速源由 [ghproxy] 提供', value: 'ghproxy'},
-        {name: '直连', value: 'direct'},
-      ],
+      availableGithubDownloadSource: [],
       sbgPath: {
         helpCircle: mdiHelpCircle,
       }
@@ -100,7 +95,19 @@ export default {
   },
   async mounted() {
     let config = await this.$store.dispatch('loadConfig');
+    await this.loadAvailableGithubDownloadSource()
     this.setting = config.setting
+  },
+  methods: {
+    async loadAvailableGithubDownloadSource() {
+      let resp = await window.eel.get_github_mirrors()()
+      console.log(resp)
+      if (resp.code === 0) {
+        for (let mirror of resp.data) {
+          this.availableGithubDownloadSource.push({name: mirror[2], value: mirror[0]})
+        }
+      }
+    }
   },
   watch: {
     setting: {
