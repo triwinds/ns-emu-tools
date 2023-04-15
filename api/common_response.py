@@ -23,13 +23,13 @@ def exception_response(ex):
 
 
 def version_not_found_handler(ex: VersionNotFoundException):
-    logger.error(f'{str(ex)}')
+    logger.info(f'{str(ex)}')
     send_notify(f'无法获取 {ex.branch} 分支的 [{ex.target_version}] 版本信息')
     return error_response(404, str(ex))
 
 
 def md5_not_found_handler(ex: Md5NotMatchException):
-    logger.error(f'{str(ex)}')
+    logger.info(f'{str(ex)}')
     send_notify(f'固件文件 md5 不匹配, 请重新下载')
     return error_response(501, str(ex))
 

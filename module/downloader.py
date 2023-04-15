@@ -132,7 +132,7 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
                         os.remove(file.path)
             raise DownloadInterrupted()
         else:
-            logger.error(f'info.error_code: {info.error_code}, error message: {info.error_message}')
+            logger.info(f'info.error_code: {info.error_code}, error message: {info.error_message}')
             raise RuntimeError(f'下载出错, error_code: {info.error_code}, error message: {info.error_message}')
     else:
         logger.info(f'progress: {info.progress_string()}, total size: {info.total_length_string()}')
