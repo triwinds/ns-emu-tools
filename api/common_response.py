@@ -3,6 +3,7 @@ from module.msg_notifier import send_notify
 from exception.common_exception import *
 from exception.download_exception import *
 from exception.install_exception import *
+from requests.exceptions import ConnectionError
 
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ def fail_to_copy_files_handler(ex: FailToCopyFiles):
     return error_response(701, str(ex))
 
 
-def ignored_exception_handler(ex: IgnoredException):
+def ignored_exception_handler(ex):
     logger.info(f'{str(ex)}')
     return error_response(801, str(ex))
 
@@ -72,6 +73,7 @@ exception_handler_map = {
     DownloadNotCompleted: download_not_completed_handler,
     FailToCopyFiles: fail_to_copy_files_handler,
     IgnoredException: ignored_exception_handler,
+    ConnectionError: ignored_exception_handler,
 }
 
 
