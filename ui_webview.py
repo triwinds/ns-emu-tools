@@ -9,7 +9,7 @@ port = 0
 
 
 def import_api_modules():
-    pass
+    import api
 
 
 def start_eel():
