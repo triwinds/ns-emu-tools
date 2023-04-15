@@ -170,7 +170,7 @@ def start_ryujinx():
         logger.info(f'starting Ryujinx from: {rj_path}')
         subprocess.Popen([rj_path])
     else:
-        logger.error(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
+        logger.info(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
         raise IgnoredException(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
 
 

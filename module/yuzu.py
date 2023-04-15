@@ -191,7 +191,7 @@ def start_yuzu():
         logger.info(f'starting yuzu from: {yz_path}')
         subprocess.Popen([yz_path])
     else:
-        logger.error(f'yuzu not exist in [{yz_path}]')
+        logger.info(f'yuzu not exist in [{yz_path}]')
         raise IgnoredException(f'yuzu not exist in [{yz_path}]')
 
 
