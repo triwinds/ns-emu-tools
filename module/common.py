@@ -3,7 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from utils.network import get_finial_url
+from module.network import get_finial_url
 
 logger = logging.getLogger(__name__)
 

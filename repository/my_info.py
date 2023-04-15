@@ -1,4 +1,4 @@
-from utils.network import request_github_api, session, get_finial_url
+from module.network import request_github_api, session, get_finial_url
 
 
 def get_all_release():

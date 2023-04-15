@@ -61,6 +61,19 @@
             <span class="text-h6">
                     {{ latestYuzuVersion }}
                   </span>
+            <ChangeLogDialog>
+              <template v-slot:activator="{on, attrs}">
+                      <span v-bind="attrs" v-on="on" @click="loadChangeLog"
+                            style="margin-left: 10px">
+                        <v-icon color="warning">
+                          {{ svgPath.mdiTimelineQuestionOutline }}
+                        </v-icon>
+                      </span>
+              </template>
+              <template v-slot:content>
+                <div class="text--primary" v-html="changeLogHtml"></div>
+              </template>
+            </ChangeLogDialog>
           </v-col>
         </v-row>
         <v-row>
@@ -131,16 +144,23 @@
 
 <script>
 import SimplePage from "@/components/SimplePage";
+import ChangeLogDialog from "@/components/ChangeLogDialog";
+import {mdiTimelineQuestionOutline} from '@mdi/js';
+import * as showdown from "showdown";
 
 export default {
   name: "YuzuPage",
-  components: {SimplePage},
+  components: {ChangeLogDialog, SimplePage},
   data: () => ({
     allYuzuReleaseVersions: [],
     targetYuzuVersion: "",
     isRunningInstall: false,
     historyPathList: [],
     selectedYuzuPath: '',
+    changeLogHtml: '<p>加载中...</p>',
+    svgPath: {
+      mdiTimelineQuestionOutline
+    }
   }),
   created() {
     this.updateYuzuReleaseVersions()
@@ -265,6 +285,16 @@ export default {
       await this.updateYuzuConfig()
       this.allYuzuReleaseVersions = []
       this.updateYuzuReleaseVersions()
+    },
+    loadChangeLog() {
+      window.eel.get_yuzu_commit_logs()((resp) => {
+        if (resp.code === 0) {
+          const converter = new showdown.Converter()
+          this.changeLogHtml = converter.makeHtml(resp.data)
+        } else {
+          this.changeLogHtml = '<p>加载失败。</p>'
+        }
+      })
     },
   },
   computed: {

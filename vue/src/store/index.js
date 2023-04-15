@@ -113,7 +113,7 @@ const state = {
             network: {
                 firmwareSource: 'auto-detect',
                 githubApiMode: 'direct',
-                githubDownloadSource: "self",
+                githubDownloadMirror: "cloudflare_load_balance",
                 useDoh: true,
             },
             download: {

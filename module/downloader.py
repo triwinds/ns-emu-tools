@@ -7,7 +7,7 @@ from pathlib import Path
 import os
 from module.msg_notifier import send_notify
 from config import config
-from utils.network import get_available_port, get_global_options, init_download_options_with_proxy
+from module.network import get_available_port, get_global_options, init_download_options_with_proxy
 from exception.download_exception import *
 
 aria2: Optional[aria2p.API] = None
@@ -39,8 +39,9 @@ def init_aria2():
            '--rpc-secret', '123456', '--log', 'aria2.log', '--log-level=info', f'--stop-with-process={os.getpid()}']
     if config.setting.download.disableAria2Ipv6:
         cli.append('--disable-ipv6=true')
-        cli.append('--async-dns-server=223.5.5.5,119.29.29.29')
-    else:
+        if config.setting.network.useDoh:
+            cli.append('--async-dns-server=223.5.5.5,119.29.29.29')
+    elif config.setting.network.useDoh:
         cli.append('--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29')
     logger.info(f'aria2 cli: {cli}')
     aria2_process = subprocess.Popen(cli, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, startupinfo=st_inf)
@@ -131,7 +132,7 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
                         os.remove(file.path)
             raise DownloadInterrupted()
         else:
-            logger.error(f'info.error_code: {info.error_code}, error message: {info.error_message}')
+            logger.info(f'info.error_code: {info.error_code}, error message: {info.error_message}')
             raise RuntimeError(f'下载出错, error_code: {info.error_code}, error message: {info.error_message}')
     else:
         logger.info(f'progress: {info.progress_string()}, total size: {info.total_length_string()}')

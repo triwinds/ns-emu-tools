@@ -3,10 +3,10 @@ import subprocess
 import time
 from pathlib import Path
 
-from exception.common_exception import VersionNotFoundException
+from exception.common_exception import VersionNotFoundException, IgnoredException
 from module.downloader import download
 from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
-from utils.network import get_github_download_url
+from module.network import get_github_download_url
 from module.msg_notifier import send_notify
 from config import config, dump_config, RyujinxConfig
 from storage import storage, add_ryujinx_history
@@ -53,7 +53,7 @@ def install_ryujinx_by_version(target_version: str, branch: str):
     download_url = get_ryujinx_download_url(target_version, branch)
     if not download_url:
         send_notify(f'获取 ryujinx 下载链接失败')
-        raise RuntimeError(f'No download url found with branch: {branch}, version: {target_version}')
+        raise IgnoredException(f'No download url found with branch: {branch}, version: {target_version}')
     download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
@@ -171,7 +171,7 @@ def start_ryujinx():
         subprocess.Popen([rj_path])
     else:
         logger.error(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
-        raise RuntimeError(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
+        raise IgnoredException(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
 
 
 def detect_current_branch():

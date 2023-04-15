@@ -13,9 +13,9 @@ from storage import storage, add_yuzu_history
 from module.downloader import download
 from module.msg_notifier import send_notify
 from repository.yuzu import get_yuzu_release_info_by_version
-from utils.network import get_github_download_url
+from module.network import get_github_download_url
 from utils.common import decode_yuzu_path
-from exception.common_exception import VersionNotFoundException
+from exception.common_exception import VersionNotFoundException, IgnoredException
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def download_yuzu(target_version, branch):
             url = get_github_download_url(asset['browser_download_url'])
             break
     if not url:
-        raise RuntimeError('Fail to fetch yuzu download url.')
+        raise IgnoredException('Fail to fetch yuzu download url.')
     logger.info(f"downloading yuzu from {url}")
     info = download(url)
     file = info.files[0]
@@ -139,11 +139,8 @@ def detect_yuzu_version():
         dump_config()
         return None
     kill_all_yuzu_instance()
-    st_inf = subprocess.STARTUPINFO()
-    st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     send_notify(f'正在启动 yuzu ...')
-    subprocess.Popen(['powershell', 'Start-Process', f'"{str(yz_path.absolute())}"', '-WindowStyle', 'Hidden'],
-                     startupinfo=st_inf)
+    subprocess.Popen([yz_path.absolute()])
     time.sleep(3)
     version = None
     branch = None
@@ -195,7 +192,7 @@ def start_yuzu():
         subprocess.Popen([yz_path])
     else:
         logger.error(f'yuzu not exist in [{yz_path}]')
-        raise RuntimeError(f'yuzu not exist in [{yz_path}]')
+        raise IgnoredException(f'yuzu not exist in [{yz_path}]')
 
 
 def get_yuzu_user_path():
@@ -274,6 +271,29 @@ def update_yuzu_path(new_yuzu_path: str):
     dump_config()
 
 
+def get_yuzu_commit_logs():
+    from module.network import request_github_api
+    resp = request_github_api('https://api.github.com/repos/yuzu-emu/yuzu/commits')
+    markdown = '# Recent commits of yuzu-emu/yuzu\n\n'
+    last_date = ''
+    for commit_info in resp:
+        commit_date = commit_info['commit']['author']['date'].split('T')[0]
+        if last_date != commit_date:
+            markdown += f'## {commit_date}\n\n'
+            last_date = commit_date
+        msg: str = commit_info['commit']['message']
+        lines = msg.splitlines()
+        if len(lines) > 1:
+            content = '\n\n'.join(lines[1:])
+            markdown += f"""<details><summary>{lines[0]}</summary>
+{content}
+</details>\n\n"""
+        else:
+            markdown += f' - {lines[0]}\n\n'
+    # print(markdown)
+    return markdown
+
+
 if __name__ == '__main__':
     # install_yuzu('1220', 'mainline')
     # install_firmware_to_yuzu()
@@ -281,7 +301,8 @@ if __name__ == '__main__':
     # print(detect_yuzu_version())
     # print(get_yuzu_user_path().joinpath(r'nand\system\Contents\registered'))
     # open_yuzu_keys_folder()
-    print(get_yuzu_load_path())
+    # print(get_yuzu_load_path())
     # from utils.common import decode_yuzu_path
     # test_str = r'D:/Yuzu/user\'/\x65b0\x5efa\x6587\x4ef6\x5939/'
     # print(decode_yuzu_path(test_str))
+    get_yuzu_commit_logs()

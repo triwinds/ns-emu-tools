@@ -17,3 +17,8 @@ class VersionNotFoundException(Exception):
 class Md5NotMatchException(Exception):
     def __init__(self):
         super().__init__('MD5 not match')
+
+
+class IgnoredException(RuntimeError):
+    def __init__(self, msg=''):
+        super().__init__(msg)

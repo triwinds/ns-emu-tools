@@ -1,4 +1,4 @@
-from utils.network import request_github_api
+from module.network import request_github_api
 
 
 def get_all_yuzu_release_infos():

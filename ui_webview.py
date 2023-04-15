@@ -1,7 +1,6 @@
 import logging
 import eel
 import webview
-from config import config
 from utils.webview2 import ensure_runtime_components
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ def main():
     from module.msg_notifier import update_notifier
     update_notifier('eel-console')
     if port == 0:
-        from utils.network import get_available_port
+        from module.network import get_available_port
         port = get_available_port()
     url = f'http://localhost:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')

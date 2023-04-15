@@ -2,14 +2,15 @@ import subprocess
 import os
 from pathlib import Path
 import logging
-from config import config, dump_config
+from config import dump_config
 import shutil
 from module.msg_notifier import send_notify
 import xmltodict
 from functools import lru_cache
 from config import config
 from module.downloader import download
-from utils.network import get_finial_url, get_durable_cache_session
+from module.network import get_finial_url, get_durable_cache_session
+from exception.common_exception import IgnoredException
 
 logger = logging.getLogger(__name__)
 hactool_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('hactool.exe')
@@ -35,11 +36,11 @@ def _detect_firmware_version(emu_type: str):
     if not key_path.exists():
         logger.error(f'prod keys not found in path: {key_path}')
         send_notify('未能找到相应的 prod.keys 文件')
-        raise RuntimeError(f'prod keys not found in path: {key_path}')
+        raise IgnoredException(f'prod keys not found in path: {key_path}')
     if not firmware_files:
         logger.error(f'no firmware files found in path: {firmware_path}')
         send_notify('未能找到相应的固件文件')
-        raise RuntimeError(f'no firmware files found in path: {firmware_path}')
+        raise IgnoredException(f'no firmware files found in path: {firmware_path}')
     target_file = find_target_firmware_file(firmware_files, key_path)
     if target_file:
         version = extract_version(target_file, key_path)

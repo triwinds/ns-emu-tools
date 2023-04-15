@@ -1,7 +1,6 @@
 import logging
 import os
 import subprocess
-import sys
 import time
 from pathlib import Path
 from typing import List
@@ -11,8 +10,9 @@ import psutil
 from config import config
 from module.downloader import download
 from module.msg_notifier import send_notify
-from utils.network import get_github_download_url
+from module.network import get_github_download_url
 from module.hosts import Hosts
+from exception.common_exception import IgnoredException
 
 logger = logging.getLogger(__name__)
 script_template = """@echo off
@@ -47,7 +47,7 @@ def run_cfst():
     if not exe_path.exists():
         logger.info('CloudflareSpeedTest not exist.')
         send_notify('CloudflareSpeedTest not exist.')
-        raise RuntimeError('CloudflareSpeedTest not exist.')
+        raise IgnoredException('CloudflareSpeedTest not exist.')
     logger.info('starting CloudflareSpeedTest...')
     send_notify('正在运行 CloudflareSpeedTest...')
     script_path = Path('CloudflareSpeedTest/cfst.bat')
@@ -65,13 +65,13 @@ def get_fastest_ip_from_result():
     if not result_path.exists():
         logger.info('CloudflareSpeedTest result not exist.')
         send_notify('未能检测到 CloudflareSpeedTest 结果, 请先运行一次测试.')
-        raise RuntimeError('未能检测到 CloudflareSpeedTest 结果, 请先运行一次测试.')
+        raise IgnoredException('未能检测到 CloudflareSpeedTest 结果, 请先运行一次测试.')
     with open(result_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     if len(lines) < 2:
         logger.info('Fail to parse CloudflareSpeedTest result.')
         send_notify('无法解析 CloudflareSpeedTest 结果, 请先运行一次测试.')
-        raise RuntimeError('无法解析 CloudflareSpeedTest 结果, 请先运行一次测试.')
+        raise IgnoredException('无法解析 CloudflareSpeedTest 结果, 请先运行一次测试.')
     ip = lines[1].split(',', 1)[0]
     logger.info(f'fastest ip from result: {ip}')
     return ip
@@ -82,7 +82,7 @@ def show_result():
     if not result_path.exists():
         logger.info('CloudflareSpeedTest result not exist.')
         send_notify('未能检测到 CloudflareSpeedTest 结果, 请先运行一次测试.')
-        raise RuntimeError('未能检测到 CloudflareSpeedTest 结果, 请先运行一次测试.')
+        raise IgnoredException('未能检测到 CloudflareSpeedTest 结果, 请先运行一次测试.')
     with open(result_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     send_notify('===============测速结果===============')
@@ -120,7 +120,7 @@ def get_current_cfst_version():
 
 
 def get_cf_hostnames():
-    default_list = ['nsarchive.e6ex.com', 'proxy.zyun.vip', 'download.nuaa.cf']
+    default_list = ['nsarchive.e6ex.com']
     hostnames = get_override_host_names()
     for hn in default_list:
         if hn not in hostnames:
@@ -178,7 +178,7 @@ def write_hosts(hosts: Hosts):
         if ret == 42:
             logger.info(f'updated hosts: {hosts}')
             return
-    raise RuntimeError(f'Unable to write hosts file.')
+    raise IgnoredException(f'Unable to write hosts file.')
 
 
 if __name__ == '__main__':

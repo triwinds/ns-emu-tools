@@ -5,6 +5,7 @@ import os
 import requests_cache
 from requests.adapters import HTTPAdapter
 from gevent.lock import RLock
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,28 @@ url_override_map = {
     'https://raw.githubusercontent.com': 'https://www.githubs.cn/raw-githubusercontent',
 }
 
-github_override_map = {
-    'self': 'https://nsarchive.e6ex.com/gh',
-    'ghproxy': 'https://ghproxy.com/https://github.com',
-    'zhiliao': 'https://proxy.zyun.vip/https://github.com',
-    'nuaa': 'https://download.nuaa.cf',
-}
+
+github_us_mirrors = [
+    ['https://nsarchive.e6ex.com/gh', '美国', '[美国 Cloudflare CDN] - 自建代理服务器'],
+
+    # https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js
+    ['https://gh.gh2233.ml/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@X.I.U/XIU2] 提供'],
+    ['https://gh.ddlc.top/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@mtr-static-official] 提供'],
+    ['https://ghdl.feizhuqwq.cf/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [feizhuqwq.com] 提供'],
+    ['https://gh.flyinbug.top/gh/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [Mintimate] 提供'],
+    # ['https://proxy.zyun.vip/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供'],
+    # ['https://cors.isteed.cc/github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [Lufs\'s] 提供'],
+    ['https://hub.gitmirror.com/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [GitMirror] 提供'],
+    ['https://js.xxooo.ml/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [饭太硬] 提供'],
+    ['https://download.nuaa.cf', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供']
+]
+
+github_other_mirrors = [
+    # ['https://download.fastgit.org', '德国', '[德国] - 该公益加速源由 [FastGit] 提供'],
+    ['https://ghproxy.com/https://github.com', '韩国',
+     '[韩国 首尔] - 该公益加速源由 [ghproxy] 提供，有日本、韩国、德国、巴西等地区的服务器，不过国内一般分配为韩国'],
+    ['https://kgithub.com', '新加坡', '[新加坡] - 该公益加速源由 [KGitHub] 提供']
+]
 
 if config.setting.network.useDoh:
     from utils.doh import install_doh
@@ -41,6 +58,7 @@ def get_durable_cache_session():
     global _durable_cache_session
     if not _durable_cache_session:
         _durable_cache_session = requests_cache.CachedSession(cache_control=True)
+        _durable_cache_session.headers.update({'User-Agent': user_agent})
         _durable_cache_session.mount('https://cdn.jsdelivr.net', HTTPAdapter(max_retries=5))
         _durable_cache_session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
         origin_get = _durable_cache_session.get
@@ -103,15 +121,26 @@ def init_download_options_with_proxy(url):
     return options
 
 
+def get_github_mirrors():
+    github_mirrors = [
+        ['cloudflare_load_balance', '美国', '[美国 Cloudflare CDN] 随机选择 Cloudflare 服务器'],
+        ['direct', '美国', '直连 GitHub']
+    ]
+    github_mirrors += github_us_mirrors
+    github_mirrors += github_other_mirrors
+    return github_mirrors
+
+
 def get_github_download_url(origin_url: str):
-    source = config.setting.network.githubDownloadSource
-    if source in github_override_map:
-        prefix = github_override_map[source]
-        url = origin_url.replace('https://github.com', prefix)
-        logger.info(f'using new url: {url}')
-        return url
-    logger.info(f'using origin url: {origin_url}')
-    return origin_url
+    mirror = config.setting.network.githubDownloadMirror
+    if not mirror or mirror == 'direct':
+        logger.info(f'using origin url: {origin_url}')
+        return origin_url
+    if mirror == 'cloudflare_load_balance':
+        mirror = random.choice(github_us_mirrors)[0]
+    url = origin_url.replace('https://github.com', mirror)
+    logger.info(f'using new url: {url}')
+    return url
 
 
 def get_finial_url(origin_url: str):
@@ -189,3 +218,29 @@ def request_github_api(url: str):
             github_api_fallback_flag = True
     url = get_override_url(url)
     return session.get(url).json()
+
+
+def test_github_us_mirrors():
+    import requests
+    invalid_mirrors = []
+    test_mirrors = github_us_mirrors[1:]
+    for mirror in test_mirrors:
+        try:
+            print(f'testing {mirror[2]}...', end='')
+            url = f'{mirror[0]}/XIU2/CloudflareSpeedTest/releases/download/v2.2.2/CloudflareST_windows_amd64.zip'
+            resp = requests.head(url, headers={'user-agent': chrome_ua})
+            # print(resp.headers)
+            if 'Content-Length' not in resp.headers:
+                print(resp.headers)
+                invalid_mirrors.append(mirror[2])
+                print('failed')
+            print('worked')
+        except Exception as e:
+            print('failed')
+            print(e)
+            invalid_mirrors.append(mirror[2])
+    print(f'invalid_mirrors: {invalid_mirrors}')
+
+
+if __name__ == '__main__':
+    test_github_us_mirrors()
