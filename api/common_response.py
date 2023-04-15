@@ -18,7 +18,7 @@ def exception_response(ex):
     if type(ex) in exception_handler_map:
         return exception_handler_map[type(ex)](ex)
     logger.error(ex, exc_info=True)
-    traceback_str = "\n".join(traceback.format_exception(ex))
+    traceback_str = "".join(traceback.format_exception(ex))
     send_notify(f'出现异常, {traceback_str}')
     return error_response(999, str(ex))
 
@@ -65,6 +65,14 @@ def ignored_exception_handler(ex):
     return error_response(801, str(ex))
 
 
+def connection_error_handler(ex):
+    import traceback
+    traceback_str = "".join([s for s in traceback.format_exception(ex) if s.strip() != ''])
+    logger.info(f'{str(ex)}\n{traceback_str}')
+    send_notify(f'出现异常, {traceback_str}')
+    return error_response(999, str(ex))
+
+
 exception_handler_map = {
     VersionNotFoundException: version_not_found_handler,
     Md5NotMatchException: md5_not_found_handler,
@@ -73,7 +81,7 @@ exception_handler_map = {
     DownloadNotCompleted: download_not_completed_handler,
     FailToCopyFiles: fail_to_copy_files_handler,
     IgnoredException: ignored_exception_handler,
-    ConnectionError: ignored_exception_handler,
+    ConnectionError: connection_error_handler,
 }
 
 
