@@ -23,7 +23,8 @@ def get_game_data():
     res = {}
     try:
         resp = get_durable_cache_session().get(
-            'https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/game_data.json', timeout=5)
+            'https://ghproxy.net/https://raw.githubusercontent.com/triwinds/ns-emu-tools/main/game_data.json',
+            timeout=5)
         return resp.json()
     except Exception as e:
         logger.warning(f'fail to load game data, ex: {e}')
