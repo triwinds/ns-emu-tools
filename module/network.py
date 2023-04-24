@@ -81,8 +81,8 @@ options_on_proxy = {
 }
 
 options_on_cdn = {
-    'split': '8',
-    'max-connection-per-server': '8',
+    'split': '4',
+    'max-connection-per-server': '4',
     'min-split-size': '12M',
 }
 
