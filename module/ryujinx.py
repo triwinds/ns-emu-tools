@@ -110,6 +110,7 @@ def install_firmware_to_ryujinx(firmware_version=None):
                 path.rename(nca_dir.joinpath('00'))
             config.ryujinx.firmware = new_version
             dump_config()
+            send_notify(f'固件已安装至 {str(firmware_path)}')
             send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 Ryujinx.')
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)

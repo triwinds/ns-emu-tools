@@ -123,10 +123,12 @@ def install_firmware_to_yuzu(firmware_version=None):
         send_notify(f'当前的 固件 就是 [{firmware_version}], 跳过安装.')
         return
     from module.firmware import install_firmware
-    new_version = install_firmware(firmware_version, get_yuzu_nand_path().joinpath(r'system\Contents\registered'))
+    firmware_path = get_yuzu_nand_path().joinpath(r'system\Contents\registered')
+    new_version = install_firmware(firmware_version, firmware_path)
     if new_version:
         config.yuzu.yuzu_firmware = new_version
         dump_config()
+        send_notify(f'固件已安装至 {str(firmware_path)}')
         send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.')
 
 
