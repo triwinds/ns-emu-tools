@@ -64,8 +64,12 @@ export default {
             }
           ]
         },{
+          link: 'https://github.com/ChanseyIsTheBest/NX-60FPS-RES-GFX-Cheats/blob/main/GAMES.md',
+          title: '图形类金手指合集',
+          description: '由 ChanseyIsTheBest 整理的金手指合集',
+        },{
           link: 'https://www.cheatslips.com/',
-          title: '金手指合集',
+          title: '作弊类金手指合集',
           description: '由 cheatslips 整理的金手指合集',
         },{
           link: 'http://www.ffhome.com/works/1814.html',
