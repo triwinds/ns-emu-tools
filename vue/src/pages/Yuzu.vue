@@ -30,7 +30,17 @@
           <v-col cols="7">
             <v-autocomplete label="Yuzu 路径" v-model="selectedYuzuPath" :items="historyPathList"
                             @change="updateYuzuPath"
-                            style="cursor: default"></v-autocomplete>
+                            style="cursor: default">
+              <template v-slot:item="data">
+                <v-list-item-content v-text="data.item"></v-list-item-content>
+                <v-btn color="error" small icon outlined right v-if="selectedYuzuPath !== data.item"
+                       @click.stop="deleteHistoryPath(data.item)">
+                  <v-icon small>
+                    {{ svgPath.mdiTrashCanOutline }}
+                  </v-icon>
+                </v-btn>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col cols="5">
             <v-btn large color="secondary" outlined style="margin-right: 5px" min-width="120px"
@@ -142,10 +152,11 @@
   </SimplePage>
 </template>
 
+<!--suppress JSUnresolvedFunction -->
 <script>
 import SimplePage from "@/components/SimplePage";
 import ChangeLogDialog from "@/components/ChangeLogDialog";
-import {mdiTimelineQuestionOutline} from '@mdi/js';
+import {mdiTimelineQuestionOutline, mdiTrashCanOutline } from '@mdi/js';
 import * as showdown from "showdown";
 
 export default {
@@ -159,14 +170,16 @@ export default {
     selectedYuzuPath: '',
     changeLogHtml: '<p>加载中...</p>',
     svgPath: {
-      mdiTimelineQuestionOutline
+      mdiTimelineQuestionOutline,
+      mdiTrashCanOutline
     }
   }),
-  created() {
-    this.updateYuzuReleaseVersions()
-    this.loadHistoryPathList()
-    window.eel.update_last_open_emu_page('yuzu')()
+  async created() {
+    await this.loadHistoryPathList()
+    await this.updateYuzuConfig()
     this.selectedYuzuPath = this.yuzuConfig.yuzu_path
+    this.updateYuzuReleaseVersions()
+    window.eel.update_last_open_emu_page('yuzu')()
   },
   methods: {
     async updateYuzuConfig() {
@@ -270,6 +283,13 @@ export default {
       }
       this.appendConsoleMessage(data['msg'])
       this.loadHistoryPathList()
+    },
+    deleteHistoryPath(targetPath) {
+      window.eel.delete_history_path('yuzu', targetPath)((resp) => {
+        if (resp.code === 0) {
+          this.loadHistoryPathList()
+        }
+      })
     },
     startYuzu() {
       window.eel.start_yuzu()((data) => {

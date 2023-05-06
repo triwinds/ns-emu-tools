@@ -23,7 +23,17 @@
           <v-col cols="7">
             <v-autocomplete label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
                             @change="updateRyujinxPath"
-                            style="cursor: default"></v-autocomplete>
+                            style="cursor: default">
+                            <template v-slot:item="data">
+                <v-list-item-content v-text="data.item"></v-list-item-content>
+                <v-btn color="error" small icon outlined right v-if="selectedRyujinxPath !== data.item"
+                       @click.stop="deleteHistoryPath(data.item)">
+                  <v-icon small>
+                    {{ svgPath.mdiTrashCanOutline }}
+                  </v-icon>
+                </v-btn>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col cols="5">
             <v-btn large color="secondary" outlined style="margin-right: 5px" min-width="120px"
@@ -138,7 +148,7 @@
 <script>
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import * as showdown from "showdown";
-import {mdiTimelineQuestionOutline} from '@mdi/js';
+import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from '@mdi/js';
 import SimplePage from "@/components/SimplePage";
 
 
@@ -167,16 +177,16 @@ export default {
     ],
     selectedBranch: '',
     svgPath: {
-      mdiTimelineQuestionOutline
+      mdiTimelineQuestionOutline,
+      mdiTrashCanOutline
     }
   }),
-  mounted() {
-    this.updateRyujinxReleaseInfos()
-    this.updateRyujinxConfig()
-    this.loadHistoryPathList().then(() => {
-      this.selectedRyujinxPath = this.ryujinxConfig.path
-    })
+  async mounted() {
+    await this.updateRyujinxConfig()
+    await this.loadHistoryPathList()
+    this.selectedRyujinxPath = this.ryujinxConfig.path
     this.selectedBranch = this.ryujinxConfig.branch
+    this.updateRyujinxReleaseInfos()
     window.eel.update_last_open_emu_page('ryujinx')()
   },
   methods: {
@@ -202,6 +212,13 @@ export default {
       if (oldBranch !== this.selectedRyujinxPath.branch) {
         this.updateRyujinxReleaseInfos()
       }
+    },
+    deleteHistoryPath(targetPath) {
+      window.eel.delete_history_path('ryujinx', targetPath)((resp) => {
+        if (resp.code === 0) {
+          this.loadHistoryPathList()
+        }
+      })
     },
     async loadHistoryPathList() {
       let data = await window.eel.load_history_path('ryujinx')()
