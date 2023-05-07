@@ -50,17 +50,10 @@ def download_yuzu(target_version, branch):
 def unzip_yuzu(package_path: Path):
     logger.info(f'Unpacking yuzu files...')
     send_notify('正在解压 yuzu 文件...')
-    if package_path.name.endswith('.zip'):
-        import zipfile
-        with zipfile.ZipFile(package_path, 'r') as zf:
-            zf.extractall(tempfile.gettempdir())
-            return tempfile.gettempdir()
-    elif package_path.name.endswith('.7z'):
-        with py7zr.SevenZipFile(package_path) as zf:
-            zf.extractall(tempfile.gettempdir())
-            return tempfile.gettempdir()
-    logger.info(f'Unknown file format: {package_path}')
-    send_notify('不支持的文件格式, 解压失败.')
+    from utils.package import uncompress
+    target_dir = tempfile.gettempdir()
+    uncompress(package_path, target_dir)
+    return target_dir
 
 
 def install_ea_yuzu(target_version):
