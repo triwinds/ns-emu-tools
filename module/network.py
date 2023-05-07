@@ -6,6 +6,7 @@ import requests_cache
 from requests.adapters import HTTPAdapter
 from gevent.lock import RLock
 import random
+from module.msg_notifier import send_notify
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,9 @@ def get_github_download_url(origin_url: str):
         logger.info(f'using origin url: {origin_url}')
         return origin_url
     if mirror == 'cloudflare_load_balance':
-        mirror = random.choice(github_us_mirrors)[0]
+        choice = random.choice(github_us_mirrors)
+        send_notify(f'使用 GitHub 镜像: {choice[2]}')
+        mirror = choice[0]
     url = origin_url.replace('https://github.com', mirror)
     logger.info(f'using new url: {url}')
     return url
