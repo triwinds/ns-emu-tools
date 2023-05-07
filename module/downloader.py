@@ -19,7 +19,7 @@ if not download_path.exists():
 logger = logging.getLogger(__name__)
 
 
-def init_aria2():
+def _init_aria2():
     global aria2
     global aria2_process
     if aria2:
@@ -56,6 +56,21 @@ def init_aria2():
     global_options = get_global_options()
     logger.info(f'aria2 global options: {global_options}')
     aria2.set_global_options(global_options)
+
+
+def init_aria2():
+    global aria2
+    global aria2_process
+    ex = None
+    for _ in range(2):
+        try:
+            _init_aria2()
+            return
+        except Exception as e:
+            ex = e
+            logger.info(f'Fail in start aria2 daemon, trying to restart...')
+            aria2 = aria2_process = None
+    raise ex
 
 
 def stop_download():
