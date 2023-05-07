@@ -19,6 +19,7 @@ if not exist "<new_exe>" (
   echo 无法找到更新文件 "<new_exe>"
   pause
 ) else (
+  taskkill /F /IM NsEmuTools* >nul 2>nul
   move /Y "<new_exe>" "<target_place>"
   echo 启动程序
   call "<target_place>"
