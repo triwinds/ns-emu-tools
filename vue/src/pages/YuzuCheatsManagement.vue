@@ -64,6 +64,14 @@
 
           </v-col>
         </v-row>
+        <v-row v-if="cheatItems && cheatItems.length > 0">
+          <v-col>
+            <v-btn block outlined color="info" @click="updateAllItemState(true)">选择全部</v-btn>
+          </v-col>
+          <v-col>
+            <v-btn block outlined color="error" @click="updateAllItemState(false)">反选全部</v-btn>
+          </v-col>
+        </v-row>
       </v-container>
     </v-card>
   </SimplePage>
@@ -96,7 +104,7 @@ export default {
       cheatFiles: [],
       selectedCheatFile: '',
       cheatItems: [],
-      cheatItemBoxHeight: 410,
+      cheatItemBoxHeight: 350,
       descriptionHtml: '',
       gameDataInited: false,
     }
@@ -136,7 +144,7 @@ export default {
       return []
     },
     updateCheatItemBoxHeight() {
-      this.cheatItemBoxHeight = window.innerHeight - 390
+      this.cheatItemBoxHeight = window.innerHeight - 450
     },
     concatFolderItemName(item) {
       let gameName = item.game_name ? item.game_name : this.gameDataInited ? '未知游戏' : '游戏信息加载中...'
@@ -154,6 +162,7 @@ export default {
       })
     },
     loadCheatChunkInfo(selectedCheatFile) {
+      this.cheatItems = []
       window.eel.load_cheat_chunk_info(selectedCheatFile)((resp) => {
         if (resp.code === 0 && resp.data) {
           this.cheatItems = resp.data
@@ -184,6 +193,11 @@ export default {
           this.appendConsoleMessage("打开文件夹成功")
         }
       })
+    },
+    updateAllItemState(state) {
+      for (let item of this.cheatItems) {
+        item.enable = state;
+      }
     }
   },
   watch: {

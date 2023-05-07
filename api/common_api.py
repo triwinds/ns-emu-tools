@@ -102,6 +102,13 @@ def load_history_path(emu_type: str):
 
 
 @eel.expose
+def delete_history_path(emu_type: str, path_to_delete: str):
+    from storage import delete_history_path
+    delete_history_path(emu_type, path_to_delete)
+    return success_response()
+
+
+@eel.expose
 def get_github_mirrors():
     from module.network import get_github_mirrors
     try:

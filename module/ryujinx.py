@@ -62,27 +62,26 @@ def install_ryujinx_by_version(target_version: str, branch: str):
     ryujinx_path = Path(config.ryujinx.path)
     ryujinx_path.mkdir(parents=True, exist_ok=True)
     kill_all_ryujinx_instance(ryujinx_path)
+    from utils.package import uncompress
+    import tempfile
+    tmp_dir = Path(tempfile.gettempdir()).joinpath('ryujinx-install')
+    logger.info(f'Unpacking ryujinx files to {tmp_dir}.')
+    send_notify('正在解压 ryujinx 文件...')
+    uncompress(file.path, tmp_dir)
     clear_ryujinx_folder(ryujinx_path)
-    import zipfile
-    with zipfile.ZipFile(file.path, 'r') as zf:
-        import tempfile
-        tmp_dir = Path(tempfile.gettempdir()).joinpath('ryujinx-install')
-        logger.info(f'Unpacking ryujinx files to {tmp_dir}.')
-        send_notify('正在解压 ryujinx 文件...')
-        zf.extractall(str(tmp_dir.absolute()))
-        ryujinx_tmp_dir = tmp_dir.joinpath('publish')
-        logger.info(f'Copy back ryujinx files...')
-        send_notify('安装 ryujinx 文件至目录...')
-        try:
-            shutil.copytree(ryujinx_tmp_dir, ryujinx_path, dirs_exist_ok=True)
-        except Exception as e:
-            from exception.install_exception import FailToCopyFiles
-            raise FailToCopyFiles(e, 'Ryujinx 文件复制失败')
-        shutil.rmtree(tmp_dir)
-        config.ryujinx.version = target_version
-        config.ryujinx.branch = branch
-        dump_config()
-        logger.info(f'Ryujinx {branch} of [{target_version}] install successfully.')
+    ryujinx_tmp_dir = tmp_dir.joinpath('publish')
+    logger.info(f'Copy back ryujinx files...')
+    send_notify('安装 ryujinx 文件至目录...')
+    try:
+        shutil.copytree(ryujinx_tmp_dir, ryujinx_path, dirs_exist_ok=True)
+    except Exception as e:
+        from exception.install_exception import FailToCopyFiles
+        raise FailToCopyFiles(e, 'Ryujinx 文件复制失败')
+    shutil.rmtree(tmp_dir)
+    config.ryujinx.version = target_version
+    config.ryujinx.branch = branch
+    dump_config()
+    logger.info(f'Ryujinx {branch} of [{target_version}] install successfully.')
     if config.setting.download.autoDeleteAfterInstall:
         os.remove(file.path)
     from module.common import check_and_install_msvc
@@ -110,6 +109,7 @@ def install_firmware_to_ryujinx(firmware_version=None):
                 path.rename(nca_dir.joinpath('00'))
             config.ryujinx.firmware = new_version
             dump_config()
+            send_notify(f'固件已安装至 {str(firmware_path)}')
             send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 Ryujinx.')
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -170,7 +170,7 @@ def start_ryujinx():
         logger.info(f'starting Ryujinx from: {rj_path}')
         subprocess.Popen([rj_path])
     else:
-        logger.error(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
+        logger.info(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
         raise IgnoredException(f'Ryujinx exe not exist in [{config.ryujinx.path}]')
 
 

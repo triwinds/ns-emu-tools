@@ -50,17 +50,10 @@ def download_yuzu(target_version, branch):
 def unzip_yuzu(package_path: Path):
     logger.info(f'Unpacking yuzu files...')
     send_notify('正在解压 yuzu 文件...')
-    if package_path.name.endswith('.zip'):
-        import zipfile
-        with zipfile.ZipFile(package_path, 'r') as zf:
-            zf.extractall(tempfile.gettempdir())
-            return tempfile.gettempdir()
-    elif package_path.name.endswith('.7z'):
-        with py7zr.SevenZipFile(package_path) as zf:
-            zf.extractall(tempfile.gettempdir())
-            return tempfile.gettempdir()
-    logger.info(f'Unknown file format: {package_path}')
-    send_notify('不支持的文件格式, 解压失败.')
+    from utils.package import uncompress
+    target_dir = tempfile.gettempdir()
+    uncompress(package_path, target_dir)
+    return target_dir
 
 
 def install_ea_yuzu(target_version):
@@ -123,10 +116,12 @@ def install_firmware_to_yuzu(firmware_version=None):
         send_notify(f'当前的 固件 就是 [{firmware_version}], 跳过安装.')
         return
     from module.firmware import install_firmware
-    new_version = install_firmware(firmware_version, get_yuzu_nand_path().joinpath(r'system\Contents\registered'))
+    firmware_path = get_yuzu_nand_path().joinpath(r'system\Contents\registered')
+    new_version = install_firmware(firmware_version, firmware_path)
     if new_version:
         config.yuzu.yuzu_firmware = new_version
         dump_config()
+        send_notify(f'固件已安装至 {str(firmware_path)}')
         send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.')
 
 
@@ -191,7 +186,7 @@ def start_yuzu():
         logger.info(f'starting yuzu from: {yz_path}')
         subprocess.Popen([yz_path])
     else:
-        logger.error(f'yuzu not exist in [{yz_path}]')
+        logger.info(f'yuzu not exist in [{yz_path}]')
         raise IgnoredException(f'yuzu not exist in [{yz_path}]')
 
 

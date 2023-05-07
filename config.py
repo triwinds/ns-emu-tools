@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.3.8'
+current_version = '0.3.9'
 user_agent = f'ns-emu-tools/{current_version}'
 
 

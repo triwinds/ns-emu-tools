@@ -49,5 +49,17 @@ def add_ryujinx_history(ryujinx_config: RyujinxConfig, dump=True):
         dump_storage()
 
 
+def delete_history_path(emu_type: str, path_to_delete: str):
+    if emu_type == 'yuzu':
+        history = storage.yuzu_history
+    else:
+        history = storage.ryujinx_history
+    abs_path = str(Path(path_to_delete).absolute())
+    if abs_path in history:
+        del history[abs_path]
+        logger.info(f'{emu_type} path {abs_path} deleted.')
+        dump_storage()
+
+
 if __name__ == '__main__':
     print(storage)

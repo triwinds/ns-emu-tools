@@ -34,11 +34,11 @@ def _detect_firmware_version(emu_type: str):
             if p.is_file():
                 firmware_files.append(p)
     if not key_path.exists():
-        logger.error(f'prod keys not found in path: {key_path}')
+        logger.info(f'prod keys not found in path: {key_path}')
         send_notify('未能找到相应的 prod.keys 文件')
         raise IgnoredException(f'prod keys not found in path: {key_path}')
     if not firmware_files:
-        logger.error(f'no firmware files found in path: {firmware_path}')
+        logger.info(f'no firmware files found in path: {firmware_path}')
         send_notify('未能找到相应的固件文件')
         raise IgnoredException(f'no firmware files found in path: {firmware_path}')
     target_file = find_target_firmware_file(firmware_files, key_path)
