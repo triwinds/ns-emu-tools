@@ -197,24 +197,28 @@ def detect_ryujinx_version():
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     subprocess.Popen([rj_path], startupinfo=st_inf, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(3)
-    version = None
-    try:
-        from utils.common import get_all_window_name
-        for window_name in get_all_window_name():
-            if window_name.startswith('Ryujinx '):
-                version = window_name[16:] if window_name.startswith('Ryujinx Console ') else window_name[8:]
-                send_notify(f'当前 Ryujinx 版本 [{version}]')
-                logger.info(f'Current Ryujinx version: {version}')
-                break
-    except:
-        logger.exception('error occur in get_all_window_name')
+    version, try_count = None, 0
+    from utils.common import get_all_window_name
+    while try_count < 30 and not version:
+        try_count += 1
+        time.sleep(0.5)
+        try:
+            for window_name in get_all_window_name():
+                if window_name.startswith('Ryujinx '):
+                    version = window_name[16:] if window_name.startswith('Ryujinx Console ') else window_name[8:]
+                    send_notify(f'当前 Ryujinx 版本 [{version}]')
+                    logger.info(f'Current Ryujinx version: {version}')
+                    break
+        except:
+            logger.exception('error occur in get_all_window_name')
     kill_all_ryujinx_instance()
     if version:
         if 'ldn' in version:
             idx = version.index('ldn')
             version = version[idx+3:]
             config.ryujinx.branch = 'ldn'
+    else:
+        send_notify(f'检测失败！没有找到 Ryujinx 窗口...')
     config.ryujinx.version = version
     dump_config()
     return version
@@ -245,4 +249,6 @@ if __name__ == '__main__':
     # open_ryujinx_keys_folder()
     # detect_ryujinx_version()
     # install_ryujinx_by_version('3.0.1', 'ldn')
-    kill_all_ryujinx_instance(Path(config.ryujinx.path))
+    # kill_all_ryujinx_instance(Path(config.ryujinx.path))
+    a = 1
+    print()

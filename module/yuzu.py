@@ -140,9 +140,9 @@ def detect_yuzu_version():
     branch = None
     try:
         try_cnt = 0
-        while try_cnt < 3:
-            time.sleep(3)
-            from utils.common import get_all_window_name
+        from utils.common import get_all_window_name
+        while try_cnt < 30 and not version:
+            time.sleep(0.5)
             for window_name in get_all_window_name():
                 if window_name.startswith('yuzu '):
                     logger.info(f'yuzu window name: {window_name}')
@@ -155,8 +155,6 @@ def detect_yuzu_version():
                     send_notify(f'当前 yuzu 版本 [{version}]')
                     logger.info(f'current yuzu version: {version}, branch: {branch}')
                     break
-            if version:
-                break
             try_cnt += 1
     except:
         logger.exception('error occur in get_all_window_name')
