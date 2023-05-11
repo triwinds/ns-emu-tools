@@ -80,7 +80,7 @@ def main(port=0, mode=None, dev=False):
             mode = 'edge'
         else:
             mode = 'user default'
-    size = (1280, 850)
+    size = (config.setting.ui.width, config.setting.ui.height)
     logger.info(f'browser mode: {mode}')
     if port == 0:
         from module.network import get_available_port
@@ -104,4 +104,4 @@ if __name__ == '__main__':
     #
     # gevent.monkey.patch_ssl()
     # gevent.monkey.patch_socket()
-    main(8888, False, True)
+    main(0)

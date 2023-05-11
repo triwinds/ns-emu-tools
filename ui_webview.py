@@ -2,6 +2,7 @@ import logging
 import eel
 import webview
 from utils.webview2 import ensure_runtime_components
+from config import config
 
 logger = logging.getLogger(__name__)
 default_page = f'index.html'
@@ -38,7 +39,8 @@ def main():
         port = get_available_port()
     url = f'http://localhost:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')
-    webview.create_window('NS EMU TOOLS', url, width=1280, height=850, text_select=True)
+    webview.create_window('NS EMU TOOLS', url, width=config.setting.ui.width,
+                          height=config.setting.ui.height, text_select=True)
     webview.start(func=start_eel)
 
 

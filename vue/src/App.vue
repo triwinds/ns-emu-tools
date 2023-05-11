@@ -167,6 +167,8 @@ import {
 } from '@mdi/js'
 import Vue from "vue";
 
+let pendingWriteSize = false
+
 export default {
   components: {NewVersionDialog, SpeedDial, ConsoleDialog},
   data: () => ({
@@ -192,11 +194,21 @@ export default {
     this.initAvailableFirmwareInfos()
     this.applyUiConfig()
     this.appendConsoleMessage('启动时间：' + new Date().toLocaleString())
+    window.addEventListener('resize', this.rememberWindowSize);
   },
   methods: {
     openReleasePage() {
       if (this.hasNewVersion) {
         this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
+      }
+    },
+    rememberWindowSize() {
+      if (!pendingWriteSize) {
+        pendingWriteSize = true
+        setTimeout(() => {
+          pendingWriteSize = false
+          window.eel.update_window_size(window.innerWidth, window.innerHeight)()
+        }, 3000)
       }
     },
     async applyUiConfig() {

@@ -81,6 +81,8 @@ class UiSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu',
     dark: Optional[bool] = True,
     mode: Optional[str] = 'auto'
+    width: int = 1280
+    height: int = 850
 
 
 @dataclass_json
