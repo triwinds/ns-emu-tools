@@ -146,7 +146,7 @@
           </v-col>
         </v-row>
       </v-container>
-      <SpeedDial></SpeedDial>
+      <SpeedDial v-show="$vuetify.breakpoint.mdAndUp"></SpeedDial>
       <ConsoleDialog></ConsoleDialog>
       <NewVersionDialog></NewVersionDialog>
     </v-main>
