@@ -117,6 +117,7 @@ const state = {
                 githubApiMode: 'direct',
                 githubDownloadMirror: "cloudflare_load_balance",
                 useDoh: true,
+                proxy: 'system',
             },
             download: {
                 autoDeleteAfterInstall: true,

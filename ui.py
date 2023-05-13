@@ -100,8 +100,8 @@ def main(port=0, mode=None, dev=False):
 
 
 if __name__ == '__main__':
-    # import gevent.monkey
-    #
-    # gevent.monkey.patch_ssl()
-    # gevent.monkey.patch_socket()
-    main(0)
+    import gevent.monkey
+
+    gevent.monkey.patch_ssl()
+    gevent.monkey.patch_socket()
+    main(8888, False, True)

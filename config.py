@@ -65,6 +65,7 @@ class NetworkSetting:
     githubApiMode: Optional[str] = 'direct'
     githubDownloadMirror: Optional[str] = 'cloudflare_load_balance'
     useDoh: Optional[bool] = True
+    proxy: Optional[str] = 'system'
 
 
 @dataclass_json
