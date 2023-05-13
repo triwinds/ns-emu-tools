@@ -3,7 +3,6 @@ dataclasses-json
 aria2p
 py7zr
 beautifulsoup4
-# google-api-python-client
 eel
 pywin32
 psutil
@@ -11,7 +10,7 @@ gevent
 httplib2
 requests-cache
 dnspython[doh]
-pywebview
+pywebview==4.0.2
 sentry-sdk
 xmltodict
 chardet
