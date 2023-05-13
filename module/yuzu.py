@@ -136,28 +136,33 @@ def detect_yuzu_version():
     kill_all_yuzu_instance()
     send_notify(f'正在启动 yuzu ...')
     subprocess.Popen([yz_path.absolute()])
-    time.sleep(3)
     version = None
     branch = None
     try:
+        try_cnt = 0
         from utils.common import get_all_window_name
-        for window_name in get_all_window_name():
-            if window_name.startswith('yuzu '):
-                logger.info(f'yuzu window name: {window_name}')
-                if window_name.startswith('yuzu Early Access '):
-                    version = window_name[18:]
-                    branch = 'ea'
-                else:
-                    version = window_name[5:]
-                    branch = 'mainline'
-                send_notify(f'当前 yuzu 版本 [{version}]')
-                logger.info(f'current yuzu version: {version}, branch: {branch}')
-                break
+        while try_cnt < 30 and not version:
+            time.sleep(0.5)
+            for window_name in get_all_window_name():
+                if window_name.startswith('yuzu '):
+                    logger.info(f'yuzu window name: {window_name}')
+                    if window_name.startswith('yuzu Early Access '):
+                        version = window_name[18:]
+                        branch = 'ea'
+                    else:
+                        version = window_name[5:]
+                        branch = 'mainline'
+                    send_notify(f'当前 yuzu 版本 [{version}]')
+                    logger.info(f'current yuzu version: {version}, branch: {branch}')
+                    break
+            try_cnt += 1
     except:
         logger.exception('error occur in get_all_window_name')
     kill_all_yuzu_instance()
     if version:
         config.yuzu.branch = branch
+    else:
+        send_notify(f'检测失败！没有找到 yuzu 窗口...')
     config.yuzu.yuzu_version = version
     dump_config()
     return version

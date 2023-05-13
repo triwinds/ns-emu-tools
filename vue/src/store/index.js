@@ -108,13 +108,16 @@ const state = {
             ui: {
                 lastOpenEmuPage: "",
                 dark: true,
-                mode: 'auto'
+                mode: 'auto',
+                width: 1280,
+                height: 850,
             },
             network: {
                 firmwareSource: 'auto-detect',
                 githubApiMode: 'direct',
                 githubDownloadMirror: "cloudflare_load_balance",
                 useDoh: true,
+                proxy: 'system',
             },
             download: {
                 autoDeleteAfterInstall: true,

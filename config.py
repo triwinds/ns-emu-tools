@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 
 
-current_version = '0.3.9'
+current_version = '0.4.0'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
@@ -28,6 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 config_path = Path('config.json')
 config = None
+shared = {}
 
 
 def log_versions():
@@ -64,6 +65,7 @@ class NetworkSetting:
     githubApiMode: Optional[str] = 'direct'
     githubDownloadMirror: Optional[str] = 'cloudflare_load_balance'
     useDoh: Optional[bool] = True
+    proxy: Optional[str] = 'system'
 
 
 @dataclass_json
@@ -81,6 +83,8 @@ class UiSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu',
     dark: Optional[bool] = True,
     mode: Optional[str] = 'auto'
+    width: int = 1280
+    height: int = 850
 
 
 @dataclass_json
@@ -145,4 +149,4 @@ def update_setting(setting: Dict[str, object]):
 
 
 __all__ = ['config', 'dump_config', 'YuzuConfig', 'current_version', 'RyujinxConfig', 'update_dark_state',
-           'update_last_open_emu_page', 'update_setting', 'user_agent']
+           'update_last_open_emu_page', 'update_setting', 'user_agent', 'shared']

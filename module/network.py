@@ -7,6 +7,7 @@ from requests.adapters import HTTPAdapter
 from gevent.lock import RLock
 import random
 from module.msg_notifier import send_notify
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ options_on_cdn = {
 }
 
 chrome_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' \
-            'Chrome/110.0.0.0 Safari/537.36'
+            'Chrome/113.0.0.0 Safari/537.36'
 github_api_fallback_flag = False
 
 
@@ -98,7 +99,28 @@ def is_using_proxy():
     return proxies is not None and proxies != {}
 
 
+def uri_validator(x):
+    try:
+        result = urlparse(x)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+
 def get_proxies():
+    proxy = config.setting.network.proxy
+    if proxy == 'system':
+        return get_system_proxies()
+    elif proxy is None or proxy.strip() == '':
+        return {}
+    elif uri_validator(proxy):
+        return {'http': proxy, 'https': proxy}
+    else:
+        logger.info(f'unknown proxy: {proxy}')
+        return {}
+
+
+def get_system_proxies():
     proxies = {}
     if os.name == 'nt':
         proxies.update(urllib.request.getproxies_registry())

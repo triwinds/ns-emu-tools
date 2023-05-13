@@ -2,8 +2,9 @@ from typing import Dict
 
 import eel
 from api.common_response import success_response, exception_response, error_response
-from config import current_version
+from config import current_version, shared
 import logging
+import time
 from module.firmware import get_firmware_infos
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ def get_available_firmware_infos():
 
 @eel.expose
 def get_current_version():
+    shared['ui_init_time'] = time.time()
     return success_response(current_version)
 
 
@@ -115,6 +117,20 @@ def get_github_mirrors():
         return success_response(get_github_mirrors())
     except Exception as e:
         return exception_response(e)
+
+
+@eel.expose
+def update_window_size(width: int, height: int):
+    from config import dump_config, config
+    width = width if width > 500 else 500
+    height = height if height > 400 else 400
+    if width == config.setting.ui.width and height == config.setting.ui.height:
+        return success_response()
+    config.setting.ui.width = width
+    config.setting.ui.height = height
+    logger.info(f'saving window size: {(config.setting.ui.width, config.setting.ui.height)}')
+    dump_config()
+    return success_response()
 
 
 def _merge_to_set(*cols):

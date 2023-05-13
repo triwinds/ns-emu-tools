@@ -38,6 +38,20 @@
             persistent-hint
             hint="如果速度可以接受，希望大家尽量多使用前面的美国节点，避免流量都集中到亚洲公益节点，减少成本压力运营才能更持久~"
         ></v-select>
+        <v-divider style="margin-bottom: 10px; margin-top: 10px"></v-divider>
+        <v-select
+            v-model="proxyMode"
+            :items="availableProxyMode"
+            item-text="name"
+            item-value="value"
+            label="代理设置"
+            hide-details
+            @change="onProxyModeChange"
+        ></v-select>
+        <v-text-field v-if="proxyMode === 'http'" v-model="proxyInput" @change="onProxyChange" label="代理服务器地址"
+                      persistent-hint hint="仅支持 HTTP 代理, 如 http://127.0.0.1:7890"
+                      :rules="[rules.validateProxy]"
+        ></v-text-field>
         <v-switch v-model="setting.network.useDoh">
           <template v-slot:label>
             访问 api 时使用 DNS over HTTPS
@@ -45,7 +59,7 @@
               <template v-slot:activator="{ on, attrs }">
                 <v-btn icon v-bind="attrs" v-on="on">
                   <v-icon color="grey lighten-1">
-                    {{ sbgPath.helpCircle }}
+                    {{ svgPath.helpCircle }}
                   </v-icon>
                 </v-btn>
               </template>
@@ -75,6 +89,18 @@ import {
   mdiHelpCircle
 } from '@mdi/js'
 
+function isValidHttpUrl(string) {
+  let url;
+
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
 export default {
   name: "SettingsPage",
   components: {SimplePage},
@@ -88,8 +114,23 @@ export default {
         {name: '直连', value: 'direct'},
       ],
       availableGithubDownloadSource: [],
-      sbgPath: {
+      availableProxyMode: [
+          {name: '自动检测系统代理', value: 'system'},
+          {name: '手动配置 HTTP 代理', value: 'http'},
+          {name: '不使用代理', value: 'none'},
+      ],
+      proxyMode: '',
+      proxyInput: '',
+      svgPath: {
         helpCircle: mdiHelpCircle,
+      },
+      rules: {
+        validateProxy(value) {
+          if (!value || value.trim() === '' || value === 'system' || isValidHttpUrl(value)) {
+            return true;
+          }
+          return '仅支持 HTTP 代理, 如 http://127.0.0.1:7890'
+        }
       }
     }
   },
@@ -97,6 +138,8 @@ export default {
     let config = await this.$store.dispatch('loadConfig');
     await this.loadAvailableGithubDownloadSource()
     this.setting = config.setting
+    this.proxyInput = config.setting.network.proxy
+    this.updateProxyMode()
   },
   methods: {
     async loadAvailableGithubDownloadSource() {
@@ -107,6 +150,31 @@ export default {
           this.availableGithubDownloadSource.push({name: mirror[2], value: mirror[0]})
         }
       }
+    },
+    updateProxyMode() {
+      if (this.proxyInput === 'system') {
+        this.proxyMode = 'system'
+      } else if (this.proxyInput.startsWith('http')) {
+        this.proxyMode = 'http'
+      } else {
+        this.proxyMode = 'none'
+      }
+    },
+    onProxyChange() {
+      console.log(`onProxyChange, current input: ${this.proxyInput}`)
+      this.setting.network.proxy = this.proxyInput.trim()
+      this.updateProxyMode()
+    },
+    onProxyModeChange() {
+      if (this.proxyMode === 'http' && this.proxyInput === 'system') {
+        this.proxyInput = ''
+      } else if (this.proxyMode === 'system') {
+        this.proxyInput = 'system'
+      } else if (this.proxyMode === 'none') {
+        this.proxyInput = ''
+      }
+      console.log(`onProxyModeChange, current input: ${this.proxyInput}`)
+      this.setting.network.proxy = this.proxyInput
     }
   },
   watch: {
