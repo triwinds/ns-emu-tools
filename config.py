@@ -28,6 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 config_path = Path('config.json')
 config = None
+shared = {}
 
 
 def log_versions():
@@ -147,4 +148,4 @@ def update_setting(setting: Dict[str, object]):
 
 
 __all__ = ['config', 'dump_config', 'YuzuConfig', 'current_version', 'RyujinxConfig', 'update_dark_state',
-           'update_last_open_emu_page', 'update_setting', 'user_agent']
+           'update_last_open_emu_page', 'update_setting', 'user_agent', 'shared']

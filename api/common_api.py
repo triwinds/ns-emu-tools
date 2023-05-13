@@ -2,8 +2,9 @@ from typing import Dict
 
 import eel
 from api.common_response import success_response, exception_response, error_response
-from config import current_version
+from config import current_version, shared
 import logging
+import time
 from module.firmware import get_firmware_infos
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ def get_available_firmware_infos():
 
 @eel.expose
 def get_current_version():
+    shared['ui_init_time'] = time.time()
     return success_response(current_version)
 
 
