@@ -49,7 +49,7 @@ def main():
     if port == 0:
         from module.network import get_available_port
         port = get_available_port()
-    url = f'http://localhost:{port}/{default_page}'
+    url = f'http://127.0.0.1:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')
     webview.create_window('NS EMU TOOLS', url, width=config.setting.ui.width,
                           height=config.setting.ui.height, text_select=True)
