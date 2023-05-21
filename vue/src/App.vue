@@ -207,7 +207,7 @@ export default {
         pendingWriteSize = true
         setTimeout(() => {
           pendingWriteSize = false
-          window.eel.update_window_size(window.innerWidth, window.innerHeight)()
+          window.eel.update_window_size(window.outerWidth, window.outerHeight)()
         }, 1000)
       }
     },

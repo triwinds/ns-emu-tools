@@ -1,3 +1,4 @@
+import os
 from typing import Dict
 
 import eel
@@ -128,6 +129,11 @@ def update_window_size(width: int, height: int):
         return success_response()
     config.setting.ui.width = width
     config.setting.ui.height = height
+    if os.name == 'nt':
+        import ctypes
+        scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+        config.setting.ui.width = int(scale_factor * config.setting.ui.width)
+        config.setting.ui.height = int(scale_factor * config.setting.ui.height)
     logger.info(f'saving window size: {(config.setting.ui.width, config.setting.ui.height)}')
     dump_config()
     return success_response()
