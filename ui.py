@@ -48,7 +48,7 @@ def start_edge_in_app_mode(page, port, size=(1280, 720)):
     if port == 0:
         from module.network import get_available_port
         port = get_available_port()
-    url = f'http://localhost:{port}/{page}'
+    url = f'http://127.0.0.1:{port}/{page}'
     import subprocess
     try:
         subprocess.Popen(f'"{_find_edge_win()}" --app={url}',
