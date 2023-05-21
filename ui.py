@@ -81,7 +81,7 @@ def main(port=0, mode=None, dev=False):
         else:
             mode = 'user default'
     size = (config.setting.ui.width, config.setting.ui.height)
-    logger.info(f'browser mode: {mode}')
+    logger.info(f'browser mode: {mode}, size: {size}')
     if port == 0:
         from module.network import get_available_port
         port = get_available_port()

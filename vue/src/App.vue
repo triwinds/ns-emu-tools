@@ -208,7 +208,7 @@ export default {
         setTimeout(() => {
           pendingWriteSize = false
           window.eel.update_window_size(window.innerWidth, window.innerHeight)()
-        }, 3000)
+        }, 1000)
       }
     },
     async applyUiConfig() {
