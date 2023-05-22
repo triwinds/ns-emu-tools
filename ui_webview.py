@@ -26,8 +26,20 @@ def check_webview_status():
                                       '已将 ui 切换至浏览器模式，请重新启动程序.')
 
 
-def start_eel():
+def maximize_window():
+    if os.name != 'nt':
+        return
+    from webview.platforms.winforms import WinForms, Func, Type, BrowserView
+
+    def _maximize():
+        BrowserView.instances['master'].WindowState = WinForms.FormWindowState.Maximized
+    BrowserView.instances['master'].Invoke(Func[Type](_maximize))
+
+
+def post_start(fullscreen):
     Timer(10.0, check_webview_status).start()
+    if fullscreen:
+        Timer(0.5, maximize_window).start()
     eel.start(default_page, port=port, mode=False)
 
 
@@ -58,9 +70,11 @@ def main():
         import ctypes
         scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
         width, height = int(scale_factor * width), int(scale_factor * height)
-    logger.info(f'window size: {(width, height)}')
+    sw, sh = webview.screens[0].width, webview.screens[0].height
+    fullscreen = width / sw > 0.95 and height / sh > 0.9
+    logger.info(f'window size: {(width, height)}, fullscreen: {fullscreen}')
     webview.create_window('NS EMU TOOLS', url, width=width, height=height, text_select=True)
-    webview.start(func=start_eel)
+    webview.start(func=post_start, args=[fullscreen])
 
 
 if __name__ == '__main__':
