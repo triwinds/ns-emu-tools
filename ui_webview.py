@@ -1,4 +1,6 @@
 import logging
+import os
+
 import eel
 import webview
 from utils.webview2 import ensure_runtime_components
@@ -51,9 +53,13 @@ def main():
         port = get_available_port()
     url = f'http://127.0.0.1:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')
-    logger.info(f'window size: {(config.setting.ui.width, config.setting.ui.height)}')
-    webview.create_window('NS EMU TOOLS', url, width=config.setting.ui.width,
-                          height=config.setting.ui.height, text_select=True)
+    width, height = config.setting.ui.width, config.setting.ui.height
+    if os.name == 'nt':
+        import ctypes
+        scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+        width, height = int(scale_factor * width), int(scale_factor * height)
+    logger.info(f'window size: {(width, height)}')
+    webview.create_window('NS EMU TOOLS', url, width=width, height=height, text_select=True)
     webview.start(func=start_eel)
 
 
