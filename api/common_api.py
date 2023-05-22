@@ -122,9 +122,10 @@ def get_github_mirrors():
 
 @eel.expose
 def update_window_size(width: int, height: int):
-    from config import dump_config, config
-    width = width if width > 500 else 500
-    height = height if height > 400 else 400
+    from config import dump_config, config, shared
+    if shared['mode'] == 'webview':
+        from ui_webview import get_window_size
+        width, height = get_window_size()
     if width == config.setting.ui.width and height == config.setting.ui.height:
         return success_response()
     config.setting.ui.width = width

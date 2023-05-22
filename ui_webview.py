@@ -36,10 +36,15 @@ def maximize_window():
     BrowserView.instances['master'].Invoke(Func[Type](_maximize))
 
 
+def get_window_size():
+    return webview.windows[0].width, webview.windows[0].height
+
+
 def post_start(fullscreen):
     Timer(10.0, check_webview_status).start()
     if fullscreen:
         Timer(0.5, maximize_window).start()
+    shared['mode'] = 'webview'
     eel.start(default_page, port=port, mode=False)
 
 
@@ -66,12 +71,8 @@ def main():
     url = f'http://127.0.0.1:{port}/{default_page}'
     logger.info(f'start webview with url: {url}')
     width, height = config.setting.ui.width, config.setting.ui.height
-    if os.name == 'nt':
-        import ctypes
-        scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
-        width, height = int(scale_factor * width), int(scale_factor * height)
     sw, sh = webview.screens[0].width, webview.screens[0].height
-    fullscreen = width / sw > 0.95 and height / sh > 0.9
+    fullscreen = sw - width < 3 and height / sh > 0.9
     logger.info(f'window size: {(width, height)}, fullscreen: {fullscreen}')
     webview.create_window('NS EMU TOOLS', url, width=width, height=height, text_select=True)
     webview.start(func=post_start, args=[fullscreen])

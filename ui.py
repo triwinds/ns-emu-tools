@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 import eel
-from config import config, dump_config
+from config import config, dump_config, shared
 
 logger = logging.getLogger(__name__)
 
@@ -88,14 +88,17 @@ def main(port=0, mode=None, dev=False):
         logger.info(f'starting eel at port: {port}')
     if mode == 'edge':
         try:
+            shared['mode'] = mode
             start_edge_in_app_mode(default_page, port, size)
         except Exception as e:
             logger.info(f'Fail to start with Edge, fallback to default browser, exception: {str(e)}')
             mode = 'user default'
             config.setting.ui.mode = mode
             dump_config()
+            shared['mode'] = mode
             eel.start(default_page, port=port, size=size, mode=mode, shutdown_delay=shutdown_delay)
     else:
+        shared['mode'] = mode
         eel.start(default_page, port=port, size=size, mode=mode, shutdown_delay=shutdown_delay)
 
 
