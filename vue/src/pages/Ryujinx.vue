@@ -128,7 +128,7 @@
           </v-col>
           <v-col>
             <v-btn class="info--text" large outlined min-width="160px" :disabled='isRunningInstall'
-                   @click="installFirmware">
+                   @click="firmwareInstallationWarningDialog = true">
               安装固件
             </v-btn>
           </v-col>
@@ -142,6 +142,34 @@
         </v-row>
       </v-container>
     </v-card>
+    <v-dialog v-model="firmwareInstallationWarningDialog" max-width="800">
+      <v-card>
+        <v-card-title class="text-h5 primary white--text">
+          安装前必读
+        </v-card-title>
+        <MarkdownContentBox :content="firmwareWarningMsg">
+        </MarkdownContentBox>
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+              color="primary"
+              text
+              @click="firmwareInstallationWarningDialog = false"
+          >
+            取消安装
+          </v-btn>
+          <v-btn
+              color="primary"
+              text
+              @click="installFirmware"
+          >
+            安装固件
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </SimplePage>
 </template>
 
@@ -150,11 +178,16 @@ import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import * as showdown from "showdown";
 import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from '@mdi/js';
 import SimplePage from "@/components/SimplePage";
+import MarkdownContentBox from "@/components/MarkdownContentBox";
 
+const ryujinxFirmwareInstallationWarningMessage = `
+一般来说，更新固件并不会改善你的游戏体验。只要你的模拟器能够正常识别游戏，并且游戏内的字体显示正常，
+那么你就不需要更新固件。其他问题，比如游戏内材质错误、帧率低等问题与固件无关，可以通过更换模拟器版本或者使用 mod 来解决。
+`
 
 export default {
   name: "RyujinxPage",
-  components: {SimplePage, ChangeLogDialog},
+  components: {MarkdownContentBox, SimplePage, ChangeLogDialog},
   data: () => ({
     allRyujinxReleaseInfos: [],
     availableFirmwareInfos: [],
@@ -163,6 +196,8 @@ export default {
     targetRyujinxVersion: "",
     isRunningInstall: false,
     changeLogHtml: '<p>加载中...</p>',
+    firmwareWarningMsg: ryujinxFirmwareInstallationWarningMessage,
+    firmwareInstallationWarningDialog: false,
     availableBranch: [
       {
         text: '正式版 (老 UI)',
@@ -254,6 +289,7 @@ export default {
     installFirmware() {
       this.cleanAndShowConsoleDialog()
       this.isRunningInstall = true
+      this.firmwareInstallationWarningDialog = false
       this.$store.commit('PERSISTENT_CONSOLE_DIALOG', true)
       window.eel.install_ryujinx_firmware(this.targetFirmwareVersion)((resp) => {
         this.isRunningInstall = false
