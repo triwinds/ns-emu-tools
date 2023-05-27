@@ -35,6 +35,15 @@ Vue.mixin({
                 }
             })
         },
+        async loadGameData() {
+            if (this.gameDataInited && !('unknown' in this.$store.state.gameData)) {
+                return this.$store.state.gameData
+            }
+            let resp = await window.eel.get_game_data()()
+            let gameData = resp.code === 0 ? resp.data : {'unknown': 'unknown'}
+            this.$store.commit('UPDATE_GAME_DATA', gameData)
+            return gameData
+        },
     },
     computed: {
         targetFirmwareVersion: {
@@ -59,6 +68,9 @@ Vue.mixin({
         },
         ryujinxConfig() {
             return this.$store.state.config.ryujinx
-        }
+        },
+        gameDataInited() {
+            return Object.keys(this.$store.state.gameData).length !== 0
+        },
     },
 })

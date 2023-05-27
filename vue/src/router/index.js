@@ -8,6 +8,7 @@ import YuzuCheatsManagement from "@/pages/YuzuCheatsManagement";
 import FAQ from "@/pages/FAQ";
 import OtherLinks from "@/pages/OtherLinks";
 import CloudflareST from "@/pages/CloudflareST";
+import YuzuSaveManagement from "@/pages/YuzuSaveManagement";
 
 export default new VueRouter({
     routes: [
@@ -38,6 +39,9 @@ export default new VueRouter({
         },{
             path: '/cloudflareST',
             component: CloudflareST
+        },{
+            path: '/yuzuSaveManagement',
+            component: YuzuSaveManagement
         },
     ]
 })

@@ -12,6 +12,7 @@ from config import config, dump_config, RyujinxConfig
 from storage import storage, add_ryujinx_history
 import logging
 import os
+from utils.common import find_all_instances, kill_all_instances, is_path_in_use
 
 
 logger = logging.getLogger(__name__)
@@ -54,14 +55,18 @@ def install_ryujinx_by_version(target_version: str, branch: str):
     if not download_url:
         send_notify(f'获取 ryujinx 下载链接失败')
         raise IgnoredException(f'No download url found with branch: {branch}, version: {target_version}')
+    ryujinx_path = Path(config.ryujinx.path)
+    ryujinx_path.mkdir(parents=True, exist_ok=True)
+    if is_path_in_use(ryujinx_path):
+        logger.info(f'Ryujinx path is in use, skip install.')
+        send_notify(f'Ryujinx 目录正在被其它程序占用, 请先关闭这些程序(如 Ryujinx, 资源管理器等)再进行安装.')
+        send_notify(f'如果找不到是什么程序在占用，可以试试重启系统.')
+        return
     download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
     info = download(download_url)
     file = info.files[0]
-    ryujinx_path = Path(config.ryujinx.path)
-    ryujinx_path.mkdir(parents=True, exist_ok=True)
-    kill_all_ryujinx_instance(ryujinx_path)
     from utils.package import uncompress
     import tempfile
     tmp_dir = Path(tempfile.gettempdir()).joinpath('ryujinx-install')
@@ -122,23 +127,6 @@ def clear_ryujinx_folder(ryujinx_path: Path):
         os.remove(path)
 
 
-def kill_all_ryujinx_instance(ryujinx_path: Path = None):
-    import psutil
-    kill_flag = False
-    for p in psutil.process_iter():
-        if p.name().startswith('Ryujinx.'):
-            if ryujinx_path is not None:
-                process_path = Path(p.exe()).parent.absolute()
-                if ryujinx_path.absolute() != process_path:
-                    continue
-            send_notify(f'关闭 Ryujinx 进程 [{p.pid}]')
-            logger.info(f'kill Ryujinx process [{p.pid}]')
-            p.kill()
-            kill_flag = True
-    if kill_flag:
-        time.sleep(1)
-
-
 def get_ryujinx_user_folder():
     ryujinx_path = Path(config.ryujinx.path)
     if ryujinx_path.joinpath('portable/').exists():
@@ -192,7 +180,11 @@ def detect_ryujinx_version():
         config.ryujinx.version = None
         dump_config()
         return None
-    kill_all_ryujinx_instance()
+    instances = find_all_instances('Ryujinx.')
+    if instances:
+        logger.info(f'Ryujinx pid={[p.pid for p in instances]} is running, skip install.')
+        send_notify(f'Ryujinx 正在运行中, 请先关闭 Ryujinx.')
+        return
     config.ryujinx.branch = detect_current_branch()
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
@@ -211,7 +203,7 @@ def detect_ryujinx_version():
                     break
         except:
             logger.exception('error occur in get_all_window_name')
-    kill_all_ryujinx_instance()
+    kill_all_instances('Ryujinx.')
     if version:
         if 'ldn' in version:
             idx = version.index('ldn')

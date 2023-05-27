@@ -73,6 +73,14 @@
               <v-list-item-title class="text--primary">Yuzu 金手指管理</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item link to="/yuzuSaveManagement" style="padding-left: 30px">
+            <v-list-item-icon>
+              <v-icon color="blue darken-1">{{ svgPath.mdiContentSaveMoveOutline }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content>
+              <v-list-item-title class="text--primary">Yuzu 存档备份</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
           <v-list-item link to="/cloudflareST" style="padding-left: 30px">
             <v-list-item-icon>
               <v-icon color="error">{{ svgPath.speedmeter }}</v-icon>
@@ -163,7 +171,7 @@ import NewVersionDialog from "@/components/NewVersionDialog";
 import '@/plugins/mixin';
 import {
   mdiBrightness6, mdiConsole, mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog, mdiTestTube,
-  mdiMemory, mdiCommentQuestionOutline, mdiLinkVariant, mdiSpeedometer
+  mdiMemory, mdiCommentQuestionOutline, mdiLinkVariant, mdiSpeedometer, mdiContentSaveMoveOutline,
 } from '@mdi/js'
 import Vue from "vue";
 
@@ -184,7 +192,8 @@ export default {
       memory: mdiMemory,
       help: mdiCommentQuestionOutline,
       link: mdiLinkVariant,
-      speedmeter: mdiSpeedometer
+      speedmeter: mdiSpeedometer,
+      mdiContentSaveMoveOutline,
     }
   }),
   created() {
@@ -207,8 +216,8 @@ export default {
         pendingWriteSize = true
         setTimeout(() => {
           pendingWriteSize = false
-          window.eel.update_window_size(window.innerWidth, window.innerHeight)()
-        }, 3000)
+          window.eel.update_window_size(window.outerWidth, window.outerHeight)()
+        }, 1000)
       }
     },
     async applyUiConfig() {

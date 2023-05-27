@@ -19,6 +19,7 @@ storage = None
 class Storage:
     yuzu_history: Dict[str, YuzuConfig] = field(default_factory=dict)
     ryujinx_history: Dict[str, RyujinxConfig] = field(default_factory=dict)
+    yuzu_save_backup_path: str = str(Path(r'D:\\yuzu_save_backup'))
 
 
 def dump_storage():

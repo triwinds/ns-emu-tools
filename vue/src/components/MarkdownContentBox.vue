@@ -1,53 +1,23 @@
 <template>
-  <v-dialog
-      v-model="dialog"
-      max-width="900"
-  >
-    <template v-slot:activator="{ on, attrs }">
-      <slot name="activator" v-bind:on="on" v-bind:attrs="attrs">
+  <div style=" padding: 15px; overflow-y: auto; max-height: 50vh">
+    <div ref="text-box" class="text--primary" v-html="mdHtml">
 
-      </slot>
-    </template>
-
-    <v-card>
-      <v-card-title class="text-h5 primary white--text">
-        {{ title }}
-      </v-card-title>
-
-      <div style=" padding: 15px; overflow-y: auto; max-height: 50vh">
-        <div ref="text-box" class="text--primary" v-html="mdHtml">
-
-        </div>
-      </div>
-
-      <v-divider></v-divider>
-
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-            color="primary"
-            text
-            @click="dialog = false"
-        >
-          关闭
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    </div>
+  </div>
 </template>
 
 <script>
 import * as showdown from 'showdown';
 
 export default {
-  name: "MarkdownDialog",
+  name: "MarkdownContentBox",
   data() {
     return {
       dialog: false,
       mdHtml: '',
     }
   },
-  props: ['title', 'content'],
+  props: ['content'],
   mounted() {
     const converter = new showdown.Converter({strikethrough: true})
     this.mdHtml = converter.makeHtml(this.content)

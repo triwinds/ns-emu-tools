@@ -4,6 +4,7 @@ from exception.common_exception import *
 from exception.download_exception import *
 from exception.install_exception import *
 from requests.exceptions import ConnectionError
+import eel
 
 
 logger = logging.getLogger(__name__)
@@ -85,8 +86,18 @@ exception_handler_map = {
 }
 
 
+def generic_api(func):
+    def wrapper(*args, **kw):
+        try:
+            return success_response(func(*args, **kw))
+        except Exception as e:
+            return exception_response(e)
+    eel._expose(func.__name__, wrapper)
+    return wrapper
+
+
 def error_response(code, msg):
     return {'code': code, 'msg': msg}
 
 
-__all__ = ['success_response', 'exception_response', 'error_response']
+__all__ = ['success_response', 'exception_response', 'error_response', 'generic_api']

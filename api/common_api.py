@@ -1,7 +1,8 @@
+import os
 from typing import Dict
 
 import eel
-from api.common_response import success_response, exception_response, error_response
+from api.common_response import *
 from config import current_version, shared
 import logging
 import time
@@ -121,9 +122,10 @@ def get_github_mirrors():
 
 @eel.expose
 def update_window_size(width: int, height: int):
-    from config import dump_config, config
-    width = width if width > 500 else 500
-    height = height if height > 400 else 400
+    from config import dump_config, config, shared
+    if shared['mode'] == 'webview':
+        from ui_webview import get_window_size
+        width, height = get_window_size()
     if width == config.setting.ui.width and height == config.setting.ui.height:
         return success_response()
     config.setting.ui.width = width
@@ -131,6 +133,18 @@ def update_window_size(width: int, height: int):
     logger.info(f'saving window size: {(config.setting.ui.width, config.setting.ui.height)}')
     dump_config()
     return success_response()
+
+
+@generic_api
+def get_storage():
+    from storage import storage
+    return storage.to_dict()
+
+
+@generic_api
+def delete_path(path: str):
+    from module.common import delete_path
+    return delete_path(path)
 
 
 def _merge_to_set(*cols):

@@ -80,6 +80,9 @@ const mutations = {
     },
     PERSISTENT_CONSOLE_DIALOG(state, value) {
         state.persistentConsoleDialog = value
+    },
+    UPDATE_GAME_DATA(state, value) {
+        state.gameData = value
     }
 }
 
@@ -91,6 +94,7 @@ const state = {
     targetFirmwareVersion: '',
     currentVersion: '',
     hasNewVersion: false,
+    gameData: {},
     config: {
         yuzu: {
             yuzu_path: "",
