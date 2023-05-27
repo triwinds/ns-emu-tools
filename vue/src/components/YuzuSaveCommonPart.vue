@@ -42,10 +42,14 @@ export default {
     this.$bus.$on('yuzuSave:selectedUser', newUser => {
       this.selectedUser = newUser
     })
+    this.$bus.$on('yuzuSave:backupPathChange', newPath => {
+      this.yuzuSaveBackupPath = newPath
+    })
     this.loadYuzuSaveBackupPath()
   },
   beforeDestroy() {
     this.$bus.$off('yuzuSave:selectedUser')
+    this.$bus.$off('yuzuSave:backupPathChange')
   },
   methods: {
     onUserChange() {
@@ -54,6 +58,7 @@ export default {
     async askAndUpdateYuzuBackupPath() {
       await window.eel.ask_and_update_yuzu_save_backup_folder()()
       await this.loadYuzuSaveBackupPath()
+      this.$bus.$emit('yuzuSave:backupPathChange', this.yuzuSaveBackupPath)
     },
     async loadYuzuSaveBackupPath() {
       let resp = await window.eel.get_storage()()
