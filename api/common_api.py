@@ -2,7 +2,7 @@ import os
 from typing import Dict
 
 import eel
-from api.common_response import success_response, exception_response, error_response
+from api.common_response import *
 from config import current_version, shared
 import logging
 import time
@@ -133,6 +133,18 @@ def update_window_size(width: int, height: int):
     logger.info(f'saving window size: {(config.setting.ui.width, config.setting.ui.height)}')
     dump_config()
     return success_response()
+
+
+@generic_api
+def get_storage():
+    from storage import storage
+    return storage.to_dict()
+
+
+@generic_api
+def delete_path(path: str):
+    from module.common import delete_path
+    return delete_path(path)
 
 
 def _merge_to_set(*cols):

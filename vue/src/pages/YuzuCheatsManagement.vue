@@ -9,13 +9,13 @@
         <v-row>
           <v-col>
             <v-select
-              :items="cheatsFolders"
-              v-model="selectedFolder"
-              :item-text="concatFolderItemName"
-              item-value="cheats_path"
-              label="选择游戏 mod 目录"
-              hide-details
-              :disabled="!cheatsInited"
+                :items="cheatsFolders"
+                v-model="selectedFolder"
+                :item-text="concatFolderItemName"
+                item-value="cheats_path"
+                label="选择游戏 mod 目录"
+                hide-details
+                :disabled="!cheatsInited"
             ></v-select>
           </v-col>
         </v-row>
@@ -25,12 +25,12 @@
         <v-row v-show="selectedFolder !== ''">
           <v-col>
             <v-select
-              :items="cheatFiles"
-              v-model="selectedCheatFile"
-              label="选择金手指文件"
-              item-text="name"
-              item-value="path"
-              hide-details
+                :items="cheatFiles"
+                v-model="selectedCheatFile"
+                label="选择金手指文件"
+                item-text="name"
+                item-value="path"
+                hide-details
             ></v-select>
           </v-col>
         </v-row>
@@ -45,16 +45,16 @@
         <v-row v-show="selectedCheatFile !== ''">
           <v-col>
             <v-virtual-scroll
-              :items="cheatItems"
-              :item-height="35"
-              :height="cheatItemBoxHeight"
+                :items="cheatItems"
+                :item-height="35"
+                :height="cheatItemBoxHeight"
             >
               <template v-slot:default="{ item }">
                 <v-list-item>
                   <v-list-item-action>
                     <v-checkbox
-                      v-model="item.enable"
-                      :label="item.title"
+                        v-model="item.enable"
+                        :label="item.title"
                     >
                     </v-checkbox>
                   </v-list-item-action>
@@ -104,9 +104,8 @@ export default {
       cheatFiles: [],
       selectedCheatFile: '',
       cheatItems: [],
-      cheatItemBoxHeight: 350,
+      cheatItemBoxHeight: window.innerHeight - 450,
       descriptionHtml: '',
-      gameDataInited: false,
     }
   },
   async created() {
@@ -127,17 +126,14 @@ export default {
       let resp = await window.eel.scan_all_cheats_folder()()
       if (resp.code === 0 && resp.data) {
         this.cheatsFolders = resp.data
-        window.eel.get_game_data()((resp) => {
-          this.gameDataInited = true
-          if (resp.code === 0) {
-            let nl = []
-            for (let item of this.cheatsFolders) {
-              item.game_name = resp.data[item.game_id]
-              nl.push(item)
-            }
-            this.cheatsFolders = nl;
+        this.loadGameData().then(gameData => {
+          let nl = []
+          for (let item of this.cheatsFolders) {
+            item.game_name = gameData[item.game_id]
+            nl.push(item)
           }
-        });
+          this.cheatsFolders = nl;
+        })
         this.cheatsInited = true
         return this.cheatsFolders
       }
@@ -179,7 +175,7 @@ export default {
       if (!this.cheatItems) {
         return
       }
-      let enabledTitles = this.cheatItems.filter(d=>d.enable).map(d=>d.title)
+      let enabledTitles = this.cheatItems.filter(d => d.enable).map(d => d.title)
       window.eel.update_current_cheats(enabledTitles, this.selectedCheatFile)((resp) => {
         if (resp.code === 0) {
           this.appendConsoleMessage('保存成功')
