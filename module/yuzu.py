@@ -94,11 +94,6 @@ def install_yuzu(target_version, branch='ea'):
         logger.info(f'Current yuzu version is same as target version [{target_version}], skip install.')
         send_notify(f'当前就是 [{target_version}] 版本的 yuzu , 跳过安装.')
         return
-    if is_path_in_use(Path(config.yuzu.yuzu_path)):
-        logger.info(f'Yuzu path is in use, skip install.')
-        send_notify(f'yuzu 目录正在被其它程序占用, 请先关闭这些程序(如 Yuzu, 资源管理器等)再进行安装.')
-        send_notify(f'如果找不到是什么程序在占用，可以试试重启系统.')
-        return
     if branch == 'ea':
         install_ea_yuzu(target_version)
     else:

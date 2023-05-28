@@ -57,11 +57,6 @@ def install_ryujinx_by_version(target_version: str, branch: str):
         raise IgnoredException(f'No download url found with branch: {branch}, version: {target_version}')
     ryujinx_path = Path(config.ryujinx.path)
     ryujinx_path.mkdir(parents=True, exist_ok=True)
-    if is_path_in_use(ryujinx_path):
-        logger.info(f'Ryujinx path is in use, skip install.')
-        send_notify(f'Ryujinx 目录正在被其它程序占用, 请先关闭这些程序(如 Ryujinx, 资源管理器等)再进行安装.')
-        send_notify(f'如果找不到是什么程序在占用，可以试试重启系统.')
-        return
     download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
