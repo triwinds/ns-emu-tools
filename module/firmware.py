@@ -109,7 +109,7 @@ def get_firmware_infos():
     import urllib.parse
     base_url = 'https://archive.org/download/nintendo-switch-global-firmwares/'
     url = base_url + 'nintendo-switch-global-firmwares_files.xml'
-    resp = get_durable_cache_session().get(get_finial_url(url), timeout=5)
+    resp = get_durable_cache_session().get(get_finial_url(url), timeout=15)
     data = xmltodict.parse(resp.text)
     files = data['files']['file']
     res = []
