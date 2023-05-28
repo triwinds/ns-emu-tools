@@ -14,3 +14,4 @@ pywebview==4.0.2
 sentry-sdk
 xmltodict
 chardet
+pyinstaller==5.10.1
