@@ -111,7 +111,7 @@
         <template v-slot:title>其它问题反馈</template>
         <template v-slot:content>
           <p>如果你遇到的问题不属于上面的任何一个，可以在
-            <a @click="openUrlWithDefaultBrowser('https://github.com/MengNianxiaoyao/ns-emu-tools/issues')">GitHub Issues</a>
+            <a @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/issues')">GitHub Issues</a>
             中提交问题反馈，记得带上程序目录下的两个 log 文件，这将有助于排查你遇到的问题。
           </p>
         </template>

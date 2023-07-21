@@ -36,6 +36,8 @@ github_us_mirrors = [
 
 github_other_mirrors = [
     # ['https://download.fastgit.org', '德国', '[德国] - 该公益加速源由 [FastGit] 提供'],
+    ['https://ghproxy.net/https://github.com', '韩国',
+     '[韩国 首尔] - 该公益加速源由 [ghproxy] 提供，有日本、韩国、德国、巴西等地区的服务器，不过国内一般分配为韩国'],
     ['https://ghproxy.com/https://github.com', '韩国',
      '[韩国 首尔] - 该公益加速源由 [ghproxy] 提供，有日本、韩国、德国、巴西等地区的服务器，不过国内一般分配为韩国'],
     ['https://kgithub.com', '新加坡', '[新加坡] - 该公益加速源由 [KGitHub] 提供']
@@ -62,6 +64,7 @@ def get_durable_cache_session():
         _durable_cache_session = requests_cache.CachedSession(cache_control=True)
         _durable_cache_session.headers.update({'User-Agent': user_agent})
         _durable_cache_session.mount('https://ghproxy.net', HTTPAdapter(max_retries=5))
+        _durable_cache_session.mount('https://ghproxy.com', HTTPAdapter(max_retries=5))
         _durable_cache_session.mount('https://nsarchive.e6ex.com', HTTPAdapter(max_retries=5))
         origin_get = _durable_cache_session.get
 
