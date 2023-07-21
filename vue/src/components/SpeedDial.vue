@@ -26,7 +26,7 @@
         </v-btn>
       </template>
       <v-btn
-          @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')"
+          @click="openUrlWithDefaultBrowser('https://github.com/MengNianxiaoyao/ns-emu-tools')"
           color="grey darken-3"
           dark
           fab

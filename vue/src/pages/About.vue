@@ -29,8 +29,8 @@
               <p class="text-h5 accent--text">项目地址</p>
               <v-icon>{{ svgPath.github }}</v-icon>
               GitHub：<a class="error--text"
-                        @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')">
-              triwinds/ns-emu-tools</a><br>
+                        @click="openUrlWithDefaultBrowser('https://github.com/MengNianxiaoyao/ns-emu-tools')">
+              MengNianxiaoyao/ns-emu-tools</a><br>
               <span class="text--primary">如果您觉得这个软件好用, 可以在 GitHub 上点个 star</span><br>
               <span class="text--primary">这是对我最大的鼓励。</span>
             </div>

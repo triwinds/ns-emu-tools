@@ -60,7 +60,7 @@ const guide = `
 Yuzu 模拟器在保存存档时会根据用户 id 选择不同的文件夹，因此需要先确认你正在使用的用户 id.
 
 模拟器的用户 ID 可以在菜单 模拟->设置->系统->配置 中查看
-[参考截图](https://cdn.jsdelivr.net/gh/triwinds/ns-emu-tools@main/doc/assets/yuzu_user_id.jpg).
+[参考截图](https://cdn.jsdelivr.net/gh/MengNianxiaoyao/ns-emu-tools@main/doc/assets/yuzu_user_id.jpg).
 
 点击备份会将选择的存档文件夹打包成一个 7z 压缩包放到指定的目录, 你也可以选择手动解压还原。
 `

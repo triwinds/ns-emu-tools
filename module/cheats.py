@@ -23,7 +23,7 @@ def get_game_data():
     res = {}
     try:
         resp = get_durable_cache_session().get(
-            'https://ghproxy.net/https://raw.githubusercontent.com/triwinds/ns-emu-tools/main/game_data.json',
+            'https://ghproxy.net/https://raw.githubusercontent.com/MengNianxiaoyao/ns-emu-tools/main/game_data.json',
             timeout=5)
         return resp.json()
     except Exception as e:

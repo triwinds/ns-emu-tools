@@ -2,11 +2,11 @@
 
 一个用于安装/更新 NS 模拟器的工具
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/triwinds/ns-emu-tools?style=for-the-badge)
-![GitHub last commit](https://img.shields.io/github/last-commit/triwinds/ns-emu-tools?style=for-the-badge)
-![GitHub all releases](https://img.shields.io/github/downloads/triwinds/ns-emu-tools/total?style=for-the-badge)
-![GitHub Repo stars](https://img.shields.io/github/stars/triwinds/ns-emu-tools?style=for-the-badge)
-![GitHub](https://img.shields.io/github/license/triwinds/ns-emu-tools?style=for-the-badge)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/MengNianxiaoyao/ns-emu-tools?style=for-the-badge)
+![GitHub last commit](https://img.shields.io/github/last-commit/MengNianxiaoyao/ns-emu-tools?style=for-the-badge)
+![GitHub all releases](https://img.shields.io/github/downloads/MengNianxiaoyao/ns-emu-tools/total?style=for-the-badge)
+![GitHub Repo stars](https://img.shields.io/github/stars/MengNianxiaoyao/ns-emu-tools?style=for-the-badge)
+![GitHub](https://img.shields.io/github/license/MengNianxiaoyao/ns-emu-tools?style=for-the-badge)
 
 ## Features
 
@@ -23,7 +23,7 @@
 
 ## 下载
 
-[GitHub Release](https://github.com/triwinds/ns-emu-tools/releases)
+[GitHub Release](https://github.com/MengNianxiaoyao/ns-emu-tools/releases)
 
 
 ## 讨论组
@@ -33,7 +33,7 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 ## License
 
-本项目的发布受 [AGPL-3.0](https://github.com/triwinds/ns-emu-tools/blob/main/LICENSE) 许可认证。
+本项目的发布受 [AGPL-3.0](https://github.com/MengNianxiaoyao/ns-emu-tools/blob/main/LICENSE) 许可认证。
 
 ## 启动参数
 

@@ -3,7 +3,7 @@ from module.network import request_github_api, session, get_finial_url
 
 def get_all_release():
     with session.cache_disabled():
-        return request_github_api('https://api.github.com/repos/triwinds/ns-emu-tools/releases')
+        return request_github_api('https://api.github.com/repos/MengNianxiaoyao/ns-emu-tools/releases')
 
 
 def get_latest_release(prerelease=False):
@@ -14,9 +14,9 @@ def get_latest_release(prerelease=False):
 
 
 def get_release_info_by_tag(tag: str):
-    return request_github_api(f'https://api.github.com/repos/triwinds/ns-emu-tools/releases/tags/{tag}')
+    return request_github_api(f'https://api.github.com/repos/MengNianxiaoyao/ns-emu-tools/releases/tags/{tag}')
 
 
 def load_change_log():
-    resp = session.get(get_finial_url('https://raw.githubusercontent.com/triwinds/ns-emu-tools/main/changelog.md'))
+    resp = session.get(get_finial_url('https://raw.githubusercontent.com/MengNianxiaoyao/ns-emu-tools/main/changelog.md'))
     return resp.text

@@ -208,7 +208,7 @@ export default {
   methods: {
     openReleasePage() {
       if (this.hasNewVersion) {
-        this.openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases');
+        this.openUrlWithDefaultBrowser('https://github.com/MengNianxiaoyao/ns-emu-tools/releases');
       }
     },
     rememberWindowSize() {

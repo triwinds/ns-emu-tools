@@ -33,7 +33,7 @@ def send_message(msg: str):
 
 
 def get_all_release():
-    return requests.get('https://api.github.com/repos/triwinds/ns-emu-tools/releases').json()
+    return requests.get('https://api.github.com/repos/MengNianxiaoyao/ns-emu-tools/releases').json()
 
 
 def get_latest_release(prerelease=False):
