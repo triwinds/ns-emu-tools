@@ -23,6 +23,7 @@ def download_yuzu(target_version, branch):
     release_info = get_yuzu_release_info_by_version(target_version, branch)
     if not release_info.get('tag_name'):
         raise VersionNotFoundException(target_version, branch, 'yuzu')
+    send_notify('yuzu 版本信息获取成功')
     logger.info(f'target yuzu version: {target_version}')
     yuzu_path = Path(config.yuzu.yuzu_path)
     logger.info(f'target yuzu path: {yuzu_path}')

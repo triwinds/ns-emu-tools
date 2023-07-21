@@ -177,6 +177,7 @@ def install_firmware(firmware_version, target_firmware_path):
         send_notify(f'开始解压安装固件...')
         logger.info(f'Unzipping firmware files to {firmware_path}')
         zf.extractall(firmware_path)
+        send_notify(f'解压安装固件完成')
         logger.info(f'Firmware of [{firmware_version}] install successfully.')
     if config.setting.download.autoDeleteAfterInstall:
         os.remove(file.path)

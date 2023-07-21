@@ -20,10 +20,12 @@ def uncompress(filepath: Path, target_path, delete_on_error=True,
             import zipfile
             with zipfile.ZipFile(filepath, 'r') as zf:
                 zf.extractall(str(target_path.absolute()))
+            send_notify('解压完成')
         elif filepath.name.lower().endswith(".7z"):
             import py7zr
             with py7zr.SevenZipFile(filepath) as zf:
                 zf.extractall(str(target_path.absolute()))
+            send_notify('解压完成')
     except Exception as e:
         logger.error(f'Fail to uncompress file: {filepath}', exc_info=True)
         if delete_on_error:
