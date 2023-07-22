@@ -27,9 +27,9 @@ def send_message(msg: str):
     resp = requests.post(f'https://api.telegram.org/bot{bot_token}/sendMessage', json=data)
     data = resp.json()
     # print(data)
-    if not data.get('ok'):
-        print(data)
-        raise RuntimeError(data.get('description'))
+    # if not data.get('ok'):
+    #     print(data)
+    #     raise RuntimeError(data.get('description'))
 
 
 def get_all_release():
