@@ -149,7 +149,7 @@ def check_file_md5(file: Path, target_md5: str):
 
 
 def install_firmware(firmware_version, target_firmware_path):
-    send_notify('正在获取固件信息...')
+    send_notify('正在获取 固件 信息...')
     firmware_infos = get_firmware_infos()
     target_info = None
     if firmware_version:
@@ -162,7 +162,7 @@ def install_firmware(firmware_version, target_firmware_path):
     url = get_finial_url(target_info['url'])
     send_notify(f'开始下载固件...')
     logger.info(f"downloading firmware of [{firmware_version}] from {url}")
-    info = download(url)
+    info = download(url, '固件')
     file = info.files[0]
     if config.setting.download.verifyFirmwareMd5 and not check_file_md5(file.path, target_info['md5']):
         logger.info(f'firmware md5 not match, removing file [{file}]...')

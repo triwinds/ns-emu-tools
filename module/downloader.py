@@ -85,11 +85,11 @@ def pause_download():
     return aria2.pause_all(force=True)
 
 
-def download(url, save_dir=None, options=None, download_in_background=False):
+def download(url, name, save_dir=None, options=None, download_in_background=False):
     origin_no_proxy = os.environ.get('no_proxy')
     os.environ['no_proxy'] = '127.0.0.1,localhost'
     try:
-        return _download(url, save_dir, options, download_in_background)
+        return _download(url, name, save_dir, options, download_in_background)
     finally:
         if origin_no_proxy is None:
             del os.environ['no_proxy']
@@ -97,7 +97,7 @@ def download(url, save_dir=None, options=None, download_in_background=False):
             os.environ['no_proxy'] = origin_no_proxy
 
 
-def _download(url, save_dir=None, options=None, download_in_background=False):
+def _download(url, name, save_dir=None, options=None, download_in_background=False):
     init_aria2()
     send_notify('如果遇到下载失败或卡住的问题, 可以尝试在设置中换个下载源, 如果还是不行就挂个梯子')
     send_notify('如果你的网络支持 IPv6, 也可以尝试在设置中允许 aria2 使用 IPv6, 看看能不能解决问题')
@@ -116,6 +116,7 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
         return info
     info = aria2.get_download(info.gid)
     retry_count = 0
+    send_notify(f'正在下载 {name}...')
     while info.is_active:
         print(f'\rprogress: {info.progress_string()}, '
                     f'connections: {info.connections}, '

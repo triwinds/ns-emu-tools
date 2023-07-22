@@ -60,7 +60,7 @@ def install_ryujinx_by_version(target_version: str, branch: str):
     download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
-    info = download(download_url)
+    info = download(download_url, 'ryujinx')
     file = info.files[0]
     from utils.package import uncompress
     import tempfile

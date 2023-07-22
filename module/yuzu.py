@@ -40,7 +40,7 @@ def download_yuzu(target_version, branch):
     if not url:
         raise IgnoredException('Fail to fetch yuzu download url.')
     logger.info(f"downloading yuzu from {url}")
-    info = download(url)
+    info = download(url, 'yuzu')
     file = info.files[0]
     return file.path
 

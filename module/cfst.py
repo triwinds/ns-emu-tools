@@ -30,7 +30,7 @@ def download_cfst():
         send_notify('开始下载 CloudflareSpeedTest...')
         url = get_github_download_url('https://github.com/XIU2/CloudflareSpeedTest/releases/download'
                                       f'/{target_cfst_version}/CloudflareST_windows_amd64.zip')
-        info = download(url)
+        info = download(url, 'CloudflareSpeedTest')
         filepath = info.files[0].path
     import zipfile
     logger.info('unzip CloudflareSpeedTest...')
