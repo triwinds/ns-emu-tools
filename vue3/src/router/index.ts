@@ -16,6 +16,11 @@ const routes = [
         name: 'ryujinx',
         component: () => import(/* webpackChunkName: "home" */ '@/views/RyujinxMain.vue'),
       },
+      {
+        path: '/keys',
+        name: 'key',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/KeysManagement.vue'),
+      },
     ],
   },
 ]

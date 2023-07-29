@@ -28,6 +28,7 @@ export default createVuetify({
         colors: {
           primary: '#009688',
           secondary: '#89ddff',
+          accent: '#c792ea',
           error: '#ff5370',
           warning: '#ffcb6b',
           info: '#89ddff',
@@ -39,6 +40,7 @@ export default createVuetify({
         colors: {
           primary: '#3A66D1',
           secondary: '#2AA298',
+          accent: '#6F42C1',
           error: '#d25252',
           warning: '#E36209',
           info: '#2AA298',
