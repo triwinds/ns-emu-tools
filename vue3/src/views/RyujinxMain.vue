@@ -24,7 +24,7 @@
           <v-col cols="7">
             <v-autocomplete label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
                             @update:model-value="updateRyujinxPath"
-                            style="cursor: default">
+                            style="cursor: default" variant="underlined">
               <template v-slot:item="{props, item}">
                 <v-list-item v-bind="props" :title="item.raw">
                   <template v-slot:append>
@@ -41,10 +41,10 @@
           </v-col>
           <v-col cols="5">
             <v-btn size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
-                   :disabled='isRunningInstall' @click="askAndUpdateRyujinxPath" min-height="54px">修改路径
+                   :disabled='isRunningInstall' @click="askAndUpdateRyujinxPath">修改路径
             </v-btn>
             <v-btn size="large" color="success" variant="outlined" min-width="120px" :disabled='isRunningInstall'
-                   @click="startRyujinx" min-height="54px">启动龙神
+                   @click="startRyujinx">启动龙神
             </v-btn>
           </v-col>
         </v-row>
@@ -114,23 +114,23 @@
         <v-divider style="margin-bottom: 15px"></v-divider>
         <v-row>
           <v-col cols="7">
-            <v-text-field hide-details label="需要安装的 Ryujinx 版本" v-model="targetRyujinxVersion"></v-text-field>
+            <v-text-field hide-details label="需要安装的 Ryujinx 版本" variant="underlined" v-model="targetRyujinxVersion"></v-text-field>
           </v-col>
           <v-col>
             <v-btn color="info" size="large" variant="outlined" min-width="160px" :disabled='isRunningInstall'
-                   @click="installRyujinx" min-height="54px">
+                   @click="installRyujinx">
               安装 Ryujinx
             </v-btn>
           </v-col>
         </v-row>
         <v-row>
           <v-col cols="7">
-            <v-autocomplete hide-details v-model="appStore.targetFirmwareVersion" label="需要安装的固件版本"
+            <v-autocomplete hide-details v-model="appStore.targetFirmwareVersion" variant="underlined" label="需要安装的固件版本"
                             :items="appStore.availableFirmwareVersions"></v-autocomplete>
           </v-col>
           <v-col>
             <v-btn color="info" size="large" variant="outlined" min-width="160px" :disabled='isRunningInstall'
-                   @click="firmwareInstallationWarningDialog = true" min-height="54px">
+                   @click="firmwareInstallationWarningDialog = true" >
               安装固件
             </v-btn>
           </v-col>

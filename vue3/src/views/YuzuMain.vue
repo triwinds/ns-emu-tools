@@ -29,7 +29,7 @@
       <v-row>
         <v-col cols="7">
           <v-autocomplete label="Yuzu 路径" v-model="selectedYuzuPath" :items="historyPathList"
-                          @update:model-value="updateYuzuPath"
+                          @update:model-value="updateYuzuPath" variant="underlined"
                           style="cursor: default">
             <template v-slot:item="{props, item}">
               <v-list-item v-bind="props" :title="item.raw">
@@ -45,10 +45,10 @@
           </v-autocomplete>
         </v-col>
         <v-col cols="5">
-          <v-btn size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-height="54px" min-width="120px"
+          <v-btn size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
                  :disabled='isRunningInstall' @click="modifyYuzuPath">修改路径
           </v-btn>
-          <v-btn size="large" color="success" variant="outlined" min-height="54px" min-width="120px" :disabled='isRunningInstall'
+          <v-btn size="large" color="success" variant="outlined" min-width="120px" :disabled='isRunningInstall'
                  @click="startYuzu">启动 Yuzu
           </v-btn>
         </v-col>
@@ -119,11 +119,11 @@
       <v-divider style="margin-bottom: 15px"></v-divider>
       <v-row>
         <v-col cols="7">
-          <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"></v-text-field>
+          <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion" variant="underlined"></v-text-field>
         </v-col>
         <v-col>
           <v-btn color="info" size="large" variant="outlined" min-width="140px" :disabled='isRunningInstall'
-                 @click="installYuzu" min-height="54px">
+                 @click="installYuzu">
             安装 Yuzu
           </v-btn>
         </v-col>
@@ -131,11 +131,11 @@
       <v-row>
         <v-col cols="7">
           <v-autocomplete hide-details v-model="appStore.targetFirmwareVersion" label="需要安装的固件版本"
-                          :items="appStore.availableFirmwareVersions"></v-autocomplete>
+                          :items="appStore.availableFirmwareVersions" variant="underlined"></v-autocomplete>
         </v-col>
         <v-col>
           <v-btn color="info" size="large" variant="outlined" min-width="140px" :disabled='isRunningInstall'
-                 @click="firmwareInstallationWarning = true" min-height="54px">
+                 @click="firmwareInstallationWarning = true">
             安装固件
           </v-btn>
         </v-col>

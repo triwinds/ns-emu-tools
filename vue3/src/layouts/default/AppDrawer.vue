@@ -50,6 +50,7 @@ function openReleasePage() {
   <v-navigation-drawer
       v-model="drawer"
       app
+      :style="{'background-color': theme.global.name.value === 'dark' ? '#363636' : '#FFFFFF'}"
   >
     <v-sheet
         class="pa-4"
