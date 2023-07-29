@@ -15,7 +15,6 @@ export const useConfigStore = defineStore('config', {
   actions: {
     async reloadConfig() {
       const resp = await window.eel.get_config()()
-      console.log(resp)
       if (resp.code === 0) {
         this.config = resp.data
       }

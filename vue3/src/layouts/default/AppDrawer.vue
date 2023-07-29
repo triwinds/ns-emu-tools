@@ -13,19 +13,28 @@ import {
   mdiTestTube,
 } from '@mdi/js'
 import {useEmitter} from "@/plugins/mitt";
-import {useDisplay} from "vuetify";
+import {useDisplay, useTheme} from "vuetify";
 import {useConfigStore} from "@/store/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 
 const emitter = useEmitter()
 let open = ref(['experiment'])
 const display = useDisplay()
-let drawer = ref(display.mdAndUp.value)
+let drawer = ref(display.lgAndUp.value)
 const configStore = useConfigStore()
+import router from "@/router";
+const theme = useTheme()
 
-onMounted(() => {
+
+onMounted(async () => {
   configStore.initCurrentVersion()
+  await configStore.reloadConfig()
   configStore.checkUpdate(false)
+  if (router.currentRoute.value.path === '/'
+    && router.currentRoute.value.path !== '/' + configStore.config.setting.ui.lastOpenEmuPage) {
+    await router.push('/' + configStore.config.setting.ui.lastOpenEmuPage)
+  }
+  theme.global.name.value = configStore.config.setting.ui.dark ? 'dark' : 'light'
 })
 
 emitter.on('triggerDrawer', () => {

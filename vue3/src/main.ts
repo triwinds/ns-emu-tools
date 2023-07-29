@@ -35,3 +35,4 @@ const cds = useConsoleDialogStore()
 window.$bus.on('APPEND_CONSOLE_MESSAGE', (msg) => {
     cds.appendConsoleMessage(msg as string)
 })
+cds.appendConsoleMessage('启动时间: ' + new Date())
