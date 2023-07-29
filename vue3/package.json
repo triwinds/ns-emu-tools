@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "rimraf tsconfig.tsbuildinfo && vue-tsc --noEmit && vite build --emptyOutDir && rimraf tsconfig.tsbuildinfo",
     "preview": "vite preview",
     "lint": "eslint . --fix --ignore-path .gitignore"
   },
   "dependencies": {
     "@mdi/font": "7.0.96",
     "core-js": "^3.29.0",
+    "mitt": "^3.0.1",
     "pinia": "^2.0.0",
     "roboto-fontface": "*",
     "vue": "^3.2.0",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@babel/types": "^7.21.4",
+    "@mdi/js": "^7.2.96",
     "@types/node": "^18.15.0",
     "@types/webfontloader": "^1.6.35",
     "@vitejs/plugin-vue": "^4.0.0",

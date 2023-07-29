@@ -1,12 +1,16 @@
 <template>
   <v-app>
-    <default-bar />
+    <AppDrawer/>
+    <default-bar/>
 
-    <default-view />
+    <default-view/>
   </v-app>
 </template>
 
 <script lang="ts" setup>
-  import DefaultBar from './AppBar.vue'
-  import DefaultView from './View.vue'
+import DefaultBar from './AppBar.vue'
+import DefaultView from './View.vue'
+import AppDrawer from "@/layouts/default/AppDrawer.vue";
+
+
 </script>

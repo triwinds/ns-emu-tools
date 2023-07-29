@@ -1,13 +1,35 @@
 <template>
-  <v-app-bar flat>
+  <v-app-bar flat color="primary">
+    <v-app-bar-nav-icon class="white--text" @click="triggerDrawer"></v-app-bar-nav-icon>
     <v-app-bar-title>
-      <v-icon icon="mdi-circle-slice-6" />
-
-      Essentials Preset
+      NS EMU TOOLS
     </v-app-bar-title>
+    <v-spacer/>
+    <v-btn class="float-right" icon @click="showConsoleDialog">
+      <v-icon color="white" :icon="mdiConsole"></v-icon>
+    </v-btn>
+    <v-btn class="float-right" icon @click="switchDarkLight">
+      <v-icon color="white" :icon="mdiBrightness6"></v-icon>
+    </v-btn>
   </v-app-bar>
 </template>
 
 <script lang="ts" setup>
-  //
+import {useEmitter} from "@/plugins/mitt";
+import {mdiBrightness6, mdiConsole} from '@mdi/js'
+import {useTheme} from "vuetify";
+
+const emitter = useEmitter()
+const theme = useTheme()
+
+function triggerDrawer() {
+  emitter.emit('triggerDrawer')
+}
+function showConsoleDialog() {
+
+}
+
+function switchDarkLight() {
+  theme.global.name.value = theme.global.name.value === 'dark' ? 'light' : 'dark'
+}
 </script>
