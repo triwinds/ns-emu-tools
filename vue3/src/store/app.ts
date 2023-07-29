@@ -8,11 +8,16 @@ const cds = useConsoleDialogStore()
 export const useAppStore = defineStore('app', {
   state: () => ({
     targetFirmwareVersion: '' || null,
-    availableFirmwareInfos: []
+    availableFirmwareInfos: [],
+    gameDataInited: false,
+    gameData: {}
   }),
   getters: {
     availableFirmwareVersions(state) {
       return state.availableFirmwareInfos.map(info => info['version'])
+    },
+    gameDataInited(state) {
+        return Object.keys(state.gameData).length !== 0
     }
   },
   actions: {

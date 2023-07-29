@@ -31,6 +31,9 @@ export const useConsoleDialogStore = defineStore('consoleDialog', {
                     this.consoleMessages.push(value)
                 }
             }
+        },
+        cleanMessages() {
+            this.consoleMessages = []
         }
     }
 })

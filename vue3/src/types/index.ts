@@ -59,3 +59,19 @@ export interface CommonResponse {
   msg: string,
   data: any
 }
+
+export interface CheatGameInfo {
+  game_id: string,
+  game_name: string,
+  cheats_path: string,
+}
+
+export interface CheatItem {
+  enable: boolean,
+  title: string,
+}
+
+export interface CheatFileInfo {
+  path: string,
+  name: string,
+}

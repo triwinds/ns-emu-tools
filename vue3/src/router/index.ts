@@ -21,6 +21,11 @@ const routes = [
         name: 'key',
         component: () => import(/* webpackChunkName: "home" */ '@/views/KeysManagement.vue'),
       },
+      {
+        path: '/yuzuCheatsManagement',
+        name: 'yuzuCheatsManagement',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/YuzuCheatsManagement.vue'),
+      },
     ],
   },
 ]
