@@ -1,7 +1,5 @@
 // Composables
 
-import {emitter} from "@/plugins/mitt";
-
 export interface AppConfig {
   yuzu: YuzuConfig
   ryujinx: RyujinxConfig
@@ -11,14 +9,14 @@ export interface AppConfig {
 export interface YuzuConfig {
   yuzu_path: string
   yuzu_version: string
-  yuzu_firmware: any
+  yuzu_firmware: string
   branch: string
 }
 
 export interface RyujinxConfig {
   path: string
-  version: any
-  firmware: any
+  version: string
+  firmware: string
   branch: string
 }
 

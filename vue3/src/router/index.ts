@@ -11,6 +11,11 @@ const routes = [
         name: 'yuzu',
         component: () => import(/* webpackChunkName: "home" */ '@/views/YuzuMain.vue'),
       },
+      {
+        path: '/ryujinx',
+        name: 'ryujinx',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/RyujinxMain.vue'),
+      },
     ],
   },
 ]
