@@ -7,9 +7,9 @@
     >
 
       <v-card>
-        <v-card-title class="text-h5 bg-primary text-white my-auto" style="height: 64px; padding-top: 18px">
+        <dialog-title>
           控制台日志
-        </v-card-title>
+        </dialog-title>
 
         <div style="padding-left: 10px; padding-right: 10px; padding-top: 10px;" class="flex-grow-0">
           <textarea style="padding: 10px" id="consoleBox" :value="logText" readonly rows="12"></textarea>
@@ -55,6 +55,7 @@
 import {useConsoleDialogStore} from "@/store/ConsoleDialogStore";
 import {CommonResponse} from "@/types";
 import {computed, nextTick, onUpdated} from "vue";
+import DialogTitle from "@/components/DialogTitle.vue";
 
 const consoleDialogStore = useConsoleDialogStore()
 

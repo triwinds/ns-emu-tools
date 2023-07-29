@@ -73,17 +73,17 @@
           <span class="text-h6">
                     {{ latestYuzuVersion }}
                   </span>
-<!--          <ChangeLogDialog>-->
-<!--            <template v-slot:activator="{on, attrs}">-->
-<!--                      <span v-bind="attrs" v-on="on" @click="loadChangeLog"-->
-<!--                            style="margin-left: 10px">-->
-<!--                        <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>-->
-<!--                      </span>-->
-<!--            </template>-->
-<!--            <template v-slot:content>-->
-<!--              <div class="text&#45;&#45;primary" v-html="changeLogHtml"></div>-->
-<!--            </template>-->
-<!--          </ChangeLogDialog>-->
+          <ChangeLogDialog>
+            <template v-slot:activator="{ props }">
+                      <span v-bind="props" @click="loadChangeLog"
+                            style="margin-left: 10px">
+                        <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>
+                      </span>
+            </template>
+            <template v-slot:content>
+              <div class="text--primary" v-html="changeLogHtml"></div>
+            </template>
+          </ChangeLogDialog>
         </v-col>
       </v-row>
       <v-row>
@@ -151,11 +151,11 @@
   </v-card>
   <v-dialog v-model="firmwareInstallationWarning" max-width="800">
     <v-card>
-      <v-card-title class="text-h5 primary white--text">
+      <dialog-title>
         安装前必读
-      </v-card-title>
-<!--      <MarkdownContentBox :content="md">-->
-<!--      </MarkdownContentBox>-->
+      </dialog-title>
+      <MarkdownContentBox :content="md"/>
+
 
       <v-divider></v-divider>
 
@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onBeforeMount, onMounted, ref} from "vue";
+import {computed, onBeforeMount, ref} from "vue";
 import {useConfigStore} from "@/store/ConfigStore";
 import {CommonResponse} from "@/types";
 import {useAppStore} from "@/store/app";
@@ -190,6 +190,9 @@ import {useConsoleDialogStore} from "@/store/ConsoleDialogStore";
 import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from "@mdi/js";
 import showdown from 'showdown'
 import SimplePage from "@/components/SimplePage.vue";
+import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
+import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
+import DialogTitle from "@/components/DialogTitle.vue";
 
 let allYuzuReleaseVersions = ref([])
 let targetYuzuVersion = ref('')
