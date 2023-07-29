@@ -1,6 +1,6 @@
 <template>
   <v-main>
-    <div style="height: calc(100vh - 64px); width: 100%; overflow: auto;">
+    <div style="max-height: calc(100vh - 64px); width: 100%; overflow: auto;">
       <router-view />
     </div>
   </v-main>

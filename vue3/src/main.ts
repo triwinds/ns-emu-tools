@@ -12,7 +12,8 @@ import { createApp } from 'vue'
 
 // Plugins
 import { registerPlugins } from '@/plugins'
-import type {useEmitter} from "@/plugins/mitt";
+import {emitter, useEmitter} from "@/plugins/mitt";
+import {useConsoleDialogStore} from "@/store/ConsoleDialogStore";
 
 const app = createApp(App)
 
@@ -24,8 +25,13 @@ declare global {
     interface Window {
         $vm: typeof app;
         eel: any;
-        $bus: typeof useEmitter;
+        $bus: typeof emitter;
     }
 }
 
 window.$vm = app
+window.$bus = useEmitter()
+const cds = useConsoleDialogStore()
+window.$bus.on('APPEND_CONSOLE_MESSAGE', (msg) => {
+    cds.appendConsoleMessage(msg as string)
+})

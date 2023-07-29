@@ -1,47 +1,66 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 import {
-  mdiInformation, mdiKeyVariant, mdiNewBox, mdiCog, mdiTestTube,
-  mdiMemory, mdiCommentQuestionOutline, mdiLinkVariant, mdiSpeedometer, mdiContentSaveMoveOutline,
+  mdiCog,
+  mdiCommentQuestionOutline,
+  mdiContentSaveMoveOutline,
+  mdiInformation,
+  mdiKeyVariant,
+  mdiLinkVariant,
+  mdiMemory,
+  mdiNewBox,
+  mdiSpeedometer,
+  mdiTestTube,
 } from '@mdi/js'
 import {useEmitter} from "@/plugins/mitt";
+import {useDisplay} from "vuetify";
+import {useConfigStore} from "@/store/ConfigStore";
+import {openUrlWithDefaultBrowser} from "@/utils/common";
 
 const emitter = useEmitter()
-let drawer = ref(true)
 let open = ref(['experiment'])
+const display = useDisplay()
+let drawer = ref(display.mdAndUp.value)
+const configStore = useConfigStore()
+
+onMounted(() => {
+  configStore.initCurrentVersion()
+  configStore.checkUpdate(false)
+})
 
 emitter.on('triggerDrawer', () => {
   drawer.value = !drawer.value
 })
+
+function openReleasePage() {
+  openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/releases')
+}
 </script>
 
 <template>
   <v-navigation-drawer
-    v-model="drawer"
-    app
+      v-model="drawer"
+      app
   >
-    <!--      <v-sheet-->
-    <!--        class="pa-4"-->
-    <!--        @click="openReleasePage" :style="{cursor: hasNewVersion ? 'pointer' : 'default' }"-->
-    <!--      >-->
     <v-sheet
-      class="pa-4"
+        class="pa-4"
+        @click="openReleasePage" :style="{cursor: configStore.hasNewVersion ? 'pointer' : 'default' }"
     >
       <v-avatar
-        class="mb-4"
-        color="#00000000"
-        size="100"
-        rounded
+          class="mb-4"
+          color="#00000000"
+          size="100"
+          rounded
       >
         <img src="@/assets/icon.png" alt="">
       </v-avatar>
 
-      <div>版本：v111
-        <v-icon color="info" v-show="true">{{ mdiNewBox }}</v-icon>
+      <div>版本：v{{ configStore.currentVersion }}
+        <v-icon color="info" v-show="configStore.hasNewVersion">{{ mdiNewBox }}</v-icon>
       </div>
-      <!--        <div v-show="hasNewVersion" class="info--text">-->
-      <!--          点击查看新版本-->
-      <!--        </div>-->
+      <div v-show="configStore.hasNewVersion" class="info--text">
+        点击查看新版本
+      </div>
     </v-sheet>
 
     <v-divider></v-divider>
