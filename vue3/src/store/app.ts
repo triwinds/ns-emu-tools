@@ -9,7 +9,6 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     targetFirmwareVersion: '' || null,
     availableFirmwareInfos: [],
-    gameDataInited: false,
     gameData: {}
   }),
   getters: {

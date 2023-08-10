@@ -5,6 +5,6 @@
  */
 
 // https://vuetifyjs.com/features/sass-variables/`
-// @use 'vuetify/settings' with (
-//   $color-pack: false
-// );
+@use 'vuetify/settings' with (
+  $tooltip-background-color: rgba(var(--v-theme-surface-variant), .95)
+);

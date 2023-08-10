@@ -18,7 +18,7 @@ import {useConfigStore} from "@/store/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 
 const emitter = useEmitter()
-let open = ref(['experiment'])
+let open = ref<string[]>([])
 const display = useDisplay()
 let drawer = ref(display.lgAndUp.value)
 const configStore = useConfigStore()
@@ -35,6 +35,7 @@ onMounted(async () => {
     await router.push('/' + configStore.config.setting.ui.lastOpenEmuPage)
   }
   theme.global.name.value = configStore.config.setting.ui.dark ? 'dark' : 'light'
+  open.value.push('experiment')
 })
 
 emitter.on('triggerDrawer', () => {

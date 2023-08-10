@@ -15,6 +15,7 @@
                 item-value="cheats_path"
                 label="选择游戏 mod 目录"
                 hide-details
+                variant="underlined"
                 :disabled="!cheatsInited"
             ></v-select>
           </v-col>
@@ -30,6 +31,7 @@
                 label="选择金手指文件"
                 item-title="name"
                 item-value="path"
+                variant="underlined"
                 hide-details
             ></v-select>
           </v-col>

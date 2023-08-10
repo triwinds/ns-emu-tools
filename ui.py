@@ -72,7 +72,7 @@ def main(port=0, mode=None, dev=False):
     shutdown_delay = 114514 if dev else 1
     logger.info('eel init finished.')
     from module.msg_notifier import update_notifier
-    default_page = f'index.html'
+    default_page = f''
     update_notifier('eel-console')
     if mode is None:
         if can_use_chrome():
