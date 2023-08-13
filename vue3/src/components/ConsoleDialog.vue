@@ -12,7 +12,7 @@
         </dialog-title>
 
         <div style="padding-left: 10px; padding-right: 10px; padding-top: 10px;" class="flex-grow-0">
-          <textarea style="padding: 10px" id="consoleBox" :value="logText" readonly rows="12"></textarea>
+          <textarea style="padding: 10px;font-family: 'JetBrains Mono Variable',sans-serif;" id="consoleBox" :value="logText" readonly rows="12"></textarea>
         </div>
 
         <v-divider></v-divider>
@@ -51,7 +51,7 @@
 
 <script lang="ts" setup>
 
-
+import '@fontsource-variable/jetbrains-mono';
 import {useConsoleDialogStore} from "@/store/ConsoleDialogStore";
 import {CommonResponse} from "@/types";
 import {computed, nextTick, onUpdated} from "vue";

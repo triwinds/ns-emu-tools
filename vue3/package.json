@@ -9,6 +9,7 @@
     "lint": "eslint . --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.0.9",
     "core-js": "^3.29.0",
     "mitt": "^3.0.1",
     "pinia": "^2.0.0",
