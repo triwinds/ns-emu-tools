@@ -80,3 +80,22 @@ export interface NameValueItem {
   name: string,
   value: string,
 }
+
+export interface YuzuSaveUserListItem {
+  user_id: string,
+  folder: string
+}
+
+export interface YuzuSaveBackupListItem {
+  game_name: string,
+  title_id: string,
+  bak_time: number,
+  filename: string,
+  path: string,
+}
+
+export interface SaveGameInfo {
+  title_id: string,
+  game_name: string,
+  folder: string,
+}

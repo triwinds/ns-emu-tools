@@ -31,6 +31,11 @@ const routes = [
         name: 'settings',
         component: () => import(/* webpackChunkName: "home" */ '@/views/SettingsPage.vue'),
       },
+      {
+        path: '/yuzuSaveManagement',
+        name: 'yuzuSaveManagement',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/YuzuSaveManagement.vue'),
+      },
     ],
   },
 ]
