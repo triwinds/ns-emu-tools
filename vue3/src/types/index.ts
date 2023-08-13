@@ -75,3 +75,8 @@ export interface CheatFileInfo {
   path: string,
   name: string,
 }
+
+export interface NameValueItem {
+  name: string,
+  value: string,
+}

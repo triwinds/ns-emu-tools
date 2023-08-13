@@ -26,6 +26,11 @@ const routes = [
         name: 'yuzuCheatsManagement',
         component: () => import(/* webpackChunkName: "home" */ '@/views/YuzuCheatsManagement.vue'),
       },
+      {
+        path: '/settings',
+        name: 'settings',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/SettingsPage.vue'),
+      },
     ],
   },
 ]
