@@ -77,11 +77,12 @@ const yuzuSaveStore = useYuzuSaveStore()
 const appStore = useAppStore()
 const cds = useConsoleDialogStore()
 const emitter = useEmitter()
+let lastUser: string = ''
 
-yuzuSaveStore.$subscribe((mutation,state) => {
-  console.log(mutation)
-  if (mutation.events.key == "selectedUser") {
+yuzuSaveStore.$subscribe((mutation, state) => {
+  if (lastUser != state.selectedUser) {
     reloadGameList()
+    lastUser = state.selectedUser
   }
 })
 

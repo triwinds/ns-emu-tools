@@ -61,13 +61,13 @@
 
 <script setup lang="ts">
 import {mdiClockTimeNineOutline, mdiFileDocumentOutline} from '@mdi/js';
-import YuzuSaveCommonPart from "@/components/YuzuSaveCommonPart";
-import {onActivated, onMounted, onUnmounted, ref} from "vue";
+import {onMounted, onUnmounted, ref} from "vue";
 import {useAppStore} from "@/store/app";
 import {useYuzuSaveStore} from "@/store/YuzuSaveStore";
 import {useConsoleDialogStore} from "@/store/ConsoleDialogStore";
 import {CommonResponse, YuzuSaveBackupListItem} from "@/types";
 import {useEmitter} from "@/plugins/mitt";
+import YuzuSaveCommonPart from "@/components/YuzuSaveCommonPart.vue";
 
 let backupList = ref<YuzuSaveBackupListItem[]>([])
 let backupItemBoxHeight = ref(window.innerHeight - 420)
@@ -82,7 +82,6 @@ onMounted(() => {
   loadAllYuzuBackups()
   window.addEventListener('resize', updateBackupItemBoxHeight);
   emitter.on('yuzuSave:tabChange', (tab) => {
-    console.log(tab)
     loadAllYuzuBackups()
   })
 })

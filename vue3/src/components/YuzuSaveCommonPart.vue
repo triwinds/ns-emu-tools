@@ -23,8 +23,7 @@
   </v-container>
 </template>
 
-<script setup lang="ts">
-
+<script lang="ts" setup>
 import {onMounted} from "vue";
 import {CommonResponse} from "@/types";
 import {useYuzuSaveStore} from "@/store/YuzuSaveStore";
