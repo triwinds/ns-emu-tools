@@ -88,6 +88,7 @@ let credits = [
   {name: 'Ryujinx', link: 'https://github.com/Ryujinx/Ryujinx', description: 'Ryujinx 模拟器'},
   {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},
+  {name: 'Github 增强', link: 'https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js', description: 'X.I.U 大佬的 Github 增强脚本'},
 ]
 let changeLogHtml = ref('<p>加载中...</p>')
 function loadChangeLog() {

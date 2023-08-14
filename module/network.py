@@ -23,14 +23,19 @@ github_us_mirrors = [
     ['https://nsarchive.e6ex.com/gh', '美国', '[美国 Cloudflare CDN] - 自建代理服务器'],
 
     # https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js
-    ['https://gh.gh2233.ml/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@X.I.U/XIU2] 提供'],
-    ['https://gh.ddlc.top/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@mtr-static-official] 提供'],
-    ['https://ghdl.feizhuqwq.cf/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [feizhuqwq.com] 提供'],
-    # ['https://gh.flyinbug.top/gh/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [Mintimate] 提供'],
-    # ['https://proxy.zyun.vip/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供'],
+    ['https://gh.h233.eu.org/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@X.I.U/XIU2] 提供'],
+    ['https://gh.ddlc.top/https://github.com', '美国',
+     '[美国 Cloudflare CDN] - 该公益加速源由 [@mtr-static-official] 提供'],
+    # ['https://ghdl.feizhuqwq.cf/https://github.com', '美国',
+    #  '[美国 Cloudflare CDN] - 该公益加速源由 [feizhuqwq.com] 提供'],
+    ['https://slink.ltd/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供'],
+    ['https://git.xfj0.cn/https://github.com', '美国', '[美国 Cloudflare CDN] - git.xfj0.cn'],
+    ['https://gh.con.sh/https://github.com', '美国', '[美国 Cloudflare CDN] - gh.con.sh'],
+    ['https://ghps.cc/https://github.com', '美国', '[美国 Cloudflare CDN] - ghps.cc'],
     # ['https://cors.isteed.cc/github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [Lufs\'s] 提供'],
     ['https://hub.gitmirror.com/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [GitMirror] 提供'],
-    ['https://js.xxooo.ml/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [饭太硬] 提供'],
+    ['https://download.njuu.cf', '美国', '[美国 拉斯维加斯] - 该公益加速源由 [LibraryCloud] 提供'],
+    ['https://download.yzuu.cf', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供'],
     ['https://download.nuaa.cf', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供']
 ]
 
@@ -264,7 +269,9 @@ def test_github_us_mirrors():
             print('failed')
             print(e)
             invalid_mirrors.append(mirror[2])
-    print(f'invalid_mirrors: {invalid_mirrors}')
+    from pprint import pp
+    print('====================================')
+    pp(invalid_mirrors)
 
 
 if __name__ == '__main__':

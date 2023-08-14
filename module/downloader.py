@@ -153,6 +153,8 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
             retry_count += 1
             if retry_count > 15:
                 raise e
+    pbar.update_process(info)
+    pbar.close()
     if info.is_paused:
         raise DownloadPaused()
     if info.error_code != '0':
@@ -175,8 +177,6 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
         logger.info(f'progress: {info.progress_string()}, total size: {info.total_length_string()}')
     if not info.is_complete:
         raise DownloadNotCompleted(info.name, info.status)
-    pbar.update_process(info)
-    pbar.close()
     send_notify('下载完成')
     aria2.purge()
     return info
