@@ -50,7 +50,12 @@ const routes = [
         path: '/otherLinks',
         name: 'otherLinks',
         component: () => import(/* webpackChunkName: "home" */ '@/views/OtherLinks.vue'),
-      }
+      },
+      {
+        path: '/faq',
+        name: 'faq',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/FaqPage.vue'),
+      },
     ],
   },
 ]
