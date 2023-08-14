@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "ns-emu-tools"
+version = "0.4.2"
+description = ""
+authors = ["triwinds <triwinds@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "ns_emu_tools"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.12"
+tqdm = "^4.66.1"
+aria2p = "^0.11.3"
+requests = "^2.31.0"
+py7zr = "^0.20.6"
+beautifulsoup4 = "^4.12.2"
+eel = "^0.16.0"
+pywin32 = "^306"
+psutil = "^5.9.5"
+gevent = "^23.7.0"
+httplib2 = "^0.22.0"
+requests-cache = "^1.1.0"
+dnspython = {extras = ["doh"], version = "^2.4.2"}
+sentry-sdk = "^1.29.2"
+xmltodict = "^0.13.0"
+chardet = "^5.2.0"
+pywebview = "^4.2.2"
+dataclasses-json = "^0.5.14"
+
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^5.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
