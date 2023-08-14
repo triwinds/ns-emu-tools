@@ -15,7 +15,7 @@ url_override_map = {
     'https://archive.org/download/nintendo-switch-global-firmwares/': 'https://nsarchive.e6ex.com/nsfrp/',
     'https://api.github.com': 'https://cfrp.e6ex.com/ghapi',
     # 'https://aka.ms/vs': 'https://nsarchive.e6ex.com/msvc'
-    'https://raw.githubusercontent.com': 'https://www.githubs.cn/raw-githubusercontent',
+    'https://raw.githubusercontent.com': 'https://ghproxy.com/https://raw.githubusercontent.com',
 }
 
 

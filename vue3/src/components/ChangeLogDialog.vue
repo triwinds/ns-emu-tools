@@ -14,10 +14,8 @@
         更新日志
       </dialog-title>
 
-      <div style=" padding: 15px; overflow-y: auto; max-height: 50vh">
-        <slot name="content">
-
-        </slot>
+      <div class="change-log-content" style=" padding: 15px; overflow-y: auto; max-height: 50vh">
+        <slot name="content"></slot>
       </div>
 
       <v-divider></v-divider>
@@ -43,6 +41,8 @@ import DialogTitle from "@/components/DialogTitle.vue";
 let dialog = ref(false)
 </script>
 
-<style scoped>
-
+<style>
+.change-log-content li {
+  margin-left: 30px !important;
+}
 </style>
