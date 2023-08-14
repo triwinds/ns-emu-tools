@@ -1,6 +1,6 @@
 <template>
-  <div style=" padding: 15px; overflow-y: auto; max-height: 50vh">
-    <div id="text-box" class="text--primary" v-html="mdHtml">
+  <div style="padding: 15px;">
+    <div id="text-box" v-html="mdHtml">
 
     </div>
   </div>
@@ -29,16 +29,19 @@ onUpdated(() => {
           openUrlWithDefaultBrowser(url)
         }
       }
-      let infoTags = []
+      let infoTags = [] as HTMLElement[]
       infoTags.push(...document.getElementById("text-box")!.getElementsByTagName('strong'))
       infoTags.push(...document.getElementById("text-box")!.getElementsByTagName('code'))
       for (let infoTag of infoTags) {
         infoTag.classList.add("text-info")
+        infoTag.style.fontFamily = "'JetBrains Mono Variable', sans-serif"
       }
   })
 })
 </script>
 
-<style scoped>
-
+<style >
+#text-box details > p {
+  margin-left: 30px;
+}
 </style>

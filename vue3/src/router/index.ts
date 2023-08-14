@@ -41,6 +41,11 @@ const routes = [
         name: 'about',
         component: () => import(/* webpackChunkName: "home" */ '@/views/AboutPage.vue'),
       },
+      {
+        path: '/cloudflareST',
+        name: 'cloudflareST',
+        component: () => import(/* webpackChunkName: "home" */ '@/views/CloudflareST.vue'),
+      },
     ],
   },
 ]
