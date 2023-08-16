@@ -27,7 +27,6 @@ import {mdiSpeedometer} from '@mdi/js';
 import SimplePage from "@/components/SimplePage.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import {useConsoleDialogStore} from "@/store/ConsoleDialogStore";
-import '@fontsource-variable/jetbrains-mono'
 
 
 const mdRaw = `

@@ -71,4 +71,8 @@ div::-webkit-resizer, div ::-webkit-scrollbar-thumb {
 div::-webkit-scrollbar-corner, div ::-webkit-scrollbar-track {
   background: transparent !important;
 }
+
+a {
+  cursor: pointer;
+}
 </style>
