@@ -19,8 +19,8 @@
           <v-window-item key="backup" value="backup">
             <v-card variant="flat">
               <YuzuSaveCommonPart/>
-              <MarkdownContentBox v-if="yuzuSaveStore.selectedUser === ''" :content="guide"/>
-              <v-container v-if="yuzuSaveStore.selectedUser !== ''">
+              <MarkdownContentBox v-if="!yuzuSaveStore.selectedUser || yuzuSaveStore.selectedUser === ''" :content="guide"/>
+              <v-container v-else>
                 <v-row>
                   <v-col>
                     <v-autocomplete v-model="selectedGameFolder" hide-details variant="underlined"
@@ -80,7 +80,7 @@ const emitter = useEmitter()
 let lastUser: string = ''
 
 yuzuSaveStore.$subscribe((mutation, state) => {
-  if (lastUser != state.selectedUser) {
+  if (state.selectedUser && lastUser != state.selectedUser) {
     reloadGameList()
     lastUser = state.selectedUser
   }

@@ -86,10 +86,10 @@
         <v-row>
           <v-col><p class="text-success text-h5">下载设置</p></v-col>
         </v-row>
-        <v-switch color="primary" :hide-details="true" v-model="setting.download.autoDeleteAfterInstall" label="安装完成后自动删除下载的安装包"></v-switch>
-        <v-switch color="primary" :hide-details="true" v-model="setting.download.disableAria2Ipv6" label="aria2 禁用 IPv6 (重启程序后生效)"></v-switch>
-        <v-switch color="primary" :hide-details="true" v-model="setting.download.removeOldAria2LogFile" label="启动 aria2 前删除旧的日志"></v-switch>
-        <v-switch color="primary" :hide-details="true" v-model="setting.download.verifyFirmwareMd5" label="固件下载完成后校验 md5"></v-switch>
+        <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.autoDeleteAfterInstall" label="安装完成后自动删除下载的安装包"></v-switch>
+        <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.disableAria2Ipv6" label="aria2 禁用 IPv6 (重启程序后生效)"></v-switch>
+        <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.removeOldAria2LogFile" label="启动 aria2 前删除旧的日志"></v-switch>
+        <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.verifyFirmwareMd5" label="固件下载完成后校验 md5"></v-switch>
       </v-container>
     </v-card>
   </SimplePage>
@@ -108,7 +108,6 @@ import {
 let configStore = useConfigStore()
 configStore.reloadConfig()
 let setting = configStore.config.setting
-let inited = ref(false)
 let availableNetworkMode = [
   {name: '根据系统代理自动决定', value: 'auto-detect'},
   {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'cdn'},
@@ -200,8 +199,5 @@ function onProxyModeChange() {
 .v-select {
   margin-bottom: 5px;
   margin-top: 10px;
-}
-.v-switch {
-  height: 48px;
 }
 </style>
