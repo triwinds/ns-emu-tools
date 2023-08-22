@@ -6,7 +6,7 @@
     <default-view/>
     <ConsoleDialog/>
     <NewVersionDialog/>
-    <SpeedDial />
+    <SpeedDial v-if="display.mdAndUp.value"/>
   </v-app>
 </template>
 

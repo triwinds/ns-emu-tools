@@ -32,15 +32,15 @@
 </template>
 
 <script setup lang="ts">
-import {mdiCreation, mdiClose, mdiGithub} from '@mdi/js'
+import {mdiCreation, mdiGithub} from '@mdi/js'
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 </script>
 
 <style scoped>
 #speed-dial {
   position: absolute;
-  right: 30px;
-  bottom: 30px;
+  right: 24px;
+  bottom: 24px;
 }
 
 .btn-item {
