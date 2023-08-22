@@ -89,7 +89,6 @@ onMounted(() => {
 function showNewVersionDialog(info: any) {
   dialog.value = true
   newVersion.value = info.latestVersion
-  console.log(configStore.hasNewVersion)
   if (configStore.hasNewVersion) {
     loadReleaseDescription()
   }
@@ -104,7 +103,6 @@ function openReleasePage() {
 
 function loadReleaseDescription() {
   window.eel.load_change_log()((resp: CommonResponse) => {
-    console.log(resp.data)
     if (resp.code === 0) {
       const converter = new showdown.Converter()
       let rawMd = resp.data.replace('# Change Log\n\n', '')
