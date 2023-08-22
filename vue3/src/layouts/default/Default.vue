@@ -5,6 +5,7 @@
 
     <default-view/>
     <ConsoleDialog/>
+    <NewVersionDialog/>
   </v-app>
 </template>
 
@@ -14,6 +15,7 @@ import DefaultView from './View.vue'
 import AppDrawer from "@/layouts/default/AppDrawer.vue";
 import ConsoleDialog from "@/components/ConsoleDialog.vue";
 import {useAppStore} from "@/store/app";
+import NewVersionDialog from "@/components/NewVersionDialog.vue";
 
 const appStore = useAppStore()
 appStore.updateAvailableFirmwareInfos()
