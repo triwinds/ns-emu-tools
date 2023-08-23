@@ -1,15 +1,14 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from pathlib import Path
 from dataclasses_json import dataclass_json, Undefined
 import logging
 from logging.handlers import RotatingFileHandler
-import sys
 
 
-current_version = '0.4.2'
+current_version = '0.4.3-b1'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
