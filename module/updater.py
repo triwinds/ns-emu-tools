@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import subprocess
 import logging
+from config import current_version
 
 
 logger = logging.getLogger(__name__)
@@ -28,21 +29,34 @@ DEL "%~f0"
 """
 
 
+def _parse_version(version_str):
+    qualifier = 'zzzzzzzzzzzz'
+    sp = version_str.split('-')
+    if len(sp) == 2:
+        version, qualifier = sp
+    else:
+        version = version_str
+    version = version.strip()
+    major, minor, incr = version.split('.')
+    return int(major), int(minor), int(incr), qualifier
+
+
 def check_update(prerelease=False):
     from repository.my_info import get_all_release
-    from config import current_version
+    cur_ver_group = _parse_version(current_version)
     release_infos = get_all_release()
-    latest_tag_name = None
+    remote_version = None
     if prerelease:
-        latest_tag_name = release_infos[0]['tag_name']
+        remote_version = release_infos[0]['tag_name']
     else:
         for ri in release_infos:
             if not ri['prerelease']:
-                latest_tag_name = ri['tag_name']
+                remote_version = ri['tag_name']
                 break
-    if not latest_tag_name:
-        latest_tag_name = release_infos[0]['tag_name']
-    return current_version != latest_tag_name, latest_tag_name
+    if not remote_version:
+        remote_version = release_infos[0]['tag_name']
+    remote_ver_group = _parse_version(remote_version)
+    return cur_ver_group < remote_ver_group, remote_version
 
 
 def download_net_by_tag(tag: str):
@@ -91,3 +105,11 @@ def update_self_by_tag(tag: str):
     send_notify(f'webview 版本可以避免这个问题，如果你的系统版本比较新，可以尝试使用一下 webview 版本。')
     logger.info(f'exit')
     sys.exit()
+
+
+if __name__ == '__main__':
+    # print(check_update())
+    print(_parse_version('0.0.1') < _parse_version('0.0.2'))
+    print(_parse_version('0.0.1-beta1') < _parse_version('0.0.1'))
+    print(_parse_version('0.0.1-beta1') < _parse_version('0.0.1-beta2'))
+    print(_parse_version('0.0.1-alpha1') < _parse_version('0.0.1-beta2'))

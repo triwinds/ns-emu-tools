@@ -1,15 +1,14 @@
 import json
 import os
-from dataclasses import dataclass
-from typing import Optional, Dict, List
+from dataclasses import dataclass, field
+from typing import Optional, Dict
 from pathlib import Path
 from dataclasses_json import dataclass_json, Undefined
 import logging
 from logging.handlers import RotatingFileHandler
-import sys
 
 
-current_version = '0.4.2'
+current_version = '0.4.3-b1'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
@@ -83,7 +82,7 @@ class UiSetting:
     lastOpenEmuPage: Optional[str] = 'yuzu',
     dark: Optional[bool] = True,
     mode: Optional[str] = 'auto'
-    width: int = 1280
+    width: int = 1300
     height: int = 850
 
 
@@ -96,18 +95,18 @@ class CloudflareSpeedTestSetting:
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
-    ui: UiSetting = UiSetting()
-    network: NetworkSetting = NetworkSetting()
-    download: DownloadSetting = DownloadSetting()
-    cfst: CloudflareSpeedTestSetting = CloudflareSpeedTestSetting()
+    ui: UiSetting = field(default_factory=UiSetting)
+    network: NetworkSetting = field(default_factory=NetworkSetting)
+    download: DownloadSetting = field(default_factory=DownloadSetting)
+    cfst: CloudflareSpeedTestSetting = field(default_factory=CloudflareSpeedTestSetting)
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class Config:
-    yuzu: YuzuConfig = YuzuConfig()
-    ryujinx: RyujinxConfig = RyujinxConfig()
-    setting: CommonSetting = CommonSetting()
+    yuzu: YuzuConfig = field(default_factory=YuzuConfig)
+    ryujinx: RyujinxConfig = field(default_factory=RyujinxConfig)
+    setting: CommonSetting = field(default_factory=CommonSetting)
 
 
 if os.path.exists(config_path):

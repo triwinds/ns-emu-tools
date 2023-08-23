@@ -5,7 +5,6 @@ import logging
 from config import dump_config
 import shutil
 from module.msg_notifier import send_notify
-import xmltodict
 from functools import lru_cache
 from config import config
 from module.downloader import download
@@ -106,34 +105,20 @@ def extract_version(target_file, key_path):
 
 @lru_cache(1)
 def get_firmware_infos():
-    import urllib.parse
-    base_url = 'https://archive.org/download/nintendo-switch-global-firmwares/'
-    url = base_url + 'nintendo-switch-global-firmwares_files.xml'
+    url = 'https://nsarchive.e6ex.com/nsf/firmwares.json'
     resp = get_durable_cache_session().get(get_finial_url(url), timeout=15)
-    data = xmltodict.parse(resp.text)
-    files = data['files']['file']
     res = []
-    for info in files:
-        if 'ZIP' != info['format']:
-            continue
-        info['name'] = info['@name']
-        del info['@name']
-        info['url'] = base_url + urllib.parse.quote(info['name'])
-        version = info['name'][9:-4]
-        info['version'] = version
-        version_num = 0
-        for num in version.split('.'):
-            version_num *= 100
-            version_num += int(''.join(ch for ch in num if ch.isdigit()))
-        info['version_num'] = version_num
+    for info in resp.json():
+        info['version'] = info['name'][9:]
         res.append(info)
-    res = sorted(res, key=lambda x: x['version_num'], reverse=True)
     return res
 
 
 def check_file_md5(file: Path, target_md5: str):
     if not file.exists() or not file.is_file():
         return None
+    if not target_md5:
+        return True
     import hashlib
     logger.debug(f'calculating md5 of file: {file}')
     send_notify('开始校验文件 md5...')
@@ -159,7 +144,8 @@ def install_firmware(firmware_version, target_firmware_path):
         logger.info(f'Target firmware version [{firmware_version}] not found, skip install.')
         send_notify(f'Target firmware version [{firmware_version}] not found, skip install.')
         return
-    url = get_finial_url(target_info['url'])
+    import urllib.parse
+    url = 'https://nsarchive.e6ex.com/nsf/' + urllib.parse.quote(target_info['filename'])
     send_notify(f'开始下载固件...')
     logger.info(f"downloading firmware of [{firmware_version}] from {url}")
     info = download(url)
@@ -184,4 +170,6 @@ def install_firmware(firmware_version, target_firmware_path):
 
 
 if __name__ == '__main__':
-    detect_firmware_version('yuzu')
+    from pprint import pp
+    # detect_firmware_version('yuzu')
+    pp(get_firmware_infos())

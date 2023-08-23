@@ -8,7 +8,7 @@ from config import config, shared, dump_config
 from threading import Timer
 
 logger = logging.getLogger(__name__)
-default_page = f'index.html'
+default_page = f''
 port = 0
 
 

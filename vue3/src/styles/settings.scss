@@ -1,0 +1,11 @@
+/**
+ * src/styles/settings.scss
+ *
+ * Configures SASS variables and Vuetify overwrites
+ */
+
+// https://vuetifyjs.com/features/sass-variables/`
+@use 'vuetify/settings' with (
+  $tooltip-background-color: rgba(var(--v-theme-surface-variant), .95),
+  $switch-thumb-background: rgb(var(--v-theme-primary)),
+);

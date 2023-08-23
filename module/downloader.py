@@ -9,6 +9,7 @@ from module.msg_notifier import send_notify
 from config import config
 from module.network import get_available_port, get_global_options, init_download_options_with_proxy
 from exception.download_exception import *
+from tqdm import tqdm
 
 aria2: Optional[aria2p.API] = None
 aria2_process: Optional[subprocess.Popen] = None
@@ -17,6 +18,32 @@ aria2_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('aria2c.
 if not download_path.exists():
     download_path.mkdir()
 logger = logging.getLogger(__name__)
+
+
+class MyTqdm(tqdm):
+    download_info: aria2p.Download
+    def __init__(self, download_info: aria2p.Download, **kargs):
+        self.download_info = download_info
+        super().__init__(**kargs)
+        self.total = download_info.total_length
+        self.ncols = 25
+        self.ascii = '.oO'
+        self.bar_format = '{l_bar}{bar}'
+
+    def display(self, msg=None, pos=None):
+        d = self.format_dict
+        di = self.download_info
+        msg = self.format_meter(**d)
+        msg += (f'|{di.completed_length_string()}/{di.total_length_string()} '
+                f'[{di.eta_string()}, {di.download_speed_string()}]')
+        print('\r' + msg, end='' if pos != 0 else '\n')
+        send_notify('^' + msg)
+
+    def update_process(self, download_info: aria2p.Download):
+        self.download_info = download_info
+        self.n = download_info.completed_length
+        self.total = download_info.total_length
+        self.refresh()
 
 
 def _init_aria2():
@@ -116,13 +143,9 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
         return info
     info = aria2.get_download(info.gid)
     retry_count = 0
+    pbar = MyTqdm(info)
     while info.is_active:
-        print(f'\rprogress: {info.progress_string()}, '
-                    f'connections: {info.connections}, '
-                    f'{info.completed_length_string()}/{info.total_length_string()} , '
-                    f'download speed: {info.download_speed_string()}, eta: {info.eta_string()}', end='')
-        send_notify(f'下载速度: {info.download_speed_string()}, '
-                    f'{info.completed_length_string()}/{info.total_length_string()}')
+        pbar.update_process(info)
         time.sleep(0.3)
         try:
             info = aria2.get_download(info.gid)
@@ -130,7 +153,8 @@ def _download(url, save_dir=None, options=None, download_in_background=False):
             retry_count += 1
             if retry_count > 15:
                 raise e
-    print('\r')
+    pbar.update_process(info)
+    pbar.close()
     if info.is_paused:
         raise DownloadPaused()
     if info.error_code != '0':
