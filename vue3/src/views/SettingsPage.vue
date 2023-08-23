@@ -13,16 +13,16 @@
                 to="/cloudflareST">这个</router-link></span>
           </v-col>
         </v-row>
-        <v-select
-            v-model="setting.network.firmwareSource"
-            :items="availableNetworkMode"
-            item-title="name"
-            item-value="value"
-            label="固件下载源配置"
-            hide-details
-            variant="underlined"
-            color="primary"
-        ></v-select>
+<!--        <v-select-->
+<!--            v-model="setting.network.firmwareSource"-->
+<!--            :items="availableNetworkMode"-->
+<!--            item-title="name"-->
+<!--            item-value="value"-->
+<!--            label="固件下载源配置"-->
+<!--            hide-details-->
+<!--            variant="underlined"-->
+<!--            color="primary"-->
+<!--        ></v-select>-->
         <v-select
             v-model="setting.network.githubApiMode"
             :items="availableNetworkMode"
