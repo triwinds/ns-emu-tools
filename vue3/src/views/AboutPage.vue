@@ -1,7 +1,7 @@
 <template>
   <SimplePage>
     <v-card>
-      <v-card-title class="text-h4 text-primary">Ns Emu Tools</v-card-title>
+      <v-card-title style="padding-top: 16px; padding-bottom: 16px" class="text-h4 text-primary">Ns Emu Tools</v-card-title>
       <v-divider></v-divider>
       <v-spacer></v-spacer>
       <v-card-text class="text-h6">
@@ -9,7 +9,7 @@
       </v-card-text>
       <v-card-text class="text-h6">
         当前版本：v{{ configStore.currentVersion }}
-        <v-btn color="primary" @click="configStore.checkUpdate(true)">
+        <v-btn color="primary" variant="outlined" @click="configStore.checkUpdate(true)">
           检测新版本
         </v-btn>
         <ChangeLogDialog>
@@ -23,6 +23,10 @@
             <div v-html="changeLogHtml"></div>
           </template>
         </ChangeLogDialog>
+        <v-btn color="success" variant="outlined" style="margin-left: 10px"
+               @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools/blob/main/LICENSE')">
+          License
+        </v-btn>
       </v-card-text>
       <v-card-text class="text-h6 text--primary">
         <div class="info-block">
@@ -88,7 +92,9 @@ let credits = [
   {name: 'Ryujinx', link: 'https://github.com/Ryujinx/Ryujinx', description: 'Ryujinx 模拟器'},
   {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},
-  {name: 'Github 增强', link: 'https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js', description: 'X.I.U 大佬的 Github 增强脚本'},
+  {name: 'Github 镜像源', link: 'https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js', description: '来自 X.I.U 大佬的 Github 增强脚本'},
+  {name: 'pineappleEA', link: 'https://github.com/pineappleEA/pineapple-src', description: 'Yuzu EA 版本来源'},
+  {name: 'darthsternie.net', link: 'https://darthsternie.net/switch-firmwares/', description: 'NS 固件来源'},
 ]
 let changeLogHtml = ref('<p>加载中...</p>')
 function loadChangeLog() {
