@@ -4,11 +4,13 @@
     <v-container>
       <v-row>
         <v-col>
-          <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
+          <div style="height: 50px">
+            <v-img src="@/assets/yuzu.webp" height="40" width="40" class="float-left"
                  style="margin-right: 15px"></v-img>
-          <p class="text-h4 text-primary float-left">
-            Yuzu 基础信息
-          </p>
+            <p class="text-h4 text-primary float-left">
+              Yuzu 基础信息
+            </p>
+          </div>
         </v-col>
       </v-row>
       <v-divider style="margin-bottom: 15px"></v-divider>
@@ -109,11 +111,13 @@
     <v-container>
       <v-row>
         <v-col>
-          <v-img src="@/assets/yuzu.webp" max-height="40" max-width="40" class="float-left"
+          <div style="height: 50px">
+            <v-img src="@/assets/yuzu.webp" height="40" width="40" class="float-left"
                  style="margin-right: 15px"></v-img>
-          <p class="text-h4 text-primary float-left">
-            Yuzu 组件管理
-          </p>
+            <p class="text-h4 text-primary float-left">
+              Yuzu 组件管理
+            </p>
+          </div>
         </v-col>
       </v-row>
       <v-divider style="margin-bottom: 15px"></v-divider>

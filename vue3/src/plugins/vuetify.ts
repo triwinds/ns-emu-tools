@@ -21,6 +21,11 @@ export default createVuetify({
       mdi,
     },
   },
+  defaults: {
+    VCardTitle: {
+      style: 'padding-top: 16px; padding-bottom: 16px;'
+    }
+  },
   theme: {
     defaultTheme: 'dark',
     themes: {

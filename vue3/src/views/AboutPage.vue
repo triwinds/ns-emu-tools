@@ -1,7 +1,7 @@
 <template>
   <SimplePage>
     <v-card>
-      <v-card-title style="padding-top: 16px; padding-bottom: 16px" class="text-h4 text-primary">Ns Emu Tools</v-card-title>
+      <v-card-title class="text-h4 text-primary">Ns Emu Tools</v-card-title>
       <v-divider></v-divider>
       <v-spacer></v-spacer>
       <v-card-text class="text-h6">

@@ -145,7 +145,7 @@ async function scanCheatsFolders() {
 }
 
 function updateCheatItemBoxHeight() {
-  cheatItemBoxHeight.value = window.innerHeight - 450
+  cheatItemBoxHeight.value = window.innerHeight - 460
 }
 
 function concatFolderItemName(item: CheatGameInfo) {

@@ -10,7 +10,7 @@
       <v-card-subtitle>
         <slot name="subtitle"></slot>
       </v-card-subtitle>
-      <v-card-text>
+      <v-card-text class="text-body-1">
         <slot name="description"></slot>
       </v-card-text>
       <v-card-actions>

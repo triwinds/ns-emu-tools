@@ -1,10 +1,10 @@
 <template>
 <SimplePage>
     <v-card>
-      <v-card-title class="text-h4 text-primary">
-        <v-icon color="error" size="48" style="margin-right: 10px">{{ mdiSpeedometer }}</v-icon>
-        Cloudflare 节点选优
-      </v-card-title>
+      <div style="height: 60px; padding-left: 16px; padding-top: 10px;" class="d-flex my-auto">
+        <v-icon color="error" size="44" style="margin-right: 10px">{{ mdiSpeedometer }}</v-icon>
+        <span class="text-h4 text-primary" style="margin-top: 3px">Cloudflare 节点选优</span>
+      </div>
       <v-divider></v-divider>
       <MarkdownContentBox style="font-size: 18px; line-height: 30px;" :content="mdRaw"/>
 
