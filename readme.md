@@ -21,9 +21,23 @@
  - Yuzu 金手指管理
  - aria2 多线程下载
 
-## 下载
+## 使用方法
 
-[GitHub Release](https://github.com/triwinds/ns-emu-tools/releases)
+### 一、使用预构建的版本运行
+
+从 [GitHub 发布页(稳定版本)](https://github.com/triwinds/ns-emu-tools/releases) 或 
+[CI 自动构建](https://github.com/triwinds/ns-emu-tools/actions/workflows/ci-build.yaml) 下载 exe 文件，然后双击运行即可。
+<details>
+<summary>NsEmuTools.exe 和 NsEmuTools-console.exe 有什么区别？</summary>
+NsEmuTools.exe 和 NsEmuTools-console.exe 在实际的功能上并没有任何差异，
+其主要的差别在于 console 会在启动的时候多一个命令行窗口，这也许可以解决某些杀毒软件的误报问题，
+详情见 <a href="https://github.com/triwinds/ns-emu-tools/issues/2">#2</a>.
+</details>
+
+
+### 二、使用源码运行
+
+参见 [开发文档](doc/dev.md)
 
 
 ## 讨论组
@@ -55,3 +69,6 @@ options:
  - [Ryujinx](https://github.com/Ryujinx/Ryujinx) - Ryujinx 模拟器
  - [hactool](https://github.com/SciresM/hactool) - NS 固件解析
  - [aria2](https://github.com/aria2/aria2) - aria2 下载器
+ - [Github 镜像源](https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js) - 来自 X.I.U 大佬的 Github 增强脚本
+ - [pineappleEA](https://github.com/pineappleEA/pineapple-src) - Yuzu EA 版本来源
+ - [darthsternie.net](https://darthsternie.net/switch-firmwares/) - NS 固件来源
