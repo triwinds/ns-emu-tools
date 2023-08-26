@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.4.3
+
+- 替换已经失效的 GitHub Mirror
+- 不再使用 archive.org 作为固件源
+- 更新 Python 至 3.11
+- 更新 Vue 至 Vue3
+
 ## 0.4.2
 
 - 安装模拟器时不再提前检查目录是否被占用 (#69)(#70)

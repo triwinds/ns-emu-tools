@@ -8,7 +8,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
-current_version = '0.4.3-b1'
+current_version = '0.4.3'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
