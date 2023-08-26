@@ -1273,13 +1273,13 @@ hook-testing = ["execnet (>=1.5.0)", "psutil", "pytest (>=2.7.3)"]
 
 [[package]]
 name = "pyinstaller-hooks-contrib"
-version = "2023.6"
+version = "2023.7"
 description = "Community maintained hooks for PyInstaller"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyinstaller-hooks-contrib-2023.6.tar.gz", hash = "sha256:596a72009d8692b043e0acbf5e1b476d93149900142ba01845dded91a0770cb5"},
-    {file = "pyinstaller_hooks_contrib-2023.6-py2.py3-none-any.whl", hash = "sha256:aa6d7d038814df6aa7bec7bdbebc7cb4c693d3398df858f6062957f0797d397b"},
+    {file = "pyinstaller-hooks-contrib-2023.7.tar.gz", hash = "sha256:0c436a4c3506020e34116a8a7ddfd854c1ad6ddca9a8cd84500bd6e69c9e68f9"},
+    {file = "pyinstaller_hooks_contrib-2023.7-py2.py3-none-any.whl", hash = "sha256:3c10df14c0f71ab388dfbf1625375b087e7330d9444cbfd2b310ba027fa0cff0"},
 ]
 
 [[package]]
@@ -1772,17 +1772,17 @@ tornado = ["tornado (>=5)"]
 
 [[package]]
 name = "setuptools"
-version = "68.1.0"
+version = "68.1.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "setuptools-68.1.0-py3-none-any.whl", hash = "sha256:e13e1b0bc760e9b0127eda042845999b2f913e12437046e663b833aa96d89715"},
-    {file = "setuptools-68.1.0.tar.gz", hash = "sha256:d59c97e7b774979a5ccb96388efc9eb65518004537e85d52e81eaee89ab6dd91"},
+    {file = "setuptools-68.1.2-py3-none-any.whl", hash = "sha256:3d8083eed2d13afc9426f227b24fd1659489ec107c0e86cec2ffdde5c92e790b"},
+    {file = "setuptools-68.1.2.tar.gz", hash = "sha256:3d4dfa6d95f1b101d695a6160a7626e15583af71a5f52176efa5d39a054d475d"},
 ]
 
 [package.extras]
-docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-hoverxref (<2)", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (==0.8.3)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
+docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (>=3.5,<=7.1.2)", "sphinx-favicon", "sphinx-hoverxref (<2)", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (==0.8.3)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
 testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pip (>=19.1)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-ruff", "pytest-timeout", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
 testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
 
@@ -1920,17 +1920,17 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "websocket-client"
-version = "1.6.1"
+version = "1.6.2"
 description = "WebSocket client for Python with low level API options"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "websocket-client-1.6.1.tar.gz", hash = "sha256:c951af98631d24f8df89ab1019fc365f2227c0892f12fd150e935607c79dd0dd"},
-    {file = "websocket_client-1.6.1-py3-none-any.whl", hash = "sha256:f1f9f2ad5291f0225a49efad77abf9e700b6fef553900623060dad6e26503b9d"},
+    {file = "websocket-client-1.6.2.tar.gz", hash = "sha256:53e95c826bf800c4c465f50093a8c4ff091c7327023b10bfaff40cf1ef170eaa"},
+    {file = "websocket_client-1.6.2-py3-none-any.whl", hash = "sha256:ce54f419dfae71f4bdba69ebe65bf7f0a93fe71bc009ad3a010aacc3eebad537"},
 ]
 
 [package.extras]
-docs = ["Sphinx (>=3.4)", "sphinx-rtd-theme (>=0.5)"]
+docs = ["Sphinx (>=6.0)", "sphinx-rtd-theme (>=1.1.0)"]
 optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
