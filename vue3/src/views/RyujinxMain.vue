@@ -17,7 +17,7 @@
         <v-row>
           <v-col>
             <v-select variant="outlined" v-model="selectedBranch" :items="availableBranch" hide-details
-                      @change="switchRyujinxBranch" color="error" item-color="error"
+                      @update:model-value="switchRyujinxBranch" color="error" item-color="error"
                       item-title="text" item-value="value"
                       label="当前使用的 Ryujinx 分支"></v-select>
           </v-col>

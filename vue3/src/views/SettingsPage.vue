@@ -52,12 +52,12 @@
             item-value="value"
             label="代理设置"
             hide-details
-            @change="onProxyModeChange"
+            @update:model-value="onProxyModeChange"
             variant="underlined"
             color="primary"
         ></v-select>
         <v-text-field
-            v-if="proxyMode === 'http'" v-model="proxyInput" @change="onProxyChange" label="代理服务器地址"
+            v-if="proxyMode === 'http'" v-model="proxyInput" @update:model-value="onProxyChange" label="代理服务器地址"
             persistent-hint hint="仅支持 HTTP 代理, 如 http://127.0.0.1:7890"
             :rules="[rules.validateProxy]"
             variant="underlined"
