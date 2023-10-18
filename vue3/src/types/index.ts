@@ -29,14 +29,14 @@ export interface Setting {
 
 export interface UiSetting {
   lastOpenEmuPage: string
-  dark: boolean[]
+  dark: boolean
   mode: string
   width: number
   height: number
 }
 
 export interface NetworkSetting {
-  firmwareSource: string
+  firmwareDownloadSource: string
   githubApiMode: string
   githubDownloadMirror: string
   useDoh: boolean

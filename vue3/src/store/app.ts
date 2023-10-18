@@ -21,6 +21,7 @@ export const useAppStore = defineStore('app', {
   },
   actions: {
     updateAvailableFirmwareInfos() {
+        this.targetFirmwareVersion = null
         window.eel.get_available_firmware_infos()((data: CommonResponse) => {
             if (data['code'] === 0) {
               const infos = data['data']

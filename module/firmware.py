@@ -8,8 +8,10 @@ from module.msg_notifier import send_notify
 from functools import lru_cache
 from config import config
 from module.downloader import download
-from module.network import get_finial_url, get_durable_cache_session
+from module.network import get_finial_url, get_durable_cache_session, request_github_api, get_github_download_url
+
 from exception.common_exception import IgnoredException
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 hactool_path = Path(os.path.realpath(os.path.dirname(__file__))).joinpath('hactool.exe')
@@ -103,15 +105,54 @@ def extract_version(target_file, key_path):
     return version
 
 
-@lru_cache(1)
 def get_firmware_infos():
+    if config.setting.network.firmwareDownloadSource == 'nsarchive':
+        return get_firmware_infos_from_nsarchive()
+    else:
+        return get_firmware_infos_from_github()
+
+
+@lru_cache(1)
+def get_firmware_infos_from_nsarchive():
     url = 'https://nsarchive.e6ex.com/nsf/firmwares.json'
     resp = get_durable_cache_session().get(get_finial_url(url), timeout=15)
     res = []
     for info in resp.json():
         info['version'] = info['name'][9:]
+        info['url'] = 'https://nsarchive.e6ex.com/nsf/' + urllib.parse.quote(info['filename'])
         res.append(info)
     return res
+
+
+@lru_cache(1)
+def get_firmware_infos_from_github():
+    data = request_github_api('https://api.github.com/repos/THZoria/NX_Firmware/releases')
+    res = []
+    for release in data:
+        target_asset = None
+        for asset in release['assets']:
+            if asset['content_type'] == 'application/x-zip-compressed':
+                target_asset = asset
+                break
+        if target_asset is None:
+            break
+        info = {
+            'name': release['name'],
+            'version': release['tag_name'],
+            'url': target_asset['browser_download_url'],
+            'filename': target_asset['name'],
+            'size': _sizeof_fmt(target_asset['size']),
+        }
+        res.append(info)
+    return res
+
+
+def _sizeof_fmt(num, suffix="B"):
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"
 
 
 def check_file_md5(file: Path, target_md5: str):
@@ -144,13 +185,14 @@ def install_firmware(firmware_version, target_firmware_path):
         logger.info(f'Target firmware version [{firmware_version}] not found, skip install.')
         send_notify(f'Target firmware version [{firmware_version}] not found, skip install.')
         return
-    import urllib.parse
-    url = 'https://nsarchive.e6ex.com/nsf/' + urllib.parse.quote(target_info['filename'])
+    url = target_info['url']
+    if 'github.com' in url:
+        url = get_github_download_url(url)
     send_notify(f'开始下载固件...')
     logger.info(f"downloading firmware of [{firmware_version}] from {url}")
     info = download(url)
     file = info.files[0]
-    if config.setting.download.verifyFirmwareMd5 and not check_file_md5(file.path, target_info['md5']):
+    if config.setting.download.verifyFirmwareMd5 and not check_file_md5(file.path, target_info.get('md5')):
         logger.info(f'firmware md5 not match, removing file [{file}]...')
         os.remove(file.path)
         from exception.common_exception import Md5NotMatchException
@@ -169,7 +211,15 @@ def install_firmware(firmware_version, target_firmware_path):
     return firmware_version
 
 
+def get_available_firmware_sources():
+    return [
+        ['由 github.com/THZoria/NX_Firmware 提供的固件', 'github'],
+        ['由 darthsternie.net 提供的固件', 'nsarchive']
+    ]
+
+
 if __name__ == '__main__':
     from pprint import pp
     # detect_firmware_version('yuzu')
-    pp(get_firmware_infos())
+    # pp(get_firmware_infos())
+    pp(get_firmware_infos_from_github())

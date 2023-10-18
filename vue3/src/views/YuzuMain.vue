@@ -245,6 +245,7 @@ async function loadHistoryPathList() {
 onBeforeMount(async () => {
   await loadHistoryPathList()
   await configStore.reloadConfig()
+  appStore.updateAvailableFirmwareInfos()
   selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
   updateYuzuReleaseVersions()
   window.eel.update_last_open_emu_page('yuzu')()

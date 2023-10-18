@@ -19,6 +19,12 @@ def get_available_firmware_infos():
         return exception_response(e)
 
 
+@generic_api
+def get_available_firmware_sources():
+    from module.firmware import get_available_firmware_sources
+    return get_available_firmware_sources()
+
+
 @eel.expose
 def get_current_version():
     shared['ui_init_time'] = time.time()

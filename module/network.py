@@ -177,7 +177,7 @@ def get_finial_url(origin_url: str):
     network_setting = config.setting.network
     if origin_url.startswith('https://api.github.com'):
         return get_finial_url_with_mode(origin_url, network_setting.githubApiMode)
-    return get_finial_url_with_mode(origin_url, network_setting.firmwareSource)
+    return get_finial_url_with_mode(origin_url, network_setting.firmwareDownloadSource)
 
 
 def get_finial_url_with_mode(origin_url: str, mode: str):

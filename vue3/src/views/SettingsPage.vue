@@ -13,16 +13,16 @@
                 to="/cloudflareST">这个</router-link></span>
           </v-col>
         </v-row>
-<!--        <v-select-->
-<!--            v-model="setting.network.firmwareSource"-->
-<!--            :items="availableNetworkMode"-->
-<!--            item-title="name"-->
-<!--            item-value="value"-->
-<!--            label="固件下载源配置"-->
-<!--            hide-details-->
-<!--            variant="underlined"-->
-<!--            color="primary"-->
-<!--        ></v-select>-->
+        <v-select
+            v-model="setting.network.firmwareDownloadSource"
+            :items="availableFirmwareDownloadSource"
+            item-title="name"
+            item-value="value"
+            label="固件下载源配置"
+            hide-details
+            variant="underlined"
+            color="primary"
+        ></v-select>
         <v-select
             v-model="setting.network.githubApiMode"
             :items="availableNetworkMode"
@@ -98,21 +98,27 @@
 <script setup lang="ts">
 import SimplePage from "@/components/SimplePage.vue";
 import {useConfigStore} from "@/store/ConfigStore";
-import {onMounted, ref, watch} from "vue";
-import {NameValueItem} from "@/types";
+import {onBeforeMount, onMounted, ref, watch} from "vue";
+import {NameValueItem, Setting} from "@/types";
+import {defaultConfig} from "@/types/DefaultConfig";
 import {
   mdiHelpCircle
 } from '@mdi/js'
 
-
 let configStore = useConfigStore()
 configStore.reloadConfig()
-let setting = configStore.config.setting
+let setting: Setting = defaultConfig.setting
+
+onBeforeMount(async () => {
+  await configStore.reloadConfig()
+  setting = configStore.config.setting
+})
 let availableNetworkMode = [
   {name: '根据系统代理自动决定', value: 'auto-detect'},
   {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'cdn'},
   {name: '直连', value: 'direct'},
 ]
+let availableFirmwareDownloadSource = ref<NameValueItem[]>([])
 let availableGithubDownloadSource = ref<NameValueItem[]>([])
 let availableProxyMode = [
     {name: '自动检测系统代理', value: 'system'},
@@ -144,8 +150,8 @@ function isValidHttpUrl(string: string) {
 
 
 onMounted(async () => {
+  await loadAvailableFirmwareDownloadSource()
   await loadAvailableGithubDownloadSource()
-  setting = configStore.config.setting
   proxyInput.value = setting.network.proxy
   updateProxyMode()
   watch(setting, async (newValue) => {
@@ -156,6 +162,17 @@ onMounted(async () => {
     }
   }, {deep: true, immediate: false})
 })
+
+async function loadAvailableFirmwareDownloadSource() {
+  let resp = await window.eel.get_available_firmware_sources()();
+  console.log(resp)
+  if (resp.code === 0) {
+    for (let source of resp.data) {
+      availableFirmwareDownloadSource.value.push({name: source[0], value: source[1]})
+    }
+  }
+}
+
 async function loadAvailableGithubDownloadSource() {
   let resp = await window.eel.get_github_mirrors()()
   console.log(resp)

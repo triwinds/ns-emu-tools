@@ -60,7 +60,7 @@ class RyujinxConfig:
 @dataclass_json
 @dataclass
 class NetworkSetting:
-    firmwareSource: Optional[str] = 'auto-detect'
+    firmwareDownloadSource: Optional[str] = 'github'
     githubApiMode: Optional[str] = 'direct'
     githubDownloadMirror: Optional[str] = 'cloudflare_load_balance'
     useDoh: Optional[bool] = True
@@ -89,7 +89,7 @@ class UiSetting:
 @dataclass_json
 @dataclass
 class CloudflareSpeedTestSetting:
-    override_hostnames: Optional[str] = 'nsarchive.e6ex.com,proxy.zyun.vip'
+    override_hostnames: Optional[str] = 'nsarchive.e6ex.com'
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)

@@ -228,6 +228,7 @@ let latestRyujinxVersion = computed(() => {
 onBeforeMount(async () => {
   await configStore.reloadConfig()
   await loadHistoryPathList()
+  appStore.updateAvailableFirmwareInfos()
   selectedRyujinxPath.value = configStore.config.ryujinx.path
   selectedBranch.value = configStore.config.ryujinx.branch
   updateRyujinxReleaseInfos()
