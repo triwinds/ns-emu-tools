@@ -16,6 +16,8 @@ console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
 # logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 # logging.getLogger("geventwebsocket.handler").setLevel(logging.WARNING)
 logging.basicConfig(
     level=logging.DEBUG,

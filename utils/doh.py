@@ -14,6 +14,7 @@ import requests
 from urllib3.util import connection
 from urllib.parse import urlparse
 from gevent.lock import RLock
+import httpx
 
 _orig_create_connection = connection.create_connection
 PY3 = sys.version_info >= (3, 0)
@@ -26,7 +27,7 @@ DOH_SERVER = '223.5.5.5'
 # iQDNS https://iqiq.io/servers.html
 # DOH_SERVER = 'https://cn-east.iqiqzz.com/dns-query'
 doh_server_name = urlparse(DOH_SERVER).netloc or DOH_SERVER
-session = requests.Session()
+session = httpx.Client()
 query_lock = RLock()
 
 resolver = dns.resolver.Resolver(configure=False)
