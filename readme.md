@@ -71,4 +71,5 @@ options:
  - [aria2](https://github.com/aria2/aria2) - aria2 下载器
  - [Github 镜像源](https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js) - 来自 X.I.U 大佬的 Github 增强脚本
  - [pineappleEA](https://github.com/pineappleEA/pineapple-src) - Yuzu EA 版本来源
+ - [THZoria/NX_Firmware](https://github.com/THZoria/NX_Firmware) - NS 固件来源
  - [darthsternie.net](https://darthsternie.net/switch-firmwares/) - NS 固件来源

@@ -94,6 +94,7 @@ let credits = [
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},
   {name: 'Github 镜像源', link: 'https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js', description: '来自 X.I.U 大佬的 Github 增强脚本'},
   {name: 'pineappleEA', link: 'https://github.com/pineappleEA/pineapple-src', description: 'Yuzu EA 版本来源'},
+  {name: 'THZoria/NX_Firmware', link: 'https://github.com/THZoria/NX_Firmware', description: 'NS 固件来源'},
   {name: 'darthsternie.net', link: 'https://darthsternie.net/switch-firmwares/', description: 'NS 固件来源'},
 ]
 let changeLogHtml = ref('<p>加载中...</p>')
