@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.4
+
+- 修复了一些 UI 问题
+- 新增 [THZoria/NX_Firmware](https://github.com/THZoria/NX_Firmware) 固件源 (#83)
+
 ## 0.4.3
 
 - 替换已经失效的 GitHub Mirror
