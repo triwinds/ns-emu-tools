@@ -81,8 +81,8 @@ class DownloadSetting:
 @dataclass_json
 @dataclass
 class UiSetting:
-    lastOpenEmuPage: Optional[str] = 'yuzu',
-    dark: Optional[bool] = True,
+    lastOpenEmuPage: Optional[str] = 'yuzu'
+    dark: Optional[bool] = True
     mode: Optional[str] = 'auto'
     width: int = 1300
     height: int = 850
