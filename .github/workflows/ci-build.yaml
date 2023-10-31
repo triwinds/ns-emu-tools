@@ -36,7 +36,6 @@ jobs:
         cmd: build
     - run: |
         pip install poetry
-        poetry config installer.parallel false
         poetry config --list
         poetry install
         poetry run pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./main_devnull.py" --name "NsEmuTools"
