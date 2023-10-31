@@ -35,6 +35,7 @@ jobs:
         dir: vue3
         cmd: build
     - run: |
+        python.exe -m pip install --upgrade pip setuptools wheel
         pip install poetry
         poetry config --list
         poetry install
