@@ -35,8 +35,6 @@ jobs:
         dir: vue3
         cmd: build
     - run: |
-        python -m venv venv
-        venv\Scripts\activate.ps1
         pip install poetry
         poetry config installer.parallel false
         poetry config --list
