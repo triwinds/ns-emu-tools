@@ -24,16 +24,24 @@ github_us_mirrors = [
 
     # https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js
     ['https://gh.h233.eu.org/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@X.I.U/XIU2] 提供'],
+    # ['https://gh.api.99988866.xyz/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [hunshcn/gh-proxy] 提供'],# 官方演示站用的人太多了
     ['https://gh.ddlc.top/https://github.com', '美国',
      '[美国 Cloudflare CDN] - 该公益加速源由 [@mtr-static-official] 提供'],
-    # ['https://ghdl.feizhuqwq.cf/https://github.com', '美国',
-    #  '[美国 Cloudflare CDN] - 该公益加速源由 [feizhuqwq.com] 提供'],
+    # ['https://gh2.yanqishui.work/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [@HongjieCN] 提供'],# Error 1101
+    ['https://dl.ghpig.top/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [feizhuqwq.com] 提供'],
+    # ['https://gh-proxy-misakano7545.koyeb.app/https://github.com', '美国', '[美国 Cloudflare CDN]'],# 404
+    # ['https://gh.flyinbug.top/gh/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [Mintimate] 提供'],# 域名无解析
+    # ['https://github.91chi.fun/https://github.com', '美国', '[美国 Cloudflare CDN]'],# 连接超时
     ['https://slink.ltd/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [知了小站] 提供'],
     ['https://git.xfj0.cn/https://github.com', '美国', '[美国 Cloudflare CDN] - git.xfj0.cn'],
     ['https://gh.con.sh/https://github.com', '美国', '[美国 Cloudflare CDN] - gh.con.sh'],
     ['https://ghps.cc/https://github.com', '美国', '[美国 Cloudflare CDN] - ghps.cc'],
     # ['https://cors.isteed.cc/github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [Lufs\'s] 提供'],
     ['https://hub.gitmirror.com/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [GitMirror] 提供'],
+    # ['https://js.xxooo.ml/https://github.com', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [饭太硬] 提供'],
+    # ['https://proxy.freecdn.ml/?url=https://github.com', '美国', '[美国 Cloudflare CDN]'],
+    # ['https://cdn.githubjs.cf', '美国', '[美国 Cloudflare CDN]'],# 域名无解析
+    ['https://download.fgit.cf', '美国', '[美国 洛杉矶] - 该公益加速源由 [FastGit 群组成员] 提供'],
     ['https://download.njuu.cf', '美国', '[美国 拉斯维加斯] - 该公益加速源由 [LibraryCloud] 提供'],
     ['https://download.yzuu.cf', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供'],
     ['https://download.nuaa.cf', '美国', '[美国 Cloudflare CDN] - 该公益加速源由 [LibraryCloud] 提供']
