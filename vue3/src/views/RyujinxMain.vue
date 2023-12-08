@@ -129,8 +129,9 @@
         </v-row>
         <v-row>
           <v-col cols="7">
-            <v-autocomplete hide-details v-model="appStore.targetFirmwareVersion" variant="underlined" label="需要安装的固件版本"
-                            :items="appStore.availableFirmwareVersions"></v-autocomplete>
+            <v-autocomplete hide-details v-model="appStore.targetFirmwareVersion" label="需要安装的固件版本"
+                          item-title="name" item-value="version"
+                          :items="appStore.availableFirmwareInfos" variant="underlined"></v-autocomplete>
           </v-col>
           <v-col>
             <v-btn color="info" size="large" variant="outlined" min-width="160px" :disabled='isRunningInstall'

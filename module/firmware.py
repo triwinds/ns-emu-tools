@@ -137,7 +137,7 @@ def get_firmware_infos_from_github():
         if target_asset is None:
             break
         info = {
-            'name': release['name'],
+            'name': release['name'][9:],
             'version': release['tag_name'],
             'url': target_asset['browser_download_url'],
             'filename': target_asset['name'],

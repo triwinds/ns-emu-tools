@@ -12,9 +12,6 @@ export const useAppStore = defineStore('app', {
     gameData: {} as {[key: string]: string}
   }),
   getters: {
-    availableFirmwareVersions(state) {
-      return state.availableFirmwareInfos.map(info => info['version'])
-    },
     gameDataInited(state) {
         return Object.keys(state.gameData).length !== 0
     }
