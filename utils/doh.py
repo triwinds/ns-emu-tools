@@ -1,5 +1,6 @@
 import ipaddress
 import logging
+import os
 import socket
 import sys
 import time
@@ -27,6 +28,7 @@ DOH_SERVER = '223.5.5.5'
 # iQDNS https://iqiq.io/servers.html
 # DOH_SERVER = 'https://cn-east.iqiqzz.com/dns-query'
 doh_server_name = urlparse(DOH_SERVER).netloc or DOH_SERVER
+os.environ['no_proxy'] = f'https://{doh_server_name}'
 session = httpx.Client()
 query_lock = RLock()
 

@@ -69,6 +69,9 @@ def open_url_in_default_browser(url):
 def update_setting(setting: Dict[str, object]):
     from config import config, update_setting
     update_setting(setting)
+    from module.network import session, get_durable_cache_session, get_proxies
+    session.proxies.update(get_proxies())
+    get_durable_cache_session().proxies.update(get_proxies())
     return success_response(config.to_dict())
 
 
