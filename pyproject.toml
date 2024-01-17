@@ -4,7 +4,7 @@ version = "0.4.2"
 description = ""
 authors = ["triwinds <triwinds@users.noreply.github.com>"]
 readme = "README.md"
-packages = [{include = "ns_emu_tools"}]
+packages = [{include = "module"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <3.12"
@@ -25,10 +25,11 @@ xmltodict = "^0.13.0"
 chardet = "^5.2.0"
 pywebview = "^4.2.2"
 dataclasses-json = "^0.5.14"
+pyinstaller = "^6.3.0"
 
 
 [tool.poetry.group.dev.dependencies]
-pyinstaller = "^5.13.0"
+pyinstaller = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
