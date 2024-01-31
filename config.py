@@ -88,19 +88,12 @@ class UiSetting:
     height: int = 850
 
 
-@dataclass_json
-@dataclass
-class CloudflareSpeedTestSetting:
-    override_hostnames: Optional[str] = 'nsarchive.e6ex.com'
-
-
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
     ui: UiSetting = field(default_factory=UiSetting)
     network: NetworkSetting = field(default_factory=NetworkSetting)
     download: DownloadSetting = field(default_factory=DownloadSetting)
-    cfst: CloudflareSpeedTestSetting = field(default_factory=CloudflareSpeedTestSetting)
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)

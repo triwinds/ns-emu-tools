@@ -90,10 +90,6 @@ def show_result():
         send_notify(line)
 
 
-def get_override_host_names():
-    return [s.strip() for s in config.setting.cfst.override_hostnames.split(',')]
-
-
 def install_ip_to_hosts(ip: str, host_names: List[str]):
     logger.info('writing hosts...')
     send_notify('正在更新 hosts 文件...')
@@ -120,12 +116,7 @@ def get_current_cfst_version():
 
 
 def get_cf_hostnames():
-    default_list = ['nsarchive.e6ex.com']
-    hostnames = get_override_host_names()
-    for hn in default_list:
-        if hn not in hostnames:
-            hostnames.append(hn)
-    return hostnames
+    return ['nsarchive.e6ex.com']
 
 
 def optimize_cloudflare_hosts():

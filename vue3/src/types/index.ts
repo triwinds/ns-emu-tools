@@ -24,7 +24,6 @@ export interface Setting {
   ui: UiSetting
   network: NetworkSetting
   download: DownloadSetting
-  cfst: CfstSetting
 }
 
 export interface UiSetting {
@@ -48,10 +47,6 @@ export interface DownloadSetting {
   disableAria2Ipv6: boolean
   removeOldAria2LogFile: boolean
   verifyFirmwareMd5: boolean
-}
-
-export interface CfstSetting {
-  override_hostnames: string
 }
 
 export interface CommonResponse {
