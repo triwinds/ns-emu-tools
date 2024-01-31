@@ -88,12 +88,19 @@ class UiSetting:
     height: int = 850
 
 
+@dataclass_json
+@dataclass
+class OtherSetting:
+    rename_yuzu_to_cemu: Optional[bool] = False
+
+
 @dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class CommonSetting:
     ui: UiSetting = field(default_factory=UiSetting)
     network: NetworkSetting = field(default_factory=NetworkSetting)
     download: DownloadSetting = field(default_factory=DownloadSetting)
+    other: OtherSetting = field(default_factory=OtherSetting)
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)

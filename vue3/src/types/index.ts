@@ -24,6 +24,11 @@ export interface Setting {
   ui: UiSetting
   network: NetworkSetting
   download: DownloadSetting
+  other: OtherSetting
+}
+
+export interface OtherSetting {
+  rename_yuzu_to_cemu: boolean
 }
 
 export interface UiSetting {

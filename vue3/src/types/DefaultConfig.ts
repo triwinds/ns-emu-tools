@@ -34,8 +34,8 @@ export const defaultConfig: AppConfig = {
       "removeOldAria2LogFile": true,
       "verifyFirmwareMd5": true
     },
-    "cfst": {
-      "override_hostnames": ""
+    "other": {
+      "rename_yuzu_to_cemu": false
     }
   }
 }

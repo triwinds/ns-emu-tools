@@ -94,10 +94,15 @@ def install_yuzu(target_version, branch='ea'):
         logger.info(f'Current yuzu version is same as target version [{target_version}], skip install.')
         send_notify(f'当前就是 [{target_version}] 版本的 yuzu , 跳过安装.')
         return
+    yuzu_path = Path(config.yuzu.yuzu_path)
     if branch == 'ea':
         install_ea_yuzu(target_version)
     else:
         install_mainline_yuzu(target_version)
+    if config.setting.other.rename_yuzu_to_cemu and yuzu_path.joinpath('yuzu.exe').exists():
+        os.replace(yuzu_path.joinpath('yuzu.exe'), yuzu_path.joinpath("cemu.exe"))
+        logger.info(f'Rename yuzu.exe to {yuzu_path.joinpath("cemu.exe")}')
+        send_notify(f'重命名 yuzu.exe 为 {yuzu_path.joinpath("cemu.exe")}')
     config.yuzu.yuzu_version = target_version
     config.yuzu.branch = branch
     dump_config()
@@ -121,15 +126,25 @@ def install_firmware_to_yuzu(firmware_version=None):
         send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.')
 
 
+def get_yuzu_exe_path():
+    yz_path = Path(config.yuzu.yuzu_path)
+    if ((config.setting.other.rename_yuzu_to_cemu or not yz_path.joinpath('yuzu.exe').exists())
+            and yz_path.joinpath('cemu.exe').exists()):
+        return yz_path.joinpath('cemu.exe')
+    return yz_path.joinpath('yuzu.exe')
+
+
 def detect_yuzu_version():
     send_notify('正在检测 yuzu 版本...')
-    yz_path = Path(config.yuzu.yuzu_path).joinpath('yuzu.exe')
+    yz_path = get_yuzu_exe_path()
     if not yz_path.exists():
         send_notify('未能找到 yuzu 程序')
         config.yuzu.yuzu_version = None
         dump_config()
         return None
     instances = find_all_instances('yuzu.exe')
+    if config.setting.other.rename_yuzu_to_cemu or yz_path.name == 'cemu.exe':
+        instances += find_all_instances('cemu.exe')
     if instances:
         logger.info(f'Yuzu pid={[p.pid for p in instances]} is running.')
         send_notify(f'yuzu 正在运行中, 请先关闭之.')
@@ -159,6 +174,8 @@ def detect_yuzu_version():
     except:
         logger.exception('error occur in get_all_window_name')
     kill_all_instances('yuzu.exe')
+    if config.setting.other.rename_yuzu_to_cemu or yz_path.name == 'cemu.exe':
+        kill_all_instances('cemu.exe')
     if version:
         config.yuzu.branch = branch
     else:
@@ -169,9 +186,9 @@ def detect_yuzu_version():
 
 
 def start_yuzu():
-    yz_path = Path(config.yuzu.yuzu_path).joinpath('yuzu.exe')
+    yz_path = get_yuzu_exe_path()
     if yz_path.exists():
-        logger.info(f'starting yuzu from: {yz_path}')
+        logger.info(f'starting yuzu from {yz_path}')
         subprocess.Popen([yz_path])
     else:
         logger.info(f'yuzu not exist in [{yz_path}]')
