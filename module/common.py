@@ -11,8 +11,11 @@ logger = logging.getLogger(__name__)
 def check_and_install_msvc():
     windir = Path(os.environ['windir'])
     if windir.joinpath(r'System32\msvcp140_atomic_wait.dll').exists():
-        logger.info(f'msvc already installed.')
-        return
+        from utils.common import find_installed_software, is_newer_version
+        software_list = find_installed_software(r'Microsoft Visual C\+\+ .+ Redistributable')
+        if software_list and any(is_newer_version('14.34', s['version']) for s in software_list):
+            logger.info(f'msvc already installed.')
+            return
     from module.downloader import download
     send_notify('开始下载 msvc 安装包...')
     logger.info('downloading msvc installer...')

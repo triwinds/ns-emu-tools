@@ -70,6 +70,66 @@ def is_path_in_use(file_path):
         return False
 
 
+def get_installed_software():
+    import winreg
+
+    def foo(hive, flag):
+        aReg = winreg.ConnectRegistry(None, hive)
+        aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                              0, winreg.KEY_READ | flag)
+        count_subkey = winreg.QueryInfoKey(aKey)[0]
+        software_list = []
+        for i in range(count_subkey):
+            software = {}
+            try:
+                asubkey_name = winreg.EnumKey(aKey, i)
+                asubkey = winreg.OpenKey(aKey, asubkey_name)
+                software['name'] = winreg.QueryValueEx(asubkey, "DisplayName")[0]
+
+                try:
+                    software['version'] = winreg.QueryValueEx(asubkey, "DisplayVersion")[0]
+                except EnvironmentError:
+                    software['version'] = 'undefined'
+                try:
+                    software['publisher'] = winreg.QueryValueEx(asubkey, "Publisher")[0]
+                except EnvironmentError:
+                    software['publisher'] = 'undefined'
+                software_list.append(software)
+            except EnvironmentError:
+                continue
+
+        return software_list
+
+    sl = (foo(winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY) +
+          foo(winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY) +
+          foo(winreg.HKEY_CURRENT_USER, 0))
+    return sl
+
+
+def find_installed_software(name_pattern: str):
+    import re
+    software_list = get_installed_software()
+    pattern = re.compile(name_pattern)
+    final_list = [s for s in software_list if pattern.search(s['name']) is not None]
+    return final_list
+
+
+def is_newer_version(min_version, current_version):
+    cur_range = current_version.split(".")
+    min_range = min_version.split(".")
+    for index in range(len(cur_range)):
+        if len(min_range) > index:
+            try:
+                return int(cur_range[index]) >= int(min_range[index])
+            except:
+                return False
+    return False
+
+
 if __name__ == '__main__':
-    from config import config
-    print(is_path_in_use(config.yuzu.yuzu_path))
+    from pprint import pp
+    # from config import config
+    # print(is_path_in_use(config.yuzu.yuzu_path))
+    pp(get_installed_software())
+    test_l = find_installed_software(r'Microsoft Visual C\+\+ .+ Redistributable')
+    print(any(is_newer_version('14.34', s['version']) for s in test_l))
