@@ -13,9 +13,15 @@ def check_and_install_msvc():
     if windir.joinpath(r'System32\msvcp140_atomic_wait.dll').exists():
         from utils.common import find_installed_software, is_newer_version
         software_list = find_installed_software(r'Microsoft Visual C\+\+ .+ Redistributable')
-        if software_list and any(is_newer_version('14.34', s['version']) for s in software_list):
-            logger.info(f'msvc already installed.')
+        if not software_list:
+            logger.info(f'msvc already installed, but version not found in registry.')
             return
+        logger.debug(f'Installed msvc: {software_list}')
+        if not any(is_newer_version('14.38', s['version']) for s in software_list):
+            logger.info(f'show update msvc notification.')
+            send_notify('如果在启动模拟器时提示 [无法定位程序输入点]，可以试试更新你的 msvc')
+            send_notify('下载链接：https://aka.ms/vs/17/release/VC_redist.x64.exe')
+        return
     from module.downloader import download
     send_notify('开始下载 msvc 安装包...')
     logger.info('downloading msvc installer...')
