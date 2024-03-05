@@ -277,17 +277,17 @@ function deleteHistoryPath(targetPath: string) {
   })
 }
 
-function detectRyujinxVersion() {
+async function detectRyujinxVersion() {
   cds.cleanAndShowConsoleDialog()
-  window.eel.detect_ryujinx_version()((data: CommonResponse) => {
-    if (data['code'] === 0) {
-      configStore.reloadConfig()
-      updateRyujinxReleaseInfos()
-      cds.appendConsoleMessage('Ryujinx 版本检测完成')
-    } else {
-      cds.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
-    }
-  })
+  let data = await window.eel.detect_ryujinx_version()()
+  if (data['code'] === 0) {
+    await configStore.reloadConfig()
+    selectedBranch.value = configStore.config.ryujinx.branch
+    updateRyujinxReleaseInfos()
+    cds.appendConsoleMessage('Ryujinx 版本检测完成')
+  } else {
+    cds.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
+  }
 }
 
 function installRyujinx() {
