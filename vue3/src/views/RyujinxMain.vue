@@ -208,7 +208,7 @@ let availableBranch = ref([
     text: '正式版',
     value: 'mainline'
   }, {
-    text: 'AVA 版',
+    text: 'AVA 版 (1.1.1217 后已经合并入正式版)',
     value: 'ava'
   }, {
     text: 'LDN 版 (联机版本)',

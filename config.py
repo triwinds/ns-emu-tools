@@ -56,7 +56,7 @@ class RyujinxConfig:
     path: Optional[str] = 'D:\\Ryujinx'
     version: Optional[str] = None
     firmware: Optional[str] = None
-    branch: Optional[str] = 'ava'
+    branch: Optional[str] = 'mainline'
 
 
 @dataclass_json
