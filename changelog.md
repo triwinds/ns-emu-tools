@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.7
+
+- yuzu is dead, RIP (#97)
+- 修复 Ryujinx 分支的展示问题 (#96)
+
 ## 0.4.6
 
 - 调整固件名称展示逻辑
