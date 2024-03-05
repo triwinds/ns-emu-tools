@@ -81,7 +81,7 @@ class DownloadSetting:
 @dataclass_json
 @dataclass
 class UiSetting:
-    lastOpenEmuPage: Optional[str] = 'yuzu'
+    lastOpenEmuPage: Optional[str] = 'ryujinx'
     dark: Optional[bool] = True
     mode: Optional[str] = 'auto'
     width: int = 1300
@@ -118,6 +118,7 @@ if os.path.exists(config_path):
         config.ryujinx.path = str(Path(config.ryujinx.path).absolute())
 if not config:
     config = Config()
+config.yuzu.branch = 'ea'
 
 
 def dump_config():

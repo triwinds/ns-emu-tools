@@ -17,15 +17,9 @@
       <v-row>
         <v-col>
           <span class="text-h6 text-secondary">当前使用的 Yuzu 分支：</span>
-          <v-tooltip right>
-            <template v-slot:activator="{ props }">
-              <v-btn color="error" size="large" variant="outlined" style="margin-right: 15px" v-bind="props"
-                     @click="switchYuzuBranch" :disabled='isRunningInstall'>
-                {{ displayBranch }} 版
-              </v-btn>
-            </template>
-            <span>切换安装分支</span>
-          </v-tooltip>
+          <v-btn color="error" size="large" variant="outlined" style="margin-right: 15px" :disabled="true">
+            {{ displayBranch }} 版
+          </v-btn>
         </v-col>
       </v-row>
       <v-row>
@@ -75,17 +69,6 @@
           <span class="text-h6">
                     {{ latestYuzuVersion }}
                   </span>
-          <ChangeLogDialog>
-            <template v-slot:activator="{ props }">
-                      <span v-bind="props" @click="loadChangeLog"
-                            style="margin-left: 10px">
-                        <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>
-                      </span>
-            </template>
-            <template v-slot:content>
-              <div class="text--primary" v-html="changeLogHtml"></div>
-            </template>
-          </ChangeLogDialog>
         </v-col>
       </v-row>
       <v-row>

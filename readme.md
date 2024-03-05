@@ -10,8 +10,8 @@
 
 ## Features
 
- - 支持安装 Yuzu EA/正式 版模拟器
- - 支持 Yuzu 版本检测及更新
+ - 支持安装 Yuzu EA/~~正式~~ 版模拟器
+ - ~~支持 Yuzu 版本检测及更新~~ (yuzu 目前已经停止开发)
  - 支持安装 Ryujinx Ava/正式/LDN 版模拟器
  - 支持 Ryujinx 版本检测及更新
  - 自动检测并安装 msvc 运行库
@@ -65,7 +65,7 @@ options:
 
 ## Credits
 
- - [Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器
+ - ~~[Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器~~
  - [Ryujinx](https://github.com/Ryujinx/Ryujinx) - Ryujinx 模拟器
  - [hactool](https://github.com/SciresM/hactool) - NS 固件解析
  - [aria2](https://github.com/aria2/aria2) - aria2 下载器

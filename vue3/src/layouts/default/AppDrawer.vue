@@ -31,8 +31,8 @@ onMounted(async () => {
   await configStore.reloadConfig()
   configStore.checkUpdate(false)
   if (!['yuzu', 'ryujinx'].includes(configStore.config.setting.ui.lastOpenEmuPage)) {
-    configStore.config.setting.ui.lastOpenEmuPage = 'yuzu'
-    window.eel.update_last_open_emu_page('yuzu')()
+    configStore.config.setting.ui.lastOpenEmuPage = 'ryujinx'
+    window.eel.update_last_open_emu_page('ryujinx')()
   }
   console.log(router.currentRoute.value.path)
   if (router.currentRoute.value.path === '/'
