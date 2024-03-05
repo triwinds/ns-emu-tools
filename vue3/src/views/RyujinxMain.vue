@@ -205,10 +205,10 @@ let firmwareWarningMsg = ref(`一般来说，更新固件并不会改善你的�
 let firmwareInstallationWarningDialog = ref(false)
 let availableBranch = ref([
   {
-    text: '正式版 (老 UI)',
+    text: '正式版',
     value: 'mainline'
   }, {
-    text: 'AVA 版 (新 UI)',
+    text: 'AVA 版',
     value: 'ava'
   }, {
     text: 'LDN 版 (联机版本)',
@@ -262,6 +262,7 @@ async function updateRyujinxPath() {
   let oldBranch = configStore.config.ryujinx.branch
   await configStore.reloadConfig()
   selectedRyujinxPath.value = configStore.config.ryujinx.path
+  selectedBranch.value = configStore.config.ryujinx.branch
   await loadHistoryPathList()
   if (oldBranch !== configStore.config.ryujinx.branch) {
     updateRyujinxReleaseInfos()
