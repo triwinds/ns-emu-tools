@@ -61,6 +61,15 @@ class RyujinxConfig:
 
 @dataclass_json
 @dataclass
+class SuyuConfig:
+    path: Optional[str] = 'D:\\Suyu'
+    version: Optional[str] = None
+    firmware: Optional[str] = None
+    branch: Optional[str] = 'dev'
+
+
+@dataclass_json
+@dataclass
 class NetworkSetting:
     firmwareDownloadSource: Optional[str] = 'github'
     githubApiMode: Optional[str] = 'direct'
@@ -108,6 +117,7 @@ class CommonSetting:
 class Config:
     yuzu: YuzuConfig = field(default_factory=YuzuConfig)
     ryujinx: RyujinxConfig = field(default_factory=RyujinxConfig)
+    suyu: SuyuConfig = field(default_factory=SuyuConfig)
     setting: CommonSetting = field(default_factory=CommonSetting)
 
 
