@@ -30,7 +30,7 @@ onMounted(async () => {
   configStore.initCurrentVersion()
   await configStore.reloadConfig()
   configStore.checkUpdate(false)
-  if (!['yuzu', 'ryujinx'].includes(configStore.config.setting.ui.lastOpenEmuPage)) {
+  if (!['yuzu', 'ryujinx', 'suyu'].includes(configStore.config.setting.ui.lastOpenEmuPage)) {
     configStore.config.setting.ui.lastOpenEmuPage = 'ryujinx'
     window.eel.update_last_open_emu_page('ryujinx')()
   }
@@ -87,6 +87,12 @@ function openReleasePage() {
           <v-img src="@/assets/yuzu.webp" style="margin-right: 12px" height="24" width="24"></v-img>
         </template>
         <v-list-item-title>Yuzu 模拟器</v-list-item-title>
+      </v-list-item>
+      <v-list-item link to="/suyu">
+        <template v-slot:prepend>
+          <v-img src="@/assets/suyu.png" style="margin-right: 12px" height="24" width="24"></v-img>
+        </template>
+        <v-list-item-title>Suzu 模拟器</v-list-item-title>
       </v-list-item>
 
       <v-list-item link to="/ryujinx">

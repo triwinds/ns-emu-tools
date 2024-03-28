@@ -6,6 +6,7 @@ export const useConfigStore = defineStore('config', {
   state: () => ({
     config: {
       yuzu: {},
+      suyu: {},
       ryujinx: {},
       setting: {}
     } as AppConfig,

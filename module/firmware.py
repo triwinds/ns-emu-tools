@@ -27,6 +27,13 @@ def _detect_firmware_version(emu_type: str):
         for file in firmware_path.glob('*.nca'):
             if not file.name.endswith('.cnmt.nca'):
                 firmware_files.append(file)
+    elif emu_type == 'suyu':
+        from module.suyu import get_suyu_nand_path, get_suyu_user_path
+        firmware_path = get_suyu_nand_path().joinpath(r'system\Contents\registered')
+        key_path = get_suyu_user_path().joinpath(r'keys/prod.keys')
+        for file in firmware_path.glob('*.nca'):
+            if not file.name.endswith('.cnmt.nca'):
+                firmware_files.append(file)
     else:
         from module.ryujinx import get_ryujinx_user_folder
         firmware_path = get_ryujinx_user_folder().joinpath(r'bis\system\Contents\registered')
@@ -57,6 +64,8 @@ def detect_firmware_version(emu_type: str):
     finally:
         if emu_type == 'yuzu':
             config.yuzu.yuzu_firmware = version
+        elif emu_type == 'suyu':
+            config.suyu.firmware = version
         else:
             config.ryujinx.firmware = version
         dump_config()

@@ -207,7 +207,7 @@ def get_yuzu_user_path():
 def open_yuzu_keys_folder():
     keys_path = get_yuzu_user_path().joinpath('keys')
     keys_path.mkdir(parents=True, exist_ok=True)
-    keys_path.joinpath('把prod.keys和title.keys放当前目录.txt').touch(exist_ok=True)
+    keys_path.joinpath('把prod.keys放当前目录.txt').touch(exist_ok=True)
     logger.info(f'open explorer on path {keys_path}')
     subprocess.Popen(f'explorer "{str(keys_path.absolute())}"')
 
