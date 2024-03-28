@@ -131,7 +131,7 @@ def get_firmware_infos_from_github():
     for release in data:
         target_asset = None
         for asset in release['assets']:
-            if asset['content_type'] == 'application/x-zip-compressed':
+            if 'zip' in asset['content_type']:
                 target_asset = asset
                 break
         if target_asset is None:
