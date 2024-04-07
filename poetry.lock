@@ -1052,10 +1052,8 @@ version = "4.6.1"
 description = "NSZ - Homebrew compatible NSP/XCI compressor/decompressor"
 optional = false
 python-versions = ">=3.6"
-files = [
-    {file = "nsz-4.6.1-py3-none-any.whl", hash = "sha256:3b65c3ccc5620d713b7d862191f2f657f1b019ec6173e95ddf274c4e196a714d"},
-    {file = "nsz-4.6.1.tar.gz", hash = "sha256:456e3b33ff1fa9455376768dad588046a4530c8c1c87416607e6ba7221e6ba3f"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 enlighten = "*"
@@ -1063,7 +1061,13 @@ pycryptodome = "*"
 zstandard = "*"
 
 [package.extras]
-gui = ["kivy", "pypiwin32", "pywin32"]
+gui = ["kivy"]
+
+[package.source]
+type = "git"
+url = "https://github.com/triwinds/nsz"
+reference = "HEAD"
+resolved_reference = "422b829cbe37574c214123686c503b9946e799f6"
 
 [[package]]
 name = "packaging"
@@ -2217,4 +2221,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.12"
-content-hash = "3ebacb3d230a63689a8f1863261f66b5774ce1e20e10c28e741d20dc973b66ac"
+content-hash = "16bf59a98b6abd372a6d770411b7a67f39e09181f6398e52f23bcbb66d2e9011"

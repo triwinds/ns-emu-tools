@@ -1,26 +1,15 @@
-import os
-import shutil
 from logging import getLogger
 from pathlib import Path
 
 from exception.common_exception import IgnoredException
 
 logger = getLogger(__name__)
-_inited = False
 
 
 def reload_key(key_path):
-    global _inited
     try:
-        if not _inited:
-            _inited = True
-            shutil.copy(key_path, './keys.txt')
-            import nsz.nut.Print
-            nsz.nut.Print.info = nsz.nut.Print.error = nsz.nut.Print.warning = nsz.nut.Print.debug = lambda *args: None
         from nsz.nut.Keys import load
         load(key_path)
-        if not _inited:
-            os.remove('./keys.txt')
     except:
         raise IgnoredException("Failed to load key")
 
