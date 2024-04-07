@@ -26,6 +26,7 @@ chardet = "^5.2.0"
 pywebview = "^4.2.2"
 dataclasses-json = "^0.5.14"
 pyinstaller = "^6.3.0"
+nsz = "^4.6.1"
 
 
 [tool.poetry.group.dev.dependencies]

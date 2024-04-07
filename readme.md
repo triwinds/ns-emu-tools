@@ -68,7 +68,8 @@ options:
  - ~~[Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器~~
  - [Ryujinx](https://github.com/Ryujinx/Ryujinx) - Ryujinx 模拟器
  - [Suyu](https://git.suyu.dev/suyu/suyu) - Suyu 模拟器
- - [hactool](https://github.com/SciresM/hactool) - NS 固件解析
+ - ~~[hactool](https://github.com/SciresM/hactool) - NS 固件解析~~
+ - [nsz](https://github.com/nicoboss/nsz) - NS 固件解析
  - [aria2](https://github.com/aria2/aria2) - aria2 下载器
  - [Github 镜像源](https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js) - 来自 X.I.U 大佬的 Github 增强脚本
  - [pineappleEA](https://github.com/pineappleEA/pineapple-src) - Yuzu EA 版本来源

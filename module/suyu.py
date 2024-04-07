@@ -107,7 +107,7 @@ def _get_suyu_data_storage_config(user_path: Path):
     if config_path.exists():
         import configparser
         suyu_qt_config = configparser.ConfigParser()
-        suyu_qt_config.read(str(config_path.absolute()))
+        suyu_qt_config.read(str(config_path.absolute()), encoding='utf-8')
         # data = {section: dict(suyu_qt_config[section]) for section in suyu_qt_config.sections()}
         # print(data)
         data_storage = suyu_qt_config['Data%20Storage']
@@ -122,7 +122,7 @@ def get_suyu_nand_path():
         data_storage = _get_suyu_data_storage_config(user_path)
         if data_storage:
             path_str = data_storage.get('nand_directory')
-            nand_path = Path(decode_yuzu_path(path_str))
+            nand_path = Path(path_str)
             logger.info(f'use nand path from suyu config: {nand_path}')
     except Exception as e:
         logger.warning(f'fail in parse suyu qt-config, error msg: {str(e)}')
