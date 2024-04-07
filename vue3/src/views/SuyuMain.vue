@@ -51,18 +51,19 @@
       </v-row>
       <v-row>
         <v-col>
-                  <span class="text-h6 text-secondary">
-                    当前 suyu 版本：
-                  </span>
-          <v-tooltip top>
-            <template v-slot:activator="{ props }">
-              <v-btn color="warning" variant="outlined" style="margin-right: 15px" v-bind="props"
-                     @click="detectSuyuVersion" :disabled='true'>
-                {{ suyuConfig.version ? suyuConfig.version : '未知' }}
-              </v-btn>
-            </template>
-            <span>点击重新检测 suyu 版本</span>
-          </v-tooltip>
+          <span class="text-h6 text-secondary">
+            当前 suyu 版本：
+          </span>
+          <span class="text-h6 text-warning">{{ suyuConfig.version ? suyuConfig.version : '未知' }}</span>
+<!--          <v-tooltip top>-->
+<!--            <template v-slot:activator="{ props }">-->
+<!--              <v-btn color="warning" variant="outlined" style="margin-right: 15px" v-bind="props"-->
+<!--                     @click="detectSuyuVersion" :disabled='true'>-->
+<!--                {{ suyuConfig.version ? suyuConfig.version : '未知' }}-->
+<!--              </v-btn>-->
+<!--            </template>-->
+<!--            <span>点击重新检测 suyu 版本</span>-->
+<!--          </v-tooltip>-->
           <span class="text-h6 text-secondary">
                     最新 suyu 版本：
                   </span>
