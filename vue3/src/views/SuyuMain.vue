@@ -85,7 +85,7 @@
             <span>点击重新检测固件版本, 需安装密钥后使用</span>
           </v-tooltip>
           <span class="text-h7 text-secondary">
-              （如果固件能用就没必要更新）
+              （18.0.0 及更高版本固件无法在目前的 suyu 模拟器中使用）
             </span>
         </v-col>
       </v-row>
