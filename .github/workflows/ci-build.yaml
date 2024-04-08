@@ -42,16 +42,16 @@ jobs:
         .\package_all.bat
 #        pip install pywebview
 #        pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./ui_webview.py" --name "NsEmuTools-webview"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         path: dist/NsEmuTools.exe
         name: NsEmuTools
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         path: dist/NsEmuTools-console.exe
         name: NsEmuTools-console
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true

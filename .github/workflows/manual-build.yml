@@ -35,7 +35,7 @@ jobs:
         pip install poetry
         poetry install
         poetry run pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./main_devnull.py" --name "NsEmuTools"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         path: dist/*
         name: NsEmuTools
