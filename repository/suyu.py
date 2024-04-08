@@ -11,3 +11,11 @@ def load_suyu_releases():
 def get_release_by_tag_name(tag_name: str):
     resp = session.get(get_finial_url(f'https://git.suyu.dev/api/v1/repos/suyu/suyu/releases/tags/{tag_name}'))
     return resp.json()
+
+
+def get_all_suyu_release_versions():
+    res = []
+    data = load_suyu_releases()
+    for item in data:
+        res.append(item['tag_name'])
+    return res

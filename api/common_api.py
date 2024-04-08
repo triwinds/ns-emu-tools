@@ -109,6 +109,8 @@ def load_history_path(emu_type: str):
     emu_type = emu_type.lower()
     if emu_type == 'yuzu':
         return success_response(list(_merge_to_set(storage.yuzu_history.keys(), config.yuzu.yuzu_path)))
+    elif emu_type == 'suyu':
+        return success_response(list(_merge_to_set(storage.suyu_history.keys(), config.suyu.path)))
     else:
         return success_response(list(_merge_to_set(storage.ryujinx_history.keys(), config.ryujinx.path)))
 

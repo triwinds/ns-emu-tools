@@ -23,6 +23,7 @@ const display = useDisplay()
 let drawer = ref(display.lgAndUp.value)
 const configStore = useConfigStore()
 import router from "@/router";
+
 const theme = useTheme()
 
 
@@ -30,7 +31,7 @@ onMounted(async () => {
   configStore.initCurrentVersion()
   await configStore.reloadConfig()
   configStore.checkUpdate(false)
-  if (!['yuzu', 'ryujinx'].includes(configStore.config.setting.ui.lastOpenEmuPage)) {
+  if (!['yuzu', 'ryujinx', 'suyu'].includes(configStore.config.setting.ui.lastOpenEmuPage)) {
     configStore.config.setting.ui.lastOpenEmuPage = 'ryujinx'
     window.eel.update_last_open_emu_page('ryujinx')()
   }
@@ -54,19 +55,19 @@ function openReleasePage() {
 
 <template>
   <v-navigation-drawer
-      v-model="drawer"
-      app
-      :style="{'background-color': theme.global.name.value === 'dark' ? '#363636' : '#FFFFFF'}"
+    v-model="drawer"
+    app
+    :style="{'background-color': theme.global.name.value === 'dark' ? '#363636' : '#FFFFFF'}"
   >
     <v-sheet
-        class="pa-4"
-        @click="openReleasePage" :style="{cursor: configStore.hasNewVersion ? 'pointer' : 'default' }"
+      class="pa-4"
+      @click="openReleasePage" :style="{cursor: configStore.hasNewVersion ? 'pointer' : 'default' }"
     >
       <v-avatar
-          class="mb-4"
-          color="#00000000"
-          size="100"
-          rounded
+        class="mb-4"
+        color="#00000000"
+        size="100"
+        rounded
       >
         <img src="@/assets/icon.png" alt="">
       </v-avatar>
@@ -116,6 +117,12 @@ function openReleasePage() {
             </template>
           </v-list-item>
         </template>
+        <v-list-item link to="/suyu">
+          <template v-slot:prepend>
+            <v-img src="@/assets/suyu.png" style="margin-right: 12px" height="24" width="24"></v-img>
+          </template>
+          <v-list-item-title>Suzu 模拟器</v-list-item-title>
+        </v-list-item>
         <v-list-item link to="/yuzuCheatsManagement">
           <template v-slot:prepend>
             <div class="my-prepend-box">

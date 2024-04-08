@@ -8,7 +8,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
-current_version = '0.4.7'
+current_version = '0.4.8'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
@@ -140,6 +140,8 @@ def dump_config():
 def update_last_open_emu_page(page: str):
     if page == 'ryujinx':
         config.setting.ui.lastOpenEmuPage = 'ryujinx'
+    elif page == 'suyu':
+        config.setting.ui.lastOpenEmuPage = 'suyu'
     else:
         config.setting.ui.lastOpenEmuPage = 'yuzu'
     logger.info(f'update lastOpenEmuPage to {config.setting.ui.lastOpenEmuPage}')

@@ -90,7 +90,9 @@ const configStore = useConfigStore()
 let credits = [
   {name: 'Yuzu', link: 'https://github.com/yuzu-emu/yuzu', description: 'Yuzu 模拟器'},
   {name: 'Ryujinx', link: 'https://github.com/Ryujinx/Ryujinx', description: 'Ryujinx 模拟器'},
+  {name: 'Suyu', link: 'https://git.suyu.dev/suyu/suyu', description: 'Suyu 模拟器'},
   {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
+  {name: 'nsz', link: 'https://github.com/nicoboss/nsz', description: 'NS 固件解析'},
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},
   {name: 'Github 镜像源', link: 'https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js', description: '来自 X.I.U 大佬的 Github 增强脚本'},
   {name: 'pineappleEA', link: 'https://github.com/pineappleEA/pineapple-src', description: 'Yuzu EA 版本来源'},

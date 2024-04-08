@@ -100,10 +100,14 @@ def get_installed_software():
 
         return software_list
 
-    sl = (foo(winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY) +
-          foo(winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY) +
-          foo(winreg.HKEY_CURRENT_USER, 0))
-    return sl
+    try:
+        sl = (foo(winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY) +
+              foo(winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY) +
+              foo(winreg.HKEY_CURRENT_USER, 0))
+        return sl
+    except Exception as e:
+        logger.info('Exception occurred in get_software_list, exception is: {}'.format(e))
+        return []
 
 
 def find_installed_software(name_pattern: str):

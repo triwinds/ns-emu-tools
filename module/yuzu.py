@@ -207,7 +207,7 @@ def get_yuzu_user_path():
 def open_yuzu_keys_folder():
     keys_path = get_yuzu_user_path().joinpath('keys')
     keys_path.mkdir(parents=True, exist_ok=True)
-    keys_path.joinpath('把prod.keys和title.keys放当前目录.txt').touch(exist_ok=True)
+    keys_path.joinpath('把prod.keys放当前目录.txt').touch(exist_ok=True)
     logger.info(f'open explorer on path {keys_path}')
     subprocess.Popen(f'explorer "{str(keys_path.absolute())}"')
 
@@ -217,7 +217,7 @@ def _get_yuzu_data_storage_config(user_path: Path):
     if config_path.exists():
         import configparser
         yuzu_qt_config = configparser.ConfigParser()
-        yuzu_qt_config.read(str(config_path.absolute()))
+        yuzu_qt_config.read(str(config_path.absolute()), encoding='utf-8')
         # data = {section: dict(yuzu_qt_config[section]) for section in yuzu_qt_config.sections()}
         # print(data)
         data_storage = yuzu_qt_config['Data%20Storage']
@@ -246,7 +246,7 @@ def get_yuzu_load_path():
         data_storage = _get_yuzu_data_storage_config(user_path)
         if data_storage:
             path_str = data_storage.get('load_directory')
-            load_path = Path(decode_yuzu_path(path_str))
+            load_path = Path(decode_yuzu_path(path_str) if '\\u' in path_str else path_str)
             logger.info(f'use load path from yuzu config: {load_path}')
     except Exception as e:
         logger.warning(f'fail in parse yuzu qt-config, error msg: {str(e)}')
