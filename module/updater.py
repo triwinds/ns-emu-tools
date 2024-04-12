@@ -1,4 +1,4 @@
-from module.downloader import download
+from module.downloader import download, download_path
 from module.msg_notifier import send_notify
 import sys
 from pathlib import Path
@@ -12,18 +12,25 @@ script_template = """@echo off
 chcp>nul 2>nul 65001
 echo 开始准备更新
 timeout /t 5 /nobreak
+taskkill /F /IM NsEmuTools* >nul 2>nul
 if exist "<old_exe>" (
   echo 备份原文件至 "<old_exe>.bak"
   move /Y "<old_exe>" "<old_exe>.bak"
 )
-if not exist "<new_exe>" (
-  echo 无法找到更新文件 "<new_exe>"
+if exist "_internal" (
+  move /Y "_internal" "_internal_bak"
+  timeout /t 1 /nobreak
+)
+if not exist "<upgrade_files_folder>" (
+  echo 无法找到更新文件 "<upgrade_files_folder>"
   pause
 ) else (
-  taskkill /F /IM NsEmuTools* >nul 2>nul
-  move /Y "<new_exe>" "<target_place>"
+  robocopy "<upgrade_files_folder>" . /MOVE
+  if exist "download/upgrade_files" (
+    rmdir /s /q "download/upgrade_files"
+  )
   echo 启动程序
-  call "<target_place>"
+  start /b "NsEmuTools" "<target_place>"
 )
 DEL "%~f0"
 """
@@ -67,12 +74,17 @@ def download_net_by_tag(tag: str):
     execute_path = Path(sys.argv[0])
     logger.info(f'execute_path: {execute_path}')
     asset_map = {asset['name']: asset for asset in release_info['assets']}
-    target_asset = asset_map.get(execute_path.name, asset_map.get('NsEmuTools.exe'))
+    target_asset = asset_map.get('NsEmuTools.7z')
+    if not target_asset:
+        target_asset = asset_map.get(execute_path.name, asset_map.get('NsEmuTools.exe'))
     target_file_name = target_asset["name"]
     logger.info(f'target_file_name: {target_file_name}')
     logger.info(f'start download {target_file_name}, version: [{tag}]')
     send_notify(f'开始下载 {target_file_name}, 版本: [{tag}]')
-    info = download(get_github_download_url(target_asset['browser_download_url']), options={'allow-overwrite': 'true'})
+    upgrade_files_path = download_path.joinpath('upgrade_files')
+    info = download(get_github_download_url(target_asset['browser_download_url']),
+                    save_dir=str(upgrade_files_path.absolute()),
+                    options={'allow-overwrite': 'true'})
     filepath = info.files[0].path.absolute()
     logger.info(f'{target_file_name} of [{tag}] downloaded to {filepath}')
     send_notify(f'{target_file_name} 版本: [{tag}] 已下载至')
@@ -81,15 +93,24 @@ def download_net_by_tag(tag: str):
 
 
 def update_self_by_tag(tag: str):
-    new_exe_path = download_net_by_tag(tag)
-    if not new_exe_path:
+    # upgrade_files_path = download_path.joinpath('upgrade_files')
+    # upgrade_file_path = upgrade_files_path.joinpath('NsEmuTools.7z')
+    upgrade_file_path = download_net_by_tag(tag)
+    upgrade_files_folder = upgrade_file_path.parent
+    if not upgrade_file_path:
         logger.error(f'something wrong in downloading.')
         send_notify(f'下载时出现问题, 更新已取消.')
         return
-    target_path = new_exe_path.parent.parent.joinpath(new_exe_path.name).absolute()
+    if upgrade_file_path.name.endswith('.7z'):
+        from utils.package import uncompress
+        uncompress(upgrade_file_path, upgrade_file_path.parent)
+        upgrade_file_path.unlink()
+        upgrade_files_folder = upgrade_file_path.parent.joinpath('NsEmuTools')
+    target_path = Path('NsEmuTools.exe') if Path('NsEmuTools.exe').exists() else Path('NsEmuTools-console.exe')
     script = script_template\
         .replace('<old_exe>', str(Path(sys.argv[0]).absolute()))\
-        .replace('<new_exe>', str(new_exe_path)).replace('<target_place>', str(target_path))
+        .replace('<upgrade_files_folder>', str(upgrade_files_folder))\
+        .replace('<target_place>', str(target_path.absolute()))
     logger.info(f'creating update script')
     with open('update.bat', 'w', encoding='utf-8') as f:
         f.write(script)
