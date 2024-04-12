@@ -85,7 +85,7 @@
             <span>点击重新检测固件版本, 需安装密钥后使用</span>
           </v-tooltip>
           <span class="text-h7 text-secondary">
-              （18.0.0 及更高版本固件无法在目前的 suyu 模拟器中使用）
+              （如果固件能用就没必要更新）
             </span>
         </v-col>
       </v-row>
@@ -320,7 +320,12 @@ function startSuyu() {
 async function modifySuyuPath() {
   consoleDialogStore.cleanAndShowConsoleDialog()
   consoleDialogStore.appendConsoleMessage('=============================================')
-  consoleDialogStore.appendConsoleMessage('选择的目录将作为存放模拟器的根目录')
+  consoleDialogStore.appendConsoleMessage('选择的目录将作为存放 suyu 模拟器的根目录')
+  consoleDialogStore.appendConsoleMessage('***** 安装时会清除该目录下的文件 *****')
+  consoleDialogStore.appendConsoleMessage('***** 安装时会清除该目录下的文件 *****')
+  consoleDialogStore.appendConsoleMessage('***** 安装时会清除该目录下的文件 *****')
+  consoleDialogStore.appendConsoleMessage('建议新建目录单独存放')
+  consoleDialogStore.appendConsoleMessage('建议新建目录单独存放')
   consoleDialogStore.appendConsoleMessage('建议新建目录单独存放')
   consoleDialogStore.appendConsoleMessage('=============================================')
   let data = await window.eel.ask_and_update_suyu_path()()

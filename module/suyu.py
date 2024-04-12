@@ -29,7 +29,7 @@ def download_suyu_release(tag_name, release_info):
     assets = release_info['assets']
     target_asset = None
     for asset in assets:
-        if 'Windows' in asset['name']:
+        if 'windows' in asset['name'].lower():
             target_asset = asset
             break
     if not target_asset:
@@ -59,7 +59,15 @@ def install_suyu(tag_name):
     logger.info(f'Unpacking suyu files...')
     send_notify('正在解压 suyu 文件...')
     uncompress(zip_file, tmp_dir)
-    copy_back_suyu_files(tmp_dir.joinpath('Release'), config.suyu.path)
+    clear_suyu_folder()
+    file_contents = os.listdir(tmp_dir)
+    if len(file_contents) > 1:
+        copy_back_suyu_files(tmp_dir, config.suyu.path)
+    else:
+        file_contents_dir = file_contents[0]
+        logger.info(f'copy dir: {file_contents_dir}')
+        copy_back_suyu_files(tmp_dir.joinpath(file_contents_dir), config.suyu.path)
+        shutil.rmtree(tmp_dir)
     config.suyu.version = tag_name
     dump_config()
     if config.setting.download.autoDeleteAfterInstall:
@@ -68,6 +76,21 @@ def install_suyu(tag_name):
     send_notify(f'Suyu [{tag_name}] 安装完成.')
     from module.common import check_and_install_msvc
     check_and_install_msvc()
+
+
+def clear_suyu_folder():
+    suyu_path = Path(config.suyu.path)
+    if not suyu_path.exists():
+        return
+    logger.info(f'clear suyu folder: {suyu_path}')
+    send_notify(f'清理 suyu 文件夹: {suyu_path}')
+    for file in suyu_path.iterdir():
+        if file.name.lower() == 'user':
+            continue
+        if file.is_file():
+            file.unlink()
+        elif file.is_dir():
+            shutil.rmtree(file)
 
 
 def get_suyu_user_path():
@@ -163,4 +186,4 @@ def update_suyu_path(new_suyu_path: str):
 
 
 if __name__ == '__main__':
-    install_suyu('v0.0.1')
+    install_suyu('v0.0.3')
