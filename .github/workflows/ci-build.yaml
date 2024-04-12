@@ -50,6 +50,10 @@ jobs:
       with:
         path: dist/NsEmuTools-console.exe
         name: NsEmuTools-console
+    - uses: actions/upload-artifact@v4
+      with:
+        path: dist/NsEmuTools.7z
+        name: NsEmuTools.7z
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
