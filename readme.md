@@ -10,7 +10,7 @@
 
 ## Features
 
- - 支持安装 Yuzu EA/~~正式~~ 版模拟器
+ - ~~支持安装 Yuzu EA/正式版模拟器~~ 
  - ~~支持 Yuzu 版本检测及更新~~ (yuzu 目前已经停止开发)
  - 支持安装 Ryujinx Ava/正式/LDN 版模拟器
  - 支持 Ryujinx 版本检测及更新

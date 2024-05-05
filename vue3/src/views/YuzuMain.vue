@@ -106,10 +106,11 @@
       <v-divider style="margin-bottom: 15px"></v-divider>
       <v-row>
         <v-col cols="7">
-          <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion" variant="underlined"></v-text-field>
+          <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"
+                        disabled variant="underlined"></v-text-field>
         </v-col>
         <v-col>
-          <v-btn color="info" size="large" variant="outlined" min-width="140px" :disabled='isRunningInstall'
+          <v-btn color="info" size="large" variant="outlined" min-width="140px" :disabled='true'
                  @click="installYuzu">
             安装 Yuzu
           </v-btn>
@@ -183,7 +184,7 @@ import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import DialogTitle from "@/components/DialogTitle.vue";
 
 let allYuzuReleaseVersions = ref([])
-let targetYuzuVersion = ref('')
+let targetYuzuVersion = ref('已停更')
 let isRunningInstall = ref(false)
 let historyPathList = ref<string[]>([])
 let selectedYuzuPath = ref('')
@@ -212,12 +213,13 @@ let displayBranch = computed(() => {
   }
   return '未知'
 })
-let latestYuzuVersion = computed(() => {
-  if (allYuzuReleaseVersions.value.length > 0) {
-    return allYuzuReleaseVersions.value[0]
-  }
-  return "加载中"
-})
+// let latestYuzuVersion = computed(() => {
+//   if (allYuzuReleaseVersions.value.length > 0) {
+//     return allYuzuReleaseVersions.value[0]
+//   }
+//   return "加载中"
+// })
+let latestYuzuVersion = '已停更'
 
 async function loadHistoryPathList() {
   let data = await window.eel.load_history_path('yuzu')()
@@ -231,7 +233,7 @@ onBeforeMount(async () => {
   await configStore.reloadConfig()
   appStore.updateAvailableFirmwareInfos()
   selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
-  updateYuzuReleaseVersions()
+  // updateYuzuReleaseVersions()
   window.eel.update_last_open_emu_page('yuzu')()
 })
 
