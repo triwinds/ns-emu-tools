@@ -184,7 +184,7 @@ import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import DialogTitle from "@/components/DialogTitle.vue";
 
 let allYuzuReleaseVersions = ref([])
-let targetYuzuVersion = ref('已停更')
+let targetYuzuVersion = ref('项目已被关闭')
 let isRunningInstall = ref(false)
 let historyPathList = ref<string[]>([])
 let selectedYuzuPath = ref('')
@@ -219,7 +219,7 @@ let displayBranch = computed(() => {
 //   }
 //   return "加载中"
 // })
-let latestYuzuVersion = '已停更'
+let latestYuzuVersion = '项目已被关闭'
 
 async function loadHistoryPathList() {
   let data = await window.eel.load_history_path('yuzu')()
