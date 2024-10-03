@@ -27,6 +27,8 @@ if not exist "<upgrade_files_folder>" (
 ) else (
   robocopy "<upgrade_files_folder>" . /MOVE
   if exist "download/upgrade_files" (
+    echo 复制文件中
+    timeout /t 5 /nobreak
     rmdir /s /q "download/upgrade_files"
   )
   echo 启动程序
