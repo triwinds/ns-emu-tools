@@ -12,8 +12,8 @@
 
  - ~~支持安装 Yuzu EA/正式版模拟器~~ 
  - ~~支持 Yuzu 版本检测及更新~~ (yuzu 目前已经停止开发)
- - 支持安装 Ryujinx Ava/正式/LDN 版模拟器
- - 支持 Ryujinx 版本检测及更新
+ - ~~支持安装 Ryujinx Ava/正式/LDN 版模拟器~~
+ - ~~支持 Ryujinx 版本检测及更新~~(Ryujinx 项目已被关闭)
  - 自动检测并安装 msvc 运行库
  - 支持安装及更新 NS 固件至模拟器
  - 支持固件版本检测 (感谢 [a709560839](https://tieba.baidu.com/home/main?id=tb.1.f9804802.YmDokXJSRkAJB0xF8XfaCQ&fr=pb) 提供的思路)
@@ -66,7 +66,7 @@ options:
 ## Credits
 
  - ~~[Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器~~
- - [Ryujinx](https://github.com/Ryujinx/Ryujinx) - Ryujinx 模拟器
+ - ~~[Ryujinx](https://github.com/Ryujinx/Ryujinx) - Ryujinx 模拟器~~
  - [Suyu](https://git.suyu.dev/suyu/suyu) - Suyu 模拟器
  - ~~[hactool](https://github.com/SciresM/hactool) - NS 固件解析~~
  - [nsz](https://github.com/nicoboss/nsz) - NS 固件解析
