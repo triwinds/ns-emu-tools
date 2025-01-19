@@ -180,10 +180,12 @@ def detect_ryujinx_version():
             for window_name in get_all_window_name():
                 if window_name.startswith('Ryujinx ') and '-' not in window_name:
                     version = window_name[16:] if window_name.startswith('Ryujinx Console ') else window_name[8:]
+                    if version.startwith('Console '):
+                        version = version[9:]
                     send_notify(f'当前 Ryujinx 版本 [{version}]')
                     logger.info(f'Current Ryujinx version: {version}')
-                    print(window_name, version)
-                    # break
+                    # print(window_name, version)
+                    break
         except:
             logger.exception('error occur in get_all_window_name')
     kill_all_instances('Ryujinx.')
