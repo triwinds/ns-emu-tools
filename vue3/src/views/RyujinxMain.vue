@@ -118,10 +118,10 @@
         <v-divider style="margin-bottom: 15px"></v-divider>
         <v-row>
           <v-col cols="7">
-            <v-text-field hide-details label="需要安装的 Ryujinx 版本" variant="underlined" v-model="targetRyujinxVersion" disabled></v-text-field>
+            <v-text-field hide-details label="需要安装的 Ryujinx 版本" variant="underlined" v-model="targetRyujinxVersion"></v-text-field>
           </v-col>
           <v-col>
-            <v-btn color="info" size="large" variant="outlined" min-width="160px" disabled
+            <v-btn color="info" size="large" variant="outlined" min-width="160px"
                    @click="installRyujinx">
               安装 Ryujinx
             </v-btn>
@@ -196,7 +196,7 @@ import DialogTitle from "@/components/DialogTitle.vue";
 let allRyujinxReleaseInfos = ref([])
 let historyPathList = ref<string[]>([])
 let selectedRyujinxPath = ref('')
-let targetRyujinxVersion = ref('项目已被关闭')
+let targetRyujinxVersion = ref('')
 let isRunningInstall = ref(false)
 let changeLogHtml = ref('<p>加载中...</p>')
 let firmwareWarningMsg = ref(`一般来说，更新固件并不会改善你的游戏体验。只要你的模拟器能够正常识别游戏，并且游戏内的字体显示正常，
@@ -205,27 +205,23 @@ let firmwareWarningMsg = ref(`一般来说，更新固件并不会改善你的�
 let firmwareInstallationWarningDialog = ref(false)
 let availableBranch = ref([
   {
-    text: '正式版',
+    text: 'Ryubing/Ryujinx 正式版',
     value: 'mainline'
   }, {
-    text: 'AVA 版 (1.1.1217 后已经合并入正式版)',
-    value: 'ava'
-  }, {
-    text: 'LDN 版 (联机版本)',
-    value: 'ldn'
-  },
+    text: 'Ryubing/Ryujinx Canary 版',
+    value: 'canary'
+  }
 ])
 let selectedBranch = ref('')
 const cds = useConsoleDialogStore()
 const configStore = useConfigStore()
 const appStore = useAppStore()
-// let latestRyujinxVersion = computed(() => {
-//   if (allRyujinxReleaseInfos.value.length > 0) {
-//     return allRyujinxReleaseInfos.value[0]['tag_name']
-//   }
-//   return "加载中"
-// })
-let latestRyujinxVersion = '项目已被关闭'
+let latestRyujinxVersion = computed(() => {
+  if (allRyujinxReleaseInfos.value.length > 0) {
+    return allRyujinxReleaseInfos.value[0]['tag_name']
+  }
+  return "加载中"
+})
 
 onBeforeMount(async () => {
   await configStore.reloadConfig()
@@ -233,7 +229,7 @@ onBeforeMount(async () => {
   appStore.updateAvailableFirmwareInfos()
   selectedRyujinxPath.value = configStore.config.ryujinx.path
   selectedBranch.value = configStore.config.ryujinx.branch
-  // updateRyujinxReleaseInfos()
+  updateRyujinxReleaseInfos()
   window.eel.update_last_open_emu_page('ryujinx')()
 })
 

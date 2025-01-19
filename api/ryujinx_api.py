@@ -1,6 +1,6 @@
 import eel
 from api.common_response import success_response, exception_response, error_response
-from repository.ryujinx import get_all_ryujinx_release_infos, get_all_ldn_ryujinx_release_infos
+from repository.ryujinx import get_all_ryujinx_release_infos
 from config import config
 import logging
 
@@ -43,10 +43,8 @@ def update_ryujinx_path(folder: str):
 @eel.expose
 def get_ryujinx_release_infos():
     try:
-        if config.ryujinx.branch == 'ldn':
-            return success_response(get_all_ldn_ryujinx_release_infos())
-        else:
-            return success_response(get_all_ryujinx_release_infos())
+        print(config.ryujinx.branch)
+        return success_response(get_all_ryujinx_release_infos(config.ryujinx.branch))
     except Exception as e:
         return exception_response(e)
 
@@ -95,7 +93,7 @@ def install_ryujinx_firmware(version):
 @eel.expose
 def switch_ryujinx_branch(branch: str):
     from config import dump_config
-    if branch not in {'mainline', 'ava', 'ldn'}:
+    if branch not in {'mainline', 'canary'}:
         return error_response(-1, f'Invalidate branch: {branch}')
     target_branch = branch
     logger.info(f'switch ryujinx branch to {target_branch}')

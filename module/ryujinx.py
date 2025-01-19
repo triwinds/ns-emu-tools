@@ -5,7 +5,7 @@ from pathlib import Path
 
 from exception.common_exception import VersionNotFoundException, IgnoredException
 from module.downloader import download
-from repository.ryujinx import get_ryujinx_release_info_by_version, get_ldn_ryujinx_release_info_by_version
+from repository.ryujinx import *
 from module.network import get_github_download_url
 from module.msg_notifier import send_notify
 from config import config, dump_config, RyujinxConfig
@@ -19,30 +19,16 @@ logger = logging.getLogger(__name__)
 
 
 def get_ryujinx_download_url(target_version: str, branch: str):
-    if branch in {'mainline', 'ava'}:
-        release_info = get_ryujinx_release_info_by_version(target_version)
-        if 'tag_name' not in release_info:
-            raise VersionNotFoundException(target_version, branch, 'ryujinx')
-        assets = release_info['assets']
-        for asset in assets:
-            name: str = asset['name']
-            if branch == 'mainline' and name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
-                return asset['browser_download_url']
-            elif branch == 'ava' and name.startswith('test-ava-ryujinx-') and name.endswith('-win_x64.zip'):
-                return asset['browser_download_url']
-    elif branch == 'ldn':
-        release_info = get_ldn_ryujinx_release_info_by_version(target_version)
-        if 'tag_name' not in release_info:
-            raise VersionNotFoundException(target_version, branch, 'ryujinx')
-        assets = release_info['assets']
-        ava_ldn_url, mainline_ldn_url = None, None
-        for asset in assets:
-            name: str = asset['name']
-            if name.startswith('ava-ryujinx-') and name.endswith('-win_x64.zip'):
-                ava_ldn_url = asset['browser_download_url']
-            elif name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
-                mainline_ldn_url = asset['browser_download_url']
-        return ava_ldn_url or mainline_ldn_url
+    release_info = get_ryujinx_release_info_by_version(target_version, branch)
+    if 'tag_name' not in release_info:
+        raise VersionNotFoundException(target_version, branch, 'ryujinx')
+    assets = release_info['assets']
+    for asset in assets:
+        name: str = asset['name']
+        if name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
+            return asset['browser_download_url']
+    logger.warning(f'No download url found with branch: {branch}, version: {target_version}')
+    send_notify(f'没有找到 {branch} [{target_version}] 版本的 ryujinx 下载链接')
 
 
 def install_ryujinx_by_version(target_version: str, branch: str):
@@ -184,6 +170,7 @@ def detect_ryujinx_version():
     st_inf = subprocess.STARTUPINFO()
     st_inf.dwFlags = st_inf.dwFlags | subprocess.STARTF_USESHOWWINDOW
     subprocess.Popen([rj_path], startupinfo=st_inf, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(3)
     version, try_count = None, 0
     from utils.common import get_all_window_name
     while try_count < 30 and not version:
@@ -191,11 +178,12 @@ def detect_ryujinx_version():
         time.sleep(0.5)
         try:
             for window_name in get_all_window_name():
-                if window_name.startswith('Ryujinx '):
+                if window_name.startswith('Ryujinx ') and '-' not in window_name:
                     version = window_name[16:] if window_name.startswith('Ryujinx Console ') else window_name[8:]
                     send_notify(f'当前 Ryujinx 版本 [{version}]')
                     logger.info(f'Current Ryujinx version: {version}')
-                    break
+                    print(window_name, version)
+                    # break
         except:
             logger.exception('error occur in get_all_window_name')
     kill_all_instances('Ryujinx.')
@@ -204,6 +192,10 @@ def detect_ryujinx_version():
             idx = version.index('ldn')
             version = version[idx+3:]
             config.ryujinx.branch = 'ldn'
+        elif 'Canary' in version:
+            idx = version.index('Canary')
+            version = version[idx+7:]
+            config.ryujinx.branch = 'canary'
     else:
         send_notify(f'检测失败！没有找到 Ryujinx 窗口...')
     config.ryujinx.version = version
@@ -230,12 +222,12 @@ def update_ryujinx_path(new_ryujinx_path: str):
 
 
 if __name__ == '__main__':
-    # install_ryujinx_by_version('1.1.338', 'ava')
+    # install_ryujinx_by_version('1.2.78', 'mainline')
     # clear_ryujinx_folder(Path(config.ryujinx.path))
     # install_firmware_to_ryujinx('15.0.0')
     # open_ryujinx_keys_folder()
-    # detect_ryujinx_version()
+    detect_ryujinx_version()
     # install_ryujinx_by_version('3.0.1', 'ldn')
     # kill_all_ryujinx_instance(Path(config.ryujinx.path))
-    a = 1
-    print()
+    # a = 1
+    # print()
