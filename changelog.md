@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.5.2
+- 添加对 Ryubing/Ryujinx 的支持 (#117)
+- 更新 GitHub 下载源
+
 ## 0.5.1
 
 - Ryujinx 项目已被关闭 (#113)
