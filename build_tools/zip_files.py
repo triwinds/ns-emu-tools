@@ -6,4 +6,4 @@ DIST_FOLDER = Path(__file__).parent.parent / 'dist'
 
 
 if __name__ == '__main__':
-    compress_folder(DIST_FOLDER.joinpath('NsEmuTools'), DIST_FOLDER.joinpath('NsEmuTools.7z'))
+    compress_folder(DIST_FOLDER.joinpath('NsEmuTools'), DIST_FOLDER.joinpath('NsEmuTools-dir.7z'))

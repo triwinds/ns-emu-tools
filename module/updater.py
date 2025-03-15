@@ -76,7 +76,7 @@ def download_net_by_tag(tag: str):
     execute_path = Path(sys.argv[0])
     logger.info(f'execute_path: {execute_path}')
     asset_map = {asset['name']: asset for asset in release_info['assets']}
-    target_asset = asset_map.get('NsEmuTools.7z')
+    target_asset = asset_map.get('NsEmuTools-dir.7z')
     if not target_asset:
         target_asset = asset_map.get(execute_path.name, asset_map.get('NsEmuTools.exe'))
     target_file_name = target_asset["name"]
