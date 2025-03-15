@@ -27,12 +27,12 @@ jobs:
     - name: Run yarn install
       uses: borales/actions-yarn@v5
       with:
-        dir: vue3
+        dir: frontend
         cmd: install
     - name: Run yarn build
       uses: borales/actions-yarn@v5
       with:
-        dir: vue3
+        dir: frontend
         cmd: build
     - run: |
         pip install uv
