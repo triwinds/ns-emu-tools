@@ -177,7 +177,7 @@ import type {CommonResponse} from "@/types";
 import {useAppStore} from "@/stores/app";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from "@mdi/js";
-import showdown from 'showdown'
+import markdown from "@/utils/markdown";
 import SimplePage from "@/components/SimplePage.vue";
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
@@ -300,8 +300,7 @@ async function detectFirmwareVersion() {
 function loadChangeLog() {
   window.eel.get_yuzu_commit_logs()((resp: CommonResponse) => {
     if (resp.code === 0) {
-      const converter = new showdown.Converter()
-      changeLogHtml.value = converter.makeHtml(resp.data)
+      changeLogHtml.value = markdown.parse(resp.data)
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

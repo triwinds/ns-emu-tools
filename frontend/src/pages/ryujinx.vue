@@ -186,7 +186,7 @@ import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import {useConfigStore} from "@/stores/ConfigStore";
 import type {CommonResponse} from "@/types";
 import {useAppStore} from "@/stores/app";
-import showdown from "showdown";
+import markdown from "@/utils/markdown";
 import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from "@mdi/js";
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import SimplePage from "@/components/SimplePage.vue";
@@ -362,8 +362,7 @@ async function switchRyujinxBranch() {
 function loadChangeLog() {
   window.eel.load_ryujinx_change_log()((resp: CommonResponse) => {
     if (resp.code === 0) {
-      const converter = new showdown.Converter()
-      changeLogHtml.value = converter.makeHtml(resp.data)
+      changeLogHtml.value = markdown.parse(resp.data)
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

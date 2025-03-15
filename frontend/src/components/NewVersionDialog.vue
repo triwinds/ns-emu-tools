@@ -70,7 +70,7 @@
 import {onMounted, ref} from "vue";
 import {useConfigStore} from "@/stores/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
-import showdown from "showdown";
+import md from "@/utils/markdown";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import type {CommonResponse} from "@/types";
 import {useEmitter} from "@/plugins/mitt";
@@ -104,9 +104,8 @@ function openReleasePage() {
 function loadReleaseDescription() {
   window.eel.load_change_log()((resp: CommonResponse) => {
     if (resp.code === 0) {
-      const converter = new showdown.Converter()
       let rawMd = resp.data.replace('# Change Log\n\n', '')
-      releaseDescriptionHtml.value = converter.makeHtml(rawMd)
+      releaseDescriptionHtml.value = md.parse(rawMd)
     } else {
       releaseDescriptionHtml.value = '<p>加载失败</p>'
     }

@@ -8,15 +8,14 @@
 
 <script setup lang="ts">
 import {nextTick, onMounted, onUpdated, ref} from "vue";
-import showdown from "showdown";
+import md from "@/utils/markdown";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 
 let mdHtml = ref('')
 const props = defineProps(['content'])
 
-const converter = new showdown.Converter({strikethrough: true})
 onMounted(() => {
-  mdHtml.value = converter.makeHtml(props.content)
+  mdHtml.value = md.parse(props.content)
 })
 
 onUpdated(() => {

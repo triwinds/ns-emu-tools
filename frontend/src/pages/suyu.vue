@@ -143,7 +143,7 @@
       <dialog-title>
         安装前必读
       </dialog-title>
-      <MarkdownContentBox :content="md"/>
+      <MarkdownContentBox :content="mdStr"/>
 
 
       <v-divider></v-divider>
@@ -177,7 +177,7 @@ import type {CommonResponse} from "@/types";
 import {useAppStore} from "@/stores/app";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from "@mdi/js";
-import showdown from 'showdown'
+import md from "@/utils/markdown";
 import SimplePage from "@/components/SimplePage.vue";
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
@@ -190,7 +190,7 @@ let historyPathList = ref<string[]>([])
 let selectedSuyuPath = ref('')
 let changeLogHtml = ref('<p>加载中...</p>')
 let firmwareInstallationWarning = ref(false)
-const md = ref(`
+const mdStr = ref(`
 一般来说，更新固件并不会改善你的游戏体验。只要你的模拟器能够正常识别游戏，并且游戏内的字体显示正常，
 那么你就不需要更新固件。其他问题，比如游戏内材质错误、帧率低等问题与固件无关，可以通过更换模拟器版本或者使用 mod 来解决。
 
@@ -284,8 +284,7 @@ async function detectFirmwareVersion() {
 function loadChangeLog() {
   window.eel.get_suyu_commit_logs()((resp: CommonResponse) => {
     if (resp.code === 0) {
-      const converter = new showdown.Converter()
-      changeLogHtml.value = converter.makeHtml(resp.data)
+      changeLogHtml.value = md.parse(resp.data)
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

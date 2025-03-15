@@ -82,7 +82,7 @@ import {openUrlWithDefaultBrowser} from "@/utils/common";
 import {useTheme} from "vuetify";
 import {ref} from "vue";
 import type {CommonResponse} from "@/types";
-import showdown from "showdown";
+import md from "@/utils/markdown";
 import {useConfigStore} from "@/stores/ConfigStore";
 
 const theme = useTheme()
@@ -103,8 +103,7 @@ let changeLogHtml = ref('<p>加载中...</p>')
 function loadChangeLog() {
   window.eel.load_change_log()((resp: CommonResponse) => {
     if (resp.code === 0) {
-      const converter = new showdown.Converter()
-      changeLogHtml.value = converter.makeHtml(resp.data)
+      changeLogHtml.value = md.parse(resp.data)
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

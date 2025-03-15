@@ -87,7 +87,7 @@ import {onMounted, onUnmounted, ref, watch} from "vue";
 import {loadGameData} from "@/utils/common";
 import type {CheatFileInfo, CheatGameInfo, CheatItem, CommonResponse} from "@/types";
 import {useAppStore} from "@/stores/app";
-import showdown from "showdown";
+import md from "@/utils/markdown";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 
 let cheatsInited = ref(false)
@@ -118,8 +118,7 @@ onMounted(async () => {
   await scanCheatsFolders()
   updateCheatItemBoxHeight()
   window.addEventListener('resize', updateCheatItemBoxHeight);
-  const converter = new showdown.Converter({strikethrough: true})
-  descriptionHtml.value = converter.makeHtml(mdDescription)
+  descriptionHtml.value = md.parse(mdDescription)
 })
 
 onUnmounted(() => {
