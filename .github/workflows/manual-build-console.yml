@@ -30,11 +30,9 @@ jobs:
         dir: vue3
         cmd: build
     - run: |
-        python -m venv venv
-        venv\Scripts\activate.ps1
-        pip install poetry
-        poetry install
-        poetry run pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/"  "./main.py" --additional-hooks-dir=".\\hooks" --name "NsEmuTools-console"
+        pip install uv
+        uv sync
+        uv run pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/"  "./main.py" --additional-hooks-dir=".\\hooks" --name "NsEmuTools-console"
     - uses: actions/upload-artifact@v4
       with:
         path: dist/*

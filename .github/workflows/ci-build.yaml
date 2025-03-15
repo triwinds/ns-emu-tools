@@ -35,10 +35,8 @@ jobs:
         dir: vue3
         cmd: build
     - run: |
-        pip install poetry
-        poetry config installer.parallel false
-        poetry config --list
-        poetry install
+        pip install uv
+        uv sync
         .\package_all.bat
 #        pip install pywebview
 #        pyinstaller --noconfirm --onefile --console --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./ui_webview.py" --name "NsEmuTools-webview"

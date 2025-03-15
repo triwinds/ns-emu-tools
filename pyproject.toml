@@ -1,37 +1,46 @@
-[tool.poetry]
+[project]
 name = "ns-emu-tools"
 version = "0.4.2"
 description = ""
-authors = ["triwinds <triwinds@users.noreply.github.com>"]
+authors = [{ name = "triwinds", email = "triwinds@users.noreply.github.com" }]
+requires-python = ">=3.11"
 readme = "README.md"
-packages = [{include = "module"}]
+dependencies = [
+    "tqdm>=4.66.1,<5",
+    "aria2p>=0.11.3,<0.12",
+    "requests>=2.31.0,<3",
+    "py7zr>=0.20.6,<0.21",
+    "beautifulsoup4>=4.12.2,<5",
+    "eel>=0.16.0,<0.17",
+    "pywin32>=306,<307",
+    "psutil>=5.9.5,<6",
+    "gevent>=23.7.0,<24",
+    "httplib2>=0.22.0,<0.23",
+    "requests-cache>=1.1.0,<2",
+    "dnspython[doh]>=2.4.2,<3",
+    "sentry-sdk>=1.29.2,<2",
+    "xmltodict>=0.13.0,<0.14",
+    "chardet>=5.2.0,<6",
+    "pywebview>=4.2.2,<5",
+    "dataclasses-json>=0.5.14,<0.6",
+    "pyinstaller>=6.3.0,<7",
+    "nsz",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10, <3.13"
-tqdm = "^4.66.1"
-aria2p = "^0.11.3"
-requests = "^2.31.0"
-py7zr = "^0.20.6"
-beautifulsoup4 = "^4.12.2"
-eel = "^0.16.0"
-pywin32 = "^306"
-psutil = "^5.9.5"
-gevent = "^23.7.0"
-httplib2 = "^0.22.0"
-requests-cache = "^1.1.0"
-dnspython = {extras = ["doh"], version = "^2.4.2"}
-sentry-sdk = "^1.29.2"
-xmltodict = "^0.13.0"
-chardet = "^5.2.0"
-pywebview = "^4.2.2"
-dataclasses-json = "^0.5.14"
-pyinstaller = "^6.3.0"
-nsz = {git = "https://github.com/triwinds/nsz"}
+[dependency-groups]
+dev = ["pyinstaller>=6.0.0,<7"]
 
+[tool.uv]
 
-[tool.poetry.group.dev.dependencies]
-pyinstaller = "^6.0.0"
+[tool.uv.sources]
+nsz = { git = "https://github.com/triwinds/nsz" }
+
+[tool.hatch.build.targets.sdist]
+include = ["module"]
+
+[tool.hatch.build.targets.wheel]
+include = ["module"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
