@@ -43,7 +43,6 @@ def update_ryujinx_path(folder: str):
 @eel.expose
 def get_ryujinx_release_infos():
     try:
-        print(config.ryujinx.branch)
         return success_response(get_all_ryujinx_release_infos(config.ryujinx.branch))
     except Exception as e:
         return exception_response(e)
