@@ -9,8 +9,6 @@
         <v-row>
           <v-col>
             <p class="text-success text-h5" style="margin-bottom: 10px;">网络设置</p>
-            <span class="body-2 text-info">Cloudflare 源下载速度慢可以看看 <router-link
-                to="/cloudflareST">这个</router-link></span>
           </v-col>
         </v-row>
         <v-select

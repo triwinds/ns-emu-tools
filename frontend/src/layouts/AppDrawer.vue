@@ -139,14 +139,6 @@ function openReleasePage() {
           </template>
           <v-list-item-title class="text--primary">Yuzu 存档备份</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/cloudflareST" style="padding-left: 30px">
-          <template v-slot:prepend>
-            <div class="my-prepend-box">
-              <v-icon color="error" :icon="mdiSpeedometer"></v-icon>
-            </div>
-          </template>
-          <v-list-item-title class="text--primary">Cloudflare 节点选优</v-list-item-title>
-        </v-list-item>
       </v-list-group>
 
       <v-list-item link to="/settings">
