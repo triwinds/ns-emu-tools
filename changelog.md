@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.5.3
+- 更新 Ryujinx 正式版的新 repo 地址
+- 恢复 Ryujinx 变更日志展示功能
+- 移除 Cloudflare 节点选优功能
+
 ## 0.5.2
 - 添加对 Ryubing/Ryujinx 的支持 (#117)
 - 更新 GitHub 下载源
