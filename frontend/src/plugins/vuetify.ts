@@ -6,6 +6,7 @@
 
 // Styles
 import 'vuetify/styles'
+import '@fontsource-variable/jetbrains-mono';
 
 // Composables
 import { createVuetify } from 'vuetify'
