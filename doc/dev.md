@@ -10,7 +10,7 @@
 ### Step 1 构建前端 package
 
 ```shell
-cd vue3
+cd frontend
 yarn install
 yarn build
 ```
@@ -18,8 +18,8 @@ yarn build
 ### Step 2 安装 Python 依赖
 
 ```shell
-# 通过 poetry 安装 (推荐)
-poetry install
+# 通过 uv 安装 (推荐)
+uv sync
 
 # 通过 pip 安装
 python -m venv venv
@@ -39,12 +39,12 @@ poetry run python main.py
 
 先启动后端服务
 ```shell
-poetry run python ui.py
+uv run python ui.py
 ```
 
 然后另起一个终端启动 dev server
 ```shell
-cd vue3
+cd frontend
 yarn dev
 ```
 
