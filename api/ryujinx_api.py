@@ -105,7 +105,7 @@ def switch_ryujinx_branch(branch: str):
 def load_ryujinx_change_log():
     from repository.ryujinx import load_ryujinx_change_log
     try:
-        return success_response(load_ryujinx_change_log())
+        return success_response(load_ryujinx_change_log(config.ryujinx.branch))
     except Exception as e:
         return exception_response(e)
 

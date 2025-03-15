@@ -70,17 +70,17 @@
             <span class="text-h6">
                     {{ latestRyujinxVersion }}
                   </span>
-<!--            <ChangeLogDialog v-if="selectedBranch === 'ava' || selectedBranch === 'mainline'">-->
-<!--              <template v-slot:activator="{ props }">-->
-<!--                <span v-bind="props" @click="loadChangeLog"-->
-<!--                      style="margin-left: 10px">-->
-<!--                  <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>-->
-<!--                </span>-->
-<!--              </template>-->
-<!--              <template v-slot:content>-->
-<!--                <div class="text&#45;&#45;primary" v-html="changeLogHtml"></div>-->
-<!--              </template>-->
-<!--            </ChangeLogDialog>-->
+            <ChangeLogDialog v-if="selectedBranch === 'canary' || selectedBranch === 'mainline'">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props" @click="loadChangeLog"
+                      style="margin-left: 10px">
+                  <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>
+                </span>
+              </template>
+              <template v-slot:content>
+                <div class="text--primary" v-html="changeLogHtml"></div>
+              </template>
+            </ChangeLogDialog>
           </v-col>
         </v-row>
         <v-row>
