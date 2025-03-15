@@ -66,7 +66,7 @@ options:
 ## Credits
 
  - ~~[Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器~~
- - [Ryubing/Ryujinx](https://github.com/Ryubing/Ryujinx) - Ryujinx 模拟器
+ - [Ryubing/Ryujinx](https://ryujinx.app/) - Ryujinx 模拟器
  - [Suyu](https://git.suyu.dev/suyu/suyu) - Suyu 模拟器
  - ~~[hactool](https://github.com/SciresM/hactool) - NS 固件解析~~
  - [nsz](https://github.com/nicoboss/nsz) - NS 固件解析
