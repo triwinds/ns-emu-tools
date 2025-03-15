@@ -2,8 +2,8 @@
 
 ## 开发环境需求
 
-- Python 3.11
-- Node.js 18
+- Python 3.12
+- Node.js 20
 
 ## 运行环境准备
 
@@ -11,8 +11,8 @@
 
 ```shell
 cd frontend
-yarn install
-yarn build
+bun install
+bun build
 ```
 
 ### Step 2 安装 Python 依赖
@@ -45,7 +45,7 @@ uv run python ui.py
 然后另起一个终端启动 dev server
 ```shell
 cd frontend
-yarn dev
+bun dev
 ```
 
 ### 调试 Python 代码
