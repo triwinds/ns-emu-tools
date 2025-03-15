@@ -11,9 +11,10 @@
 </template>
 
 <script lang="ts" setup>
+import type { DisplayInstance } from 'vuetify'
 import {useDisplay} from "vuetify";
 
-const display = useDisplay()
+const display = useDisplay() as DisplayInstance
 </script>
 
 <style scoped>
