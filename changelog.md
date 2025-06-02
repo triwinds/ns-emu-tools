@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.5.4
+- 更新 Ryujinx Canary 版的 repo 地址 (#121)
+- 修复更新脚本的问题
+
 ## 0.5.3
 - 更新 Ryujinx 正式版的新 repo 地址
 - 恢复 Ryujinx 变更日志展示功能
