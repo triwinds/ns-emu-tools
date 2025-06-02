@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 script_template = """@echo off
 chcp>nul 2>nul 65001
 echo 开始准备更新
-timeout /t 5 /nobreak
+timeout /t 3 /nobreak
 taskkill /F /IM NsEmuTools* >nul 2>nul
 if exist "<old_exe>" (
   echo 备份原文件至 "<old_exe>.bak"
@@ -25,10 +25,10 @@ if not exist "<upgrade_files_folder>" (
   echo 无法找到更新文件 "<upgrade_files_folder>"
   pause
 ) else (
-  robocopy "<upgrade_files_folder>" . /MOVE
+  echo 复制文件中
+  robocopy "<upgrade_files_folder>" . /MOVE /E /NFL /NDL /NC
   if exist "download/upgrade_files" (
-    echo 复制文件中
-    timeout /t 5 /nobreak
+    timeout /t 1 /nobreak
     rmdir /s /q "download/upgrade_files"
   )
   echo 启动程序
