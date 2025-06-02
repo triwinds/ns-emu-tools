@@ -12,7 +12,7 @@ def get_all_ryujinx_release_infos(branch='mainline'):
 
 
 def get_all_canary_ryujinx_release_infos():
-    return request_github_api('https://api.github.com/repos/Ryubing/Canary-Releases/releases')
+    return request_github_api('https://api.github.com/repos/iurehg8uetgyh8ui5e/cr/releases')
 
 
 def get_latest_ryujinx_release_info():
@@ -26,12 +26,12 @@ def get_ryujinx_release_info_by_version(version, branch='mainline'):
 
 
 def get_canary_ryujinx_release_info_by_version(version):
-    return request_github_api(f'https://api.github.com/repos/Ryubing/Canary-Releases/releases/tags/{version}')
+    return request_github_api(f'https://api.github.com/repos/iurehg8uetgyh8ui5e/cr/releases/tags/{version}')
 
 
 def load_ryujinx_change_log(branch: str):
     if branch == 'canary':
-        resp = request_github_api('https://api.github.com/repos/Ryubing/Canary-Releases/releases')
+        resp = request_github_api('https://api.github.com/repos/iurehg8uetgyh8ui5e/cr/releases')
     else:
         resp = request_github_api('https://api.github.com/repos/Ryubing/Stable-Releases/releases')
     return resp[0].get('body')
