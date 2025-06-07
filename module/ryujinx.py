@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 def get_ryujinx_download_url(target_version: str, branch: str):
     release_info = get_ryujinx_release_info_by_version(target_version, branch)
-    if 'tag_name' not in release_info:
+    if not release_info or not release_info.tag_name:
         raise VersionNotFoundException(target_version, branch, 'ryujinx')
-    assets = release_info['assets']
+    assets = release_info.assets
     for asset in assets:
-        name: str = asset['name']
+        name: str = asset.name
         if name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
-            return asset['browser_download_url']
+            return asset.download_url
     logger.warning(f'No download url found with branch: {branch}, version: {target_version}')
     send_notify(f'没有找到 {branch} [{target_version}] 版本的 ryujinx 下载链接')
 
@@ -43,7 +43,7 @@ def install_ryujinx_by_version(target_version: str, branch: str):
         raise IgnoredException(f'No download url found with branch: {branch}, version: {target_version}')
     ryujinx_path = Path(config.ryujinx.path)
     ryujinx_path.mkdir(parents=True, exist_ok=True)
-    download_url = get_github_download_url(download_url)
+    # download_url = get_github_download_url(download_url)
     logger.info(f'download ryujinx from url: {download_url}')
     send_notify(f'开始下载 ryujinx ...')
     info = download(download_url)

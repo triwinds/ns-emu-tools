@@ -5,12 +5,15 @@ from exception.download_exception import *
 from exception.install_exception import *
 from requests.exceptions import ConnectionError
 import eel
+import orjson
 
 
 logger = logging.getLogger(__name__)
 
 
 def success_response(data=None, msg=None):
+    if data:
+        data = orjson.loads(orjson.dumps(data))
     return {'code': 0, 'data': data, 'msg': msg}
 
 
