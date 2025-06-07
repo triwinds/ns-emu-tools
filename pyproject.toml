@@ -25,6 +25,7 @@ dependencies = [
     "dataclasses-json>=0.5.14,<0.6",
     "pyinstaller>=6.3.0,<7",
     "nsz",
+    "orjson>=3.10.18",
 ]
 
 [dependency-groups]
