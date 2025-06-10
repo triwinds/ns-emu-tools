@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.5.5
+- Ryujinx 切换至官方的 Gitlab 地址 (#121)
+
 ## 0.5.4
 - 更新 Ryujinx Canary 版的 repo 地址 (#121)
 - 修复更新脚本的问题
