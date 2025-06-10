@@ -17,8 +17,8 @@ def get_all_ryujinx_release_infos(branch='mainline')-> List[ReleaseInfo]:
 
 
 def get_all_canary_ryujinx_release_infos() -> List[ReleaseInfo]:
-    res = request_github_api('https://api.github.com/repos/iurehg8uetgyh8ui5e/cr/releases')
-    return [from_github_api(item) for item in res]
+    resp = session.get('https://git.ryujinx.app/api/v4/projects/68/releases').json()
+    return [from_gitlab_api(item) for item in resp]
 
 
 def get_latest_ryujinx_release_info() -> ReleaseInfo:
@@ -34,8 +34,7 @@ def get_ryujinx_release_info_by_version(version, branch='mainline') -> ReleaseIn
 
 
 def get_canary_ryujinx_release_info_by_version(version) -> ReleaseInfo:
-    resp = request_github_api(f'https://api.github.com/repos/iurehg8uetgyh8ui5e/cr/releases/tags/{version}')
-    return from_github_api(resp)
+    return from_gitlab_api(session.get(f'https://git.ryujinx.app/api/v4/projects/68/releases/{version}').json())
 
 
 def load_ryujinx_change_log(branch: str) -> str:
