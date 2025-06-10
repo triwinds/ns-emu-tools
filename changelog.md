@@ -3,6 +3,8 @@
 ## 0.5.5
 - Ryujinx 切换至官方的 Gitlab 地址 (#121)
 
+ps. 由于下载源切换到了官方的 Gitlab，所以之前的 GitHub Mirror 在这里无法生效，如果在下载时遇到了网络问题，请先挂个代理。
+
 ## 0.5.4
 - 更新 Ryujinx Canary 版的 repo 地址 (#121)
 - 修复更新脚本的问题
