@@ -51,6 +51,7 @@ export interface NetworkSetting {
   firmwareDownloadSource: string
   githubApiMode: string
   githubDownloadMirror: string
+  ryujinxGitLabDownloadMirror: string
   useDoh: boolean
   proxy: string
 }

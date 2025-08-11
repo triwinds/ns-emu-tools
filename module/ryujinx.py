@@ -6,7 +6,7 @@ from pathlib import Path
 from exception.common_exception import VersionNotFoundException, IgnoredException
 from module.downloader import download
 from repository.ryujinx import *
-from module.network import get_github_download_url
+from module.network import get_finial_url
 from module.msg_notifier import send_notify
 from config import config, dump_config, RyujinxConfig
 from storage import storage, add_ryujinx_history
@@ -26,7 +26,7 @@ def get_ryujinx_download_url(target_version: str, branch: str):
     for asset in assets:
         name: str = asset.name
         if name.startswith('ryujinx-') and name.endswith('-win_x64.zip'):
-            return asset.download_url
+            return get_finial_url(asset.download_url)
     logger.warning(f'No download url found with branch: {branch}, version: {target_version}')
     send_notify(f'没有找到 {branch} [{target_version}] 版本的 ryujinx 下载链接')
 

@@ -32,6 +32,16 @@
             color="primary"
         ></v-select>
         <v-select
+            v-model="setting.network.ryujinxGitLabDownloadMirror"
+            :items="availableNetworkMode"
+            item-title="name"
+            item-value="value"
+            label="Ryujinx GitLab CDN 配置"
+            hide-details
+            variant="underlined"
+            color="primary"
+        ></v-select>
+        <v-select
             v-model="setting.network.githubDownloadMirror"
             :items="availableGithubDownloadSource"
             item-title="name"

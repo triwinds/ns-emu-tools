@@ -16,6 +16,7 @@ url_override_map = {
     'https://api.github.com': 'https://cfrp.e6ex.com/ghapi',
     # 'https://aka.ms/vs': 'https://nsarchive.e6ex.com/msvc'
     'https://raw.githubusercontent.com': 'https://ghproxy.net/https://raw.githubusercontent.com',
+    'https://git.ryujinx.app': 'https://nsarchive.e6ex.com/ryujinx_official/',
 }
 
 
@@ -199,6 +200,8 @@ def get_finial_url(origin_url: str):
     network_setting = config.setting.network
     if origin_url.startswith('https://api.github.com'):
         return get_finial_url_with_mode(origin_url, network_setting.githubApiMode)
+    elif origin_url.startswith('https://git.ryujinx.app'):
+        return get_finial_url_with_mode(origin_url, network_setting.ryujinxGitLabDownloadMirror)
     return get_finial_url_with_mode(origin_url, network_setting.firmwareDownloadSource)
 
 

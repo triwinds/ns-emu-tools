@@ -31,6 +31,7 @@ export const defaultConfig: AppConfig = {
       "firmwareDownloadSource": "github",
       "githubApiMode": "direct",
       "githubDownloadMirror": "cloudflare_load_balance",
+      "ryujinxGitLabDownloadMirror": "auto-detect",
       "useDoh": true,
       "proxy": "system"
     },
