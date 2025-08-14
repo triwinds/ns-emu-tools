@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.5.6
+- 为 Ryujinx 的官方 Gitlab 添加 CDN 镜像源, 如果官方源出问题可以切到 CDN 镜像源试试 (#123)
+
 ## 0.5.5
 - Ryujinx 切换至官方的 Gitlab 地址 (#121)
 
