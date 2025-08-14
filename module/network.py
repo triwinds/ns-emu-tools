@@ -16,7 +16,7 @@ url_override_map = {
     'https://api.github.com': 'https://cfrp.e6ex.com/ghapi',
     # 'https://aka.ms/vs': 'https://nsarchive.e6ex.com/msvc'
     'https://raw.githubusercontent.com': 'https://ghproxy.net/https://raw.githubusercontent.com',
-    'https://git.ryujinx.app': 'https://nsarchive.e6ex.com/ryujinx_official/',
+    'https://git.ryujinx.app': 'https://nsarchive.e6ex.com/ryujinx_official',
 }
 
 
