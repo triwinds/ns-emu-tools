@@ -74,7 +74,7 @@ class NetworkSetting:
     firmwareDownloadSource: Optional[str] = 'github'
     githubApiMode: Optional[str] = 'direct'
     githubDownloadMirror: Optional[str] = 'cloudflare_load_balance'
-    ryujinxGitLabDownloadMirror: Optional[str] = 'auto-detect'
+    ryujinxGitLabDownloadMirror: Optional[str] = 'direct'
     useDoh: Optional[bool] = True
     proxy: Optional[str] = 'system'
 
