@@ -47,7 +47,7 @@ class YuzuConfig:
     yuzu_path: Optional[str] = 'D:\\Yuzu'
     yuzu_version: Optional[str] = None
     yuzu_firmware: Optional[str] = None
-    branch: Optional[str] = 'ea'
+    branch: Optional[str] = 'eden'
 
 
 @dataclass_json
@@ -129,7 +129,6 @@ if os.path.exists(config_path):
         config.ryujinx.path = str(Path(config.ryujinx.path).absolute())
 if not config:
     config = Config()
-config.yuzu.branch = 'ea'
 
 
 def dump_config():

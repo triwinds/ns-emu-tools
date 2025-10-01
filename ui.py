@@ -67,7 +67,7 @@ def import_api_modules():
 def main(port=0, mode=None, dev=False):
     import_api_modules()
     logger.info('eel init starting...')
-    # eel.init('vue/public') if dev else eel.init("web")
+    # eel.init('frontend/public') if dev else eel.init("web")
     eel.init("web")
     shutdown_delay = 114514 if dev else 1
     logger.info('eel init finished.')

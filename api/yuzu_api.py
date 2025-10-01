@@ -1,6 +1,5 @@
 import eel
-from api.common_response import success_response, exception_response, error_response
-from repository.yuzu import get_all_yuzu_release_infos
+from api.common_response import success_response, exception_response, error_response, generic_api
 from config import config, dump_config
 import logging
 
@@ -80,12 +79,11 @@ def install_yuzu_firmware(version):
         return exception_response(e)
 
 
-@eel.expose
-def switch_yuzu_branch():
-    if config.yuzu.branch == 'ea':
-        target_branch = 'mainline'
-    else:
-        target_branch = 'ea'
+@generic_api
+def switch_yuzu_branch(branch:  str):
+    if branch not in ['eden', 'ea', 'mainline']:
+        raise ValueError(f'无效的分支 {branch}')
+    target_branch = branch
     logger.info(f'switch yuzu branch to {target_branch}')
     config.yuzu.branch = target_branch
     dump_config()

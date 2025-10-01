@@ -5,7 +5,7 @@ export const defaultConfig: AppConfig = {
     "yuzu_path": "D:\\Yuzu",
     "yuzu_version": "",
     "yuzu_firmware": "",
-    "branch": "ea"
+    "branch": "eden"
   },
   "suyu": {
     "path": "D:\\Suyu",
