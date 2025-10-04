@@ -2,7 +2,6 @@
 
 export interface AppConfig {
   yuzu: YuzuConfig
-  suyu: SuyuConfig
   ryujinx: RyujinxConfig
   setting: Setting
 }
@@ -11,13 +10,6 @@ export interface YuzuConfig {
   yuzu_path: string
   yuzu_version: string
   yuzu_firmware: string
-  branch: string
-}
-
-export interface SuyuConfig {
-  path: string
-  version: string
-  firmware: string
   branch: string
 }
 

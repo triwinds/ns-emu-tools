@@ -7,12 +7,6 @@ export const defaultConfig: AppConfig = {
     "yuzu_firmware": "",
     "branch": "eden"
   },
-  "suyu": {
-    "path": "D:\\Suyu",
-    "version": "",
-    "firmware": "",
-    "branch": "dev"
-  },
   "ryujinx": {
     "path": "D:\\Ryujinx",
     "version": "",
