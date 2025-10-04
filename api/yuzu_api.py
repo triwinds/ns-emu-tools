@@ -100,10 +100,7 @@ def get_all_yuzu_release_versions():
         return exception_response(e)
 
 
-@eel.expose
-def get_yuzu_commit_logs():
-    from module.yuzu import get_yuzu_commit_logs
-    try:
-        return success_response(get_yuzu_commit_logs())
-    except Exception as e:
-        return exception_response(e)
+@generic_api
+def get_yuzu_change_logs():
+    from module.yuzu import get_yuzu_change_logs
+    return get_yuzu_change_logs()

@@ -69,6 +69,17 @@
           <span class="text-h6">
                     {{ latestYuzuVersion }}
                   </span>
+          <ChangeLogDialog v-if="isBranchAvailable">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props" @click="loadChangeLog"
+                      style="margin-left: 10px">
+                  <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>
+                </span>
+              </template>
+              <template v-slot:content>
+                <div class="text--primary" v-html="changeLogHtml"></div>
+              </template>
+            </ChangeLogDialog>
         </v-col>
       </v-row>
       <v-row>
@@ -347,7 +358,7 @@ async function detectFirmwareVersion() {
   })
 }
 function loadChangeLog() {
-  window.eel.get_yuzu_commit_logs()((resp: CommonResponse) => {
+  window.eel.get_yuzu_change_logs()((resp: CommonResponse) => {
     if (resp.code === 0) {
       changeLogHtml.value = markdown.parse(resp.data)
     } else {
