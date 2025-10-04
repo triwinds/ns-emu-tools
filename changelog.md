@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.5.7
+- 添加对 Eden 的支持 (#120)
+- 添加对 Citron 的支持 (#124)
+- 移除对 Suyu 的支持
+- Python 升级至 3.13
+
 ## 0.5.6
 - 为 Ryujinx 的官方 Gitlab 添加 CDN 镜像源, 如果官方源出问题可以切到 CDN 镜像源试试 (#123)
 
