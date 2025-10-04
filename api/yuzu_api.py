@@ -81,7 +81,8 @@ def install_yuzu_firmware(version):
 
 @generic_api
 def switch_yuzu_branch(branch:  str):
-    if branch not in ['eden', 'ea', 'mainline']:
+    from module.yuzu import download_available_branch
+    if branch not in ['ea', 'mainline'] + download_available_branch:
         raise ValueError(f'无效的分支 {branch}')
     target_branch = branch
     logger.info(f'switch yuzu branch to {target_branch}')

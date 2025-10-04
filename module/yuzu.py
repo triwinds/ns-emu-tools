@@ -17,18 +17,21 @@ from exception.common_exception import VersionNotFoundException, IgnoredExceptio
 
 logger = logging.getLogger(__name__)
 
-detect_exe_list = [r'yuzu.exe', r'eden.exe', r'suzu.exe', 'cemu.exe']
+detect_exe_list = [r'yuzu.exe', r'eden.exe', r'citron.exe', r'suzu.exe', 'cemu.exe']
+download_available_branch = ['citron', 'eden']
 
 
 def get_emu_name():
     if config.yuzu.branch == 'eden':
         return 'eden'
+    elif config.yuzu.branch == 'citron':
+        return 'citron'
     return 'yuzu'
 
 
 def download_yuzu(target_version, branch):
-    if branch != 'eden':
-        raise IgnoredException('Only support install yuzu on branch [eden]')
+    if branch not in download_available_branch:
+        raise IgnoredException(f'Only support install yuzu on branch {download_available_branch}')
     send_notify(f'正在获取 {get_emu_name()} 版本信息...')
     release_info = get_yuzu_release_info_by_version(target_version, branch)
     if not release_info.tag_name:
@@ -48,6 +51,10 @@ def download_yuzu(target_version, branch):
             break
         elif asset.name.startswith('Eden-Windows-') and asset.name.endswith('.zip'):
             url = get_github_download_url(asset.download_url)
+            break
+        elif asset.name == 'Windows' and asset.download_url.endswith('citron_windows.zip'):
+            # for citron
+            url = asset.download_url
             break
     if not url:
         raise IgnoredException('Fail to fetch yuzu download url.')
@@ -79,6 +86,20 @@ def install_eden(target_version:  str):
         os.remove(yuzu_package_path)
 
 
+def install_citron(target_version: str):
+    yuzu_path = Path(config.yuzu.yuzu_path)
+    yuzu_package_path = download_yuzu(target_version, 'citron')
+    import tempfile
+    tmp_dir = Path(tempfile.gettempdir()).joinpath('citron-install')
+    unzip_yuzu(yuzu_package_path, tmp_dir)
+    release_dir = tmp_dir.joinpath('Release')
+    copy_back_yuzu_files(release_dir, yuzu_path)
+    shutil.rmtree(tmp_dir)
+    logger.info(f'Citron of [{target_version}] install successfully.')
+    if config.setting.download.autoDeleteAfterInstall:
+        os.remove(yuzu_package_path)
+
+
 def copy_back_yuzu_files(tmp_dir: Path, yuzu_path: Path, ):
     for useless_file in tmp_dir.glob('yuzu-windows-msvc-source-*.tar.xz'):
         os.remove(useless_file)
@@ -99,10 +120,12 @@ def install_yuzu(target_version, branch='ea'):
         logger.info(f'Current {get_emu_name()} version is same as target version [{target_version}], skip install.')
         send_notify(f'当前就是 [{target_version}] 版本的 {get_emu_name()} , 跳过安装.')
         return
-    if branch != 'eden':
-        send_notify('目前仅支持安装 Eden 模拟器')
-        raise IgnoredException('Only support install yuzu on branch [eden]')
-    install_eden(target_version)
+    if branch == 'eden':
+        install_eden(target_version)
+    elif branch == 'citron':
+        install_citron(target_version)
+    else:
+        raise IgnoredException('Only support install yuzu on branch [eden/citron]')
     yuzu_path = Path(config.yuzu.yuzu_path)
     yuzu_path.mkdir(parents=True, exist_ok=True)
     exe_path = get_yuzu_exe_path()
@@ -157,7 +180,7 @@ def detect_yuzu_version():
         logger.info(f'Yuzu pid={[p.pid for p in instances]} is running.')
         send_notify(f'yuzu 正在运行中, 请先关闭之.')
         return None
-    send_notify(f'正在启动 yuzu ...')
+    send_notify(f'正在启动 {get_emu_name()} ...')
     subprocess.Popen([yz_path.absolute()])
     version = None
     branch = None
@@ -184,6 +207,12 @@ def detect_yuzu_version():
                     branch = 'eden'
                     send_notify(f'当前 Eden 模拟器版本 [{version}]')
                     logger.info(f'current eden version: {version}, branch: {branch}')
+                    break
+                elif window_name.startswith('citron | '):
+                    version = window_name[9:]
+                    branch = 'citron'
+                    send_notify(f'当前 Citron 模拟器版本 [{version}]')
+                    logger.info(f'current citron version: {version}, branch: {branch}')
                     break
             try_cnt += 1
     except:
@@ -216,6 +245,8 @@ def get_yuzu_user_path():
         return Path(os.environ['appdata']).joinpath('yuzu/')
     elif Path(os.environ['appdata']).joinpath('eden/').exists():
         return Path(os.environ['appdata']).joinpath('eden/')
+    elif Path(os.environ['appdata']).joinpath('citron/').exists():
+        return Path(os.environ['appdata']).joinpath('citron/')
     return yuzu_path.joinpath('user/')
 
 
