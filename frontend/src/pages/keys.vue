@@ -28,9 +28,6 @@
                 <v-btn color="info" variant="outlined" @click="openYuzuKeyFolder" block>打开 Yuzu keys 文件夹</v-btn>
               </v-col>
               <v-col>
-                <v-btn color="info" variant="outlined" @click="openSuyuKeyFolder" block>打开 Suzu keys 文件夹</v-btn>
-              </v-col>
-              <v-col>
                 <v-btn color="info" variant="outlined" @click="openRyujinxKeyFolder" block>打开 Ryujinx keys 文件夹
                 </v-btn>
               </v-col>
@@ -48,11 +45,6 @@ import {openUrlWithDefaultBrowser} from "@/utils/common";
 
 function openYuzuKeyFolder() {
   window.eel.open_yuzu_keys_folder()(() => {
-  })
-}
-
-function openSuyuKeyFolder() {
-  window.eel.open_suyu_keys_folder()(() => {
   })
 }
 

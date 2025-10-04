@@ -15,13 +15,13 @@
       </v-row>
       <v-divider style="margin-bottom: 15px"></v-divider>
       <v-row>
-        <v-col>
-          <span class="text-h6 text-secondary">当前使用的 Yuzu 分支：</span>
-          <v-btn color="error" size="large" variant="outlined" style="margin-right: 15px" :disabled="true">
-            {{ displayBranch }} 版
-          </v-btn>
-        </v-col>
-      </v-row>
+          <v-col>
+            <v-select variant="outlined" v-model="selectedBranch" :items="availableBranch" hide-details
+                      @update:model-value="switchYuzuBranch" color="error" item-color="error"
+                      item-title="text" item-value="value"
+                      label="当前使用的 Yuzu 分支"></v-select>
+          </v-col>
+        </v-row>
       <v-row>
         <v-col cols="7">
           <v-autocomplete label="Yuzu 路径" v-model="selectedYuzuPath" :items="historyPathList"
@@ -69,6 +69,17 @@
           <span class="text-h6">
                     {{ latestYuzuVersion }}
                   </span>
+          <ChangeLogDialog v-if="isBranchAvailable">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props" @click="loadChangeLog"
+                      style="margin-left: 10px">
+                  <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>
+                </span>
+              </template>
+              <template v-slot:content>
+                <div class="text--primary" v-html="changeLogHtml"></div>
+              </template>
+            </ChangeLogDialog>
         </v-col>
       </v-row>
       <v-row>
@@ -107,10 +118,11 @@
       <v-row>
         <v-col cols="7">
           <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"
-                        disabled variant="underlined"></v-text-field>
+                        :disabled='!isRunningInstall && !isBranchAvailable' variant="underlined"></v-text-field>
         </v-col>
         <v-col>
-          <v-btn color="info" size="large" variant="outlined" min-width="140px" :disabled='true'
+          <v-btn color="info" size="large" variant="outlined" min-width="140px"
+                 :disabled='!isRunningInstall && !isBranchAvailable'
                  @click="installYuzu">
             安装 Yuzu
           </v-btn>
@@ -186,6 +198,7 @@ import DialogTitle from "@/components/DialogTitle.vue";
 let allYuzuReleaseVersions = ref([])
 let targetYuzuVersion = ref('项目已被关闭')
 let isRunningInstall = ref(false)
+let isBranchAvailable = ref(false)
 let historyPathList = ref<string[]>([])
 let selectedYuzuPath = ref('')
 let changeLogHtml = ref('<p>加载中...</p>')
@@ -205,21 +218,46 @@ let yuzuConfig = computed(() => {
 let branch = computed(() => {
   return configStore.config.yuzu.branch
 })
-let displayBranch = computed(() => {
-  if (branch.value === 'ea') {
-    return 'EA'
-  } else if (branch.value === 'mainline') {
-    return '主线'
+console.log(branch)
+let branches = [
+  {
+    text: 'Eden',
+    value: 'eden',
+    available: true
+  },
+  {
+    text: 'Citron',
+    value: 'citron',
+    available: true
+  },
+  {
+    text: 'Yuzu 主线 (项目已关闭)',
+    value: 'mainline',
+    available: false
+  },
+  {
+    text: 'Yuzu EA (项目已关闭)',
+    value: 'ea',
+    available: false
+  },
+]
+
+let branchMap: Record<string, any> = {}
+for (let branch of branches) {
+  branchMap[branch.value] = branch
+}
+
+let availableBranch = ref(branches)
+let selectedBranch = ref('')
+let latestYuzuVersion = computed(() => {
+  if (allYuzuReleaseVersions.value.length > 0) {
+    return allYuzuReleaseVersions.value[0]
   }
-  return '未知'
+  if (!isBranchAvailable.value) {
+    return '项目已被关闭'
+  }
+  return "加载中"
 })
-// let latestYuzuVersion = computed(() => {
-//   if (allYuzuReleaseVersions.value.length > 0) {
-//     return allYuzuReleaseVersions.value[0]
-//   }
-//   return "加载中"
-// })
-let latestYuzuVersion = '项目已被关闭'
 
 async function loadHistoryPathList() {
   let data = await window.eel.load_history_path('yuzu')()
@@ -233,15 +271,25 @@ onBeforeMount(async () => {
   await configStore.reloadConfig()
   appStore.updateAvailableFirmwareInfos()
   selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
-  // updateYuzuReleaseVersions()
+  selectedBranch.value = configStore.config.yuzu.branch
+  handleSelectedBranchUpdate()
   window.eel.update_last_open_emu_page('yuzu')()
 })
 
 function updateYuzuReleaseVersions() {
+  console.log(selectedBranch.value)
+  if (selectedBranch.value in branchMap && !branchMap[selectedBranch.value].available) {
+    allYuzuReleaseVersions.value = []
+    targetYuzuVersion.value = "项目已被关闭"
+    isBranchAvailable.value = false
+    return
+  }
+  isBranchAvailable.value = true
   allYuzuReleaseVersions.value = []
   targetYuzuVersion.value = ""
   window.eel.get_all_yuzu_release_versions()((data: CommonResponse) => {
     if (data.code === 0) {
+      console.log(data.data)
       let infos = data.data
       allYuzuReleaseVersions.value = infos
       targetYuzuVersion.value = infos[0]
@@ -252,11 +300,23 @@ function updateYuzuReleaseVersions() {
   })
 }
 
+function handleSelectedBranchUpdate() {
+  if (selectedBranch.value in branchMap && !branchMap[selectedBranch.value].available) {
+    allYuzuReleaseVersions.value = []
+    targetYuzuVersion.value = "项目已被关闭"
+    isBranchAvailable.value = false
+    return
+  } else {
+    isBranchAvailable.value = true
+    updateYuzuReleaseVersions()
+  }
+}
+
 async function switchYuzuBranch() {
-  await window.eel.switch_yuzu_branch()()
+  await window.eel.switch_yuzu_branch(selectedBranch.value)()
   await configStore.reloadConfig()
   allYuzuReleaseVersions.value = []
-  updateYuzuReleaseVersions()
+  handleSelectedBranchUpdate()
 }
 
 function installFirmware() {
@@ -298,7 +358,7 @@ async function detectFirmwareVersion() {
   })
 }
 function loadChangeLog() {
-  window.eel.get_yuzu_commit_logs()((resp: CommonResponse) => {
+  window.eel.get_yuzu_change_logs()((resp: CommonResponse) => {
     if (resp.code === 0) {
       changeLogHtml.value = markdown.parse(resp.data)
     } else {
@@ -313,8 +373,10 @@ async function detectYuzuVersion() {
   let data = await window.eel.detect_yuzu_version()()
   await configStore.reloadConfig()
   if (data['code'] === 0) {
+    console.log(previousBranch, branch.value)
     if (previousBranch !== branch.value) {
-      updateYuzuReleaseVersions()
+      selectedBranch.value = branch.value
+      handleSelectedBranchUpdate()
     }
     consoleDialogStore.appendConsoleMessage('Yuzu 版本检测完成')
   } else {

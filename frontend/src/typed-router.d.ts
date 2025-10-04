@@ -25,7 +25,6 @@ declare module 'vue-router/auto-routes' {
     '/otherLinks': RouteRecordInfo<'/otherLinks', '/otherLinks', Record<never, never>, Record<never, never>>,
     '/ryujinx': RouteRecordInfo<'/ryujinx', '/ryujinx', Record<never, never>, Record<never, never>>,
     '/settings': RouteRecordInfo<'/settings', '/settings', Record<never, never>, Record<never, never>>,
-    '/suyu': RouteRecordInfo<'/suyu', '/suyu', Record<never, never>, Record<never, never>>,
     '/yuzu': RouteRecordInfo<'/yuzu', '/yuzu', Record<never, never>, Record<never, never>>,
     '/yuzuCheatsManagement': RouteRecordInfo<'/yuzuCheatsManagement', '/yuzuCheatsManagement', Record<never, never>, Record<never, never>>,
     '/yuzuSaveManagement': RouteRecordInfo<'/yuzuSaveManagement', '/yuzuSaveManagement', Record<never, never>, Record<never, never>>,

@@ -90,7 +90,8 @@ const configStore = useConfigStore()
 let credits = [
   {name: 'Yuzu', link: 'https://github.com/yuzu-emu/yuzu', description: 'Yuzu 模拟器'},
   {name: 'Ryujinx', link: 'https://ryujinx.app/', description: 'Ryujinx 模拟器'},
-  {name: 'Suyu', link: 'https://git.suyu.dev/suyu/suyu', description: 'Suyu 模拟器'},
+  {name: 'Eden', link: 'https://eden-emu.dev/', description: 'Eden 模拟器'},
+  {name: 'Citron', link: 'https://citron-emu.org/', description: 'Citron 模拟器'},
   {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
   {name: 'nsz', link: 'https://github.com/nicoboss/nsz', description: 'NS 固件解析'},
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},

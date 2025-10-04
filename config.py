@@ -8,7 +8,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
-current_version = '0.5.6'
+current_version = '0.5.7'
 user_agent = f'ns-emu-tools/{current_version}'
 
 
@@ -47,7 +47,7 @@ class YuzuConfig:
     yuzu_path: Optional[str] = 'D:\\Yuzu'
     yuzu_version: Optional[str] = None
     yuzu_firmware: Optional[str] = None
-    branch: Optional[str] = 'ea'
+    branch: Optional[str] = 'eden'
 
 
 @dataclass_json
@@ -57,15 +57,6 @@ class RyujinxConfig:
     version: Optional[str] = None
     firmware: Optional[str] = None
     branch: Optional[str] = 'mainline'
-
-
-@dataclass_json
-@dataclass
-class SuyuConfig:
-    path: Optional[str] = 'D:\\Suyu'
-    version: Optional[str] = None
-    firmware: Optional[str] = None
-    branch: Optional[str] = 'dev'
 
 
 @dataclass_json
@@ -118,7 +109,6 @@ class CommonSetting:
 class Config:
     yuzu: YuzuConfig = field(default_factory=YuzuConfig)
     ryujinx: RyujinxConfig = field(default_factory=RyujinxConfig)
-    suyu: SuyuConfig = field(default_factory=SuyuConfig)
     setting: CommonSetting = field(default_factory=CommonSetting)
 
 
@@ -129,7 +119,6 @@ if os.path.exists(config_path):
         config.ryujinx.path = str(Path(config.ryujinx.path).absolute())
 if not config:
     config = Config()
-config.yuzu.branch = 'ea'
 
 
 def dump_config():
@@ -141,8 +130,6 @@ def dump_config():
 def update_last_open_emu_page(page: str):
     if page == 'ryujinx':
         config.setting.ui.lastOpenEmuPage = 'ryujinx'
-    elif page == 'suyu':
-        config.setting.ui.lastOpenEmuPage = 'suyu'
     else:
         config.setting.ui.lastOpenEmuPage = 'yuzu'
     logger.info(f'update lastOpenEmuPage to {config.setting.ui.lastOpenEmuPage}')

@@ -134,6 +134,9 @@ if __name__ == '__main__':
     from pprint import pp
     # from config import config
     # print(is_path_in_use(config.yuzu.yuzu_path))
-    pp(get_installed_software())
-    test_l = find_installed_software(r'Microsoft Visual C\+\+ .+ Redistributable')
-    print(any(is_newer_version('14.34', s['version']) for s in test_l))
+    # pp(get_installed_software())
+    # test_l = find_installed_software(r'Microsoft Visual C\+\+ .+ Redistributable')
+    # print(any(is_newer_version('14.34', s['version']) for s in test_l))
+    names = get_all_window_name()
+    for name in names:
+        print(name)
