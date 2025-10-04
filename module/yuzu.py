@@ -23,10 +23,10 @@ download_available_branch = ['citron', 'eden']
 
 def get_emu_name():
     if config.yuzu.branch == 'eden':
-        return 'eden'
+        return 'Eden'
     elif config.yuzu.branch == 'citron':
-        return 'citron'
-    return 'yuzu'
+        return 'Citron'
+    return 'Yuzu'
 
 
 def download_yuzu(target_version, branch):
@@ -103,16 +103,27 @@ def install_citron(target_version: str):
 def copy_back_yuzu_files(tmp_dir: Path, yuzu_path: Path, ):
     for useless_file in tmp_dir.glob('yuzu-windows-msvc-source-*.tar.xz'):
         os.remove(useless_file)
-    logger.info(f'Copy back yuzu files...')
-    send_notify('安装 yuzu 文件至目录...')
+    logger.info(f'Copy back {get_emu_name()} files...')
+    send_notify(f'安装 {get_emu_name()} 文件至目录...')
     try:
         shutil.copytree(tmp_dir, yuzu_path, dirs_exist_ok=True)
         time.sleep(0.5)
     except Exception as e:
         logger.exception(e)
         from exception.install_exception import FailToCopyFiles
-        raise FailToCopyFiles(e, 'Yuzu 文件复制失败')
+        raise FailToCopyFiles(e, f'{get_emu_name()} 文件复制失败')
     shutil.rmtree(tmp_dir)
+
+
+def remove_all_executable_file():
+    send_notify(f'正在删除旧模拟器的可执行文件...')
+    logger.info('remove all executable file...')
+    yz_path = Path(config.yuzu.yuzu_path)
+    for exe_name in detect_exe_list:
+        exe_path = yz_path.joinpath(exe_name)
+        if exe_path.exists():
+            logger.info(f'remove {exe_path}')
+            exe_path.unlink()
 
 
 def install_yuzu(target_version, branch='ea'):
@@ -120,6 +131,7 @@ def install_yuzu(target_version, branch='ea'):
         logger.info(f'Current {get_emu_name()} version is same as target version [{target_version}], skip install.')
         send_notify(f'当前就是 [{target_version}] 版本的 {get_emu_name()} , 跳过安装.')
         return
+    remove_all_executable_file()
     if branch == 'eden':
         install_eden(target_version)
     elif branch == 'citron':
@@ -138,7 +150,7 @@ def install_yuzu(target_version, branch='ea'):
     dump_config()
     from module.common import check_and_install_msvc
     check_and_install_msvc()
-    send_notify(f'{get_emu_name()} {branch} [{target_version}] 安装成功.')
+    send_notify(f'{get_emu_name()} [{target_version}] 安装成功.')
 
 
 def install_firmware_to_yuzu(firmware_version=None):
@@ -153,7 +165,7 @@ def install_firmware_to_yuzu(firmware_version=None):
         config.yuzu.yuzu_firmware = new_version
         dump_config()
         send_notify(f'固件已安装至 {str(firmware_path)}')
-        send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 yuzu.')
+        send_notify(f'固件 [{firmware_version}] 安装成功，请安装相应的 key 至 {get_emu_name()}.')
 
 
 def get_yuzu_exe_path():
