@@ -52,7 +52,7 @@ def download_yuzu(target_version, branch):
         elif asset.name.startswith('Eden-Windows-') and asset.name.endswith('.zip'):
             url = get_github_download_url(asset.download_url)
             break
-        elif asset.name == 'Windows' and asset.download_url.endswith('citron_windows.zip'):
+        elif 'windows' in asset.name.lower():
             # for citron
             url = asset.download_url
             break
@@ -92,7 +92,7 @@ def install_citron(target_version: str):
     import tempfile
     tmp_dir = Path(tempfile.gettempdir()).joinpath('citron-install')
     unzip_yuzu(yuzu_package_path, tmp_dir)
-    release_dir = tmp_dir.joinpath('Release')
+    release_dir = next(tmp_dir.iterdir())
     copy_back_yuzu_files(release_dir, yuzu_path)
     shutil.rmtree(tmp_dir)
     logger.info(f'Citron of [{target_version}] install successfully.')
