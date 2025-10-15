@@ -14,6 +14,17 @@ headers = {
 } if gh_token else {}
 
 
+def update_with_cheats_db(game_data):
+    resp = requests.get('https://raw.githubusercontent.com/HamletDuFromage/switch-cheats-db/master/versions.json')
+    data = resp.json()
+
+    for title_id, item in data.items():
+        if 'title' not in item:
+            continue
+        title = item['title']
+        game_data[title_id] = title
+
+
 def update_with_page(game_data, page):
     resp = requests.get(f'https://api.github.com/repos/Ryujinx/Ryujinx-Games-List/issues?page={page}',
                         headers=headers)
@@ -47,12 +58,12 @@ def update_all():
 
 def update_latest():
     import os
-    if not os.path.exists('game_data.json'):
-        game_data = {}
-    else:
+    game_data = {}
+    if os.path.exists('game_data.json'):
         with open('game_data.json', 'r', encoding='utf-8') as f:
             game_data = json.load(f)
-    update_with_page(game_data, 1)
+    # update_with_page(game_data, 1)
+    update_with_cheats_db(game_data)
     with open('game_data.json', 'w', encoding='utf-8') as f:
         json.dump(game_data, f, ensure_ascii=False, indent=2)
 
