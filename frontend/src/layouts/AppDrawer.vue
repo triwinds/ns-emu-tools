@@ -87,7 +87,7 @@ function openReleasePage() {
         <template v-slot:prepend>
           <v-img src="@/assets/yuzu.webp" style="margin-right: 12px" height="24" width="24"></v-img>
         </template>
-        <v-list-item-title>Yuzu 模拟器</v-list-item-title>
+        <v-list-item-title>Yuzu 及衍生系列模拟器</v-list-item-title>
       </v-list-item>
 
       <v-list-item link to="/ryujinx">
