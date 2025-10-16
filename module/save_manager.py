@@ -3,7 +3,7 @@ import shutil
 import time
 
 from module.yuzu import get_yuzu_nand_path
-from module.cheats import get_game_data, game_id_re
+from module.cheats.cheats import game_id_re
 from module.msg_notifier import send_notify
 from pathlib import Path
 from storage import storage, dump_storage
@@ -142,7 +142,6 @@ def restore_yuzu_save_from_backup(user_folder_name: str, backup_path: str):
 
 
 if __name__ == '__main__':
-    from pprint import pprint
     # print(get_all_user_ids())
     # print(convert_to_uuid('97A1DAE861CD445AB9645267B3AB99BE'))
     # print(get_users_in_save())

@@ -1,6 +1,5 @@
 import re
 import shutil
-import string
 from pathlib import Path
 from typing import List, Dict
 from module.network import get_durable_cache_session
@@ -9,6 +8,8 @@ import time
 from utils.string_util import auto_decode
 from module.msg_notifier import send_notify
 from exception.common_exception import IgnoredException
+from module.cheats.cheats_yuzu_parser import parse_file as parse_yuzu_cheat_file
+from module.cheats.cheats_types import CheatParseError
 
 
 logger = logging.getLogger(__name__)
@@ -69,38 +70,22 @@ def _parse_ryujinx_cheat_file():
 
 
 def _parse_yuzu_cheat_file(cheat_file: Path):
-    # yuzu: https://github.com/yuzu-emu/yuzu/blob/master/src/core/memory/cheat_engine.cpp#L100
-    with open(cheat_file, 'rb') as f:
-        data = auto_decode(f.read()).strip()
-    if not data:
+    # yuzu/citron: parse with structured parser and map to legacy dict format
+    try:
+        model = parse_yuzu_cheat_file(cheat_file)
+    except CheatParseError as e:
+        logger.warning(f'parse cheats failed for {cheat_file}: {e}')
         return {}
-    res = {}
-    entry = {'title': 'Default', 'ops': []}
-    i = 0
-    while i < len(data):
-        c = data[i]
-        i += 1
-        if c in string.whitespace:
-            continue
-        elif c in '{[':
-            if entry['title'] != 'Default' or entry.get('ops'):
-                res[entry['title']] = _convert_ops_to_content(entry.get('ops'))
-            title, i = _find_next(data, ']}', i)
-            if not title:
-                return res
-            entry = {'title': title, 'ops': []}
-        elif c in string.hexdigits:
-            if entry is None:
-                return res
-            s = c + data[i:i+7]
-            if not all(c in string.hexdigits for c in s):
-                return res
-            ops = entry.get('ops', [])
-            ops.append(s)
-            entry['ops'] = ops
-            i += 7
-    if entry['title'] != 'Default' or entry.get('ops'):
-        res[entry['title']] = _convert_ops_to_content(entry['ops'])
+    res: Dict[str, str] = {}
+    for entry in model.entries:
+        if entry.raw_body:
+            # Prefer preserved raw body (keeps comments/spacing)
+            content = entry.raw_body
+            if not content.endswith('\n'):
+                content += '\n'
+        else:
+            content = _convert_ops_to_content(entry.ops)
+        res[entry.title] = content
     return res
 
 
@@ -140,11 +125,18 @@ def list_all_cheat_files_from_folder(folder_path: str):
 
 
 def _read_cheat_name(txt_file: Path):
+    # Prefer parsed first entry title; fall back to legacy regex on failure
+    try:
+        model = parse_yuzu_cheat_file(txt_file)
+        if model.entries:
+            return f'{txt_file.name} - {model.entries[0].title}'
+    except CheatParseError:
+        pass
     with txt_file.open('rb') as f:
         text = auto_decode(f.read())
-        res = cheat_name_re.findall(text)
-        if res:
-            return f'{txt_file.name} - {res[0]}'
+    res = cheat_name_re.findall(text)
+    if res:
+        return f'{txt_file.name} - {res[0]}'
     return txt_file.name
 
 
@@ -222,11 +214,12 @@ def open_cheat_mod_folder(folder_path: str):
 
 
 def main():
-    # cheats_folders = scan_all_cheats_folder(r'D:\Yuzu\user\load')
+    # cheats_folders = scan_all_cheats_folder(r'D:\citron\user\load')
     # print(cheats_folders)
     # backup_original_cheats(cheats_folders)
-    map = _parse_yuzu_cheat_file(Path(r'D:\Yuzu\user\load\0100F3400332C000\jinshouzhi\cheats_chunk\E3938FA78579C1CA_chunk.txt'))
-    print(map)
+    map = _parse_yuzu_cheat_file(Path(r'D:\citron\user\load\0100F2C0115B6000\Cheat Manager Patch\cheats\bdcac16e3d2977b2.txt'))
+    for title, content in map.items():
+        print(f'{title}:\n{content}')
     # print(get_game_data())
 
 
