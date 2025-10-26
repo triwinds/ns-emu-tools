@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import subprocess
 from pathlib import Path
 from module.msg_notifier import send_notify
@@ -9,8 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 def check_and_install_msvc():
-    windir = Path(os.environ['windir'])
-    if windir.joinpath(r'System32\msvcp140_atomic_wait.dll').exists():
+    if platform.system() != 'Windows':
+        logger.info('skip msvc install check on non-Windows platform.')
+        return
+    windir_value = os.environ.get('windir')
+    if not windir_value:
+        logger.info('windir environment variable not found, skip msvc install check.')
+        return
+    windir = Path(windir_value)
+    if windir.joinpath('System32', 'msvcp140_atomic_wait.dll').exists():
         from utils.common import find_installed_software, is_newer_version
         software_list = find_installed_software(r'Microsoft Visual C\+\+ .+ Redistributable')
         if not software_list:
