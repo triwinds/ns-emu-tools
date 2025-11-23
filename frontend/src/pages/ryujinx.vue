@@ -327,6 +327,7 @@ async function askAndUpdateRyujinxPath() {
     let oldBranch = configStore.config.ryujinx.branch
     await configStore.reloadConfig()
     if (oldBranch !== configStore.config.ryujinx.branch) {
+      selectedBranch.value = configStore.config.ryujinx.branch
       updateRyujinxReleaseInfos()
     }
     await loadHistoryPathList()
