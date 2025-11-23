@@ -25,6 +25,22 @@ class ReleaseInfo:
     assets: List[ReleaseAsset]
 
 
+def from_forgejo_api(release_info):
+    if 'assets' not in release_info:
+        logger.error('No assets in response, release_info: %s', release_info)
+        msg = release_info['message'] if 'message' in release_info else 'No assets in response'
+        raise IgnoredException(msg)
+    assets = []
+    for asset in release_info['assets']:
+        assets.append(ReleaseAsset(asset['name'], asset['browser_download_url']))
+    return ReleaseInfo(
+        name=release_info['name'],
+        tag_name=release_info['tag_name'],
+        description=release_info['body'],
+        assets=assets
+    )
+
+
 def from_gitlab_api(release_info):
     if 'assets' not in release_info:
         logger.error('No assets in response, release_info: %s', release_info)
@@ -39,6 +55,7 @@ def from_gitlab_api(release_info):
         description=release_info['description'],
         assets=assets
     )
+
 
 def from_github_api(release_info):
     if 'assets' not in release_info:
