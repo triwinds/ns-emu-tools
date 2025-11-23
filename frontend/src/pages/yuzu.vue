@@ -405,7 +405,8 @@ async function modifyYuzuPath() {
     let oldBranch = configStore.config.yuzu.branch
     await configStore.reloadConfig()
     if (oldBranch !== configStore.config.yuzu.branch) {
-      updateYuzuReleaseVersions()
+      selectedBranch.value = configStore.config.yuzu.branch
+      handleSelectedBranchUpdate()
     }
     await loadHistoryPathList()
     selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
@@ -429,7 +430,8 @@ async function updateYuzuPath() {
   selectedYuzuPath.value = configStore.yuzuConfig.yuzu_path
 
   if (oldBranch !== configStore.yuzuConfig.branch) {
-    updateYuzuReleaseVersions()
+    selectedBranch.value = configStore.yuzuConfig.branch
+    handleSelectedBranchUpdate()
   }
 }
 </script>
