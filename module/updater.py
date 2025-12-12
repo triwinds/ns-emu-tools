@@ -11,15 +11,46 @@ logger = logging.getLogger(__name__)
 script_template = """@echo off
 chcp>nul 2>nul 65001
 echo 开始准备更新
+
+echo 尝试优雅关闭程序（允许自动清理）...
+taskkill /IM NsEmuTools* >nul 2>nul
+echo 等待程序正常退出（3秒）...
 timeout /t 3 /nobreak
-taskkill /F /IM NsEmuTools* >nul 2>nul
+
+echo 检查是否还有残留进程...
+tasklist /FI "IMAGENAME eq NsEmuTools*" 2>nul | find /I "NsEmuTools" >nul
+if %ERRORLEVEL% equ 0 (
+  echo 程序未能正常退出，强制终止...
+  taskkill /F /IM NsEmuTools* >nul 2>nul
+  echo 等待进程完全退出...
+  timeout /t 3 /nobreak
+  
+  echo 清理强制终止残留的临时文件...
+  if not "<current_meipass>"=="" (
+    if exist "<current_meipass>" (
+      echo 删除旧版本临时目录: <current_meipass>
+      rmdir /s /q "<current_meipass>" 2>nul
+    )
+  )
+) else (
+  echo 程序已正常退出
+)
+
 if exist "<old_exe>" (
   echo 备份原文件至 "<old_exe>.bak"
   move /Y "<old_exe>" "<old_exe>.bak"
 )
 if exist "_internal" (
+  echo 备份 _internal 目录
+  if exist "_internal_bak" (
+    rmdir /s /q "_internal_bak"
+  )
   move /Y "_internal" "_internal_bak"
   timeout /t 1 /nobreak
+)
+if exist "_internal_bak" (
+  echo 清理旧的 _internal_bak 备份
+  rmdir /s /q "_internal_bak" 2>nul
 )
 if not exist "<upgrade_files_folder>" (
   echo 无法找到更新文件 "<upgrade_files_folder>"
@@ -31,6 +62,8 @@ if not exist "<upgrade_files_folder>" (
     timeout /t 1 /nobreak
     rmdir /s /q "download/upgrade_files"
   )
+  echo 清理完成，准备启动新版本...
+  timeout /t 2 /nobreak
   echo 启动程序
   start /b "NsEmuTools" "<target_place>"
 )
@@ -109,10 +142,15 @@ def update_self_by_tag(tag: str):
         upgrade_file_path.unlink()
         upgrade_files_folder = upgrade_file_path.parent.joinpath('NsEmuTools')
     target_path = Path('NsEmuTools.exe') if Path('NsEmuTools.exe').exists() else Path('NsEmuTools-console.exe')
+    
+    # 获取当前程序的临时目录（如果是 PyInstaller 打包的）
+    current_meipass = getattr(sys, '_MEIPASS', '')
+    
     script = script_template\
         .replace('<old_exe>', str(Path(sys.argv[0]).absolute()))\
         .replace('<upgrade_files_folder>', str(upgrade_files_folder))\
-        .replace('<target_place>', str(target_path.absolute()))
+        .replace('<target_place>', str(target_path.absolute()))\
+        .replace('<current_meipass>', current_meipass)
     logger.info(f'creating update script')
     with open('update.bat', 'w', encoding='utf-8') as f:
         f.write(script)
