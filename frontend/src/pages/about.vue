@@ -102,9 +102,9 @@ let credits = [
 ]
 let changeLogHtml = ref('<p>加载中...</p>')
 function loadChangeLog() {
-  window.eel.load_change_log()((resp: CommonResponse) => {
+  window.eel.load_change_log()((resp: CommonResponse<string>) => {
     if (resp.code === 0) {
-      changeLogHtml.value = md.parse(resp.data)
+      changeLogHtml.value = md.parse(resp.data || '')
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

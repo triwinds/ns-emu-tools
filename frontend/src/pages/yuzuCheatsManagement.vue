@@ -156,10 +156,10 @@ function concatFolderItemName(item: CheatGameInfo) {
 }
 
 function listAllCheatFilesFromFolder(selectedFolder: string) {
-  window.eel.list_all_cheat_files_from_folder(selectedFolder)((resp: CommonResponse) => {
+  window.eel.list_all_cheat_files_from_folder(selectedFolder)((resp: CommonResponse<CheatFileInfo[]>) => {
     if (resp.code === 0 && resp.data) {
       cheatFiles.value = resp.data
-      selectedCheatFile.value = resp.data[0].path
+      selectedCheatFile.value = resp.data[0]?.path ?? ''
     } else {
       cheatsFolders.value = []
       selectedCheatFile.value = ''
@@ -169,7 +169,7 @@ function listAllCheatFilesFromFolder(selectedFolder: string) {
 
 function loadCheatChunkInfo(selectedCheatFile: string) {
   cheatItems.value = []
-  window.eel.load_cheat_chunk_info(selectedCheatFile)((resp: CommonResponse) => {
+  window.eel.load_cheat_chunk_info(selectedCheatFile)((resp: CommonResponse<CheatItem[]>) => {
     if (resp.code === 0 && resp.data) {
       cheatItems.value = resp.data
     }

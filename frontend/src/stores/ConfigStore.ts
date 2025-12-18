@@ -14,15 +14,15 @@ export const useConfigStore = defineStore('config', {
   }),
   actions: {
     async reloadConfig() {
-      const resp = await window.eel.get_config()()
-      if (resp.code === 0) {
+      const resp = await window.eel.get_config()() as CommonResponse<AppConfig>
+      if (resp.code === 0 && resp.data) {
         this.config = resp.data
       }
     },
     initCurrentVersion() {
-      window.eel.get_current_version()((resp: CommonResponse) => {
+      window.eel.get_current_version()((resp: CommonResponse<string>) => {
         if (resp['code'] === 0) {
-          this.currentVersion = resp.data
+          this.currentVersion = resp.data || '未知'
         } else {
           this.currentVersion = '未知'
         }

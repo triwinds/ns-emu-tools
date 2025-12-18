@@ -7,8 +7,8 @@ const cds = useConsoleDialogStore()
 
 export const useAppStore = defineStore('app', {
   state: () => ({
-    targetFirmwareVersion: null,
-    availableFirmwareInfos: [],
+    targetFirmwareVersion: null as string | null,
+    availableFirmwareInfos: [] as {version: string}[],
     gameData: {} as {[key: string]: string}
   }),
   getters: {
@@ -19,11 +19,11 @@ export const useAppStore = defineStore('app', {
   actions: {
     updateAvailableFirmwareInfos() {
         this.targetFirmwareVersion = null
-        window.eel.get_available_firmware_infos()((data: CommonResponse) => {
+        window.eel.get_available_firmware_infos()((data: CommonResponse<{version: string}[]>) => {
             if (data['code'] === 0) {
-              const infos = data['data']
+              const infos = data['data'] || []
               this.availableFirmwareInfos = infos
-              this.targetFirmwareVersion = infos[0]['version']
+              this.targetFirmwareVersion = infos[0]?.['version'] ?? null
             } else {
                 cds.showConsoleDialog()
                 cds.appendConsoleMessage('固件信息加载异常.')
@@ -34,8 +34,8 @@ export const useAppStore = defineStore('app', {
       if (this.gameDataInited && !('unknown' in this.gameData)) {
           return this.gameData
       }
-      const resp = await window.eel.get_game_data()()
-      const gameData = resp.code === 0 ? resp.data : {'unknown': 'unknown'}
+      const resp = await window.eel.get_game_data()() as CommonResponse<{[key: string]: string}>
+      const gameData = resp.code === 0 ? (resp.data || {'unknown': 'unknown'}) : {'unknown': 'unknown'}
       this.gameData = gameData
       return gameData
     }

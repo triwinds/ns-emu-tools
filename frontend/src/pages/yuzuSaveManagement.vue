@@ -91,9 +91,9 @@ watch(tab, () => {
 })
 
 function reloadGameList() {
-  window.eel.list_all_games_by_user_folder(yuzuSaveStore.selectedUser)((resp: CommonResponse) => {
+  window.eel.list_all_games_by_user_folder(yuzuSaveStore.selectedUser)((resp: CommonResponse<SaveGameInfo[]>) => {
     if (resp.code === 0) {
-      gameList.value = resp.data
+      gameList.value = resp.data || []
       if (appStore.gameDataInited) {
         enrichGameList()
       } else {

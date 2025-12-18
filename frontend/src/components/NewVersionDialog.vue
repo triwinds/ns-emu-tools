@@ -102,9 +102,9 @@ function openReleasePage() {
 }
 
 function loadReleaseDescription() {
-  window.eel.load_change_log()((resp: CommonResponse) => {
+  window.eel.load_change_log()((resp: CommonResponse<string>) => {
     if (resp.code === 0) {
-      let rawMd = resp.data.replace('# Change Log\n\n', '')
+      let rawMd = (resp.data || '').replace('# Change Log\n\n', '')
       releaseDescriptionHtml.value = md.parse(rawMd)
     } else {
       releaseDescriptionHtml.value = '<p>加载失败</p>'
@@ -118,7 +118,7 @@ function downloadNET() {
     if (resp.code === 0) {
       cds.appendConsoleMessage('NET 下载完成')
     } else {
-      cds.appendConsoleMessage(resp.msg)
+      cds.appendConsoleMessage(resp.msg || '')
       cds.appendConsoleMessage('NET 下载失败')
     }
   })

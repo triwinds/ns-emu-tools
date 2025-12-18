@@ -193,7 +193,7 @@ import SimplePage from "@/components/SimplePage.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import DialogTitle from "@/components/DialogTitle.vue";
 
-let allRyujinxReleaseInfos = ref([])
+let allRyujinxReleaseInfos = ref<{tag_name: string}[]>([])
 let historyPathList = ref<string[]>([])
 let selectedRyujinxPath = ref('')
 let targetRyujinxVersion = ref('')
@@ -236,11 +236,11 @@ onBeforeMount(async () => {
 function updateRyujinxReleaseInfos() {
   allRyujinxReleaseInfos.value = []
   targetRyujinxVersion.value = ""
-  window.eel.get_ryujinx_release_infos()((data: CommonResponse) => {
+  window.eel.get_ryujinx_release_infos()((data: CommonResponse<{tag_name: string}[]>) => {
     if (data['code'] === 0) {
-      let infos = data['data']
+      let infos = data['data'] || []
       allRyujinxReleaseInfos.value = infos
-      targetRyujinxVersion.value = infos[0]['tag_name']
+      targetRyujinxVersion.value = infos[0]?.['tag_name'] ?? ''
     } else {
       cds.appendConsoleMessage('ryujinx 版本信息加载异常.')
     }
@@ -294,7 +294,7 @@ function installRyujinx() {
   window.eel.install_ryujinx(targetRyujinxVersion.value, selectedBranch.value)((resp: CommonResponse) => {
     isRunningInstall.value = false
     cds.persistentConsoleDialog = false
-    cds.appendConsoleMessage(resp['msg'])
+    cds.appendConsoleMessage(resp['msg'] || '')
     if (resp['code'] === 0) {
       configStore.reloadConfig()
     }
@@ -309,7 +309,7 @@ function installFirmware() {
   window.eel.install_ryujinx_firmware(appStore.targetFirmwareVersion)((resp: CommonResponse) => {
     isRunningInstall.value = false
     cds.persistentConsoleDialog = false
-    cds.appendConsoleMessage(resp['msg'])
+    cds.appendConsoleMessage(resp['msg'] || '')
     if (resp['code'] === 0) {
       configStore.reloadConfig()
     }
@@ -361,9 +361,9 @@ async function switchRyujinxBranch() {
 }
 
 function loadChangeLog() {
-  window.eel.load_ryujinx_change_log()((resp: CommonResponse) => {
+  window.eel.load_ryujinx_change_log()((resp: CommonResponse<string>) => {
     if (resp.code === 0) {
-      changeLogHtml.value = markdown.parse(resp.data)
+      changeLogHtml.value = markdown.parse(resp.data || '')
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

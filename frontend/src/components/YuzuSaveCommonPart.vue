@@ -30,9 +30,9 @@ import {useYuzuSaveStore} from "@/stores/YuzuSaveStore";
 
 const yuzuSaveStore = useYuzuSaveStore()
 onMounted(() => {
-  window.eel.get_users_in_save()((resp: CommonResponse) => {
+  window.eel.get_users_in_save()((resp: CommonResponse<{user_id: string, folder: string}[]>) => {
     if (resp.code === 0) {
-      yuzuSaveStore.userList = resp.data
+      yuzuSaveStore.userList = resp.data || []
     }
   })
   loadYuzuSaveBackupPath()

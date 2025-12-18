@@ -195,7 +195,7 @@ import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import DialogTitle from "@/components/DialogTitle.vue";
 
-let allYuzuReleaseVersions = ref([])
+let allYuzuReleaseVersions = ref<string[]>([])
 let targetYuzuVersion = ref('项目已被关闭')
 let isRunningInstall = ref(false)
 let isBranchAvailable = ref(false)
@@ -287,12 +287,12 @@ function updateYuzuReleaseVersions() {
   isBranchAvailable.value = true
   allYuzuReleaseVersions.value = []
   targetYuzuVersion.value = ""
-  window.eel.get_all_yuzu_release_versions()((data: CommonResponse) => {
+  window.eel.get_all_yuzu_release_versions()((data: CommonResponse<string[]>) => {
     if (data.code === 0) {
       console.log(data.data)
-      let infos = data.data
+      let infos = data.data || []
       allYuzuReleaseVersions.value = infos
-      targetYuzuVersion.value = infos[0]
+      targetYuzuVersion.value = infos[0] ?? ''
     } else {
       consoleDialogStore.showConsoleDialog()
       consoleDialogStore.appendConsoleMessage('yuzu 版本信息加载异常.')
@@ -343,9 +343,9 @@ function installYuzu() {
     consoleDialogStore.persistentConsoleDialog = false
     if (resp['code'] === 0) {
       configStore.reloadConfig()
-      consoleDialogStore.appendConsoleMessage(resp.msg)
+      consoleDialogStore.appendConsoleMessage(resp.msg || '')
     } else {
-      consoleDialogStore.appendConsoleMessage(resp.msg)
+      consoleDialogStore.appendConsoleMessage(resp.msg || '')
     }
   });
 }
@@ -358,9 +358,9 @@ async function detectFirmwareVersion() {
   })
 }
 function loadChangeLog() {
-  window.eel.get_yuzu_change_logs()((resp: CommonResponse) => {
+  window.eel.get_yuzu_change_logs()((resp: CommonResponse<string>) => {
     if (resp.code === 0) {
-      changeLogHtml.value = markdown.parse(resp.data)
+      changeLogHtml.value = markdown.parse(resp.data || '')
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }

@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(dir:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cargo check:*)",
+      "Bash(cp:*)",
+      "Bash(cat:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run build-only:*)"
     ]
   }
 }

@@ -92,8 +92,8 @@ onUnmounted(() => {
 })
 
 function loadAllYuzuBackups() {
-  window.eel.list_all_yuzu_backups()((resp: CommonResponse) => {
-    backupList.value = resp.data
+  window.eel.list_all_yuzu_backups()((resp: CommonResponse<YuzuSaveBackupListItem[]>) => {
+    backupList.value = resp.data || []
     updateBackupItemBoxHeight()
     appStore.loadGameData().then(gameData => {
       let nl = []
