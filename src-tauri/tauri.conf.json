@@ -46,13 +46,6 @@
   "plugins": {
     "shell": {
       "open": true
-    },
-    "fs": {
-      "all": true,
-      "scope": ["$APPDATA/**", "$HOME/**", "$DOCUMENT/**", "$DOWNLOAD/**", "**"]
-    },
-    "dialog": {
-      "all": true
     }
   }
 }

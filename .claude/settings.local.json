@@ -8,7 +8,8 @@
       "Bash(cat:*)",
       "Bash(git checkout:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run build-only:*)"
+      "Bash(npm run build-only:*)",
+      "Bash(cargo build:*)"
     ]
   }
 }
