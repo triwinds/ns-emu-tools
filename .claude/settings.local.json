@@ -9,7 +9,11 @@
       "Bash(git checkout:*)",
       "Bash(npm run type-check:*)",
       "Bash(npm run build-only:*)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "WebSearch",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:docs.rs)"
     ]
   }
 }

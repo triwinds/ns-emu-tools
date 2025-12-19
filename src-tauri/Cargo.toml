@@ -10,7 +10,7 @@ rust-version = "1.70"
 
 [lib]
 name = "ns_emu_tools_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -48,6 +48,7 @@ zip = "2.2"
 sevenz-rust = "0.6"
 tar = "0.4"
 xz2 = "0.1"
+flate2 = "1.0"
 
 # 文件系统
 walkdir = "2.5"
@@ -72,6 +73,22 @@ regex = "1.11"
 # URL 处理
 url = "2.5"
 
+# 随机数
+rand = "0.9"
+
+# MD5 哈希
+md5 = "0.7"
+
+# URL 编解码
+urlencoding = "2.1"
+
+# 目录路径
+dirs = "5.0"
+
+# DNS over HTTPS
+hickory-resolver = { version = "0.25", features = ["tokio", "https-ring", "webpki-roots"] }
+hickory-proto = "0.25"
+
 [target.'cfg(windows)'.dependencies]
 # Windows API
 windows = { version = "0.58", features = [
@@ -95,3 +112,6 @@ codegen-units = 1
 lto = true
 opt-level = "s"
 strip = true
+
+[dev-dependencies]
+tempfile = "3.15"
