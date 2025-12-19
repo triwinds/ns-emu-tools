@@ -135,7 +135,6 @@ pub struct DownloadResult {
     pub size: u64,
 }
 
-/// 下载选项
 #[derive(Debug, Clone)]
 pub struct DownloadOptions {
     /// 保存目录
@@ -152,6 +151,8 @@ pub struct DownloadOptions {
     pub resume: bool,
     /// 每个分块的最小大小（默认 1MB）
     pub min_chunk_size: u64,
+    /// 进度回调间隔（毫秒，默认 200ms）
+    pub progress_interval_ms: u64,
 }
 
 impl Default for DownloadOptions {
@@ -164,6 +165,7 @@ impl Default for DownloadOptions {
             num_threads: 4,
             resume: true,
             min_chunk_size: 1024 * 1024, // 1MB
+            progress_interval_ms: 500,   // 500ms
         }
     }
 }
@@ -264,8 +266,37 @@ impl Downloader {
         self.cancelled.store(false, Ordering::SeqCst);
     }
 
-    /// 下载文件
+    /// 下载文件（优先使用多线程下载，失败时回退到单线程）
     pub async fn download<F>(
+        &self,
+        url: &str,
+        options: DownloadOptions,
+        on_progress: F,
+    ) -> AppResult<DownloadResult>
+    where
+        F: Fn(DownloadProgress) + Send + Sync + Clone + 'static,
+    {
+        // 先尝试多线程下载
+        match self
+            .download_chunked(url, options.clone(), on_progress.clone())
+            .await
+        {
+            Ok(result) => Ok(result),
+            Err(e) => {
+                // 如果是取消导致的错误，直接返回
+                if self.is_cancelled() {
+                    return Err(e);
+                }
+                print!("单线程下载: {}", e);
+                // 多线程下载失败，回退到单线程
+                warn!("多线程下载失败: {}，回退到单线程下载", e);
+                self.download_single(url, options, on_progress).await
+            }
+        }
+    }
+
+    /// 单线程下载文件
+    pub async fn download_single<F>(
         &self,
         url: &str,
         options: DownloadOptions,
@@ -356,42 +387,78 @@ impl Downloader {
         // 下载追踪变量
         let downloaded = Arc::new(AtomicU64::new(0));
         let start_time = Instant::now();
+        let mut last_progress_downloaded: u64 = 0;
         let mut last_progress_time = Instant::now();
-        let mut last_downloaded: u64 = 0;
 
         // 获取响应流
         let mut stream = response.bytes_stream();
 
+        // 创建固定间隔定时器
+        let progress_interval = Duration::from_millis(options.progress_interval_ms);
+        let mut interval = tokio::time::interval(progress_interval);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        // 跳过第一次立即触发
+        interval.tick().await;
+
         // 下载循环
-        while let Some(chunk_result) = stream.next().await {
-            // 检查是否取消
-            if self.is_cancelled() {
-                // 清理临时文件
-                drop(file);
-                let _ = tokio::fs::remove_file(&temp_path).await;
-                return Err(AppError::Download("下载已取消".to_string()));
+        let mut stream_ended = false;
+        loop {
+            tokio::select! {
+                chunk_result = stream.next(), if !stream_ended => {
+                    match chunk_result {
+                        Some(Ok(chunk)) => {
+                            // 检查是否取消
+                            if self.is_cancelled() {
+                                drop(file);
+                                let _ = tokio::fs::remove_file(&temp_path).await;
+                                return Err(AppError::Download("下载已取消".to_string()));
+                            }
+
+                            // 写入文件
+                            file.write_all(&chunk).await?;
+
+                            // 更新下载量
+                            downloaded.fetch_add(chunk.len() as u64, Ordering::SeqCst);
+                        }
+                        Some(Err(e)) => {
+                            drop(file);
+                            let _ = tokio::fs::remove_file(&temp_path).await;
+                            return Err(AppError::Download(format!("读取数据失败: {}", e)));
+                        }
+                        None => {
+                            stream_ended = true;
+                        }
+                    }
+                }
+                _ = interval.tick() => {
+                    // 检查是否取消
+                    if self.is_cancelled() {
+                        drop(file);
+                        let _ = tokio::fs::remove_file(&temp_path).await;
+                        return Err(AppError::Download("下载已取消".to_string()));
+                    }
+
+                    // 固定间隔触发进度回调
+                    let current = downloaded.load(Ordering::SeqCst);
+                    let elapsed = last_progress_time.elapsed();
+                    let bytes_diff = current.saturating_sub(last_progress_downloaded);
+                    let speed = if elapsed.as_secs_f64() > 0.0 {
+                        (bytes_diff as f64 / elapsed.as_secs_f64()) as u64
+                    } else {
+                        0
+                    };
+
+                    progress.update(current, total_size, speed);
+                    on_progress(progress.clone());
+
+                    last_progress_downloaded = current;
+                    last_progress_time = Instant::now();
+                }
             }
 
-            let chunk = chunk_result.map_err(|e| AppError::Download(format!("读取数据失败: {}", e)))?;
-
-            // 写入文件
-            file.write_all(&chunk).await?;
-
-            // 更新下载量
-            let current = downloaded.fetch_add(chunk.len() as u64, Ordering::SeqCst)
-                + chunk.len() as u64;
-
-            // 计算速度（每 200ms 更新一次）
-            let elapsed = last_progress_time.elapsed();
-            if elapsed >= Duration::from_millis(200) {
-                let bytes_diff = current - last_downloaded;
-                let speed = (bytes_diff as f64 / elapsed.as_secs_f64()) as u64;
-
-                progress.update(current, total_size, speed);
-                on_progress(progress.clone());
-
-                last_downloaded = current;
-                last_progress_time = Instant::now();
+            // 如果流结束，退出循环
+            if stream_ended {
+                break;
             }
         }
 
@@ -412,7 +479,7 @@ impl Downloader {
             total_time.as_secs_f64()
         );
 
-        // 发送最终进度
+        // 发送最终进度（不受 progress_interval_ms 限制）
         progress.update(final_size, total_size, 0);
         progress.percentage = 100.0;
         on_progress(progress);
@@ -434,7 +501,7 @@ impl Downloader {
             save_dir,
             ..Default::default()
         };
-        self.download(url, options, |_| {}).await
+        self.download_single(url, options, |_| {}).await
     }
 
     /// 多线程分块下载（支持断点续传）
@@ -535,7 +602,7 @@ impl Downloader {
         // 如果不支持 Range 或文件太小，使用单线程下载
         if !supports_range || total_size == 0 || total_size < options.min_chunk_size * 2 {
             warn!("服务器不支持 Range 请求或文件太小，使用单线程下载");
-            return self.download(url, options, on_progress).await;
+            return self.download_single(url, options, on_progress).await;
         }
 
         info!(
@@ -594,13 +661,18 @@ impl Downloader {
         let progress_filename = filename.clone();
         let progress_state_path = state_path.clone();
         let progress_url = final_url.clone();
+        let progress_interval = Duration::from_millis(options.progress_interval_ms);
 
         let progress_handle = tokio::spawn(async move {
             let mut last_downloaded = progress_downloaded.load(Ordering::SeqCst);
             let mut last_time = Instant::now();
+            let mut interval = tokio::time::interval(progress_interval);
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            // 跳过第一次立即触发
+            interval.tick().await;
 
             loop {
-                tokio::time::sleep(Duration::from_millis(200)).await;
+                interval.tick().await;
 
                 if progress_cancelled.load(Ordering::SeqCst) {
                     break;
@@ -609,16 +681,20 @@ impl Downloader {
                 let current = progress_downloaded.load(Ordering::SeqCst);
                 let elapsed = last_time.elapsed();
                 let speed = if elapsed.as_secs_f64() > 0.0 {
-                    ((current - last_downloaded) as f64 / elapsed.as_secs_f64()) as u64
+                    ((current.saturating_sub(last_downloaded)) as f64 / elapsed.as_secs_f64()) as u64
                 } else {
                     0
                 };
 
+                // 先触发回调，确保按时执行
                 let mut progress = DownloadProgress::new(&progress_filename);
                 progress.update(current, total_size, speed);
                 progress_callback(progress);
 
-                // 保存下载状态
+                last_downloaded = current;
+                last_time = Instant::now();
+
+                // 保存下载状态（在回调之后，不阻塞下次回调）
                 let chunks_snapshot = progress_chunks.lock().await.clone();
                 let state = DownloadState {
                     url: progress_url.clone(),
@@ -627,9 +703,6 @@ impl Downloader {
                     filename: progress_filename.clone(),
                 };
                 let _ = save_download_state(&progress_state_path, &state).await;
-
-                last_downloaded = current;
-                last_time = Instant::now();
 
                 if current >= total_size {
                     break;
@@ -1130,6 +1203,7 @@ mod tests {
     async fn test_chunked_download_real() {
         use std::sync::atomic::{AtomicU64, Ordering};
         use std::sync::Arc;
+        use std::time::Instant;
 
         // 使用 Downloader::new() 测试，看是否使用了代理
         let downloader = Downloader::new().expect("创建下载器失败");
@@ -1139,6 +1213,12 @@ mod tests {
 
         let progress_count = Arc::new(AtomicU64::new(0));
         let progress_count_clone = progress_count.clone();
+        let last_callback_time = Arc::new(std::sync::Mutex::new(Instant::now()));
+        let last_callback_time_clone = last_callback_time.clone();
+        let intervals = Arc::new(std::sync::Mutex::new(Vec::<u128>::new()));
+        let intervals_clone = intervals.clone();
+
+        let progress_interval_ms = 200u64;
 
         let options = DownloadOptions {
             save_dir: Some(temp_dir.clone()),
@@ -1148,6 +1228,7 @@ mod tests {
             num_threads: 4,
             resume: true,
             min_chunk_size: 1024 * 1024, // 1MB
+            progress_interval_ms,
         };
 
         // 使用可靠的测试服务器
@@ -1156,16 +1237,25 @@ mod tests {
                 "http://speedtest.tele2.net/10MB.zip",
                 options,
                 move |progress| {
-                    progress_count_clone.fetch_add(1, Ordering::SeqCst);
-                    if progress.percentage as u64 % 20 == 0 {
-                        println!(
-                            "下载进度: {:.1}% ({}/{}) 速度: {}",
-                            progress.percentage,
-                            progress.downloaded_string(),
-                            progress.total_string(),
-                            progress.speed_string()
-                        );
+                    let count = progress_count_clone.fetch_add(1, Ordering::SeqCst);
+                    let mut last_time = last_callback_time_clone.lock().unwrap();
+                    let elapsed = last_time.elapsed().as_millis();
+
+                    if count > 0 {
+                        intervals_clone.lock().unwrap().push(elapsed);
                     }
+
+                    *last_time = Instant::now();
+
+                    println!(
+                        "[{}] 下载进度: {:.1}% ({}/{}) 速度: {} (间隔: {}ms)",
+                        count,
+                        progress.percentage,
+                        progress.downloaded_string(),
+                        progress.total_string(),
+                        progress.speed_string(),
+                        elapsed
+                    );
                 },
             )
             .await;
@@ -1175,7 +1265,17 @@ mod tests {
                 println!("下载完成: {:?}", download_result.path);
                 assert!(download_result.path.exists());
                 assert_eq!(download_result.size, 10 * 1024 * 1024); // 10MB
-                assert!(progress_count.load(Ordering::SeqCst) > 0);
+
+                let intervals = intervals.lock().unwrap();
+                let callback_count = progress_count.load(Ordering::SeqCst);
+                println!("回调次数: {}", callback_count);
+                println!("回调间隔: {:?}", *intervals);
+
+                // 验证回调间隔大致符合预期
+                if !intervals.is_empty() {
+                    let avg_interval: u128 = intervals.iter().sum::<u128>() / intervals.len() as u128;
+                    println!("平均间隔: {}ms (预期: {}ms)", avg_interval, progress_interval_ms);
+                }
 
                 // 清理
                 let _ = std::fs::remove_file(&download_result.path);
@@ -1183,6 +1283,105 @@ mod tests {
             Err(e) => {
                 println!("下载失败: {}", e);
                 // 在 CI 环境中可能网络不可用，不 panic
+            }
+        }
+
+        // 清理临时目录
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    /// 测试 download 方法的固定间隔进度回调
+    /// 运行: cargo test test_download_progress_interval -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore]
+    async fn test_download_progress_interval() {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        use std::sync::Arc;
+        use std::time::Instant;
+
+        let downloader = Downloader::new().expect("创建下载器失败");
+
+        let temp_dir = std::env::temp_dir().join("downloader_interval_test");
+        let _ = std::fs::create_dir_all(&temp_dir);
+
+        let progress_count = Arc::new(AtomicU64::new(0));
+        let progress_count_clone = progress_count.clone();
+        let last_callback_time = Arc::new(std::sync::Mutex::new(Instant::now()));
+        let last_callback_time_clone = last_callback_time.clone();
+        let intervals = Arc::new(std::sync::Mutex::new(Vec::<u128>::new()));
+        let intervals_clone = intervals.clone();
+
+        let progress_interval_ms = 500; // 500ms 间隔
+
+        let options = DownloadOptions {
+            num_threads: 4,
+            save_dir: Some(temp_dir.clone()),
+            filename: Some("test_1mb.bin".to_string()),
+            overwrite: true,
+            use_github_mirror: false,
+            progress_interval_ms,
+            ..Default::default()
+        };
+
+        // 使用 1MB 文件测试
+        let result = downloader
+            .download(
+                "http://speedtest.tele2.net/10MB.zip",
+                options,
+                move |progress| {
+                    let count = progress_count_clone.fetch_add(1, Ordering::SeqCst);
+                    let mut last_time = last_callback_time_clone.lock().unwrap();
+                    let elapsed = last_time.elapsed().as_millis();
+
+                    if count > 0 {
+                        intervals_clone.lock().unwrap().push(elapsed);
+                    }
+
+                    *last_time = Instant::now();
+
+                    println!(
+                        "[{}] 进度: {:.1}% 速度: {} (间隔: {}ms)",
+                        count,
+                        progress.percentage,
+                        progress.speed_string(),
+                        elapsed
+                    );
+                },
+            )
+            .await;
+
+        match result {
+            Ok(download_result) => {
+                println!("下载完成: {:?}", download_result.path);
+                assert!(download_result.path.exists());
+
+                let intervals = intervals.lock().unwrap();
+                let callback_count = progress_count.load(Ordering::SeqCst);
+                println!("回调次数: {}", callback_count);
+                println!("回调间隔: {:?}", *intervals);
+
+                // 验证回调间隔大致符合预期（允许 50% 误差）
+                if !intervals.is_empty() {
+                    let avg_interval: u128 = intervals.iter().sum::<u128>() / intervals.len() as u128;
+                    println!("平均间隔: {}ms (预期: {}ms)", avg_interval, progress_interval_ms);
+
+                    // 平均间隔应该在预期值的 50%-150% 范围内
+                    let min_expected = (progress_interval_ms as u128) / 2;
+                    let max_expected = (progress_interval_ms as u128) * 3 / 2;
+                    assert!(
+                        avg_interval >= min_expected && avg_interval <= max_expected,
+                        "平均间隔 {}ms 不在预期范围 {}ms-{}ms 内",
+                        avg_interval,
+                        min_expected,
+                        max_expected
+                    );
+                }
+
+                // 清理
+                let _ = std::fs::remove_file(&download_result.path);
+            }
+            Err(e) => {
+                println!("下载失败: {}", e);
             }
         }
 

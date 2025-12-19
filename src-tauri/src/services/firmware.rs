@@ -151,7 +151,7 @@ pub async fn install_firmware<F>(
     on_progress: F,
 ) -> AppResult<String>
 where
-    F: Fn(DownloadProgress) + Send + 'static,
+    F: Fn(DownloadProgress) + Send + Sync + Clone + 'static,
 {
     info!("开始安装固件版本: {}", firmware_version);
 
