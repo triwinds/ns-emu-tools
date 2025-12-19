@@ -82,6 +82,12 @@ md5 = "0.7"
 # URL 编解码
 urlencoding = "2.1"
 
+# aria2 RPC 客户端
+aria2-ws = "0.5"
+
+# 查找可执行文件
+which = "7.0"
+
 # 目录路径
 dirs = "5.0"
 

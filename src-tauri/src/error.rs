@@ -40,6 +40,10 @@ pub enum AppError {
     #[error("下载错误: {0}")]
     Download(String),
 
+    /// Aria2 错误
+    #[error("Aria2 错误: {0}")]
+    Aria2(String),
+
     /// 解压错误
     #[error("解压错误: {0}")]
     Extract(String),
@@ -85,6 +89,7 @@ impl From<AppError> for ErrorResponse {
             }
             AppError::Emulator(msg) => (2001, "模拟器错误".to_string(), Some(msg.clone())),
             AppError::Download(msg) => (2002, "下载错误".to_string(), Some(msg.clone())),
+            AppError::Aria2(msg) => (2006, "Aria2 错误".to_string(), Some(msg.clone())),
             AppError::Extract(msg) => (2003, "解压错误".to_string(), Some(msg.clone())),
             AppError::Process(msg) => (2004, "进程错误".to_string(), Some(msg.clone())),
             AppError::Permission(msg) => (2005, "权限错误".to_string(), Some(msg.clone())),
@@ -124,6 +129,7 @@ impl AppError {
             AppError::DirectoryNotFound(s) => AppError::DirectoryNotFound(s.clone()),
             AppError::Emulator(s) => AppError::Emulator(s.clone()),
             AppError::Download(s) => AppError::Download(s.clone()),
+            AppError::Aria2(s) => AppError::Aria2(s.clone()),
             AppError::Extract(s) => AppError::Extract(s.clone()),
             AppError::Process(s) => AppError::Process(s.clone()),
             AppError::Permission(s) => AppError::Permission(s.clone()),

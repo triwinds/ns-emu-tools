@@ -13,7 +13,8 @@
       "Bash(cargo test:*)",
       "WebSearch",
       "WebFetch(domain:crates.io)",
-      "WebFetch(domain:docs.rs)"
+      "WebFetch(domain:docs.rs)",
+      "Bash(cargo search:*)"
     ]
   }
 }
