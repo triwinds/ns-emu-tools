@@ -465,32 +465,45 @@ impl Downloader {
             CHROME_UA.to_string()
         };
 
-        // HEAD 请求获取文件信息并检查是否支持 Range
-        let head_response = self
+        // 发送 Range 请求来获取文件信息并验证是否支持分块下载
+        // 使用 Range: bytes=0-0 请求第一个字节，如果返回 206 则支持 Range
+        let range_test_response = self
             .client
-            .head(&final_url)
+            .get(&final_url)
             .header("User-Agent", &user_agent)
+            .header("Range", "bytes=0-0")
             .send()
             .await
-            .map_err(|e| AppError::Download(format!("HEAD 请求失败: {}", e)))?;
+            .map_err(|e| AppError::Download(format!("Range 测试请求失败: {}", e)))?;
 
-        if !head_response.status().is_success() {
+        let status = range_test_response.status();
+        if !status.is_success() && status.as_u16() != 206 {
             return Err(AppError::Download(format!(
                 "HTTP 错误: {}",
-                head_response.status()
+                status
             )));
         }
 
-        let total_size = head_response.content_length().unwrap_or(0);
-        let supports_range = head_response
-            .headers()
-            .get("accept-ranges")
-            .map(|v| v.to_str().unwrap_or("") == "bytes")
-            .unwrap_or(false);
+        // 206 Partial Content 表示支持 Range
+        let supports_range = status.as_u16() == 206;
+
+        // 从 Content-Range 头获取总大小: "bytes 0-0/12345"
+        let total_size = if supports_range {
+            range_test_response
+                .headers()
+                .get("content-range")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|s| s.split('/').last())
+                .and_then(|s| s.parse::<u64>().ok())
+                .unwrap_or(0)
+        } else {
+            // 如果不支持 Range，使用 Content-Length
+            range_test_response.content_length().unwrap_or(0)
+        };
 
         // 确定文件名
         let filename = options.filename.clone().unwrap_or_else(|| {
-            if let Some(cd) = head_response.headers().get("content-disposition") {
+            if let Some(cd) = range_test_response.headers().get("content-disposition") {
                 if let Ok(cd_str) = cd.to_str() {
                     if let Some(name) = extract_filename_from_content_disposition(cd_str) {
                         return name;
