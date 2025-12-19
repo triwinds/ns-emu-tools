@@ -28,7 +28,7 @@ tauri-plugin-opener = "2"
 tokio = { version = "1", features = ["full"] }
 
 # HTTP 客户端
-reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls", "gzip", "deflate"], default-features = false }
 
 # 序列化
 serde = { version = "1.0", features = ["derive"] }
