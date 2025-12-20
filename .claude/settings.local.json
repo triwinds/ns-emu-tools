@@ -14,7 +14,8 @@
       "WebSearch",
       "WebFetch(domain:crates.io)",
       "WebFetch(domain:docs.rs)",
-      "Bash(cargo search:*)"
+      "Bash(cargo search:*)",
+      "Bash(bun run build)"
     ]
   }
 }

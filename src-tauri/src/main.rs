@@ -35,6 +35,12 @@ fn main() {
             commands::common::update_setting,
             commands::common::update_last_open_emu_page,
             commands::common::update_dark_state,
+            commands::common::delete_history_path,
+            commands::common::check_update,
+            commands::common::load_change_log,
+            commands::common::get_available_firmware_sources,
+            commands::common::get_github_mirrors,
+            commands::common::get_game_data,
             // Yuzu commands
             commands::yuzu::get_all_yuzu_versions,
             commands::yuzu::install_yuzu_by_version,
@@ -48,6 +54,7 @@ fn main() {
             commands::yuzu::update_yuzu_path_command,
             commands::yuzu::get_yuzu_change_logs_command,
             commands::yuzu::install_firmware_to_yuzu_command,
+            commands::yuzu::switch_yuzu_branch,
             // Ryujinx commands
             commands::ryujinx::get_all_ryujinx_versions_command,
             commands::ryujinx::install_ryujinx_by_version_command,

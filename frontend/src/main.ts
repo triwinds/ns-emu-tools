@@ -24,7 +24,6 @@ app.mount('#app')
 declare global {
     interface Window {
         $vm: typeof app;
-        eel: any;
         $bus: typeof emitter;
     }
 }

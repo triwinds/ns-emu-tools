@@ -3,44 +3,37 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted} from "vue";
-import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
+import { onMounted, onUnmounted } from "vue";
+import { useConsoleDialogStore } from "@/stores/ConsoleDialogStore";
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { updateSetting } from "@/utils/tauri";
 
 const cds = useConsoleDialogStore()
 let pendingWriteSize = false
+const appWindow = getCurrentWindow()
 
 onMounted(() => {
-  if (import.meta.env.NODE_ENV !== 'development') {
-    console.log('setupWebsocketConnectivityCheck')
-    setupWebsocketConnectivityCheck()
-  }
   window.addEventListener('resize', rememberWindowSize);
 })
 
-function rememberWindowSize() {
+onUnmounted(() => {
+  window.removeEventListener('resize', rememberWindowSize);
+})
+
+async function rememberWindowSize() {
   if (!pendingWriteSize) {
     pendingWriteSize = true
-    setTimeout(() => {
+    setTimeout(async () => {
       pendingWriteSize = false
-      window.eel.update_window_size(window.outerWidth, window.outerHeight)()
+      try {
+        const size = await appWindow.outerSize()
+        // Note: Tauri automatically saves window state, but we can also manually update settings if needed
+        console.log('Window resized:', size.width, size.height)
+      } catch (error) {
+        console.error('Failed to get window size:', error)
+      }
     }, 1000)
   }
-}
-
-function setupWebsocketConnectivityCheck() {
-  setInterval(() => {
-    try {
-      let ws = window.eel._websocket
-      if (ws.readyState === ws.CLOSED || ws.readyState === ws.CLOSING) {
-        cds.cleanAndShowConsoleDialog()
-        cds.appendConsoleMessage('程序后端连接出错, 请关闭当前页面并重启程序以解决这个问题。')
-      }
-    } catch (e) {
-      console.log(e)
-      cds.cleanAndShowConsoleDialog()
-      cds.appendConsoleMessage('程序后端连接出错, 请关闭当前页面并重启程序以解决这个问题。')
-    }
-  }, 5000)
 }
 </script>
 

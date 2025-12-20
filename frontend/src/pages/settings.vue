@@ -117,6 +117,7 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import {onBeforeMount, onMounted, ref, watch} from "vue";
 import type {NameValueItem, Setting} from "@/types";
 import {defaultConfig} from "@/types/DefaultConfig";
+import { updateSetting, getAvailableFirmwareSources, getGithubMirrors } from "@/utils/tauri";
 import {
   mdiHelpCircle
 } from '@mdi/js'
@@ -172,30 +173,34 @@ onMounted(async () => {
   updateProxyMode()
   watch(setting, async (newValue) => {
     console.log(newValue)
-    let resp = await window.eel.update_setting(newValue)()
-    if (resp['code'] === 0) {
-      configStore.config = resp['data']
+    try {
+      await updateSetting(newValue)
+      await configStore.reloadConfig()
+    } catch (e) {
+      console.error('Failed to update setting:', e)
     }
   }, {deep: true, immediate: false})
 })
 
 async function loadAvailableFirmwareDownloadSource() {
-  let resp = await window.eel.get_available_firmware_sources()();
-  console.log(resp)
-  if (resp.code === 0) {
-    for (let source of resp.data) {
+  try {
+    const sources = await getAvailableFirmwareSources()
+    for (const source of sources) {
       availableFirmwareDownloadSource.value.push({name: source[0], value: source[1]})
     }
+  } catch (e) {
+    console.error('Failed to load firmware sources:', e)
   }
 }
 
 async function loadAvailableGithubDownloadSource() {
-  let resp = await window.eel.get_github_mirrors()()
-  console.log(resp)
-  if (resp.code === 0) {
-    for (let mirror of resp.data) {
+  try {
+    const mirrors = await getGithubMirrors()
+    for (const mirror of mirrors) {
       availableGithubDownloadSource.value.push({name: mirror[2], value: mirror[0]})
     }
+  } catch (e) {
+    console.error('Failed to load github mirrors:', e)
   }
 }
 

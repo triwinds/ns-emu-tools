@@ -41,16 +41,14 @@
 
 <script setup lang="ts">
 import SimplePage from "@/components/SimplePage.vue";
-import {openUrlWithDefaultBrowser} from "@/utils/common";
+import { openYuzuKeysFolder, openRyujinxKeysFolder } from "@/utils/tauri";
 
 function openYuzuKeyFolder() {
-  window.eel.open_yuzu_keys_folder()(() => {
-  })
+  openYuzuKeysFolder()
 }
 
 function openRyujinxKeyFolder() {
-  window.eel.open_ryujinx_keys_folder()(() => {
-  })
+  openRyujinxKeysFolder()
 }
 </script>
 

@@ -25,13 +25,13 @@
       <v-row>
         <v-col cols="7">
           <v-autocomplete label="Yuzu 路径" v-model="selectedYuzuPath" :items="historyPathList"
-                          @update:model-value="updateYuzuPath" variant="underlined"
+                          @update:model-value="updateYuzuPathHandler" variant="underlined"
                           style="cursor: default">
             <template v-slot:item="{props, item}">
               <v-list-item v-bind="props" :title="item.raw">
                 <template v-slot:append>
                   <v-btn color="error" size="small" icon variant="outlined" right v-if="selectedYuzuPath !== item.raw"
-                     @click.stop="deleteHistoryPath(item.raw)">
+                     @click.stop="deleteHistoryPathHandler(item.raw)">
                 <v-icon size="small" :icon="mdiTrashCanOutline"></v-icon>
               </v-btn>
                 </template>
@@ -45,7 +45,7 @@
                  :disabled='isRunningInstall' @click="modifyYuzuPath">修改路径
           </v-btn>
           <v-btn size="large" color="success" variant="outlined" min-width="120px" :disabled='isRunningInstall'
-                 @click="startYuzu">启动 Yuzu
+                 @click="startYuzuHandler">启动 Yuzu
           </v-btn>
         </v-col>
       </v-row>
@@ -57,7 +57,7 @@
           <v-tooltip top>
             <template v-slot:activator="{ props }">
               <v-btn color="warning" variant="outlined" style="margin-right: 15px" v-bind="props"
-                     @click="detectYuzuVersion" :disabled='isRunningInstall'>
+                     @click="detectYuzuVersionHandler" :disabled='isRunningInstall'>
                 {{ yuzuConfig.yuzu_version ? yuzuConfig.yuzu_version : '未知' }}
               </v-btn>
             </template>
@@ -123,7 +123,7 @@
         <v-col>
           <v-btn color="info" size="large" variant="outlined" min-width="140px"
                  :disabled='!isRunningInstall && !isBranchAvailable'
-                 @click="installYuzu">
+                 @click="installYuzuHandler">
             安装 Yuzu
           </v-btn>
         </v-col>
@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onBeforeMount, ref} from "vue";
+import {computed, onBeforeMount, onMounted, onUnmounted, ref} from "vue";
 import {useConfigStore} from "@/stores/ConfigStore";
 import type {CommonResponse} from "@/types";
 import {useAppStore} from "@/stores/app";
@@ -194,6 +194,27 @@ import SimplePage from "@/components/SimplePage.vue";
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import DialogTitle from "@/components/DialogTitle.vue";
+import { open } from '@tauri-apps/plugin-dialog'
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import {
+  getAllYuzuVersions,
+  switchYuzuBranch as switchBranchAPI,
+  installYuzu as installYuzuAPI,
+  installFirmwareToYuzu,
+  detectYuzuVersion as detectYuzuVersionAPI,
+  getYuzuChangeLogs,
+  startYuzu as startYuzuAPI,
+  updateYuzuPath as updateYuzuPathAPI,
+  deleteHistoryPath as deleteHistoryPathAPI,
+  updateLastOpenEmuPage,
+  getStorage,
+  onDownloadProgress,
+  onNotifyMessage,
+  formatSize,
+  formatSpeed,
+  type DownloadProgress,
+  type NotifyMessage
+} from '@/utils/tauri'
 
 let allYuzuReleaseVersions = ref<string[]>([])
 let targetYuzuVersion = ref('项目已被关闭')
@@ -260,10 +281,8 @@ let latestYuzuVersion = computed(() => {
 })
 
 async function loadHistoryPathList() {
-  let data = await window.eel.load_history_path('yuzu')()
-  if (data.code === 0) {
-    historyPathList.value = data.data
-  }
+  const storage = await getStorage()
+  historyPathList.value = Object.keys(storage.yuzu_history)
 }
 
 onBeforeMount(async () => {
@@ -273,10 +292,37 @@ onBeforeMount(async () => {
   selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
   selectedBranch.value = configStore.config.yuzu.branch
   handleSelectedBranchUpdate()
-  window.eel.update_last_open_emu_page('yuzu')()
+  await updateLastOpenEmuPage('yuzu')
 })
 
-function updateYuzuReleaseVersions() {
+// 事件监听器
+let unlistenDownload: UnlistenFn | null = null
+let unlistenNotify: UnlistenFn | null = null
+
+onMounted(async () => {
+  // 监听下载进度
+  unlistenDownload = await onDownloadProgress((event) => {
+    const progress: DownloadProgress = event.payload
+    if (progress.percentage > 0) {
+      const msg = `下载进度: ${progress.percentage.toFixed(1)}% - ${formatSize(progress.downloaded)} / ${formatSize(progress.total)} @ ${formatSpeed(progress.speed)}`
+      consoleDialogStore.appendConsoleMessage(msg)
+    }
+  })
+
+  // 监听通知消息
+  unlistenNotify = await onNotifyMessage((event) => {
+    const message: NotifyMessage = event.payload
+    consoleDialogStore.appendConsoleMessage(message.content)
+  })
+})
+
+onUnmounted(() => {
+  // 清理监听器
+  if (unlistenDownload) unlistenDownload()
+  if (unlistenNotify) unlistenNotify()
+})
+
+async function updateYuzuReleaseVersions() {
   console.log(selectedBranch.value)
   if (selectedBranch.value in branchMap && !branchMap[selectedBranch.value].available) {
     allYuzuReleaseVersions.value = []
@@ -287,17 +333,22 @@ function updateYuzuReleaseVersions() {
   isBranchAvailable.value = true
   allYuzuReleaseVersions.value = []
   targetYuzuVersion.value = ""
-  window.eel.get_all_yuzu_release_versions()((data: CommonResponse<string[]>) => {
-    if (data.code === 0) {
-      console.log(data.data)
-      let infos = data.data || []
+
+  try {
+    const response = await getAllYuzuVersions(selectedBranch.value)
+    if (response.code === 0) {
+      console.log(response.data)
+      const infos = response.data || []
       allYuzuReleaseVersions.value = infos
       targetYuzuVersion.value = infos[0] ?? ''
     } else {
       consoleDialogStore.showConsoleDialog()
       consoleDialogStore.appendConsoleMessage('yuzu 版本信息加载异常.')
     }
-  })
+  } catch (error) {
+    consoleDialogStore.showConsoleDialog()
+    consoleDialogStore.appendConsoleMessage(`加载版本失败: ${error}`)
+  }
 }
 
 function handleSelectedBranchUpdate() {
@@ -313,85 +364,97 @@ function handleSelectedBranchUpdate() {
 }
 
 async function switchYuzuBranch() {
-  await window.eel.switch_yuzu_branch(selectedBranch.value)()
+  await switchBranchAPI(selectedBranch.value)
   await configStore.reloadConfig()
   allYuzuReleaseVersions.value = []
-  handleSelectedBranchUpdate()
+  await handleSelectedBranchUpdate()
 }
 
-function installFirmware() {
+async function installFirmware() {
   consoleDialogStore.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   firmwareInstallationWarning.value = false
   consoleDialogStore.persistentConsoleDialog = true
-  window.eel.install_yuzu_firmware(appStore.targetFirmwareVersion)((resp: CommonResponse) => {
+
+  try {
+    await installFirmwareToYuzu(appStore.targetFirmwareVersion)
+    await configStore.reloadConfig()
+    consoleDialogStore.appendConsoleMessage('固件安装成功')
+  } catch (error) {
+    consoleDialogStore.appendConsoleMessage(`安装固件失败: ${error}`)
+  } finally {
     isRunningInstall.value = false
     consoleDialogStore.persistentConsoleDialog = false
-    if (resp['msg']) {
-      consoleDialogStore.appendConsoleMessage(resp.msg)
-    }
-    configStore.reloadConfig()
-  })
+  }
 }
 
-function installYuzu() {
+async function installYuzuHandler() {
   consoleDialogStore.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   consoleDialogStore.persistentConsoleDialog = true
-  window.eel.install_yuzu(targetYuzuVersion.value, branch.value)((resp: CommonResponse) => {
+
+  try {
+    await installYuzuAPI(targetYuzuVersion.value, branch.value)
+    await configStore.reloadConfig()
+    consoleDialogStore.appendConsoleMessage('Yuzu 安装成功')
+  } catch (error) {
+    consoleDialogStore.appendConsoleMessage(`安装失败: ${error}`)
+  } finally {
     isRunningInstall.value = false
     consoleDialogStore.persistentConsoleDialog = false
-    if (resp['code'] === 0) {
-      configStore.reloadConfig()
-      consoleDialogStore.appendConsoleMessage(resp.msg || '')
-    } else {
-      consoleDialogStore.appendConsoleMessage(resp.msg || '')
-    }
-  });
+  }
 }
 
 async function detectFirmwareVersion() {
   consoleDialogStore.cleanAndShowConsoleDialog()
-  window.eel.detect_firmware_version("yuzu")(() => {
-    configStore.reloadConfig()
-    consoleDialogStore.appendConsoleMessage('固件版本检测完成')
-  })
+  // TODO: 实现固件版本检测,暂时跳过
+  consoleDialogStore.appendConsoleMessage('固件版本检测功能待实现')
+  await configStore.reloadConfig()
 }
-function loadChangeLog() {
-  window.eel.get_yuzu_change_logs()((resp: CommonResponse<string>) => {
-    if (resp.code === 0) {
-      changeLogHtml.value = markdown.parse(resp.data || '')
+
+async function loadChangeLog() {
+  try {
+    const response = await getYuzuChangeLogs()
+    if (response.code === 0) {
+      changeLogHtml.value = markdown.parse(response.data || '')
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }
-  })
-}
-
-async function detectYuzuVersion() {
-  consoleDialogStore.cleanAndShowConsoleDialog()
-  let previousBranch = branch.value
-  let data = await window.eel.detect_yuzu_version()()
-  await configStore.reloadConfig()
-  if (data['code'] === 0) {
-    console.log(previousBranch, branch.value)
-    if (previousBranch !== branch.value) {
-      selectedBranch.value = branch.value
-      handleSelectedBranchUpdate()
-    }
-    consoleDialogStore.appendConsoleMessage('Yuzu 版本检测完成')
-  } else {
-    consoleDialogStore.appendConsoleMessage('检测 yuzu 版本时发生异常')
+  } catch (error) {
+    changeLogHtml.value = '<p>加载失败。</p>'
   }
 }
 
-function startYuzu() {
-  window.eel.start_yuzu()((data: CommonResponse) => {
-    if (data['code'] === 0) {
-      consoleDialogStore.appendConsoleMessage('yuzu 启动成功')
+async function detectYuzuVersionHandler() {
+  consoleDialogStore.cleanAndShowConsoleDialog()
+  let previousBranch = branch.value
+
+  try {
+    const response = await detectYuzuVersionAPI()
+    await configStore.reloadConfig()
+
+    if (response.code === 0) {
+      console.log(previousBranch, branch.value)
+      if (previousBranch !== branch.value) {
+        selectedBranch.value = branch.value
+        await handleSelectedBranchUpdate()
+      }
+      consoleDialogStore.appendConsoleMessage('Yuzu 版本检测完成')
     } else {
-      consoleDialogStore.appendConsoleMessage('yuzu 启动失败')
+      consoleDialogStore.appendConsoleMessage('检测 yuzu 版本时发生异常')
     }
-  })
+  } catch (error) {
+    consoleDialogStore.appendConsoleMessage(`检测版本失败: ${error}`)
+  }
+}
+
+async function startYuzuHandler() {
+  try {
+    await startYuzuAPI()
+    consoleDialogStore.appendConsoleMessage('yuzu 启动成功')
+  } catch (error) {
+    consoleDialogStore.appendConsoleMessage(`yuzu 启动失败: ${error}`)
+  }
 }
 
 async function modifyYuzuPath() {
@@ -400,38 +463,60 @@ async function modifyYuzuPath() {
   consoleDialogStore.appendConsoleMessage('选择的目录将作为存放模拟器的根目录')
   consoleDialogStore.appendConsoleMessage('建议新建目录单独存放')
   consoleDialogStore.appendConsoleMessage('=============================================')
-  let data = await window.eel.ask_and_update_yuzu_path()()
-  if (data['code'] === 0) {
-    let oldBranch = configStore.config.yuzu.branch
-    await configStore.reloadConfig()
-    if (oldBranch !== configStore.config.yuzu.branch) {
-      selectedBranch.value = configStore.config.yuzu.branch
-      handleSelectedBranchUpdate()
-    }
-    await loadHistoryPathList()
-    selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
-  }
-  consoleDialogStore.appendConsoleMessage(data['msg'])
-  await loadHistoryPathList()
-}
-function deleteHistoryPath(targetPath: string) {
-  window.eel.delete_history_path('yuzu', targetPath)((resp: CommonResponse) => {
-    if (resp.code === 0) {
-      loadHistoryPathList()
-    }
+
+  const selected = await open({
+    directory: true,
+    multiple: false,
+    title: '选择 Yuzu 安装目录'
   })
+
+  if (selected && typeof selected === 'string') {
+    try {
+      await updateYuzuPathAPI(selected)
+
+      let oldBranch = configStore.config.yuzu.branch
+      await configStore.reloadConfig()
+
+      if (oldBranch !== configStore.config.yuzu.branch) {
+        selectedBranch.value = configStore.config.yuzu.branch
+        await handleSelectedBranchUpdate()
+      }
+
+      await loadHistoryPathList()
+      selectedYuzuPath.value = configStore.config.yuzu.yuzu_path
+      consoleDialogStore.appendConsoleMessage('路径更新成功')
+    } catch (error) {
+      consoleDialogStore.appendConsoleMessage(`更新路径失败: ${error}`)
+    }
+  }
+
+  await loadHistoryPathList()
 }
 
-async function updateYuzuPath() {
-  await window.eel.update_yuzu_path(selectedYuzuPath.value)()
-  let oldBranch = configStore.yuzuConfig.branch
-  await configStore.reloadConfig()
-  await loadHistoryPathList()
-  selectedYuzuPath.value = configStore.yuzuConfig.yuzu_path
+async function deleteHistoryPathHandler(targetPath: string) {
+  try {
+    await deleteHistoryPathAPI('yuzu', targetPath)
+    await loadHistoryPathList()
+  } catch (error) {
+    consoleDialogStore.appendConsoleMessage(`删除历史路径失败: ${error}`)
+  }
+}
 
-  if (oldBranch !== configStore.yuzuConfig.branch) {
-    selectedBranch.value = configStore.yuzuConfig.branch
-    handleSelectedBranchUpdate()
+async function updateYuzuPathHandler() {
+  try {
+    await updateYuzuPathAPI(selectedYuzuPath.value)
+
+    let oldBranch = configStore.yuzuConfig.branch
+    await configStore.reloadConfig()
+    await loadHistoryPathList()
+    selectedYuzuPath.value = configStore.yuzuConfig.yuzu_path
+
+    if (oldBranch !== configStore.yuzuConfig.branch) {
+      selectedBranch.value = configStore.yuzuConfig.branch
+      await handleSelectedBranchUpdate()
+    }
+  } catch (error) {
+    consoleDialogStore.appendConsoleMessage(`更新路径失败: ${error}`)
   }
 }
 </script>

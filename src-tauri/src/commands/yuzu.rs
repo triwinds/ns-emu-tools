@@ -203,3 +203,16 @@ pub async fn install_firmware_to_yuzu_command(
         }
     }
 }
+
+/// 切换 Yuzu 分支
+#[tauri::command]
+pub fn switch_yuzu_branch(branch: String) -> Result<ApiResponse<()>, String> {
+    use crate::config::CONFIG;
+    info!("切换 Yuzu 分支到: {}", branch);
+
+    let mut cfg = CONFIG.write();
+    cfg.yuzu.branch = branch;
+    cfg.save().map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse::success(()))
+}

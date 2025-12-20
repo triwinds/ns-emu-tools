@@ -44,6 +44,16 @@ export interface NotifyMessage {
   persistent: boolean
 }
 
+/** 更新检查结果 */
+export interface UpdateCheckResult {
+  hasUpdate: boolean
+  currentVersion: string
+  latestVersion: string
+  description: string
+  downloadUrl?: string
+  htmlUrl?: string
+}
+
 // ============ 事件名称常量 ============
 
 export const Events = {
@@ -115,6 +125,31 @@ export async function updateLastOpenEmuPage(page: string) {
 /** 更新深色模式状态 */
 export async function updateDarkState(dark: boolean) {
   return invokeCommand<void>('update_dark_state', { dark })
+}
+
+/** 检查应用更新 */
+export async function checkUpdate(includePrerelease: boolean = false) {
+  return invokeCommand<UpdateCheckResult>('check_update', { includePrerelease })
+}
+
+/** 加载变更日志 */
+export async function loadChangeLog() {
+  return invokeCommand<string>('load_change_log')
+}
+
+/** 获取可用的固件下载源 */
+export async function getAvailableFirmwareSources() {
+  return invokeCommand<Array<[string, string]>>('get_available_firmware_sources')
+}
+
+/** 获取 GitHub 镜像列表 */
+export async function getGithubMirrors() {
+  return invokeCommand<Array<[string, string, string]>>('get_github_mirrors')
+}
+
+/** 获取游戏数据映射 */
+export async function getGameData() {
+  return invokeCommand<Record<string, any>>('get_game_data')
 }
 
 // ============ 事件监听封装 ============
@@ -223,6 +258,88 @@ export interface Storage {
   yuzu_history: Record<string, YuzuConfig>
   ryujinx_history: Record<string, RyujinxConfig>
   yuzu_save_backup_path: string
+}
+
+// ============ Yuzu API ============
+
+/** 获取所有 Yuzu 版本 */
+export async function getAllYuzuVersions(branch: string) {
+  return invokeCommand<ApiResponse<string[]>>('get_all_yuzu_versions', { branch })
+}
+
+/** 安装 Yuzu */
+export async function installYuzu(targetVersion: string, branch: string) {
+  return invokeCommand<ApiResponse<void>>('install_yuzu_by_version', {
+    targetVersion,
+    branch
+  })
+}
+
+/** 检测 Yuzu 版本 */
+export async function detectYuzuVersion() {
+  return invokeCommand<ApiResponse<string | null>>('detect_yuzu_version_command')
+}
+
+/** 启动 Yuzu */
+export async function startYuzu() {
+  return invokeCommand<ApiResponse<void>>('start_yuzu_command')
+}
+
+/** 获取 Yuzu 可执行文件路径 */
+export async function getYuzuExePath() {
+  return invokeCommand<ApiResponse<string>>('get_yuzu_exe_path_command')
+}
+
+/** 打开 Yuzu keys 文件夹 */
+export async function openYuzuKeysFolder() {
+  return invokeCommand<ApiResponse<void>>('open_yuzu_keys_folder_command')
+}
+
+/** 打开 Ryujinx keys 文件夹 */
+export async function openRyujinxKeysFolder() {
+  return invokeCommand<ApiResponse<void>>('open_ryujinx_keys_folder_command')
+}
+
+/** 获取 Yuzu 用户数据路径 */
+export async function getYuzuUserPath() {
+  return invokeCommand<ApiResponse<string>>('get_yuzu_user_path_command')
+}
+
+/** 获取 Yuzu NAND 路径 */
+export async function getYuzuNandPath() {
+  return invokeCommand<ApiResponse<string>>('get_yuzu_nand_path_command')
+}
+
+/** 获取 Yuzu load 路径 */
+export async function getYuzuLoadPath() {
+  return invokeCommand<ApiResponse<string>>('get_yuzu_load_path_command')
+}
+
+/** 更新 Yuzu 路径 */
+export async function updateYuzuPath(newPath: string) {
+  return invokeCommand<ApiResponse<void>>('update_yuzu_path_command', { newPath })
+}
+
+/** 获取 Yuzu 变更日志 */
+export async function getYuzuChangeLogs() {
+  return invokeCommand<ApiResponse<string>>('get_yuzu_change_logs_command')
+}
+
+/** 安装固件到 Yuzu */
+export async function installFirmwareToYuzu(firmwareVersion: string | null) {
+  return invokeCommand<ApiResponse<void>>('install_firmware_to_yuzu_command', {
+    firmwareVersion
+  })
+}
+
+/** 切换 Yuzu 分支 */
+export async function switchYuzuBranch(branch: string) {
+  return invokeCommand<ApiResponse<void>>('switch_yuzu_branch', { branch })
+}
+
+/** 删除历史路径 */
+export async function deleteHistoryPath(emuType: string, path: string) {
+  return invokeCommand<ApiResponse<void>>('delete_history_path', { emuType, path })
 }
 
 // ============ 工具函数 ============
