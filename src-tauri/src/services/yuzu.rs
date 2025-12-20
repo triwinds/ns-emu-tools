@@ -4,8 +4,10 @@
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
+use crate::models::InstallationEvent; // Import models
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
+use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_github_download_url;
 use crate::utils::archive::uncompress;
 use std::path::{Path, PathBuf};
@@ -137,10 +139,10 @@ pub fn unzip_yuzu(package_path: &Path, target_dir: Option<&Path>) -> AppResult<P
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `on_progress` - 下载进度回调
-pub async fn install_eden<F>(target_version: &str, on_progress: F) -> AppResult<()>
+/// * `on_event` - 事件回调
+pub async fn install_eden<F>(target_version: &str, on_event: F) -> AppResult<()>
 where
-    F: Fn(crate::services::aria2::Aria2DownloadProgress) + Send + 'static,
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
 {
     info!("开始安装 Eden 版本: {}", target_version);
 
@@ -152,20 +154,105 @@ where
         )
     };
 
-    // 下载
-    let package_path = download_yuzu(target_version, "eden", on_progress).await?;
+    // 获取版本信息
+    on_event(InstallationEvent::StepRunning { id: "fetch_version".to_string() });
+    let _release_info = match get_yuzu_release_info_by_version(target_version, "eden").await {
+        Ok(info) => {
+            if info.tag_name.is_empty() {
+                let err_msg = format!("未找到 Eden 版本: {}", target_version);
+                on_event(InstallationEvent::StepError {
+                    id: "fetch_version".to_string(),
+                    message: err_msg.clone()
+                });
+                return Err(AppError::Emulator(err_msg));
+            }
+            info
+        }
+        Err(e) => {
+            on_event(InstallationEvent::StepError {
+                id: "fetch_version".to_string(),
+                message: e.to_string()
+            });
+            return Err(e);
+        }
+    };
+    on_event(InstallationEvent::StepSuccess { id: "fetch_version".to_string() });
 
-    // 解压到临时目录
+    // 下载
+    on_event(InstallationEvent::StepRunning { id: "download".to_string() });
+    let on_event_clone = on_event.clone();
+    let package_path = match download_yuzu(target_version, "eden", move |progress| {
+         on_event_clone(InstallationEvent::DownloadProgress {
+            id: "download".to_string(),
+            progress: progress.percentage,
+            speed: progress.speed_string(),
+            eta: "Calculating...".to_string(), // Aria2 struct wrapper might need full ETA logic if not present
+         });
+    }).await {
+        Ok(path) => path,
+        Err(e) => {
+            on_event(InstallationEvent::StepError {
+                id: "download".to_string(),
+                message: e.to_string()
+            });
+            return Err(e);
+        }
+    };
+    on_event(InstallationEvent::StepSuccess { id: "download".to_string() });
+
+    // 解压
+    on_event(InstallationEvent::StepRunning { id: "extract".to_string() });
     let tmp_dir = std::env::temp_dir().join("eden-install");
     if tmp_dir.exists() {
-        std::fs::remove_dir_all(&tmp_dir)?;
+        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+            on_event(InstallationEvent::StepError {
+                id: "extract".to_string(),
+                message: format!("清理临时目录失败: {}", e)
+            });
+            return Err(e.into());
+        }
     }
-    std::fs::create_dir_all(&tmp_dir)?;
+    if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
+        on_event(InstallationEvent::StepError {
+            id: "extract".to_string(),
+            message: format!("创建临时目录失败: {}", e)
+        });
+        return Err(e.into());
+    }
 
-    unzip_yuzu(&package_path, Some(&tmp_dir))?;
+    if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
+        on_event(InstallationEvent::StepError {
+            id: "extract".to_string(),
+            message: e.to_string()
+        });
+        return Err(e);
+    }
+    on_event(InstallationEvent::StepSuccess { id: "extract".to_string() });
 
+    // 安装
+    on_event(InstallationEvent::StepRunning { id: "install".to_string() });
     // 复制文件
-    copy_back_yuzu_files(&tmp_dir, &yuzu_path)?;
+    if let Err(e) = copy_back_yuzu_files(&tmp_dir, &yuzu_path) {
+        on_event(InstallationEvent::StepError {
+            id: "install".to_string(),
+            message: e.to_string()
+        });
+        return Err(e);
+    }
+    on_event(InstallationEvent::StepSuccess { id: "install".to_string() });
+
+    // 检查运行环境
+    on_event(InstallationEvent::StepRunning { id: "check_env".to_string() });
+    if let Err(e) = check_and_install_msvc().await {
+        warn!("MSVC 运行库检查失败: {}", e);
+        on_event(InstallationEvent::StepError {
+            id: "check_env".to_string(),
+            message: e.to_string()
+        });
+        // 不阻止安装流程，继续执行
+    } else {
+        on_event(InstallationEvent::StepSuccess { id: "check_env".to_string() });
+    }
 
     // 如果配置了自动删除，删除下载文件
     if auto_delete {
@@ -179,10 +266,10 @@ where
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `on_progress` - 下载进度回调
-pub async fn install_citron<F>(target_version: &str, on_progress: F) -> AppResult<()>
+/// * `on_event` - 事件回调
+pub async fn install_citron<F>(target_version: &str, on_event: F) -> AppResult<()>
 where
-    F: Fn(crate::services::aria2::Aria2DownloadProgress) + Send + 'static,
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
 {
     info!("开始安装 Citron 版本: {}", target_version);
 
@@ -194,32 +281,141 @@ where
         )
     };
 
-    // 下载
-    let package_path = download_yuzu(target_version, "citron", on_progress).await?;
+    // 获取版本信息
+    on_event(InstallationEvent::StepRunning { id: "fetch_version".to_string() });
+    let _release_info = match get_yuzu_release_info_by_version(target_version, "citron").await {
+        Ok(info) => {
+            if info.tag_name.is_empty() {
+                let err_msg = format!("未找到 Citron 版本: {}", target_version);
+                on_event(InstallationEvent::StepError {
+                    id: "fetch_version".to_string(),
+                    message: err_msg.clone()
+                });
+                return Err(AppError::Emulator(err_msg));
+            }
+            info
+        }
+        Err(e) => {
+            on_event(InstallationEvent::StepError {
+                id: "fetch_version".to_string(),
+                message: e.to_string()
+            });
+            return Err(e);
+        }
+    };
+    on_event(InstallationEvent::StepSuccess { id: "fetch_version".to_string() });
 
-    // 解压到临时目录
+    // 下载
+    on_event(InstallationEvent::StepRunning { id: "download".to_string() });
+    let on_event_clone = on_event.clone();
+    let package_path = match download_yuzu(target_version, "citron", move |progress| {
+         on_event_clone(InstallationEvent::DownloadProgress {
+            id: "download".to_string(),
+            progress: progress.percentage,
+            speed: progress.speed_string(),
+            eta: "Calculating...".to_string(),
+         });
+    }).await {
+        Ok(path) => path,
+        Err(e) => {
+            on_event(InstallationEvent::StepError {
+                id: "download".to_string(),
+                message: e.to_string()
+            });
+            return Err(e);
+        }
+    };
+    on_event(InstallationEvent::StepSuccess { id: "download".to_string() });
+
+    // 解压
+    on_event(InstallationEvent::StepRunning { id: "extract".to_string() });
     let tmp_dir = std::env::temp_dir().join("citron-install");
     if tmp_dir.exists() {
-        std::fs::remove_dir_all(&tmp_dir)?;
+        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+            on_event(InstallationEvent::StepError {
+                id: "extract".to_string(),
+                message: format!("清理临时目录失败: {}", e)
+            });
+            return Err(e.into());
+        }
     }
-    std::fs::create_dir_all(&tmp_dir)?;
+    if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
+        on_event(InstallationEvent::StepError {
+            id: "extract".to_string(),
+            message: format!("创建临时目录失败: {}", e)
+        });
+        return Err(e.into());
+    }
 
-    unzip_yuzu(&package_path, Some(&tmp_dir))?;
+    if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
+        on_event(InstallationEvent::StepError {
+            id: "extract".to_string(),
+            message: e.to_string()
+        });
+        return Err(e);
+    }
+    on_event(InstallationEvent::StepSuccess { id: "extract".to_string() });
 
     // Citron 解压后有一个顶层目录，需要进入
     let mut release_dir = tmp_dir.clone();
-    if let Some(first_entry) = std::fs::read_dir(&tmp_dir)?.next() {
-        let entry = first_entry?;
-        if entry.path().is_dir() {
-            release_dir = entry.path();
+    match std::fs::read_dir(&tmp_dir) {
+        Ok(mut entries) => {
+            if let Some(first_entry) = entries.next() {
+                match first_entry {
+                    Ok(entry) => {
+                        if entry.path().is_dir() {
+                            release_dir = entry.path();
+                        }
+                    }
+                    Err(e) => {
+                        on_event(InstallationEvent::StepError {
+                            id: "extract".to_string(),
+                            message: format!("读取解压目录失败: {}", e)
+                        });
+                        return Err(e.into());
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            on_event(InstallationEvent::StepError {
+                id: "extract".to_string(),
+                message: format!("读取解压目录失败: {}", e)
+            });
+            return Err(e.into());
         }
     }
 
+    // 安装
+    on_event(InstallationEvent::StepRunning { id: "install".to_string() });
     // 复制文件
-    copy_back_yuzu_files(&release_dir, &yuzu_path)?;
+    if let Err(e) = copy_back_yuzu_files(&release_dir, &yuzu_path) {
+        on_event(InstallationEvent::StepError {
+            id: "install".to_string(),
+            message: e.to_string()
+        });
+        return Err(e);
+    }
+    on_event(InstallationEvent::StepSuccess { id: "install".to_string() });
 
     // 清理临时目录
-    std::fs::remove_dir_all(&tmp_dir)?;
+    if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+        warn!("清理临时目录失败: {}", e);
+        // 不阻止安装流程
+    }
+
+    // 检查运行环境
+    on_event(InstallationEvent::StepRunning { id: "check_env".to_string() });
+    if let Err(e) = check_and_install_msvc().await {
+        warn!("MSVC 运行库检查失败: {}", e);
+        on_event(InstallationEvent::StepError {
+            id: "check_env".to_string(),
+            message: e.to_string()
+        });
+        // 不阻止安装流程，继续执行
+    } else {
+        on_event(InstallationEvent::StepSuccess { id: "check_env".to_string() });
+    }
 
     // 如果配置了自动删除，删除下载文件
     if auto_delete {
@@ -311,10 +507,10 @@ pub fn remove_all_executable_file() -> AppResult<()> {
 /// # 参数
 /// * `target_version` - 目标版本
 /// * `branch` - 分支 (eden, citron)
-/// * `on_progress` - 下载进度回调
-pub async fn install_yuzu<F>(target_version: &str, branch: &str, on_progress: F) -> AppResult<()>
+/// * `on_event` - 事件回调
+pub async fn install_yuzu<F>(target_version: &str, branch: &str, on_event: F) -> AppResult<()>
 where
-    F: Fn(crate::services::aria2::Aria2DownloadProgress) + Send + 'static,
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
 {
     info!(
         "安装 {} 版本: {}, 分支: {}",
@@ -350,8 +546,8 @@ where
 
     // 根据分支安装
     match branch {
-        "eden" => install_eden(target_version, on_progress).await?,
-        "citron" => install_citron(target_version, on_progress).await?,
+        "eden" => install_eden(target_version, on_event).await?,
+        "citron" => install_citron(target_version, on_event).await?,
         _ => {
             return Err(AppError::Emulator(
                 "只支持安装 eden 和 citron 分支".to_string(),
@@ -379,8 +575,6 @@ where
         cfg.yuzu.branch = branch.to_string();
         cfg.save()?;
     }
-
-    // TODO: 检查并安装 MSVC 运行库
 
     info!("{} [{}] 安装成功", get_emu_name(branch), target_version);
     Ok(())

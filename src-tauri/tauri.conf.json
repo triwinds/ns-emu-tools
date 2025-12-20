@@ -4,9 +4,9 @@
   "version": "0.6.0",
   "identifier": "com.nsemu.tools",
   "build": {
-    "beforeDevCommand": "cd ../frontend && npm run dev",
-    "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "cd ../frontend && npm run build",
+    "beforeDevCommand": "bun run --cwd ..\\frontend dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "bun run --cwd ..\\frontend build",
     "frontendDist": "../web"
   },
   "app": {

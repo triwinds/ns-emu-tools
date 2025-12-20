@@ -11,6 +11,7 @@ declare module 'vue' {
     ConsoleDialog: typeof import('./components/ConsoleDialog.vue')['default']
     DialogTitle: typeof import('./components/DialogTitle.vue')['default']
     FaqGroup: typeof import('./components/FaqGroup.vue')['default']
+    InstallationDialog: typeof import('./components/InstallationDialog.vue')['default']
     MarkdownContentBox: typeof import('./components/MarkdownContentBox.vue')['default']
     NewVersionDialog: typeof import('./components/NewVersionDialog.vue')['default']
     OtherLinkItem: typeof import('./components/OtherLinkItem.vue')['default']

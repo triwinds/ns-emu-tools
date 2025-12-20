@@ -10,8 +10,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri": "tauri"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.2.5",
@@ -33,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@mdi/js": "^7.4.47",
+    "@tauri-apps/cli": "^2.9.6",
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^22.9.0",
     "@vitejs/plugin-vue": "^5.1.4",

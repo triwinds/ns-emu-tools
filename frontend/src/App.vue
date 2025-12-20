@@ -1,27 +1,81 @@
 <template>
   <router-view />
+  <InstallationDialog />
 </template>
+
 
 <script lang="ts" setup>
 import { onMounted, onUnmounted } from "vue";
 import { useConsoleDialogStore } from "@/stores/ConsoleDialogStore";
+import { useInstallationStore } from "@/stores/InstallationStore"; // Import store
+import InstallationDialog from "@/components/InstallationDialog.vue"; // Import component
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { updateSetting } from "@/utils/tauri";
+import { listen } from '@tauri-apps/api/event'; // Import listen
 
 const cds = useConsoleDialogStore()
+const installationStore = useInstallationStore() // Init store
 let pendingWriteSize = false
-const appWindow = getCurrentWindow()
+let appWindow: any = null
+let unlistenInstallation: any = null; // Store unlisten function
 
-onMounted(() => {
+try {
+  appWindow = getCurrentWindow()
+} catch (e) {
+  console.log('Running in browser mode, Tauri APIs unavailable')
+}
+
+onMounted(async () => {
   window.addEventListener('resize', rememberWindowSize);
+
+  // Listen for installation events
+  try {
+      unlistenInstallation = await listen('installation-event', (event: any) => {
+          const payload = event.payload;
+          console.log('Installation Event:', payload);
+
+          switch (payload.type) {
+              case 'started':
+                  installationStore.reset();
+                  installationStore.setSteps(payload.steps);
+                  installationStore.openDialog();
+                  break;
+              case 'stepRunning':
+                  installationStore.setStepRunning(payload.id);
+                  break;
+              case 'stepSuccess':
+                  installationStore.setStepSuccess(payload.id);
+                  break;
+              case 'stepError':
+                  installationStore.setStepError(payload.id, payload.message);
+                  break;
+              case 'downloadProgress':
+                  installationStore.updateDownloadProgress(
+                      payload.id, 
+                      payload.progress, 
+                      payload.speed, 
+                      payload.eta
+                  );
+                  break;
+              case 'finished':
+                  // Optional: handle overall finished state if needed
+                  // For now, steps indicating success is enough
+                  break;
+          }
+      });
+  } catch (e) {
+      console.error('Failed to setup installation event listener', e);
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', rememberWindowSize);
+  if (unlistenInstallation) {
+      unlistenInstallation();
+  }
 })
 
 async function rememberWindowSize() {
-  if (!pendingWriteSize) {
+  if (!pendingWriteSize && appWindow) {
     pendingWriteSize = true
     setTimeout(async () => {
       pendingWriteSize = false

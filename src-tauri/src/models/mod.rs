@@ -5,7 +5,9 @@
 pub mod release;
 pub mod response;
 pub mod storage;
+pub mod installation;
 
 pub use release::*;
 pub use response::*;
 pub use storage::*;
+pub use installation::*;

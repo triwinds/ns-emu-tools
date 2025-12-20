@@ -5,6 +5,7 @@
 pub mod aria2;
 pub mod doh;
 pub mod firmware;
+pub mod msvc;
 pub mod network;
 pub mod ryujinx;
 pub mod yuzu;
