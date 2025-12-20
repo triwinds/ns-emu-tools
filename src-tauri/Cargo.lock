@@ -2596,6 +2596,7 @@ dependencies = [
  "anyhow",
  "aria2-ws",
  "chrono",
+ "ctor",
  "directories",
  "dirs 5.0.1",
  "flate2",

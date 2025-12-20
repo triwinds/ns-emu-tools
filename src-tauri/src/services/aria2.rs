@@ -10,7 +10,7 @@
 
 use crate::config::get_config;
 use crate::error::{AppError, AppResult};
-use crate::services::network::{get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA};
+use crate::services::network::{get_github_download_url, get_proxy_url, is_using_proxy, request_github_api, CHROME_UA};
 use aria2_ws::response::GlobalStat as Aria2GlobalStat;
 use aria2_ws::response::Status as Aria2Status;
 use aria2_ws::{Client, TaskOptions};
@@ -18,6 +18,8 @@ use once_cell::sync::OnceCell;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -285,8 +287,8 @@ impl Aria2Manager {
 
         info!("启动 aria2 守护进程，端口: {}", port);
 
-        // 获取 aria2c 路径
-        let aria2_path = get_aria2_path()?;
+        // 确保 aria2 已安装（如果没有则自动下载）
+        let aria2_path = ensure_aria2_installed().await?;
         info!("aria2 路径: {}", aria2_path.display());
 
         // 构建命令行参数
@@ -858,6 +860,9 @@ fn find_available_port() -> AppResult<u16> {
 /// 4. 当前工作目录下的 aria2c.exe
 /// 5. 项目根目录下的 module/aria2c.exe（开发时，从 src-tauri 运行）
 /// 6. PATH 环境变量
+///
+/// 注意：此函数已被 `ensure_aria2_installed()` 替代，保留用于兼容性
+#[allow(dead_code)]
 fn get_aria2_path() -> AppResult<PathBuf> {
     let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
 
@@ -920,6 +925,313 @@ fn extract_filename_from_url(url: &str) -> String {
         .and_then(|s| s.split('?').next())
         .unwrap_or("download")
         .to_string()
+}
+
+/// Aria2 发布版本信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Aria2ReleaseAsset {
+    name: String,
+    browser_download_url: String,
+    size: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Aria2ReleaseInfo {
+    tag_name: String,
+    name: String,
+    assets: Vec<Aria2ReleaseAsset>,
+}
+
+/// 获取 aria2 最新版本信息
+async fn get_latest_aria2_release() -> AppResult<Aria2ReleaseInfo> {
+    info!("获取 aria2 最新版本信息");
+
+    let api_url = "https://api.github.com/repos/aria2/aria2/releases/latest";
+    let data = request_github_api(api_url).await?;
+
+    let release: Aria2ReleaseInfo = serde_json::from_value(data)
+        .map_err(|e| AppError::Aria2(format!("解析 aria2 版本信息失败: {}", e)))?;
+
+    info!("获取到 aria2 最新版本: {}", release.tag_name);
+    Ok(release)
+}
+
+/// 下载 aria2
+async fn download_aria2(asset_url: &str, save_path: &PathBuf) -> AppResult<()> {
+    info!("开始下载 aria2: {}", asset_url);
+
+    // 根据是否使用代理选择最终的下载 URL
+    let final_url = if is_using_proxy() {
+        info!("检测到代理，直连 GitHub");
+        asset_url.to_string()
+    } else {
+        info!("未检测到代理，使用镜像源");
+        get_github_download_url(asset_url)
+    };
+
+    info!("实际下载 URL: {}", final_url);
+
+    // 创建 HTTP 客户端
+    let mut client_builder = reqwest::Client::builder()
+        .user_agent(CHROME_UA)
+        .timeout(Duration::from_secs(600)) // 10分钟超时
+        .connect_timeout(Duration::from_secs(30));
+
+    // 如果使用代理，配置代理
+    if let Some(proxy_url) = get_proxy_url() {
+        if !proxy_url.is_empty() {
+            debug!("使用代理: {}", proxy_url);
+            let proxy = reqwest::Proxy::all(&proxy_url)
+                .map_err(|e| AppError::Aria2(format!("配置代理失败: {}", e)))?;
+            client_builder = client_builder.proxy(proxy);
+        }
+    }
+
+    let client = client_builder
+        .build()
+        .map_err(|e| AppError::Aria2(format!("创建 HTTP 客户端失败: {}", e)))?;
+
+    // 下载文件
+    let response = client
+        .get(&final_url)
+        .send()
+        .await
+        .map_err(|e| AppError::Aria2(format!("下载 aria2 失败: {}", e)))?;
+
+    if !response.status().is_success() {
+        return Err(AppError::Aria2(format!(
+            "下载 aria2 失败，HTTP 状态码: {}",
+            response.status()
+        )));
+    }
+
+    let total_size = response.content_length().unwrap_or(0);
+    info!("aria2 文件大小: {} 字节", total_size);
+
+    // 读取响应内容
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| AppError::Aria2(format!("读取 aria2 下载内容失败: {}", e)))?;
+
+    // 创建父目录
+    if let Some(parent) = save_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| AppError::Aria2(format!("创建目录失败: {}", e)))?;
+    }
+
+    // 写入文件
+    let mut file = fs::File::create(save_path)
+        .map_err(|e| AppError::Aria2(format!("创建文件失败: {}", e)))?;
+
+    file.write_all(&bytes)
+        .map_err(|e| AppError::Aria2(format!("写入文件失败: {}", e)))?;
+
+    info!("aria2 下载完成: {}", save_path.display());
+    Ok(())
+}
+
+/// 解压 aria2 压缩包
+fn extract_aria2(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
+    info!("开始解压 aria2: {}", archive_path.display());
+
+    // 创建目标目录
+    fs::create_dir_all(target_dir)
+        .map_err(|e| AppError::Aria2(format!("创建目标目录失败: {}", e)))?;
+
+    // 根据文件扩展名选择解压方法
+    let extension = archive_path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+
+    match extension {
+        "zip" => extract_zip(archive_path, target_dir),
+        "7z" => extract_7z(archive_path, target_dir),
+        _ => Err(AppError::Aria2(format!(
+            "不支持的压缩格式: {}",
+            extension
+        ))),
+    }
+}
+
+/// 解压 ZIP 文件
+fn extract_zip(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
+    let file = fs::File::open(archive_path)
+        .map_err(|e| AppError::Aria2(format!("打开 ZIP 文件失败: {}", e)))?;
+
+    let mut archive = zip::ZipArchive::new(file)
+        .map_err(|e| AppError::Aria2(format!("读取 ZIP 文件失败: {}", e)))?;
+
+    let mut aria2c_path: Option<PathBuf> = None;
+
+    for i in 0..archive.len() {
+        let mut file = archive
+            .by_index(i)
+            .map_err(|e| AppError::Aria2(format!("读取 ZIP 条目失败: {}", e)))?;
+
+        let file_name = file.name();
+
+        // 查找 aria2c.exe
+        if file_name.ends_with("aria2c.exe") {
+            let output_path = target_dir.join("aria2c.exe");
+            let mut output_file = fs::File::create(&output_path)
+                .map_err(|e| AppError::Aria2(format!("创建输出文件失败: {}", e)))?;
+
+            std::io::copy(&mut file, &mut output_file)
+                .map_err(|e| AppError::Aria2(format!("解压文件失败: {}", e)))?;
+
+            info!("已提取 aria2c.exe 到: {}", output_path.display());
+            aria2c_path = Some(output_path);
+            break;
+        }
+    }
+
+    aria2c_path.ok_or_else(|| AppError::Aria2("在压缩包中未找到 aria2c.exe".to_string()))
+}
+
+/// 解压 7z 文件
+fn extract_7z(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
+    sevenz_rust::decompress_file(archive_path, target_dir)
+        .map_err(|e| AppError::Aria2(format!("解压 7z 文件失败: {}", e)))?;
+
+    // 在解压后的文件中查找 aria2c.exe
+    let aria2c_path = find_aria2c_in_dir(target_dir)?;
+
+    // 如果 aria2c.exe 在子目录中，移动到目标目录
+    if aria2c_path.parent() != Some(target_dir.as_path()) {
+        let final_path = target_dir.join("aria2c.exe");
+        fs::copy(&aria2c_path, &final_path)
+            .map_err(|e| AppError::Aria2(format!("移动 aria2c.exe 失败: {}", e)))?;
+
+        info!("已移动 aria2c.exe 到: {}", final_path.display());
+        return Ok(final_path);
+    }
+
+    Ok(aria2c_path)
+}
+
+/// 在目录中查找 aria2c.exe
+fn find_aria2c_in_dir(dir: &PathBuf) -> AppResult<PathBuf> {
+    use walkdir::WalkDir;
+
+    for entry in WalkDir::new(dir) {
+        let entry = entry.map_err(|e| AppError::Aria2(format!("遍历目录失败: {}", e)))?;
+        if entry.file_name().to_string_lossy() == "aria2c.exe" {
+            return Ok(entry.path().to_path_buf());
+        }
+    }
+
+    Err(AppError::Aria2("在解压目录中未找到 aria2c.exe".to_string()))
+}
+
+/// 确保 aria2 已安装（如果没有则自动下载）
+pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
+    // 先尝试查找已安装的 aria2
+    if let Ok(path) = try_find_aria2_path() {
+        info!("找到已安装的 aria2: {}", path.display());
+        return Ok(path);
+    }
+
+    info!("未找到 aria2，开始自动下载");
+
+    // 获取最新版本信息
+    let release = get_latest_aria2_release().await?;
+
+    // 查找 Windows 64 位版本的资源
+    let asset = release
+        .assets
+        .iter()
+        .find(|a| {
+            let name = a.name.to_lowercase();
+            name.contains("win") && name.contains("64bit") && (name.ends_with(".zip") || name.ends_with(".7z"))
+        })
+        .ok_or_else(|| AppError::Aria2("未找到适合的 aria2 Windows 版本".to_string()))?;
+
+    info!("选择下载: {} ({}字节)", asset.name, asset.size);
+
+    // 确定保存路径
+    let temp_dir = std::env::temp_dir();
+    let archive_path = temp_dir.join(&asset.name);
+    let install_dir = get_aria2_install_dir()?;
+
+    // 下载
+    download_aria2(&asset.browser_download_url, &archive_path).await?;
+
+    // 解压到 exe 所在目录
+    let aria2c_path = extract_aria2(&archive_path, &install_dir)?;
+
+    // 清理临时文件
+    let _ = fs::remove_file(&archive_path);
+
+    info!("aria2 安装完成: {}", aria2c_path.display());
+    Ok(aria2c_path)
+}
+
+/// 尝试查找 aria2 路径（不抛出错误）
+fn try_find_aria2_path() -> AppResult<PathBuf> {
+    let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
+
+    // 获取可执行文件所在目录（打包后的应用程序目录）
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            // 检查可执行文件同目录下的 module 文件夹
+            let module_path = exe_dir.join("module").join(aria2_name);
+            if module_path.exists() {
+                return Ok(module_path);
+            }
+
+            // 检查可执行文件同目录
+            let exe_dir_path = exe_dir.join(aria2_name);
+            if exe_dir_path.exists() {
+                return Ok(exe_dir_path);
+            }
+        }
+    }
+
+    // 检查当前工作目录下的 module 文件夹（开发时）
+    if let Ok(cwd) = std::env::current_dir() {
+        let module_path = cwd.join("module").join(aria2_name);
+        if module_path.exists() {
+            return Ok(module_path);
+        }
+
+        // 检查当前工作目录
+        let cwd_path = cwd.join(aria2_name);
+        if cwd_path.exists() {
+            return Ok(cwd_path);
+        }
+
+        // 开发时可能从 src-tauri 目录运行，检查上级目录的 module
+        let parent_module_path = cwd.join("..").join("module").join(aria2_name);
+        if parent_module_path.exists() {
+            if let Ok(canonical) = parent_module_path.canonicalize() {
+                return Ok(canonical);
+            }
+        }
+    }
+
+    // 检查 PATH 环境变量
+    if let Ok(path) = which::which("aria2c") {
+        return Ok(path);
+    }
+
+    Err(AppError::Aria2("找不到 aria2c 可执行文件".to_string()))
+}
+
+/// 获取 aria2 安装目录（exe 所在目录）
+fn get_aria2_install_dir() -> AppResult<PathBuf> {
+    // 优先使用可执行文件所在目录
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            return Ok(exe_dir.to_path_buf());
+        }
+    }
+
+    // 回退到当前工作目录
+    let cwd = std::env::current_dir()
+        .map_err(|e| AppError::Aria2(format!("获取当前目录失败: {}", e)))?;
+    Ok(cwd)
 }
 
 #[cfg(test)]
@@ -989,6 +1301,8 @@ mod tests {
     async fn test_real_download() {
         use std::sync::atomic::{AtomicU64, Ordering};
         use std::sync::Arc;
+
+        info!("开始真实下载测试");
 
         // 创建临时目录
         let temp_dir = std::env::temp_dir().join("aria2_test");

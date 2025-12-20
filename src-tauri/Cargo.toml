@@ -121,3 +121,5 @@ strip = true
 
 [dev-dependencies]
 tempfile = "3.15"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ctor = "0.2"

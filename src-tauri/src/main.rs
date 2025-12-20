@@ -4,29 +4,14 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use ns_emu_tools_lib::commands;
+use ns_emu_tools_lib::{commands, logging};
 use tracing::info;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-
-fn setup_logging() {
-    // 设置日志
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info,ns_emu_tools=debug"));
-
-    let fmt_layer = fmt::layer()
-        .with_target(true)
-        .with_thread_ids(false)
-        .with_file(true)
-        .with_line_number(true);
-
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(fmt_layer)
-        .init();
-}
 
 fn main() {
-    setup_logging();
+    // 初始化日志系统
+    // 使用 Box::leak 确保 WorkerGuard 在整个程序运行期间保持活跃
+    // 这样日志可以持续写入文件
+    let _guard = Box::leak(Box::new(logging::init()));
 
     info!(
         "启动 NS Emu Tools v{}",
