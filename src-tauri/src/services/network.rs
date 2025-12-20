@@ -200,14 +200,16 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
 
 /// 获取代理 URL
 pub fn get_proxy_url() -> Option<String> {
-    let config = CONFIG.read();
-    let proxy = &config.setting.network.proxy;
+    let proxy = {
+        let config = CONFIG.read();
+        config.setting.network.proxy.clone()
+    };
 
     if proxy == "system" {
         get_system_proxy()
     } else if proxy.is_empty() {
         None
-    } else if is_valid_url(proxy) {
+    } else if is_valid_url(&proxy) {
         Some(proxy.clone())
     } else {
         warn!("无效的代理 URL: {}", proxy);
@@ -341,8 +343,10 @@ pub fn get_github_mirrors() -> Vec<GithubMirror> {
 
 /// 获取 GitHub 下载 URL（应用镜像）
 pub fn get_github_download_url(origin_url: &str) -> String {
-    let config = CONFIG.read();
-    let mirror = &config.setting.network.github_download_mirror;
+    let mirror = {
+        let config = CONFIG.read();
+        config.setting.network.github_download_mirror.clone()
+    };
 
     if mirror.is_empty() || mirror == "direct" {
         debug!("使用原始 URL: {}", origin_url);
@@ -358,22 +362,29 @@ pub fn get_github_download_url(origin_url: &str) -> String {
         }
     }
 
-    let new_url = origin_url.replace("https://github.com", mirror);
+    let new_url = origin_url.replace("https://github.com", &mirror);
     debug!("使用镜像 URL: {}", new_url);
     new_url
 }
 
 /// 根据网络设置获取最终 URL
 pub fn get_final_url(origin_url: &str) -> String {
-    let config = CONFIG.read();
-    let network = &config.setting.network;
+    let (github_api_mode, ryujinx_mirror, firmware_source) = {
+        let config = CONFIG.read();
+        let network = &config.setting.network;
+        (
+            network.github_api_mode.clone(),
+            network.ryujinx_git_lab_download_mirror.clone(),
+            network.firmware_download_source.clone(),
+        )
+    };
 
     if origin_url.starts_with("https://api.github.com") {
-        get_final_url_with_mode(origin_url, &network.github_api_mode)
+        get_final_url_with_mode(origin_url, &github_api_mode)
     } else if origin_url.starts_with("https://git.ryujinx.app") {
-        get_final_url_with_mode(origin_url, &network.ryujinx_git_lab_download_mirror)
+        get_final_url_with_mode(origin_url, &ryujinx_mirror)
     } else {
-        get_final_url_with_mode(origin_url, &network.firmware_download_source)
+        get_final_url_with_mode(origin_url, &firmware_source)
     }
 }
 
@@ -414,9 +425,10 @@ fn get_override_url(origin_url: &str) -> String {
 pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
     info!("请求 GitHub API: {}", url);
 
-    let config = CONFIG.read();
-    let github_api_mode = config.setting.network.github_api_mode.clone();
-    drop(config);
+    let github_api_mode = {
+        let config = CONFIG.read();
+        config.setting.network.github_api_mode.clone()
+    };
 
     let fallback = *GITHUB_API_FALLBACK_FLAG.read();
 

@@ -37,9 +37,10 @@ pub struct FirmwareInfo {
 
 /// 获取固件信息列表
 pub async fn get_firmware_infos() -> AppResult<Vec<FirmwareInfo>> {
-    let config = CONFIG.read();
-    let source = config.setting.network.firmware_download_source.clone();
-    drop(config);
+    let source = {
+        let config = CONFIG.read();
+        config.setting.network.firmware_download_source.clone()
+    };
 
     match source.as_str() {
         "nsarchive" => get_firmware_infos_from_nsarchive().await,
@@ -185,10 +186,11 @@ where
     let result = downloader.download(&url, options, on_progress).await?;
 
     // 验证 MD5
-    let config = CONFIG.read();
-    let verify_md5 = config.setting.download.verify_firmware_md5;
-    let auto_delete = config.setting.download.auto_delete_after_install;
-    drop(config);
+    let (verify_md5, auto_delete) = {
+        let config = CONFIG.read();
+        (config.setting.download.verify_firmware_md5,
+         config.setting.download.auto_delete_after_install)
+    };
 
     if verify_md5 {
         if let Some(ref expected_md5) = target_info.md5 {
@@ -234,9 +236,10 @@ pub fn get_available_firmware_sources() -> Vec<(&'static str, &'static str)> {
 
 /// 获取 Yuzu 固件路径
 pub fn get_yuzu_firmware_path() -> PathBuf {
-    let config = CONFIG.read();
-    let yuzu_path = config.yuzu.yuzu_path.clone();
-    drop(config);
+    let yuzu_path = {
+        let config = CONFIG.read();
+        config.yuzu.yuzu_path.clone()
+    };
 
     // Yuzu 用户数据路径
     let user_path = if cfg!(windows) {
@@ -260,9 +263,10 @@ pub fn get_yuzu_firmware_path() -> PathBuf {
 
 /// 获取 Ryujinx 固件路径
 pub fn get_ryujinx_firmware_path() -> PathBuf {
-    let config = CONFIG.read();
-    let ryujinx_path = config.ryujinx.path.clone();
-    drop(config);
+    let ryujinx_path = {
+        let config = CONFIG.read();
+        config.ryujinx.path.clone()
+    };
 
     // Ryujinx 用户数据路径
     let user_path = if cfg!(windows) {

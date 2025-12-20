@@ -3,7 +3,7 @@
 //! 用于向前端发送事件和消息
 
 use crate::models::response::{DownloadProgress, InstallProgress, NotifyMessage};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Window};
 use tracing::debug;
 
 /// 事件名称常量
@@ -79,4 +79,9 @@ pub fn emit_to_all<S: serde::Serialize + Clone>(
     payload: S,
 ) {
     let _ = app.emit(event, payload);
+}
+
+/// 发送简单文本通知到 Window
+pub fn send_notify(window: &Window, message: &str) -> Result<(), tauri::Error> {
+    window.emit(events::NOTIFY_MESSAGE, NotifyMessage::info(message))
 }

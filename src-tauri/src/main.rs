@@ -35,6 +35,29 @@ fn main() {
             commands::common::update_setting,
             commands::common::update_last_open_emu_page,
             commands::common::update_dark_state,
+            // Yuzu commands
+            commands::yuzu::get_all_yuzu_versions,
+            commands::yuzu::install_yuzu_by_version,
+            commands::yuzu::detect_yuzu_version_command,
+            commands::yuzu::start_yuzu_command,
+            commands::yuzu::get_yuzu_exe_path_command,
+            commands::yuzu::open_yuzu_keys_folder_command,
+            commands::yuzu::get_yuzu_user_path_command,
+            commands::yuzu::get_yuzu_nand_path_command,
+            commands::yuzu::get_yuzu_load_path_command,
+            commands::yuzu::update_yuzu_path_command,
+            commands::yuzu::get_yuzu_change_logs_command,
+            commands::yuzu::install_firmware_to_yuzu_command,
+            // Ryujinx commands
+            commands::ryujinx::get_all_ryujinx_versions_command,
+            commands::ryujinx::install_ryujinx_by_version_command,
+            commands::ryujinx::start_ryujinx_command,
+            commands::ryujinx::open_ryujinx_keys_folder_command,
+            commands::ryujinx::get_ryujinx_user_folder_command,
+            commands::ryujinx::update_ryujinx_path_command,
+            commands::ryujinx::get_ryujinx_change_logs_command,
+            commands::ryujinx::install_firmware_to_ryujinx_command,
+            commands::ryujinx::detect_ryujinx_branch_command,
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 应用程序时出错");

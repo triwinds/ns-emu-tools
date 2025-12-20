@@ -43,9 +43,10 @@ impl DohResolver {
 
     /// 使用阿里云 DoH 创建解析器
     pub fn with_alidns() -> AppResult<Self> {
-        let config = CONFIG.read();
-        let try_ipv6 = !config.setting.download.disable_aria2_ipv6;
-        drop(config);
+        let try_ipv6 = {
+            let config = CONFIG.read();
+            !config.setting.download.disable_aria2_ipv6
+        };
 
         // 阿里云 DoH: https://dns.alidns.com/dns-query
         // IPv4: 223.5.5.5, 223.6.6.6
@@ -89,9 +90,10 @@ impl DohResolver {
 
     /// 使用 Cloudflare DoH 创建解析器
     pub fn with_cloudflare() -> AppResult<Self> {
-        let config = CONFIG.read();
-        let try_ipv6 = !config.setting.download.disable_aria2_ipv6;
-        drop(config);
+        let try_ipv6 = {
+            let config = CONFIG.read();
+            !config.setting.download.disable_aria2_ipv6
+        };
 
         let resolver_config = ResolverConfig::cloudflare_https();
 
@@ -109,9 +111,10 @@ impl DohResolver {
 
     /// 使用 Google DoH 创建解析器
     pub fn with_google() -> AppResult<Self> {
-        let config = CONFIG.read();
-        let try_ipv6 = !config.setting.download.disable_aria2_ipv6;
-        drop(config);
+        let try_ipv6 = {
+            let config = CONFIG.read();
+            !config.setting.download.disable_aria2_ipv6
+        };
 
         let resolver_config = ResolverConfig::google_https();
 
@@ -129,9 +132,10 @@ impl DohResolver {
 
     /// 使用 Quad9 DoH 创建解析器
     pub fn with_quad9() -> AppResult<Self> {
-        let config = CONFIG.read();
-        let try_ipv6 = !config.setting.download.disable_aria2_ipv6;
-        drop(config);
+        let try_ipv6 = {
+            let config = CONFIG.read();
+            !config.setting.download.disable_aria2_ipv6
+        };
 
         let resolver_config = ResolverConfig::quad9_https();
 

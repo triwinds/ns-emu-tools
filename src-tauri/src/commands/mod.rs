@@ -4,3 +4,5 @@
 
 #[cfg(not(test))]
 pub mod common;
+pub mod ryujinx;
+pub mod yuzu;
