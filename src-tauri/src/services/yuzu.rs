@@ -99,7 +99,7 @@ where
     info!("下载 {} 从: {}", get_emu_name(branch), url);
 
     // 使用 aria2 下载
-    let aria2 = get_aria2_manager()?;
+    let aria2 = get_aria2_manager().await?;
     let options = Aria2DownloadOptions {
         use_github_mirror: true,
         ..Default::default()
@@ -167,8 +167,6 @@ where
     // 复制文件
     copy_back_yuzu_files(&tmp_dir, &yuzu_path)?;
 
-    info!("Eden [{}] 安装成功", target_version);
-
     // 如果配置了自动删除，删除下载文件
     if auto_delete {
         let _ = std::fs::remove_file(&package_path);
@@ -222,8 +220,6 @@ where
 
     // 清理临时目录
     std::fs::remove_dir_all(&tmp_dir)?;
-
-    info!("Citron [{}] 安装成功", target_version);
 
     // 如果配置了自动删除，删除下载文件
     if auto_delete {

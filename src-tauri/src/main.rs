@@ -18,6 +18,14 @@ fn main() {
         ns_emu_tools_lib::CURRENT_VERSION
     );
 
+    // 检查并安装 WebView2 运行时
+    // 如果未安装，会提示用户并自动下载安装
+    // 如果用户取消或安装失败，程序将退出
+    if let Err(e) = ns_emu_tools_lib::utils::webview::check_and_install_on_startup() {
+        tracing::error!("WebView2 检查/安装失败: {}", e);
+        std::process::exit(1);
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())

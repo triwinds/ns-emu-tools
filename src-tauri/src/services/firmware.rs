@@ -178,7 +178,7 @@ where
     info!("下载固件: {}", url);
 
     // 使用 aria2 下载固件
-    let aria2_manager = get_aria2_manager()?;
+    let aria2_manager = get_aria2_manager().await?;
     let options = Aria2DownloadOptions {
         overwrite: false,
         use_github_mirror: url.contains("github.com"),

@@ -333,8 +333,8 @@ async function installRyujinx() {
   } catch (error) {
     isRunningInstall.value = false
     cds.persistentConsoleDialog = false
+    // 错误消息已经通过 notify_message 事件发送，不需要在这里重复显示
     console.error('安装 Ryujinx 失败:', error)
-    cds.appendConsoleMessage('安装失败: ' + error)
   }
 }
 

@@ -34,12 +34,16 @@ const ARIA2_SECRET: &str = "ns-emu-tools-aria2";
 /// 全局 Aria2Manager 实例
 static ARIA2_MANAGER: OnceCell<Arc<Aria2Manager>> = OnceCell::new();
 
-/// 获取全局 Aria2Manager 实例
-pub fn get_aria2_manager() -> AppResult<Arc<Aria2Manager>> {
-    ARIA2_MANAGER
-        .get()
-        .cloned()
-        .ok_or_else(|| AppError::Aria2("Aria2Manager 未初始化".to_string()))
+/// 获取全局 Aria2Manager 实例（如果未初始化则自动初始化）
+pub async fn get_aria2_manager() -> AppResult<Arc<Aria2Manager>> {
+    // 如果已经初始化，直接返回
+    if let Some(manager) = ARIA2_MANAGER.get() {
+        return Ok(manager.clone());
+    }
+
+    // 未初始化，自动初始化
+    info!("Aria2Manager 未初始化，开始自动初始化");
+    init_aria2_manager().await
 }
 
 /// 初始化全局 Aria2Manager

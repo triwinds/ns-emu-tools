@@ -190,12 +190,12 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
     if let Some(proxy_url) = get_proxy_url() {
         if !proxy_url.is_empty() {
             debug!("使用代理: {}", proxy_url);
-            let proxy = Proxy::all(&proxy_url).map_err(|e| AppError::Network(e))?;
+            let proxy = Proxy::all(&proxy_url).map_err(|e| AppError::from(e))?;
             builder = builder.proxy(proxy);
         }
     }
 
-    builder.build().map_err(|e| AppError::Network(e))
+    builder.build().map_err(|e| AppError::from(e))
 }
 
 /// 获取代理 URL

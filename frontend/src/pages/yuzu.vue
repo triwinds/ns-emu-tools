@@ -396,9 +396,10 @@ async function installYuzuHandler() {
   try {
     await installYuzuAPI(targetYuzuVersion.value, branch.value)
     await configStore.reloadConfig()
-    consoleDialogStore.appendConsoleMessage('Yuzu 安装成功')
+    // 成功消息已经通过后端的 send_notify 发送，不需要在这里重复显示
   } catch (error) {
-    consoleDialogStore.appendConsoleMessage(`安装失败: ${error}`)
+    // 错误消息已经通过 notify_message 事件发送，不需要在这里重复显示
+    console.error('安装失败:', error)
   } finally {
     isRunningInstall.value = false
     consoleDialogStore.persistentConsoleDialog = false

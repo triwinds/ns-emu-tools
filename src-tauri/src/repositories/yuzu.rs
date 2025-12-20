@@ -79,7 +79,8 @@ pub async fn get_eden_all_release_versions() -> AppResult<Vec<String>> {
 pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
     info!("获取 Eden 版本 {} 的 Release 信息", version);
 
-    let url = format!("{}/tags/{}", EDEN_RELEASES_API.replace("/releases", ""), version);
+    // GitHub API: /repos/{owner}/{repo}/releases/tags/{tag}
+    let url = format!("{}/tags/{}", EDEN_RELEASES_API, version);
     let data = request_github_api(&url).await?;
 
     ReleaseInfo::from_github_api(&data).ok_or_else(|| {

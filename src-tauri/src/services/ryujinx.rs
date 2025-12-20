@@ -110,7 +110,7 @@ where
     info!("下载 URL: {}", download_url);
 
     // 使用 aria2 下载
-    let aria2 = get_aria2_manager()?;
+    let aria2 = get_aria2_manager().await?;
     let options = Aria2DownloadOptions {
         use_github_mirror: false, // Ryujinx 使用 GitLab，不需要镜像
         ..Default::default()

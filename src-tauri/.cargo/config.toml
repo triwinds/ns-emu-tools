@@ -1,0 +1,11 @@
+# Windows 平台静态链接 CRT，避免 VCRUNTIME140_1.dll 依赖
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.i686-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# 构建优化
+[build]
+# 使用所有 CPU 核心
+jobs = -1

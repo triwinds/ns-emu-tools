@@ -3,10 +3,11 @@
 //! 定义应用程序中使用的所有错误类型
 
 use serde::Serialize;
-use thiserror::Error;
+use std::error::Error;
+use thiserror::Error as ThisError;
 
 /// 应用程序错误类型
-#[derive(Error, Debug)]
+#[derive(ThisError, Debug)]
 pub enum AppError {
     /// 配置相关错误
     #[error("配置错误: {0}")]
@@ -21,8 +22,8 @@ pub enum AppError {
     Json(#[from] serde_json::Error),
 
     /// 网络请求错误
-    #[error("网络错误: {0}")]
-    Network(#[from] reqwest::Error),
+    #[error("{0}")]
+    Network(String),
 
     /// 文件未找到
     #[error("文件未找到: {0}")]
@@ -80,7 +81,7 @@ impl From<AppError> for ErrorResponse {
             AppError::Config(msg) => (1001, "配置错误".to_string(), Some(msg.clone())),
             AppError::Io(e) => (1002, "IO 错误".to_string(), Some(e.to_string())),
             AppError::Json(e) => (1003, "JSON 错误".to_string(), Some(e.to_string())),
-            AppError::Network(e) => (1004, "网络错误".to_string(), Some(e.to_string())),
+            AppError::Network(msg) => (1004, "网络错误".to_string(), Some(msg.clone())),
             AppError::FileNotFound(path) => {
                 (1005, "文件未找到".to_string(), Some(path.clone()))
             }
@@ -117,6 +118,47 @@ impl Serialize for AppError {
     }
 }
 
+impl From<reqwest::Error> for AppError {
+    fn from(error: reqwest::Error) -> Self {
+        let mut details = Vec::new();
+
+        // 基本错误信息
+        details.push(format!("网络错误"));
+
+        // URL 信息
+        if let Some(url) = error.url() {
+            details.push(format!("请求地址: {}", url));
+        }
+
+        // 详细错误类型
+        if error.is_timeout() {
+            details.push("原因: 请求超时".to_string());
+        } else if error.is_connect() {
+            details.push("原因: 无法连接到服务器".to_string());
+            if let Some(source) = error.source() {
+                details.push(format!("详细信息: {}", source));
+            }
+        } else if error.is_request() {
+            details.push("原因: 请求构造失败".to_string());
+        } else if error.is_redirect() {
+            details.push("原因: 重定向过多".to_string());
+        } else if error.is_status() {
+            if let Some(status) = error.status() {
+                details.push(format!("原因: HTTP 状态码 {}", status));
+            }
+        } else if error.is_body() {
+            details.push("原因: 响应体解析失败".to_string());
+        } else if error.is_decode() {
+            details.push("原因: 响应数据解码失败".to_string());
+        } else {
+            // 其他错误，提供更多上下文
+            details.push(format!("原因: {}", error));
+        }
+
+        AppError::Network(details.join("\n"))
+    }
+}
+
 impl AppError {
     /// 将错误转换为可拥有的版本（用于序列化）
     fn to_owned_error(&self) -> AppError {
@@ -124,7 +166,7 @@ impl AppError {
             AppError::Config(s) => AppError::Config(s.clone()),
             AppError::Io(e) => AppError::Unknown(e.to_string()),
             AppError::Json(e) => AppError::Unknown(e.to_string()),
-            AppError::Network(e) => AppError::Unknown(e.to_string()),
+            AppError::Network(s) => AppError::Network(s.clone()),
             AppError::FileNotFound(s) => AppError::FileNotFound(s.clone()),
             AppError::DirectoryNotFound(s) => AppError::DirectoryNotFound(s.clone()),
             AppError::Emulator(s) => AppError::Emulator(s.clone()),
