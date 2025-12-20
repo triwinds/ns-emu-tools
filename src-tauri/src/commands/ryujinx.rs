@@ -163,3 +163,48 @@ pub fn detect_ryujinx_branch_command() -> Result<ApiResponse<String>, String> {
     let branch = detect_current_branch();
     Ok(ApiResponse::success(branch))
 }
+
+/// 选择并更新 Ryujinx 路径
+#[tauri::command]
+pub async fn ask_and_update_ryujinx_path_command(
+    window: Window,
+) -> Result<ApiResponse<String>, String> {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+
+    info!("打开文件夹选择对话框");
+
+    // 使用 Tauri 对话框选择文件夹
+    let folder = window
+        .dialog()
+        .file()
+        .blocking_pick_folder();
+
+    match folder {
+        Some(path) => {
+            let path_str = path.to_string();
+            info!("用户选择的文件夹: {}", path_str);
+
+            match update_ryujinx_path(&path_str) {
+                Ok(_) => Ok(ApiResponse::success(path_str)),
+                Err(e) => {
+                    error!("更新路径失败: {}", e);
+                    Err(e.to_string())
+                }
+            }
+        }
+        None => {
+            info!("用户取消了文件夹选择");
+            Err("用户取消了操作".to_string())
+        }
+    }
+}
+
+/// 检测 Ryujinx 版本
+#[tauri::command]
+pub fn detect_ryujinx_version_command() -> Result<ApiResponse<Option<String>>, String> {
+    info!("检测 Ryujinx 版本");
+    // TODO: 实现完整的版本检测逻辑
+    // 目前仅返回分支信息作为简化实现
+    let branch = detect_current_branch();
+    Ok(ApiResponse::success(Some(branch)))
+}

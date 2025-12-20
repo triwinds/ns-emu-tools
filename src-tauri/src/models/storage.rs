@@ -126,6 +126,35 @@ pub fn get_storage() -> Storage {
     STORAGE.read().clone()
 }
 
+/// 加载历史路径列表
+pub fn load_history_path(emu_type: &str) -> AppResult<Vec<String>> {
+    use crate::config::CONFIG;
+
+    let storage = STORAGE.read();
+    let config = CONFIG.read();
+
+    let mut paths: std::collections::HashSet<String> = if emu_type == "yuzu" {
+        storage.yuzu_history.keys().cloned().collect()
+    } else {
+        storage.ryujinx_history.keys().cloned().collect()
+    };
+
+    // 添加当前配置的路径
+    let current_path = if emu_type == "yuzu" {
+        config.yuzu.yuzu_path.to_string_lossy().to_string()
+    } else {
+        config.ryujinx.path.to_string_lossy().to_string()
+    };
+
+    if !current_path.is_empty() {
+        paths.insert(current_path);
+    }
+
+    let mut result: Vec<String> = paths.into_iter().collect();
+    result.sort();
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

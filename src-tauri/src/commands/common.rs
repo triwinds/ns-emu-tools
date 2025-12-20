@@ -164,3 +164,29 @@ pub async fn get_game_data() -> Result<std::collections::HashMap<String, serde_j
         .await
         .map_err(|e| e.to_string())
 }
+
+/// 获取可用固件信息列表
+#[command]
+pub async fn get_available_firmware_infos() -> Result<Vec<crate::services::firmware::FirmwareInfo>, String> {
+    crate::services::firmware::get_firmware_infos()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 加载历史路径列表
+#[command]
+pub fn load_history_path(emu_type: String) -> Result<Vec<String>, String> {
+    storage::load_history_path(&emu_type).map_err(|e| e.to_string())
+}
+
+/// 检测固件版本
+#[command]
+pub async fn detect_firmware_version(emu_type: String) -> Result<(), String> {
+    info!("检测 {} 固件版本", emu_type);
+    // TODO: 实现固件版本检测逻辑
+    // 目前仅作为占位符，完整实现需要:
+    // 1. 扫描固件文件
+    // 2. 使用 hactool 解析版本
+    // 3. 更新配置
+    Err("固件版本检测功能暂未实现".to_string())
+}

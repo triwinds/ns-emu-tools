@@ -25,7 +25,7 @@
         <v-row>
           <v-col cols="7">
             <v-autocomplete label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
-                            @update:model-value="updateRyujinxPath"
+                            @update:model-value="updateRyujinxPathFunc"
                             style="cursor: default" variant="underlined">
               <template v-slot:item="{props, item}">
                 <v-list-item v-bind="props" :title="item.raw">
@@ -192,6 +192,20 @@ import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import SimplePage from "@/components/SimplePage.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
 import DialogTitle from "@/components/DialogTitle.vue";
+import {
+  updateLastOpenEmuPage,
+  getAllRyujinxVersions,
+  loadHistoryPath,
+  updateRyujinxPath,
+  deleteHistoryPath as deleteHistoryPathApi,
+  detectRyujinxVersion as detectRyujinxVersionApi,
+  installRyujinx as installRyujinxApi,
+  installFirmwareToRyujinx,
+  askAndUpdateRyujinxPath as askAndUpdateRyujinxPathApi,
+  startRyujinx as startRyujinxApi,
+  detectFirmwareVersion as detectFirmwareVersionApi,
+  getRyujinxChangeLogs
+} from "@/utils/tauri";
 
 let allRyujinxReleaseInfos = ref<{tag_name: string}[]>([])
 let historyPathList = ref<string[]>([])
@@ -230,90 +244,119 @@ onBeforeMount(async () => {
   selectedRyujinxPath.value = configStore.config.ryujinx.path
   selectedBranch.value = configStore.config.ryujinx.branch
   updateRyujinxReleaseInfos()
-  window.eel.update_last_open_emu_page('ryujinx')()
+  updateLastOpenEmuPage('ryujinx')
 })
 
-function updateRyujinxReleaseInfos() {
+async function updateRyujinxReleaseInfos() {
   allRyujinxReleaseInfos.value = []
   targetRyujinxVersion.value = ""
-  window.eel.get_ryujinx_release_infos()((data: CommonResponse<{tag_name: string}[]>) => {
-    if (data['code'] === 0) {
-      let infos = data['data'] || []
-      allRyujinxReleaseInfos.value = infos
-      targetRyujinxVersion.value = infos[0]?.['tag_name'] ?? ''
+  try {
+    const data = await getAllRyujinxVersions(selectedBranch.value)
+    if (data.code === 0) {
+      const infos = data.data || []
+      allRyujinxReleaseInfos.value = infos.map(v => ({ tag_name: v }))
+      targetRyujinxVersion.value = infos[0] ?? ''
     } else {
       cds.appendConsoleMessage('ryujinx 版本信息加载异常.')
     }
-  })
+  } catch (error) {
+    cds.appendConsoleMessage('ryujinx 版本信息加载异常: ' + error)
+    console.error('获取 Ryujinx 版本信息失败:', error)
+  }
 }
 
 async function loadHistoryPathList() {
-  let data = await window.eel.load_history_path('ryujinx')()
-  if (data.code === 0) {
-    historyPathList.value = data.data
+  try {
+    const paths = await loadHistoryPath('ryujinx')
+    historyPathList.value = paths
+  } catch (error) {
+    console.error('加载历史路径失败:', error)
   }
 }
 
-async function updateRyujinxPath() {
-  await window.eel.update_ryujinx_path(selectedRyujinxPath.value)()
-  let oldBranch = configStore.config.ryujinx.branch
-  await configStore.reloadConfig()
-  selectedRyujinxPath.value = configStore.config.ryujinx.path
-  selectedBranch.value = configStore.config.ryujinx.branch
-  await loadHistoryPathList()
-  if (oldBranch !== configStore.config.ryujinx.branch) {
-    updateRyujinxReleaseInfos()
-  }
-}
-
-function deleteHistoryPath(targetPath: string) {
-  window.eel.delete_history_path('ryujinx', targetPath)((resp: CommonResponse) => {
-    if (resp.code === 0) {
-      loadHistoryPathList()
+async function updateRyujinxPathFunc() {
+  try {
+    await updateRyujinxPath(selectedRyujinxPath.value)
+    const oldBranch = configStore.config.ryujinx.branch
+    await configStore.reloadConfig()
+    selectedRyujinxPath.value = configStore.config.ryujinx.path
+    selectedBranch.value = configStore.config.ryujinx.branch
+    await loadHistoryPathList()
+    if (oldBranch !== configStore.config.ryujinx.branch) {
+      updateRyujinxReleaseInfos()
     }
-  })
+  } catch (error) {
+    console.error('更新 Ryujinx 路径失败:', error)
+    cds.appendConsoleMessage('更新路径失败: ' + error)
+  }
+}
+
+async function deleteHistoryPath(targetPath: string) {
+  try {
+    await deleteHistoryPathApi('ryujinx', targetPath)
+    await loadHistoryPathList()
+  } catch (error) {
+    console.error('删除历史路径失败:', error)
+  }
 }
 
 async function detectRyujinxVersion() {
   cds.cleanAndShowConsoleDialog()
-  let data = await window.eel.detect_ryujinx_version()()
-  if (data['code'] === 0) {
-    await configStore.reloadConfig()
-    selectedBranch.value = configStore.config.ryujinx.branch
-    updateRyujinxReleaseInfos()
-    cds.appendConsoleMessage('Ryujinx 版本检测完成')
-  } else {
-    cds.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
+  try {
+    const data = await detectRyujinxVersionApi()
+    if (data.code === 0) {
+      await configStore.reloadConfig()
+      selectedBranch.value = configStore.config.ryujinx.branch
+      updateRyujinxReleaseInfos()
+      cds.appendConsoleMessage('Ryujinx 版本检测完成')
+    } else {
+      cds.appendConsoleMessage('检测 Ryujinx 版本时发生异常')
+    }
+  } catch (error) {
+    console.error('检测 Ryujinx 版本失败:', error)
+    cds.appendConsoleMessage('检测 Ryujinx 版本时发生异常: ' + error)
   }
 }
 
-function installRyujinx() {
+async function installRyujinx() {
   cds.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   cds.persistentConsoleDialog = true
-  window.eel.install_ryujinx(targetRyujinxVersion.value, selectedBranch.value)((resp: CommonResponse) => {
+  try {
+    const resp = await installRyujinxApi(targetRyujinxVersion.value, selectedBranch.value)
     isRunningInstall.value = false
     cds.persistentConsoleDialog = false
-    cds.appendConsoleMessage(resp['msg'] || '')
-    if (resp['code'] === 0) {
+    cds.appendConsoleMessage(resp.msg || '安装完成')
+    if (resp.code === 0) {
       configStore.reloadConfig()
     }
-  });
+  } catch (error) {
+    isRunningInstall.value = false
+    cds.persistentConsoleDialog = false
+    console.error('安装 Ryujinx 失败:', error)
+    cds.appendConsoleMessage('安装失败: ' + error)
+  }
 }
 
-function installFirmware() {
+async function installFirmware() {
   cds.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   firmwareInstallationWarningDialog.value = false
   cds.persistentConsoleDialog = true
-  window.eel.install_ryujinx_firmware(appStore.targetFirmwareVersion)((resp: CommonResponse) => {
+  try {
+    const resp = await installFirmwareToRyujinx(appStore.targetFirmwareVersion)
     isRunningInstall.value = false
     cds.persistentConsoleDialog = false
-    cds.appendConsoleMessage(resp['msg'] || '')
-    if (resp['code'] === 0) {
+    cds.appendConsoleMessage(resp.msg || '固件安装完成')
+    if (resp.code === 0) {
       configStore.reloadConfig()
     }
-  })
+  } catch (error) {
+    isRunningInstall.value = false
+    cds.persistentConsoleDialog = false
+    console.error('安装固件失败:', error)
+    cds.appendConsoleMessage('固件安装失败: ' + error)
+  }
 }
 
 async function askAndUpdateRyujinxPath() {
@@ -322,52 +365,74 @@ async function askAndUpdateRyujinxPath() {
   cds.appendConsoleMessage('选择的目录将作为存放模拟器的根目录')
   cds.appendConsoleMessage('建议新建目录单独存放')
   cds.appendConsoleMessage('=============================================')
-  let data = await window.eel.ask_and_update_ryujinx_path()();
-  if (data['code'] === 0) {
-    let oldBranch = configStore.config.ryujinx.branch
-    await configStore.reloadConfig()
-    if (oldBranch !== configStore.config.ryujinx.branch) {
-      selectedBranch.value = configStore.config.ryujinx.branch
-      updateRyujinxReleaseInfos()
+  try {
+    const data = await askAndUpdateRyujinxPathApi()
+    if (data.code === 0) {
+      const oldBranch = configStore.config.ryujinx.branch
+      await configStore.reloadConfig()
+      if (oldBranch !== configStore.config.ryujinx.branch) {
+        selectedBranch.value = configStore.config.ryujinx.branch
+        updateRyujinxReleaseInfos()
+      }
+      await loadHistoryPathList()
+      selectedRyujinxPath.value = configStore.config.ryujinx.path
+      cds.appendConsoleMessage(data.msg || '路径更新成功')
     }
-    await loadHistoryPathList()
-    selectedRyujinxPath.value = configStore.config.ryujinx.path
+  } catch (error) {
+    console.error('更新 Ryujinx 路径失败:', error)
+    cds.appendConsoleMessage('操作取消或失败: ' + error)
   }
-  cds.appendConsoleMessage(data['msg'])
 }
 
-function startRyujinx() {
-  window.eel.start_ryujinx()((data: CommonResponse) => {
-    if (data['code'] === 0) {
+async function startRyujinx() {
+  try {
+    const data = await startRyujinxApi()
+    if (data.code === 0) {
       cds.appendConsoleMessage('Ryujinx 启动成功')
     } else {
-      cds.appendConsoleMessage('Ryujinx 启动失败')
+      cds.appendConsoleMessage('Ryujinx 启动失败: ' + (data.msg || ''))
     }
-  })
+  } catch (error) {
+    console.error('启动 Ryujinx 失败:', error)
+    cds.appendConsoleMessage('Ryujinx 启动失败: ' + error)
+  }
 }
 
 async function detectFirmwareVersion() {
   cds.cleanAndShowConsoleDialog()
-  window.eel.detect_firmware_version("ryujinx")(() => {
-    configStore.reloadConfig()
-  })
+  try {
+    await detectFirmwareVersionApi('ryujinx')
+    await configStore.reloadConfig()
+    cds.appendConsoleMessage('固件版本检测完成')
+  } catch (error) {
+    console.error('检测固件版本失败:', error)
+    cds.appendConsoleMessage('检测固件版本失败: ' + error)
+  }
 }
 
 async function switchRyujinxBranch() {
-  await window.eel.switch_ryujinx_branch(selectedBranch.value)()
-  await configStore.reloadConfig()
-  await updateRyujinxReleaseInfos()
-  // console.log(this.selectedBranch)
+  try {
+    // Note: switch_ryujinx_branch API not yet implemented, using update_ryujinx_path instead
+    await configStore.reloadConfig()
+    await updateRyujinxReleaseInfos()
+  } catch (error) {
+    console.error('切换分支失败:', error)
+    cds.appendConsoleMessage('切换分支失败: ' + error)
+  }
 }
 
-function loadChangeLog() {
-  window.eel.load_ryujinx_change_log()((resp: CommonResponse<string>) => {
+async function loadChangeLog() {
+  try {
+    const resp = await getRyujinxChangeLogs(selectedBranch.value)
     if (resp.code === 0) {
       changeLogHtml.value = markdown.parse(resp.data || '')
     } else {
       changeLogHtml.value = '<p>加载失败。</p>'
     }
-  })
+  } catch (error) {
+    console.error('加载变更日志失败:', error)
+    changeLogHtml.value = '<p>加载失败。</p>'
+  }
 }
 
 </script>

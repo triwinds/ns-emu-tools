@@ -54,6 +54,16 @@ export interface UpdateCheckResult {
   htmlUrl?: string
 }
 
+/** 固件信息 */
+export interface FirmwareInfo {
+  name: string
+  version: string
+  url: string
+  filename: string
+  size: string
+  md5?: string
+}
+
 // ============ 事件名称常量 ============
 
 export const Events = {
@@ -150,6 +160,21 @@ export async function getGithubMirrors() {
 /** 获取游戏数据映射 */
 export async function getGameData() {
   return invokeCommand<Record<string, any>>('get_game_data')
+}
+
+/** 获取可用固件信息列表 */
+export async function getAvailableFirmwareInfos() {
+  return invokeCommand<FirmwareInfo[]>('get_available_firmware_infos')
+}
+
+/** 加载历史路径列表 */
+export async function loadHistoryPath(emuType: string) {
+  return invokeCommand<string[]>('load_history_path', { emuType })
+}
+
+/** 检测固件版本 */
+export async function detectFirmwareVersion(emuType: string) {
+  return invokeCommand<void>('detect_firmware_version', { emuType })
 }
 
 // ============ 事件监听封装 ============
@@ -340,6 +365,58 @@ export async function switchYuzuBranch(branch: string) {
 /** 删除历史路径 */
 export async function deleteHistoryPath(emuType: string, path: string) {
   return invokeCommand<ApiResponse<void>>('delete_history_path', { emuType, path })
+}
+
+// ============ Ryujinx API ============
+
+/** 获取所有 Ryujinx 版本 */
+export async function getAllRyujinxVersions(branch: string) {
+  return invokeCommand<ApiResponse<string[]>>('get_all_ryujinx_versions_command', { branch })
+}
+
+/** 安装 Ryujinx */
+export async function installRyujinx(targetVersion: string, branch: string) {
+  return invokeCommand<ApiResponse<void>>('install_ryujinx_by_version_command', {
+    targetVersion,
+    branch
+  })
+}
+
+/** 启动 Ryujinx */
+export async function startRyujinx() {
+  return invokeCommand<ApiResponse<void>>('start_ryujinx_command')
+}
+
+/** 更新 Ryujinx 路径 */
+export async function updateRyujinxPath(newPath: string) {
+  return invokeCommand<ApiResponse<void>>('update_ryujinx_path_command', { newPath })
+}
+
+/** 选择并更新 Ryujinx 路径 */
+export async function askAndUpdateRyujinxPath() {
+  return invokeCommand<ApiResponse<string>>('ask_and_update_ryujinx_path_command')
+}
+
+/** 检测 Ryujinx 版本 */
+export async function detectRyujinxVersion() {
+  return invokeCommand<ApiResponse<string | null>>('detect_ryujinx_version_command')
+}
+
+/** 检测 Ryujinx 分支 */
+export async function detectRyujinxBranch() {
+  return invokeCommand<ApiResponse<string>>('detect_ryujinx_branch_command')
+}
+
+/** 获取 Ryujinx 变更日志 */
+export async function getRyujinxChangeLogs(branch: string) {
+  return invokeCommand<ApiResponse<string>>('get_ryujinx_change_logs_command', { branch })
+}
+
+/** 安装固件到 Ryujinx */
+export async function installFirmwareToRyujinx(firmwareVersion: string | null) {
+  return invokeCommand<ApiResponse<void>>('install_firmware_to_ryujinx_command', {
+    firmwareVersion
+  })
 }
 
 // ============ 工具函数 ============

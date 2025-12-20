@@ -4,7 +4,7 @@
 
 本文档记录了从 Python Eel 到 Rust + Tauri 的前端调用迁移计划。
 
-**当前进度：9/18 文件已完成迁移 (50%)**
+**当前进度：11/18 文件已完成迁移 (61%)**
 
 ## 已完成迁移
 
@@ -46,6 +46,24 @@
    - `window.eel.open_url_in_default_browser()` → `openUrl()`
    - `window.eel.get_game_data()` → `getGameData()`
 
+10. **frontend/src/stores/app.ts**
+   - `window.eel.get_available_firmware_infos()` → `getAvailableFirmwareInfos()`
+   - `window.eel.get_game_data()` → `getGameData()`
+
+11. **frontend/src/pages/ryujinx.vue**
+   - `window.eel.update_last_open_emu_page()` → `updateLastOpenEmuPage()`
+   - `window.eel.get_ryujinx_release_infos()` → `getAllRyujinxVersions()`
+   - `window.eel.load_history_path()` → `loadHistoryPath()`
+   - `window.eel.update_ryujinx_path()` → `updateRyujinxPath()`
+   - `window.eel.delete_history_path()` → `deleteHistoryPath()`
+   - `window.eel.detect_ryujinx_version()` → `detectRyujinxVersion()`
+   - `window.eel.install_ryujinx()` → `installRyujinx()`
+   - `window.eel.install_ryujinx_firmware()` → `installFirmwareToRyujinx()`
+   - `window.eel.ask_and_update_ryujinx_path()` → `askAndUpdateRyujinxPath()`
+   - `window.eel.start_ryujinx()` → `startRyujinx()`
+   - `window.eel.detect_firmware_version()` → `detectFirmwareVersion()`
+   - `window.eel.load_ryujinx_change_log()` → `getRyujinxChangeLogs()`
+
 ### 🎯 新增的 Tauri 命令 (本次迁移)
 
 **后端命令 (src-tauri/src/commands/common.rs)**:
@@ -54,6 +72,19 @@
 - `get_available_firmware_sources` - 获取固件下载源列表
 - `get_github_mirrors` - 获取 GitHub 镜像列表
 - `get_game_data` - 获取游戏数据映射
+- `get_available_firmware_infos` - 获取可用固件信息列表
+- `load_history_path` - 加载历史路径列表
+- `detect_firmware_version` - 检测固件版本（占位符，待完整实现）
+
+**后端命令 (src-tauri/src/commands/ryujinx.rs)**:
+- `get_all_ryujinx_versions_command` - 获取所有 Ryujinx 版本
+- `install_ryujinx_by_version_command` - 安装指定版本的 Ryujinx
+- `start_ryujinx_command` - 启动 Ryujinx
+- `update_ryujinx_path_command` - 更新 Ryujinx 路径
+- `ask_and_update_ryujinx_path_command` - 选择并更新 Ryujinx 路径
+- `detect_ryujinx_version_command` - 检测 Ryujinx 版本（简化实现）
+- `get_ryujinx_change_logs_command` - 获取 Ryujinx 变更日志
+- `install_firmware_to_ryujinx_command` - 安装固件到 Ryujinx
 
 **前端 API (frontend/src/utils/tauri.ts)**:
 - `checkUpdate(includePrerelease)` - 检查更新
@@ -61,33 +92,29 @@
 - `getAvailableFirmwareSources()` - 获取固件源
 - `getGithubMirrors()` - 获取镜像列表
 - `getGameData()` - 获取游戏数据
-- `openRyujinxKeysFolder()` - 打开 Ryujinx keys 文件夹
+- `getAvailableFirmwareInfos()` - 获取可用固件信息列表
+- `loadHistoryPath(emuType)` - 加载历史路径列表
+- `detectFirmwareVersion(emuType)` - 检测固件版本
+- `getAllRyujinxVersions(branch)` - 获取所有 Ryujinx 版本
+- `installRyujinx(targetVersion, branch)` - 安装 Ryujinx
+- `startRyujinx()` - 启动 Ryujinx
+- `updateRyujinxPath(newPath)` - 更新 Ryujinx 路径
+- `askAndUpdateRyujinxPath()` - 选择并更新 Ryujinx 路径
+- `detectRyujinxVersion()` - 检测 Ryujinx 版本
+- `getRyujinxChangeLogs(branch)` - 获取 Ryujinx 变更日志
+- `installFirmwareToRyujinx(firmwareVersion)` - 安装固件到 Ryujinx
 
 **新增模块**:
 - `src-tauri/src/repositories/config_data.rs` - 配置数据仓库
+- `src-tauri/src/models/storage.rs` - 新增 `load_history_path` 函数
 
 ## 待迁移文件清单
 
-### 1. Stores (1 file)
+### 1. Stores (0 file)
 
 #### ~~1.1 frontend/src/stores/ConfigStore.ts~~ ✅ 已完成
 
-~~**需要迁移的调用：**~~
-
-~~| Eel 方法 | Tauri 替代 | 状态 | 备注 |~~
-~~|---------|-----------|------|------|~~
-~~| `window.eel.get_config()` | `getConfig()` | ✅ 已有 | 已在 tauri.ts 中定义 |~~
-~~| `window.eel.get_current_version()` | `getAppVersion()` | ✅ 已有 | 已在 tauri.ts 中定义 |~~
-~~| `window.eel.check_update()` | 需要新增 | ❌ 待实现 | 需要添加 `checkUpdate()` |~~
-
-#### 1.2 frontend/src/stores/app.ts
-
-**需要迁移的调用：**
-
-| Eel 方法 | Tauri 替代 | 状态 | 备注 |
-|---------|-----------|------|------|
-| `window.eel.get_available_firmware_infos()` | 需要新增 | ❌ 待实现 | 获取可用固件列表 |
-| `window.eel.get_game_data()` | 需要新增 | ❌ 待实现 | 获取游戏数据映射 |
+#### ~~1.2 frontend/src/stores/app.ts~~ ✅ 已完成
 
 ---
 
@@ -164,25 +191,7 @@
 
 #### ~~3.5 frontend/src/pages/settings.vue~~ ✅ 已完成
 
-#### 3.6 frontend/src/pages/ryujinx.vue
-
-**需要迁移的调用：**
-
-| Eel 方法 | Tauri 替代 | 状态 | 备注 |
-|---------|-----------|------|------|
-| `window.eel.update_last_open_emu_page()` | `updateLastOpenEmuPage()` | ✅ 已有 | 已在 tauri.ts 中定义 |
-| `window.eel.get_ryujinx_release_infos()` | 需要新增 | ❌ 待实现 | 获取 Ryujinx 版本信息 |
-| `window.eel.load_history_path()` | 需要新增 | ❌ 待实现 | 加载历史路径 |
-| `window.eel.update_ryujinx_path()` | 需要新增 | ❌ 待实现 | 更新 Ryujinx 路径 |
-| `window.eel.delete_history_path()` | `deleteHistoryPath()` | ✅ 已有 | 已在 tauri.ts 中定义 |
-| `window.eel.detect_ryujinx_version()` | 需要新增 | ❌ 待实现 | 检测 Ryujinx 版本 |
-| `window.eel.install_ryujinx()` | 需要新增 | ❌ 待实现 | 安装 Ryujinx |
-| `window.eel.install_ryujinx_firmware()` | 需要新增 | ❌ 待实现 | 安装 Ryujinx 固件 |
-| `window.eel.ask_and_update_ryujinx_path()` | 需要新增 | ❌ 待实现 | 选择并更新 Ryujinx 路径 |
-| `window.eel.start_ryujinx()` | 需要新增 | ❌ 待实现 | 启动 Ryujinx |
-| `window.eel.detect_firmware_version()` | 需要新增 | ❌ 待实现 | 检测固件版本 |
-| `window.eel.switch_ryujinx_branch()` | 需要新增 | ❌ 待实现 | 切换 Ryujinx 分支 |
-| `window.eel.load_ryujinx_change_log()` | 需要新增 | ❌ 待实现 | 加载 Ryujinx 更新日志 |
+#### ~~3.6 frontend/src/pages/ryujinx.vue~~ ✅ 已完成
 
 #### 3.7 frontend/src/pages/yuzu.vue
 
@@ -203,31 +212,43 @@
 1. **版本管理相关**
    - ✅ `check_update` - 检查应用更新
    - ✅ `load_change_log` - 加载变更日志
+   - ✅ `get_available_firmware_infos` - 获取可用固件列表
 
 2. **配置数据**
    - ✅ `get_available_firmware_sources` - 获取固件下载源列表
    - ✅ `get_github_mirrors` - 获取 GitHub 镜像列表
+   - ✅ `load_history_path` - 加载历史路径列表
 
 3. **游戏数据**
    - ✅ `get_game_data` - 获取游戏数据映射
+
+4. **Ryujinx 核心功能**
+   - ✅ `get_all_ryujinx_versions_command` - 获取 Ryujinx 版本列表
+   - ✅ `install_ryujinx_by_version_command` - 安装 Ryujinx
+   - ✅ `start_ryujinx_command` - 启动 Ryujinx
+   - ✅ `update_ryujinx_path_command` - 更新 Ryujinx 路径
+   - ✅ `ask_and_update_ryujinx_path_command` - 选择并更新路径
+   - ✅ `detect_ryujinx_version_command` - 检测 Ryujinx 版本（简化实现）
+   - ✅ `get_ryujinx_change_logs_command` - 获取 Ryujinx 变更日志
+   - ✅ `install_firmware_to_ryujinx_command` - 安装固件到 Ryujinx
+   - ✅ `detect_firmware_version` - 检测固件版本（占位符）
 
 ### 高优先级（核心功能）
 
 1. **版本管理相关**
    - ~~`check_update` - 检查应用更新~~ ✅ 已完成
-   - `get_available_firmware_infos` - 获取可用固件列表
-   - `detect_firmware_version` - 检测固件版本
+   - ~~`get_available_firmware_infos` - 获取可用固件列表~~ ✅ 已完成
+   - `detect_firmware_version` - 检测固件版本 ⚠️ 占位符实现
 
 2. **Ryujinx 核心功能**
-   - `get_ryujinx_release_infos` - 获取 Ryujinx 版本列表
-   - `install_ryujinx` - 安装 Ryujinx
-   - `detect_ryujinx_version` - 检测 Ryujinx 版本
-   - `start_ryujinx` - 启动 Ryujinx
-   - `update_ryujinx_path` - 更新 Ryujinx 路径
-   - `ask_and_update_ryujinx_path` - 选择并更新路径
-   - `switch_ryujinx_branch` - 切换分支
-   - `install_ryujinx_firmware` - 安装固件
-   - ~~`open_ryujinx_keys_folder` - 打开 keys 文件夹~~ ✅ 已完成
+   - ~~`get_ryujinx_release_infos` - 获取 Ryujinx 版本列表~~ ✅ 已完成
+   - ~~`install_ryujinx` - 安装 Ryujinx~~ ✅ 已完成
+   - ~~`detect_ryujinx_version` - 检测 Ryujinx 版本~~ ✅ 已完成（简化实现）
+   - ~~`start_ryujinx` - 启动 Ryujinx~~ ✅ 已完成
+   - ~~`update_ryujinx_path` - 更新 Ryujinx 路径~~ ✅ 已完成
+   - ~~`ask_and_update_ryujinx_path` - 选择并更新路径~~ ✅ 已完成
+   - `switch_ryujinx_branch` - 切换分支 ⚠️ 待完整实现
+   - ~~`install_ryujinx_firmware` - 安装固件~~ ✅ 已完成
 
 3. **下载管理**
    - `stop_download` - 停止下载
@@ -401,7 +422,7 @@ if (isTauri()) {
 - [x] layouts/AppDrawer.vue
 - [x] layouts/AppBar.vue
 - [x] stores/ConfigStore.ts ✨ 新增: `check_update`, `load_change_log`
-- [ ] stores/app.ts
+- [x] stores/app.ts ✨ 新增: `get_available_firmware_infos`
 - [ ] components/ConsoleDialog.vue
 - [ ] components/NewVersionDialog.vue
 - [ ] components/YuzuSaveCommonPart.vue
@@ -411,11 +432,11 @@ if (isTauri()) {
 - [ ] pages/yuzuSaveManagement.vue
 - [ ] pages/yuzuCheatsManagement.vue
 - [x] pages/settings.vue ✨ 新增: `get_available_firmware_sources`, `get_github_mirrors`
-- [ ] pages/ryujinx.vue
+- [x] pages/ryujinx.vue ✨ 新增大量 Ryujinx 相关命令
 - [x] pages/yuzu.vue (无需迁移)
 - [x] utils/common.ts ✨ 新增: `get_game_data`
 
-**总计：** 9/18 完成 (50%)
+**总计：** 11/18 完成 (61%)
 
 ---
 

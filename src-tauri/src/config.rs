@@ -295,8 +295,10 @@ impl Config {
             debug!("配置加载成功");
             Ok(config)
         } else {
-            info!("配置文件不存在，使用默认配置");
-            Ok(Self::default())
+            info!("配置文件不存在，创建默认配置");
+            let config = Self::default();
+            config.save()?;
+            Ok(config)
         }
     }
 

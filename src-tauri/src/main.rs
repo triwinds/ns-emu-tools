@@ -41,6 +41,9 @@ fn main() {
             commands::common::get_available_firmware_sources,
             commands::common::get_github_mirrors,
             commands::common::get_game_data,
+            commands::common::get_available_firmware_infos,
+            commands::common::load_history_path,
+            commands::common::detect_firmware_version,
             // Yuzu commands
             commands::yuzu::get_all_yuzu_versions,
             commands::yuzu::install_yuzu_by_version,
@@ -65,6 +68,8 @@ fn main() {
             commands::ryujinx::get_ryujinx_change_logs_command,
             commands::ryujinx::install_firmware_to_ryujinx_command,
             commands::ryujinx::detect_ryujinx_branch_command,
+            commands::ryujinx::ask_and_update_ryujinx_path_command,
+            commands::ryujinx::detect_ryujinx_version_command,
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 应用程序时出错");
