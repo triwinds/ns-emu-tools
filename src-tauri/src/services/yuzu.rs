@@ -10,6 +10,7 @@ use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_github_download_url;
 use crate::utils::archive::uncompress;
+use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -20,6 +21,9 @@ const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.e
 
 /// 支持下载的分支
 const DOWNLOAD_AVAILABLE_BRANCH: &[&str] = &["citron", "eden"];
+
+/// 当前正在进行的下载任务 GID
+static CURRENT_DOWNLOAD_GID: RwLock<Option<String>> = RwLock::new(None);
 
 /// 获取模拟器名称
 pub fn get_emu_name(branch: &str) -> &'static str {
@@ -107,10 +111,56 @@ where
         ..Default::default()
     };
 
-    let result = aria2.download_and_wait(&url, options, on_progress).await?;
+    // 添加下载任务并获取 GID
+    let gid = aria2.download(&url, options).await?;
 
-    info!("下载完成: {}", result.path.display());
-    Ok(result.path)
+    // 保存当前下载的 GID（用于取消功能）
+    *CURRENT_DOWNLOAD_GID.write() = Some(gid.clone());
+
+    info!("下载任务已添加，GID: {}", gid);
+
+    // 轮询下载进度
+    let poll_interval = Duration::from_millis(500);
+    loop {
+        tokio::time::sleep(poll_interval).await;
+
+        let progress = match aria2.get_download_progress(&gid).await {
+            Ok(p) => p,
+            Err(e) => {
+                *CURRENT_DOWNLOAD_GID.write() = None;
+                return Err(e);
+            }
+        };
+
+        on_progress(progress.clone());
+
+        match progress.status {
+            crate::services::aria2::Aria2DownloadStatus::Complete => {
+                // 从 aria2 获取实际文件路径
+                let status = aria2.get_download_status(&gid).await?;
+                let path = status
+                    .files
+                    .first()
+                    .map(|f| PathBuf::from(&f.path))
+                    .ok_or_else(|| AppError::Aria2("无法获取下载文件路径".to_string()))?;
+
+                // 清除 GID
+                *CURRENT_DOWNLOAD_GID.write() = None;
+
+                info!("下载完成: {}", path.display());
+                return Ok(path);
+            }
+            crate::services::aria2::Aria2DownloadStatus::Error => {
+                *CURRENT_DOWNLOAD_GID.write() = None;
+                return Err(AppError::Aria2("下载失败".to_string()));
+            }
+            crate::services::aria2::Aria2DownloadStatus::Removed => {
+                *CURRENT_DOWNLOAD_GID.write() = None;
+                return Err(AppError::Aria2("下载已取消".to_string()));
+            }
+            _ => continue,
+        }
+    }
 }
 
 /// 解压 Yuzu 安装包
@@ -186,7 +236,7 @@ where
             id: "download".to_string(),
             progress: progress.percentage,
             speed: progress.speed_string(),
-            eta: "Calculating...".to_string(), // Aria2 struct wrapper might need full ETA logic if not present
+            eta: progress.eta_string(),
          });
     }).await {
         Ok(path) => path,
@@ -313,7 +363,7 @@ where
             id: "download".to_string(),
             progress: progress.percentage,
             speed: progress.speed_string(),
-            eta: "Calculating...".to_string(),
+            eta: progress.eta_string(),
          });
     }).await {
         Ok(path) => path,
@@ -898,6 +948,28 @@ pub async fn install_firmware_to_yuzu(firmware_version: Option<&str>) -> AppResu
 
     info!("固件安装完成");
     Ok(())
+}
+
+/// 取消当前的 Yuzu 下载
+pub async fn cancel_yuzu_download() -> AppResult<()> {
+    let gid = {
+        let gid_lock = CURRENT_DOWNLOAD_GID.read();
+        gid_lock.clone()
+    };
+
+    if let Some(gid) = gid {
+        info!("取消下载任务: {}", gid);
+        let aria2 = get_aria2_manager().await?;
+        aria2.cancel(&gid).await?;
+
+        // 清除 GID
+        *CURRENT_DOWNLOAD_GID.write() = None;
+
+        info!("下载已取消");
+        Ok(())
+    } else {
+        Err(AppError::Aria2("没有正在进行的下载任务".to_string()))
+    }
 }
 
 #[cfg(test)]

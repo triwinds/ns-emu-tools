@@ -73,10 +73,20 @@
       </v-card-text>
 
       <v-divider></v-divider>
-      
+
       <v-card-actions>
         <v-spacer></v-spacer>
-        <!-- Only show close when finished (success or error on last step, or generally if not running? 
+        <!-- Cancel button when downloading -->
+        <v-btn
+          v-if="isDownloading"
+          color="error"
+          variant="text"
+          @click="handleCancelDownload"
+          :disabled="isCancelling"
+        >
+          {{ isCancelling ? '取消中...' : '取消下载' }}
+        </v-btn>
+        <!-- Only show close when finished (success or error on last step, or generally if not running?
              For now, let's just allow close if all done or error)
         -->
         <v-btn
@@ -94,14 +104,35 @@
 
 <script setup lang="ts">
 import { useInstallationStore } from '@/stores/InstallationStore';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline } from '@mdi/js';
+import { cancelYuzuDownload } from '@/utils/tauri';
+import DialogTitle from '@/components/DialogTitle.vue';
 
 const store = useInstallationStore();
+const isCancelling = ref(false);
 
 const isInstalling = computed(() => {
     // Simple check: if any step is running, we are installing.
     // Or if the last step is pending.
     return store.steps.some(s => s.status === 'running');
 });
+
+const isDownloading = computed(() => {
+    // Check if there's a download step that is currently running
+    return store.steps.some(s => s.type === 'download' && s.status === 'running');
+});
+
+async function handleCancelDownload() {
+    if (isCancelling.value) return;
+
+    isCancelling.value = true;
+    try {
+        await cancelYuzuDownload();
+    } catch (error) {
+        console.error('取消下载失败:', error);
+    } finally {
+        isCancelling.value = false;
+    }
+}
 </script>

@@ -389,7 +389,7 @@ async function installFirmware() {
 }
 
 async function installYuzuHandler() {
-  consoleDialogStore.cleanAndShowConsoleDialog()
+  // consoleDialogStore.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   consoleDialogStore.persistentConsoleDialog = true
 

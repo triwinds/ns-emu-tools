@@ -66,6 +66,7 @@ fn main() {
             commands::yuzu::get_yuzu_change_logs_command,
             commands::yuzu::install_firmware_to_yuzu_command,
             commands::yuzu::switch_yuzu_branch,
+            commands::yuzu::cancel_yuzu_download_command,
             // Ryujinx commands
             commands::ryujinx::get_all_ryujinx_versions_command,
             commands::ryujinx::install_ryujinx_by_version_command,

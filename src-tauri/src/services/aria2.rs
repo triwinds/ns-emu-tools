@@ -295,12 +295,17 @@ impl Aria2Manager {
         let aria2_path = ensure_aria2_installed().await?;
         info!("aria2 路径: {}", aria2_path.display());
 
+        // 获取默认下载目录
+        let download_dir = get_default_download_dir()?;
+        info!("aria2 默认下载目录: {}", download_dir.display());
+
         // 构建命令行参数
         let mut args = vec![
             "--enable-rpc".to_string(),
             format!("--rpc-listen-port={}", port),
             "--rpc-listen-all=false".to_string(),
             format!("--rpc-secret={}", ARIA2_SECRET),
+            format!("--dir={}", download_dir.to_string_lossy()),
             "--async-dns=true".to_string(),
             format!("--stop-with-process={}", std::process::id()),
             "--log-level=info".to_string(),
@@ -468,7 +473,7 @@ impl Aria2Manager {
         // 构建 aria2 选项
         let mut task_options = TaskOptions::default();
 
-        // 设置保存目录
+        // 设置保存目录（如果指定了的话）
         if let Some(ref dir) = options.save_dir {
             task_options.dir = Some(dir.to_string_lossy().to_string());
         }
@@ -489,14 +494,19 @@ impl Aria2Manager {
         for (k, v) in &options.headers {
             headers.push(format!("{}: {}", k, v));
         }
-        task_options.header = Some(headers);
+        task_options.header = Some(headers.clone());
 
         // 设置代理
-        if is_using_proxy() {
+        let proxy_info = if is_using_proxy() {
             if let Some(proxy) = get_proxy_url() {
-                task_options.all_proxy = Some(proxy);
+                task_options.all_proxy = Some(proxy.clone());
+                Some(proxy)
+            } else {
+                None
             }
-        }
+        } else {
+            None
+        };
 
         // 额外选项
         let mut extra = serde_json::Map::new();
@@ -504,7 +514,22 @@ impl Aria2Manager {
         extra.insert("allow-overwrite".to_string(), serde_json::json!(options.overwrite.to_string()));
         extra.insert("auto-file-renaming".to_string(), serde_json::json!("false"));
 
-        task_options.extra_options = extra;
+        task_options.extra_options = extra.clone();
+
+        // 打印任务参数到日志（debug 级别）
+        debug!(
+            "aria2 下载任务参数: url={}, dir={:?}, out={:?}, split={}, max_connection_per_server={}, user_agent={}, headers={:?}, proxy={:?}, min_split_size={}, allow_overwrite={}, auto_file_renaming=false",
+            final_url,
+            task_options.dir,
+            task_options.out,
+            options.split,
+            options.max_connection_per_server,
+            user_agent,
+            headers,
+            proxy_info,
+            options.min_split_size,
+            options.overwrite
+        );
 
         // 添加下载
         let client = self.client.lock().await;
@@ -643,7 +668,7 @@ impl Aria2Manager {
     }
 
     /// 获取下载状态详情
-    async fn get_download_status(&self, gid: &str) -> AppResult<Aria2Status> {
+    pub async fn get_download_status(&self, gid: &str) -> AppResult<Aria2Status> {
         let client = self.client.lock().await;
         let client = client
             .as_ref()
@@ -920,6 +945,22 @@ fn get_aria2_path() -> AppResult<PathBuf> {
     }
 
     Err(AppError::Aria2("找不到 aria2c 可执行文件".to_string()))
+}
+
+/// 获取默认下载目录（work_dir/download）
+pub fn get_default_download_dir() -> AppResult<PathBuf> {
+    let download_dir = std::env::current_dir()
+        .map_err(|e| AppError::Aria2(format!("获取当前目录失败: {}", e)))?
+        .join("download");
+
+    // 确保目录存在
+    if !download_dir.exists() {
+        std::fs::create_dir_all(&download_dir)
+            .map_err(|e| AppError::Aria2(format!("创建下载目录失败: {}", e)))?;
+        info!("创建下载目录: {}", download_dir.display());
+    }
+
+    Ok(download_dir)
 }
 
 /// 从 URL 提取文件名
@@ -1317,7 +1358,7 @@ mod tests {
         manager.start().await.expect("启动 aria2 失败");
 
         // 下载一个小文件 (约 1KB)
-        let test_url = "http://speedtest.tele2.net/10MB.zip";
+        let test_url = "https://hub.gitmirror.com/https://github.com/eden-emulator/Releases/releases/download/v0.0.4-rc3/Eden-Windows-v0.0.4-rc3-amd64-msvc-standard.zip";
         let options = Aria2DownloadOptions {
             save_dir: Some(temp_dir.clone()),
             filename: Some("test_download.bin".to_string()),

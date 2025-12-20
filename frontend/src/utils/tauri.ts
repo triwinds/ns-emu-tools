@@ -362,6 +362,11 @@ export async function switchYuzuBranch(branch: string) {
   return invokeCommand<ApiResponse<void>>('switch_yuzu_branch', { branch })
 }
 
+/** 取消 Yuzu 下载 */
+export async function cancelYuzuDownload() {
+  return invokeCommand<ApiResponse<void>>('cancel_yuzu_download_command')
+}
+
 /** 删除历史路径 */
 export async function deleteHistoryPath(emuType: string, path: string) {
   return invokeCommand<ApiResponse<void>>('delete_history_path', { emuType, path })

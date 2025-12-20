@@ -257,3 +257,17 @@ pub fn switch_yuzu_branch(branch: String) -> Result<ApiResponse<()>, String> {
 
     Ok(ApiResponse::success(()))
 }
+
+/// 取消 Yuzu 下载
+#[tauri::command]
+pub async fn cancel_yuzu_download_command() -> Result<ApiResponse<()>, String> {
+    info!("取消 Yuzu 下载");
+
+    match crate::services::yuzu::cancel_yuzu_download().await {
+        Ok(_) => Ok(ApiResponse::success(())),
+        Err(e) => {
+            error!("取消下载失败: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
