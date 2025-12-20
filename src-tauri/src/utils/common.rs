@@ -1,6 +1,10 @@
 //! 通用工具函数
 
+use crate::error::{AppError, AppResult};
 use std::path::Path;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
+use tracing::{debug, info};
 
 /// 检查路径是否存在
 pub fn path_exists(path: &str) -> bool {
@@ -60,6 +64,38 @@ pub fn format_duration(seconds: u64) -> String {
     } else {
         format!("{}s", seconds)
     }
+}
+
+/// 检查文件 MD5
+pub async fn check_file_md5(file_path: &Path, target_md5: &str) -> AppResult<bool> {
+    if target_md5.is_empty() {
+        return Ok(true);
+    }
+
+    if !file_path.exists() {
+        return Err(AppError::FileNotFound(file_path.display().to_string()));
+    }
+
+    info!("计算文件 MD5: {}", file_path.display());
+
+    let mut file = File::open(file_path).await?;
+    let mut hasher = md5::Context::new();
+    let mut buffer = vec![0u8; 8192];
+
+    loop {
+        let bytes_read = file.read(&mut buffer).await?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.consume(&buffer[..bytes_read]);
+    }
+
+    let digest = hasher.compute();
+    let file_md5 = format!("{:x}", digest);
+
+    debug!("文件 MD5: {}, 目标 MD5: {}", file_md5, target_md5);
+
+    Ok(file_md5.to_lowercase() == target_md5.to_lowercase())
 }
 
 #[cfg(test)]

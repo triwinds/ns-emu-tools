@@ -4,7 +4,6 @@
 
 pub mod aria2;
 pub mod doh;
-pub mod downloader;
 pub mod firmware;
 pub mod network;
 pub mod ryujinx;
@@ -15,7 +14,6 @@ pub mod notifier;
 
 pub use aria2::*;
 pub use doh::*;
-pub use downloader::*;
 pub use firmware::*;
 pub use network::*;
 pub use ryujinx::*;

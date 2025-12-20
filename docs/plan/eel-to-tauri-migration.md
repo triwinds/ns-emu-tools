@@ -109,8 +109,8 @@
 | Eel 方法 | Tauri 替代 | 状态 | 备注 |
 |---------|-----------|------|------|
 | `window.eel.load_change_log()` | 需要新增 | ❌ 待实现 | 加载更新日志 |
-| `window.eel.download_net_by_tag()` | 需要新增 | ❌ 待实现 | 下载 .NET Runtime |
-| `window.eel.update_net_by_tag()` | 需要新增 | ❌ 待实现 | 更新 .NET Runtime |
+| `window.eel.download_net_by_tag()` | 需要新增 | ❌ 待实现 | 下载 ns emt tools |
+| `window.eel.update_net_by_tag()` | 需要新增 | ❌ 待实现 | 更新 ns emt tools |
 
 #### 2.3 frontend/src/components/YuzuSaveCommonPart.vue
 

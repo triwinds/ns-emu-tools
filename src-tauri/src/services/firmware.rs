@@ -4,8 +4,9 @@
 
 use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
-use crate::services::downloader::{check_file_md5, format_size, DownloadOptions, DownloadProgress, Downloader};
+use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions, Aria2DownloadProgress};
 use crate::services::network::{create_client, get_final_url, get_github_download_url, request_github_api};
+use crate::utils::common::{check_file_md5, format_size};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
@@ -152,7 +153,7 @@ pub async fn install_firmware<F>(
     on_progress: F,
 ) -> AppResult<String>
 where
-    F: Fn(DownloadProgress) + Send + Sync + Clone + 'static,
+    F: Fn(Aria2DownloadProgress) + Send + 'static,
 {
     info!("开始安装固件版本: {}", firmware_version);
 
@@ -176,14 +177,15 @@ where
 
     info!("下载固件: {}", url);
 
-    // 下载固件
-    let downloader = Downloader::new()?;
-    let options = DownloadOptions {
+    // 使用 aria2 下载固件
+    let aria2_manager = get_aria2_manager()?;
+    let options = Aria2DownloadOptions {
         overwrite: false,
+        use_github_mirror: url.contains("github.com"),
         ..Default::default()
     };
 
-    let result = downloader.download(&url, options, on_progress).await?;
+    let result = aria2_manager.download_and_wait(&url, options, on_progress).await?;
 
     // 验证 MD5
     let (verify_md5, auto_delete) = {
