@@ -51,7 +51,17 @@
                     <v-list-item-subtitle v-if="step.description">
                         {{ step.description }}
                     </v-list-item-subtitle>
-                    
+
+                    <!-- Error message -->
+                    <div v-if="step.status === 'error' && step.error" class="mt-2">
+                        <v-alert
+                            type="error"
+                            density="compact"
+                            variant="tonal"
+                            :text="step.error"
+                        ></v-alert>
+                    </div>
+
                     <!-- Download Progress details -->
                     <div v-if="step.type === 'download' && step.status === 'running'" class="mt-2">
                          <v-progress-linear

@@ -55,6 +55,10 @@ export const useInstallationStore = defineStore('installation', {
 
         setStepError(id: string, message?: string) {
             this.updateStepStatus(id, 'error');
+            const step = this.steps.find(s => s.id === id);
+            if (step && message) {
+                step.error = message;
+            }
             if (message) {
                 this.errorMessage = message;
             }
@@ -102,8 +106,38 @@ export const useInstallationStore = defineStore('installation', {
             // Step 4: Verify
             this.updateStepStatus('step4', 'running');
             await this.sleep(1000);
-            // Let's mock a random error occasionally or just success for now
-            this.updateStepStatus('step4', 'success');
+            // Mock random success or error for testing
+            if (Math.random() > 0.7) {
+                this.setStepError('step4', '验证失败：文件校验和不匹配。请检查下载的文件是否完整。');
+            } else {
+                this.updateStepStatus('step4', 'success');
+            }
+        },
+
+        // Mock installation with guaranteed error for testing
+        async mockStartInstallationWithError() {
+            this.reset();
+            this.setSteps([
+                { id: 'step1', title: '检查环境', status: 'pending', type: 'normal' },
+                { id: 'step2', title: '下载固件', status: 'pending', type: 'download', progress: 0, downloadSpeed: '0 MB/s', eta: '--' },
+                { id: 'step3', title: '解压文件', status: 'pending', type: 'normal' },
+            ]);
+            this.openDialog();
+
+            // Step 1: Success
+            await this.sleep(800);
+            this.updateStepStatus('step1', 'running');
+            await this.sleep(1000);
+            this.updateStepStatus('step1', 'success');
+
+            // Step 2: Download with error
+            this.updateStepStatus('step2', 'running');
+            for (let i = 0; i <= 50; i += 10) {
+                await this.sleep(200);
+                this.updateDownloadProgress('step2', i, `${(Math.random() * 5 + 2).toFixed(1)} MB/s`, `${Math.floor((100 - i) / 10)}s`);
+            }
+            // Simulate download error
+            this.setStepError('step2', '下载失败：网络连接超时。请检查您的网络连接后重试。');
         },
 
         sleep(ms: number) {

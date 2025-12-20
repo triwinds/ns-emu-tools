@@ -101,7 +101,10 @@ where
             && (branch == "ldn" || current_branch == branch)
         {
             info!("当前已是目标版本，跳过安装");
-            return Ok(());
+            return Err(AppError::Emulator(format!(
+                "当前已是目标版本 {} ({})",
+                target_version, branch
+            )));
         }
     }
 

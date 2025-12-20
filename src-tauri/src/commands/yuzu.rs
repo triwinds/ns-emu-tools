@@ -47,6 +47,7 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            error: None,
         },
         InstallationStep {
             id: "download".to_string(),
@@ -56,6 +57,7 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            error: None,
         },
         InstallationStep {
             id: "extract".to_string(),
@@ -65,6 +67,7 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            error: None,
         },
         InstallationStep {
             id: "install".to_string(),
@@ -74,6 +77,7 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            error: None,
         },
         InstallationStep {
             id: "check_env".to_string(),
@@ -83,6 +87,7 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            error: None,
         },
     ];
 

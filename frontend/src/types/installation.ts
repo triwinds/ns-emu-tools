@@ -11,4 +11,6 @@ export interface InstallationStep {
     progress?: number; // 0-100
     downloadSpeed?: string;
     eta?: string;
+    // Error message when status is 'error'
+    error?: string;
 }

@@ -587,6 +587,12 @@ where
         };
         if cv == target_version && current_branch == branch {
             warn!("当前已是目标版本，跳过安装");
+            // 发送所有步骤完成事件
+            on_event(InstallationEvent::StepSuccess { id: "fetch_version".to_string() });
+            on_event(InstallationEvent::StepSuccess { id: "download".to_string() });
+            on_event(InstallationEvent::StepSuccess { id: "extract".to_string() });
+            on_event(InstallationEvent::StepSuccess { id: "install".to_string() });
+            on_event(InstallationEvent::StepSuccess { id: "check_env".to_string() });
             return Ok(());
         }
     }

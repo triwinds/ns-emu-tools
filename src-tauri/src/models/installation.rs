@@ -23,6 +23,8 @@ pub struct InstallationStep {
     pub download_speed: String,
     #[serde(default)]
     pub eta: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
