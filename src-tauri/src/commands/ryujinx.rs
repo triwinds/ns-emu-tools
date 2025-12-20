@@ -169,7 +169,7 @@ pub fn detect_ryujinx_branch_command() -> Result<ApiResponse<String>, String> {
 pub async fn ask_and_update_ryujinx_path_command(
     window: Window,
 ) -> Result<ApiResponse<String>, String> {
-    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+    use tauri_plugin_dialog::DialogExt;
 
     info!("打开文件夹选择对话框");
 

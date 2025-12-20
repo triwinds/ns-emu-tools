@@ -239,7 +239,7 @@ let yuzuConfig = computed(() => {
 let branch = computed(() => {
   return configStore.config.yuzu.branch
 })
-console.log(branch)
+
 let branches = [
   {
     text: 'Eden',

@@ -34,7 +34,6 @@ pub fn config_path() -> PathBuf {
 
 /// Yuzu/Eden/Citron 模拟器配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct YuzuConfig {
     /// 模拟器安装路径
     #[serde(default = "default_yuzu_path")]
@@ -246,7 +245,6 @@ impl Default for UiSetting {
 
 /// 其他设置
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct OtherSetting {
     /// 将 Yuzu 重命名为 Cemu
     #[serde(default)]
