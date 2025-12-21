@@ -2,8 +2,8 @@
 //!
 //! 提供固件下载源、GitHub 镜像等静态配置数据
 
-use crate::error::AppResult;
-use crate::services::network::{create_client, get_final_url};
+use crate::error::{AppError, AppResult};
+use crate::services::network::{get_durable_cached_client, get_final_url};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -148,13 +148,13 @@ pub async fn get_game_data() -> AppResult<HashMap<String, Value>> {
     let url = "https://raw.githubusercontent.com/triwinds/ns-emu-tools/main/game_data.json";
     let final_url = get_final_url(url);
 
-    let client = create_client()?;
+    let client = get_durable_cached_client();
     let resp = client.get(&final_url).send().await;
 
     match resp {
         Ok(response) => {
             if response.status().is_success() {
-                let data = response.json::<HashMap<String, Value>>().await?;
+                let data = response.json::<HashMap<String, Value>>().await.map_err(|e| AppError::Unknown(e.to_string()))?;
                 info!("成功获取 {} 个游戏数据", data.len());
                 Ok(data)
             } else {

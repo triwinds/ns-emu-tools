@@ -4,13 +4,16 @@
 
 use crate::config::{user_agent, CONFIG};
 use crate::error::{AppError, AppResult};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rand::prelude::IndexedRandom;
-use reqwest::{Client, Proxy};
+use reqwest::{Client, Proxy, Request, Response};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
+use tauri::http;
 use tracing::{debug, info, warn};
 use url::Url;
 
@@ -25,10 +28,6 @@ static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
     map.insert(
         "https://raw.githubusercontent.com",
         "https://ghproxy.net/https://raw.githubusercontent.com",
-    );
-    map.insert(
-        "https://git.ryujinx.app",
-        "https://nsarchive.e6ex.com/ryujinx_official",
     );
     map
 });
@@ -113,8 +112,68 @@ pub static GITHUB_OTHER_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
 /// Chrome User-Agent
 pub const CHROME_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
 
+/// 缓存日志中间件
+#[derive(Debug, Clone)]
+pub struct CacheLoggingMiddleware;
+
+#[async_trait::async_trait]
+impl Middleware for CacheLoggingMiddleware {
+    async fn handle(
+        &self,
+        req: Request,
+        extensions: &mut http::Extensions,
+        next: Next<'_>,
+    ) -> reqwest_middleware::Result<Response> {
+        let url = req.url().to_string();
+        let response = next.run(req, extensions).await?;
+
+        // // 打印所有响应头部用于调试
+        // debug!("请求 URL: {}", url);
+        // debug!("响应头部:");
+        // for (key, value) in response.headers().iter() {
+        //     if let Ok(v) = value.to_str() {
+        //         debug!("  {}: {}", key, v);
+        //     }
+        // }
+
+        // 检查缓存状态
+        if let Some(cache_status) = response.headers().get("x-cache") {
+            if let Ok(status_str) = cache_status.to_str() {
+                match status_str {
+                    "HIT" => info!("✓ 缓存命中: {}", url),
+                    "MISS" => info!("✗ 缓存未命中: {}", url),
+                    _ => info!("? 缓存状态 ({}): {}", status_str, url),
+                }
+            }
+        } else {
+            info!("⚠ 无缓存头部: {}", url);
+        }
+
+        Ok(response)
+    }
+}
+
 /// GitHub API 回退标志
 static GITHUB_API_FALLBACK_FLAG: Lazy<RwLock<bool>> = Lazy::new(|| RwLock::new(false));
+
+/// 全局缓存客户端（内存缓存）
+static CACHED_CLIENT: Lazy<ClientWithMiddleware> = Lazy::new(|| {
+    create_cached_client().expect("Failed to create cached client")
+});
+
+/// 全局持久化缓存客户端（磁盘缓存）
+static DURABLE_CACHED_CLIENT: Lazy<ClientWithMiddleware> = Lazy::new(|| {
+    create_durable_cached_client().expect("Failed to create durable cached client")
+});
+
+/// Git API JSON 响应缓存（5 分钟 TTL，忽略 cache-control）
+static GIT_API_JSON_CACHE: Lazy<moka::future::Cache<String, serde_json::Value>> =
+    Lazy::new(|| {
+        moka::future::Cache::builder()
+            .max_capacity(100) // 最多缓存 100 个响应
+            .time_to_live(std::time::Duration::from_secs(300)) // 5 分钟过期
+            .build()
+    });
 
 /// GitHub 镜像信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -196,6 +255,47 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
     }
 
     builder.build().map_err(|e| AppError::from(e))
+}
+
+/// 创建内存缓存客户端（用于一般请求）
+pub fn create_cached_client() -> AppResult<ClientWithMiddleware> {
+    let client = create_client()?;
+    let cached_client = ClientBuilder::new(client)
+        .with(CacheLoggingMiddleware)
+        .with(Cache(HttpCache {
+            mode: CacheMode::Default,
+            manager: MokaManager::default(),
+            options: HttpCacheOptions::default(),
+        }))
+        .build();
+    Ok(cached_client)
+}
+
+/// 创建持久化缓存客户端（用于需要长期缓存的请求，如固件信息）
+pub fn create_durable_cached_client() -> AppResult<ClientWithMiddleware> {
+    use http_cache_reqwest::CACacheManager;
+
+    let client = create_client()?;
+
+    let cached_client = ClientBuilder::new(client)
+        .with(CacheLoggingMiddleware)
+        .with(Cache(HttpCache {
+            mode: CacheMode::Default,
+            manager: CACacheManager::default(),
+            options: HttpCacheOptions::default(),
+        }))
+        .build();
+    Ok(cached_client)
+}
+
+/// 获取全局缓存客户端（内存缓存）
+pub fn get_cached_client() -> &'static ClientWithMiddleware {
+    &CACHED_CLIENT
+}
+
+/// 获取全局持久化缓存客户端（磁盘缓存，类似 Python 的 get_durable_cache_session）
+pub fn get_durable_cached_client() -> &'static ClientWithMiddleware {
+    &DURABLE_CACHED_CLIENT
 }
 
 /// 获取代理 URL
@@ -434,8 +534,9 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
 
     // 如果不是 CDN 模式且没有回退标志，尝试直连
     if github_api_mode != "cdn" && !fallback {
-        let client = create_client_with_timeout(Duration::from_secs(5))?;
-        match client.get(url).send().await {
+        // 使用缓存客户端进行直连
+        let cached_client = get_cached_client();
+        match cached_client.get(url).send().await {
             Ok(resp) => {
                 if let Ok(data) = resp.json::<serde_json::Value>().await {
                     // 检查是否触发 API 限制
@@ -458,11 +559,54 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
         }
     }
 
-    // 使用 CDN
+    // 使用 CDN 和持久化缓存
     let cdn_url = get_override_url(url);
+    let durable_cached_client = get_durable_cached_client();
+    let resp = durable_cached_client.get(&cdn_url).send().await.map_err(|e| AppError::Unknown(e.to_string()))?;
+    let data = resp.json::<serde_json::Value>().await.map_err(|e| AppError::Unknown(e.to_string()))?;
+    Ok(data)
+}
+
+/// 请求 Git 托管平台 API（GitLab/Forgejo）
+/// 用于 git.ryujinx.app 和 git.citron-emu.org
+/// 使用手动缓存（5 分钟 TTL）忽略 cache-control: private
+pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
+    info!("请求 Git API: {}", url);
+
+    // 检查缓存
+    if let Some(cached_data) = GIT_API_JSON_CACHE.get(url).await {
+        info!("✓ 缓存命中 (手动缓存): {}", url);
+        return Ok(cached_data);
+    }
+
+    info!("✗ 缓存未命中 (手动缓存): {}", url);
+
+    // 使用普通客户端发送请求（不使用 HTTP 缓存中间件）
     let client = create_client()?;
-    let resp = client.get(&cdn_url).send().await?;
-    let data = resp.json::<serde_json::Value>().await?;
+    let resp = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| AppError::Unknown(e.to_string()))?;
+
+    if !resp.status().is_success() {
+        return Err(AppError::Unknown(format!(
+            "Git API 请求失败: {} - {}",
+            resp.status(),
+            url
+        )));
+    }
+
+    let data = resp
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| AppError::Unknown(e.to_string()))?;
+
+    // 将响应存入缓存
+    GIT_API_JSON_CACHE
+        .insert(url.to_string(), data.clone())
+        .await;
+
     Ok(data)
 }
 

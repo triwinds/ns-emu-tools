@@ -4,7 +4,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::models::release::ReleaseInfo;
-use crate::services::network::create_client;
+use crate::services::network::request_git_api;
 use tracing::{debug, info};
 
 /// Ryujinx GitLab Mainline Releases API
@@ -25,17 +25,7 @@ pub async fn get_all_ryujinx_release_infos(branch: &str) -> AppResult<Vec<Releas
 pub async fn get_all_mainline_ryujinx_release_infos() -> AppResult<Vec<ReleaseInfo>> {
     info!("获取 Ryujinx Mainline 所有 Release 信息");
 
-    let client = create_client()?;
-    let resp = client.get(RYUJINX_MAINLINE_API).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "Ryujinx API 请求失败: {}",
-            resp.status()
-        )));
-    }
-
-    let data: serde_json::Value = resp.json().await?;
+    let data = request_git_api(RYUJINX_MAINLINE_API).await?;
 
     let releases: Vec<ReleaseInfo> = data
         .as_array()
@@ -52,17 +42,7 @@ pub async fn get_all_mainline_ryujinx_release_infos() -> AppResult<Vec<ReleaseIn
 pub async fn get_all_canary_ryujinx_release_infos() -> AppResult<Vec<ReleaseInfo>> {
     info!("获取 Ryujinx Canary 所有 Release 信息");
 
-    let client = create_client()?;
-    let resp = client.get(RYUJINX_CANARY_API).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "Ryujinx Canary API 请求失败: {}",
-            resp.status()
-        )));
-    }
-
-    let data: serde_json::Value = resp.json().await?;
+    let data = request_git_api(RYUJINX_CANARY_API).await?;
 
     let releases: Vec<ReleaseInfo> = data
         .as_array()
@@ -101,17 +81,7 @@ pub async fn get_mainline_ryujinx_release_info_by_version(version: &str) -> AppR
     info!("获取 Ryujinx Mainline 版本 {} 的 Release 信息", version);
 
     let url = format!("{}/{}", RYUJINX_MAINLINE_API, version);
-    let client = create_client()?;
-    let resp = client.get(&url).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Emulator(format!(
-            "找不到 Ryujinx Mainline 版本: {}",
-            version
-        )));
-    }
-
-    let data: serde_json::Value = resp.json().await?;
+    let data = request_git_api(&url).await?;
 
     ReleaseInfo::from_gitlab_api(&data).ok_or_else(|| {
         AppError::InvalidArgument(format!("无法解析 Ryujinx 版本 {} 的信息", version))
@@ -123,17 +93,7 @@ pub async fn get_canary_ryujinx_release_info_by_version(version: &str) -> AppRes
     info!("获取 Ryujinx Canary 版本 {} 的 Release 信息", version);
 
     let url = format!("{}/{}", RYUJINX_CANARY_API, version);
-    let client = create_client()?;
-    let resp = client.get(&url).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Emulator(format!(
-            "找不到 Ryujinx Canary 版本: {}",
-            version
-        )));
-    }
-
-    let data: serde_json::Value = resp.json().await?;
+    let data = request_git_api(&url).await?;
 
     ReleaseInfo::from_gitlab_api(&data).ok_or_else(|| {
         AppError::InvalidArgument(format!("无法解析 Ryujinx Canary 版本 {} 的信息", version))

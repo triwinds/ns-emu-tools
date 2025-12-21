@@ -5,7 +5,7 @@
 use crate::config::CURRENT_VERSION;
 use crate::error::{AppError, AppResult};
 use crate::models::release::ReleaseInfo;
-use crate::services::network::{create_client, get_final_url, request_github_api};
+use crate::services::network::{get_durable_cached_client, get_final_url, request_github_api};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
@@ -70,8 +70,8 @@ pub async fn load_change_log() -> AppResult<String> {
     info!("加载变更日志");
 
     let url = get_final_url(CHANGELOG_URL);
-    let client = create_client()?;
-    let resp = client.get(&url).send().await?;
+    let client = get_durable_cached_client();
+    let resp = client.get(&url).send().await.map_err(|e| AppError::Unknown(e.to_string()))?;
 
     if !resp.status().is_success() {
         return Err(AppError::Unknown(format!(
@@ -80,7 +80,7 @@ pub async fn load_change_log() -> AppResult<String> {
         )));
     }
 
-    let text = resp.text().await?;
+    let text = resp.text().await.map_err(|e| AppError::Unknown(e.to_string()))?;
     Ok(text)
 }
 

@@ -16,7 +16,8 @@
       "WebFetch(domain:docs.rs)",
       "Bash(cargo search:*)",
       "Bash(bun run build)",
-      "Bash(bun run type-check:*)"
+      "Bash(bun run type-check:*)",
+      "Bash(cargo tree:*)"
     ]
   }
 }

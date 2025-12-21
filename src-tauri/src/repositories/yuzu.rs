@@ -4,7 +4,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::models::release::ReleaseInfo;
-use crate::services::network::{create_client, request_github_api};
+use crate::services::network::{request_git_api, request_github_api};
 use tracing::{debug, info};
 
 /// Eden 仓库 API 地址
@@ -94,17 +94,7 @@ pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<Releas
 pub async fn get_citron_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
     info!("获取 Citron 所有 Release 信息");
 
-    let client = create_client()?;
-    let resp = client.get(CITRON_RELEASES_API).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "Citron API 请求失败: {}",
-            resp.status()
-        )));
-    }
-
-    let data: serde_json::Value = resp.json().await?;
+    let data = request_git_api(CITRON_RELEASES_API).await?;
 
     let releases: Vec<ReleaseInfo> = data
         .as_array()
@@ -129,17 +119,7 @@ pub async fn get_citron_release_info_by_version(version: &str) -> AppResult<Rele
     info!("获取 Citron 版本 {} 的 Release 信息", version);
 
     let url = format!("{}/tags/{}", CITRON_RELEASES_API, version);
-    let client = create_client()?;
-    let resp = client.get(&url).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Emulator(format!(
-            "找不到 Citron 版本: {}",
-            version
-        )));
-    }
-
-    let data: serde_json::Value = resp.json().await?;
+    let data = request_git_api(&url).await?;
 
     // 检查是否返回 404 消息
     if let Some(message) = data.get("message").and_then(|m| m.as_str()) {
