@@ -395,29 +395,9 @@ pub fn get_available_firmware_sources() -> Vec<(&'static str, &'static str)> {
 
 /// 获取 Yuzu 固件路径
 pub fn get_yuzu_firmware_path() -> PathBuf {
-    let yuzu_path = {
-        let config = CONFIG.read();
-        config.yuzu.yuzu_path.clone()
-    };
-
-    // Yuzu 用户数据路径
-    let user_path = if cfg!(windows) {
-        dirs::data_local_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("yuzu")
-    } else {
-        dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".local/share/yuzu")
-    };
-
-    // portable 模式检测
-    let portable_path = yuzu_path.join("user");
-    if portable_path.exists() {
-        portable_path.join("nand/system/Contents/registered")
-    } else {
-        user_path.join("nand/system/Contents/registered")
-    }
+    // 使用 yuzu.rs 中的函数获取 NAND 路径，这样可以从配置文件读取自定义路径
+    let nand_path = crate::services::yuzu::get_yuzu_nand_path();
+    nand_path.join("system/Contents/registered")
 }
 
 /// 获取 Ryujinx 固件路径

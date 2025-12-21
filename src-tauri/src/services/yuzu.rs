@@ -1293,12 +1293,122 @@ pub fn open_yuzu_keys_folder() -> AppResult<()> {
     Ok(())
 }
 
+/// 读取 Yuzu qt-config.ini 中的 Data Storage 配置
+fn get_yuzu_data_storage_config(user_path: &Path) -> Option<std::collections::HashMap<String, String>> {
+    let config_path = user_path.join("config").join("qt-config.ini");
+
+    if !config_path.exists() {
+        return None;
+    }
+
+    // 手动解析 INI 文件
+    match std::fs::read_to_string(&config_path) {
+        Ok(content) => {
+            let mut result = std::collections::HashMap::new();
+            let mut in_data_storage = false;
+
+            for line in content.lines() {
+                let line = line.trim();
+
+                // 检查是否进入 [Data%20Storage] section
+                if line == "[Data%20Storage]" {
+                    in_data_storage = true;
+                    continue;
+                }
+
+                // 如果遇到新的 section，退出
+                if line.starts_with('[') && line.ends_with(']') {
+                    in_data_storage = false;
+                    continue;
+                }
+
+                // 如果在 Data%20Storage section 中，解析键值对
+                if in_data_storage {
+                    if let Some(pos) = line.find('=') {
+                        let key = line[..pos].trim();
+                        let value = line[pos + 1..].trim();
+                        result.insert(key.to_string(), value.to_string());
+                    }
+                }
+            }
+
+            if result.is_empty() {
+                None
+            } else {
+                Some(result)
+            }
+        }
+        Err(e) => {
+            warn!("读取 qt-config.ini 失败: {}", e);
+            None
+        }
+    }
+}
+
+/// 解码 Yuzu 配置文件中的路径
+///
+/// Yuzu 配置文件中的路径可能包含 Unicode 转义序列，如 \x65b0 这样的格式
+/// 需要将其转换为正常的 Unicode 字符
+fn decode_yuzu_path(raw_path: &str) -> String {
+    // 使用正则表达式将 \x 替换为 \u
+    let re = regex::Regex::new(r"\\x([0-9a-fA-F]{4})").unwrap();
+    let converted = re.replace_all(raw_path, r"\u$1");
+
+    // 解码 unicode-escape
+    // Rust 中处理 unicode-escape 需要手动解析
+    // 简化处理：直接尝试解析 \uXXXX 格式
+    let mut result = String::new();
+    let mut chars = converted.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            if let Some(&next_ch) = chars.peek() {
+                if next_ch == 'u' {
+                    chars.next(); // 跳过 'u'
+
+                    // 读取 4 位十六进制数字
+                    let hex: String = chars.by_ref().take(4).collect();
+
+                    if hex.len() == 4 {
+                        if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                            if let Some(unicode_char) = char::from_u32(code) {
+                                result.push(unicode_char);
+                                continue;
+                            }
+                        }
+                    }
+
+                    // 如果解析失败，保留原样
+                    result.push('\\');
+                    result.push('u');
+                    result.push_str(&hex);
+                } else {
+                    result.push(ch);
+                }
+            } else {
+                result.push(ch);
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+
+    result
+}
+
 /// 获取 Yuzu NAND 路径
 pub fn get_yuzu_nand_path() -> PathBuf {
     let user_path = get_yuzu_user_path();
-    let nand_path = user_path.join("nand");
+    let mut nand_path = user_path.join("nand");
 
-    // TODO: 从 qt-config.ini 读取自定义路径
+    // 尝试从 qt-config.ini 读取自定义路径
+    if let Some(config) = get_yuzu_data_storage_config(&user_path) {
+        if let Some(path_str) = config.get("nand_directory") {
+            let decoded_path = decode_yuzu_path(path_str);
+            nand_path = PathBuf::from(decoded_path);
+            info!("从配置文件读取 NAND 路径: {}", nand_path.display());
+        }
+    }
 
     nand_path
 }
@@ -1306,9 +1416,21 @@ pub fn get_yuzu_nand_path() -> PathBuf {
 /// 获取 Yuzu load 路径（用于 mods/cheats）
 pub fn get_yuzu_load_path() -> PathBuf {
     let user_path = get_yuzu_user_path();
-    let load_path = user_path.join("load");
+    let mut load_path = user_path.join("load");
 
-    // TODO: 从 qt-config.ini 读取自定义路径
+    // 尝试从 qt-config.ini 读取自定义路径
+    if let Some(config) = get_yuzu_data_storage_config(&user_path) {
+        if let Some(path_str) = config.get("load_directory") {
+            // 检查是否包含 Unicode 转义序列
+            let decoded_path = if path_str.contains("\\u") || path_str.contains("\\x") {
+                decode_yuzu_path(path_str)
+            } else {
+                path_str.to_string()
+            };
+            load_path = PathBuf::from(decoded_path);
+            info!("从配置文件读取 Load 路径: {}", load_path.display());
+        }
+    }
 
     load_path
 }
