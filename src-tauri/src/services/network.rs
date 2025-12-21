@@ -488,7 +488,6 @@ pub fn get_available_port() -> u16 {
 pub fn get_network_firmware_sources() -> Vec<(&'static str, &'static str)> {
     vec![
         ("由 github.com/THZoria/NX_Firmware 提供的固件", "github"),
-        ("由 darthsternie.net 提供的固件", "nsarchive"),
     ]
 }
 

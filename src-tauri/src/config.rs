@@ -178,9 +178,6 @@ pub struct DownloadSetting {
     /// 删除旧的 aria2 日志文件
     #[serde(default = "default_true")]
     pub remove_old_aria2_log_file: bool,
-    /// 验证固件 MD5
-    #[serde(default = "default_true")]
-    pub verify_firmware_md5: bool,
 }
 
 impl Default for DownloadSetting {
@@ -189,7 +186,6 @@ impl Default for DownloadSetting {
             auto_delete_after_install: true,
             disable_aria2_ipv6: true,
             remove_old_aria2_log_file: true,
-            verify_firmware_md5: true,
         }
     }
 }

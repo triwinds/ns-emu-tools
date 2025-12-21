@@ -1373,8 +1373,10 @@ where
         if let Some(ref current_firmware) = config.yuzu.yuzu_firmware {
             if current_firmware == version {
                 info!("固件已是版本 {}，跳过安装", version);
-                on_event(InstallationEvent::StepUpdate {
-                    step: InstallationStep {
+
+                // 发送 Started 事件
+                let steps = vec![
+                    InstallationStep {
                         id: "check_firmware".to_string(),
                         title: format!("当前固件已是版本 {}, 跳过安装", version),
                         status: InstallationStatus::Success,
@@ -1384,6 +1386,10 @@ where
                         eta: "".to_string(),
                         error: None,
                     }
+                ];
+                on_event(InstallationEvent::Started { steps: steps.clone() });
+                on_event(InstallationEvent::StepUpdate {
+                    step: steps[0].clone(),
                 });
                 return Ok(());
             }
@@ -1394,6 +1400,42 @@ where
     let firmware_path = crate::services::firmware::get_yuzu_firmware_path();
 
     info!("开始安装固件到 Yuzu，路径: {}", firmware_path.display());
+
+    // 发送 Started 事件,包含所有步骤
+    let steps = vec![
+        InstallationStep {
+            id: "fetch_firmware_info".to_string(),
+            title: "获取固件信息".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        InstallationStep {
+            id: "download_firmware".to_string(),
+            title: "下载固件".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        InstallationStep {
+            id: "extract_firmware".to_string(),
+            title: "解压固件".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+    ];
+
+    on_event(InstallationEvent::Started { steps });
 
     // 调用固件服务进行安装
     let version_to_install = firmware_version.unwrap_or_else(|| {

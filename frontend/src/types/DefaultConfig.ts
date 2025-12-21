@@ -32,8 +32,7 @@ export const defaultConfig: AppConfig = {
     "download": {
       "autoDeleteAfterInstall": true,
       "disableAria2Ipv6": true,
-      "removeOldAria2LogFile": true,
-      "verifyFirmwareMd5": true
+      "removeOldAria2LogFile": true
     },
     "other": {
       "rename_yuzu_to_cemu": false

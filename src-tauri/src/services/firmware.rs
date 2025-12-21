@@ -6,14 +6,11 @@ use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
 use crate::models::{InstallationEvent, InstallationStatus, InstallationStep};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
-use crate::services::network::{create_client, get_final_url, get_github_download_url, request_github_api};
-use crate::utils::common::{check_file_md5, format_size};
+use crate::services::network::{get_github_download_url, request_github_api};
+use crate::utils::common::format_size;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
-
-/// NS Archive 固件信息 API
-const NSARCHIVE_FIRMWARE_API: &str = "https://nsarchive.e6ex.com/nsf/firmwares.json";
 
 /// GitHub 固件仓库 API
 const GITHUB_FIRMWARE_API: &str = "https://api.github.com/repos/THZoria/NX_Firmware/releases";
@@ -32,71 +29,11 @@ pub struct FirmwareInfo {
     pub filename: String,
     /// 文件大小（格式化后的字符串）
     pub size: String,
-    /// MD5 校验值（可选）
-    #[serde(default)]
-    pub md5: Option<String>,
 }
 
 /// 获取固件信息列表
 pub async fn get_firmware_infos() -> AppResult<Vec<FirmwareInfo>> {
-    let source = {
-        let config = CONFIG.read();
-        config.setting.network.firmware_download_source.clone()
-    };
-
-    match source.as_str() {
-        "nsarchive" => get_firmware_infos_from_nsarchive().await,
-        _ => get_firmware_infos_from_github().await,
-    }
-}
-
-/// 从 NS Archive 获取固件信息
-pub async fn get_firmware_infos_from_nsarchive() -> AppResult<Vec<FirmwareInfo>> {
-    info!("从 NS Archive 获取固件信息");
-
-    let url = get_final_url(NSARCHIVE_FIRMWARE_API);
-    let client = create_client()?;
-    let resp = client.get(&url).send().await?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "获取固件信息失败: {}",
-            resp.status()
-        )));
-    }
-
-    let data: Vec<serde_json::Value> = resp.json().await?;
-
-    let infos: Vec<FirmwareInfo> = data
-        .iter()
-        .filter_map(|item| {
-            let name = item["name"].as_str()?;
-            let filename = item["filename"].as_str()?;
-            let version = if name.len() > 9 {
-                &name[9..]
-            } else {
-                name
-            };
-
-            Some(FirmwareInfo {
-                name: name.to_string(),
-                version: version.to_string(),
-                url: format!(
-                    "https://nsarchive.e6ex.com/nsf/{}",
-                    urlencoding::encode(filename)
-                ),
-                filename: filename.to_string(),
-                size: item["size"]
-                    .as_str()
-                    .unwrap_or("未知")
-                    .to_string(),
-                md5: item["md5"].as_str().map(|s| s.to_string()),
-            })
-        })
-        .collect();
-
-    debug!("获取到 {} 个固件版本", infos.len());
-    Ok(infos)
+    get_firmware_infos_from_github().await
 }
 
 /// 从 GitHub 获取固件信息
@@ -138,7 +75,6 @@ pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
                 url: download_url.to_string(),
                 filename: filename.to_string(),
                 size: format_size(size),
-                md5: None,
             });
         }
     }
@@ -304,64 +240,12 @@ where
         }
     });
 
-    // 步骤3: 验证 MD5（可选）
-    let (verify_md5, auto_delete) = {
+    // 步骤3: 解压固件
+    let auto_delete = {
         let config = CONFIG.read();
-        (config.setting.download.verify_firmware_md5,
-         config.setting.download.auto_delete_after_install)
+        config.setting.download.auto_delete_after_install
     };
 
-    if verify_md5 {
-        if let Some(ref expected_md5) = target_info.md5 {
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
-                    id: "verify_md5".to_string(),
-                    title: "验证固件完整性".to_string(),
-                    status: InstallationStatus::Running,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: None,
-                }
-            });
-
-            info!("验证固件 MD5...");
-            if !check_file_md5(&result.path, expected_md5).await? {
-                let _ = tokio::fs::remove_file(&result.path).await;
-                let err_msg = "固件 MD5 校验失败";
-                on_event(InstallationEvent::StepUpdate {
-                    step: InstallationStep {
-                        id: "verify_md5".to_string(),
-                        title: "验证固件完整性".to_string(),
-                        status: InstallationStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(err_msg.to_string()),
-                    }
-                });
-                return Err(AppError::Download(err_msg.to_string()));
-            }
-
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
-                    id: "verify_md5".to_string(),
-                    title: "验证固件完整性".to_string(),
-                    status: InstallationStatus::Success,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: None,
-                }
-            });
-            info!("MD5 校验通过");
-        }
-    }
-
-    // 步骤4: 解压固件
     on_event(InstallationEvent::StepUpdate {
         step: InstallationStep {
             id: "extract_firmware".to_string(),
@@ -506,7 +390,6 @@ pub async fn reorganize_firmware_for_ryujinx(
 pub fn get_available_firmware_sources() -> Vec<(&'static str, &'static str)> {
     vec![
         ("由 github.com/THZoria/NX_Firmware 提供的固件", "github"),
-        ("由 darthsternie.net 提供的固件", "nsarchive"),
     ]
 }
 
@@ -579,20 +462,10 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    #[ignore] // 需要网络连接
-    async fn test_get_firmware_from_nsarchive() {
-        let infos = get_firmware_infos_from_nsarchive().await.unwrap();
-        assert!(!infos.is_empty());
-        println!("NS Archive 固件版本数: {}", infos.len());
-        if let Some(first) = infos.first() {
-            println!("最新版本: {} ({})", first.version, first.size);
-        }
-    }
-
     #[test]
     fn test_firmware_sources() {
         let sources = get_available_firmware_sources();
-        assert_eq!(sources.len(), 2);
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].1, "github");
     }
 }

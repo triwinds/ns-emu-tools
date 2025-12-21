@@ -371,20 +371,16 @@ async function switchYuzuBranch() {
 }
 
 async function installFirmware() {
-  consoleDialogStore.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   firmwareInstallationWarning.value = false
-  consoleDialogStore.persistentConsoleDialog = true
 
   try {
     await installFirmwareToYuzu(appStore.targetFirmwareVersion)
     await configStore.reloadConfig()
-    consoleDialogStore.appendConsoleMessage('固件安装成功')
   } catch (error) {
-    consoleDialogStore.appendConsoleMessage(`安装固件失败: ${error}`)
+    console.error('安装固件失败:', error)
   } finally {
     isRunningInstall.value = false
-    consoleDialogStore.persistentConsoleDialog = false
   }
 }
 

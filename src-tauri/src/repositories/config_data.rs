@@ -34,10 +34,6 @@ pub fn get_available_firmware_sources() -> Vec<NameValuePair> {
             "由 github.com/THZoria/NX_Firmware 提供的固件".to_string(),
             "github".to_string(),
         ),
-        (
-            "由 darthsternie.net 提供的固件".to_string(),
-            "nsarchive".to_string(),
-        ),
     ]
 }
 
@@ -180,9 +176,8 @@ mod tests {
     #[test]
     fn test_get_firmware_sources() {
         let sources = get_available_firmware_sources();
-        assert_eq!(sources.len(), 2);
+        assert_eq!(sources.len(), 1);
         assert_eq!(sources[0].1, "github");
-        assert_eq!(sources[1].1, "nsarchive");
     }
 
     #[test]

@@ -335,23 +335,18 @@ async function installRyujinx() {
 }
 
 async function installFirmware() {
-  cds.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   firmwareInstallationWarningDialog.value = false
-  cds.persistentConsoleDialog = true
+
   try {
     const resp = await installFirmwareToRyujinx(appStore.targetFirmwareVersion)
-    isRunningInstall.value = false
-    cds.persistentConsoleDialog = false
-    cds.appendConsoleMessage(resp.msg || '固件安装完成')
     if (resp.code === 0) {
       configStore.reloadConfig()
     }
   } catch (error) {
-    isRunningInstall.value = false
-    cds.persistentConsoleDialog = false
     console.error('安装固件失败:', error)
-    cds.appendConsoleMessage('固件安装失败: ' + error)
+  } finally {
+    isRunningInstall.value = false
   }
 }
 

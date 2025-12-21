@@ -52,7 +52,6 @@ export interface DownloadSetting {
   autoDeleteAfterInstall: boolean
   disableAria2Ipv6: boolean
   removeOldAria2LogFile: boolean
-  verifyFirmwareMd5: boolean
 }
 
 export interface CommonResponse<T = unknown> {
