@@ -3,9 +3,12 @@
 //! 业务逻辑层，处理核心功能
 
 pub mod aria2;
+pub mod crypto;
 pub mod doh;
 pub mod firmware;
+pub mod keys;
 pub mod msvc;
+pub mod nca;
 pub mod network;
 pub mod ryujinx;
 pub mod yuzu;
@@ -28,6 +31,7 @@ pub mod notifier {
 pub use aria2::*;
 pub use doh::*;
 pub use firmware::*;
+pub use nca::*;
 pub use network::*;
 pub use ryujinx::*;
 pub use yuzu::*;

@@ -187,12 +187,108 @@ pub fn load_history_path(emu_type: String) -> Result<Vec<String>, String> {
 
 /// 检测固件版本
 #[command]
-pub async fn detect_firmware_version(emu_type: String) -> Result<(), String> {
+pub async fn detect_firmware_version(emu_type: String) -> Result<String, String> {
     info!("检测 {} 固件版本", emu_type);
-    // TODO: 实现固件版本检测逻辑
-    // 目前仅作为占位符，完整实现需要:
-    // 1. 扫描固件文件
-    // 2. 使用 hactool 解析版本
-    // 3. 更新配置
-    Err("固件版本检测功能暂未实现".to_string())
+
+    // 尝试自动加载密钥（如果尚未加载）
+    if !crate::services::keys::is_keys_loaded() {
+        if let Err(e) = auto_load_keys(&emu_type) {
+            info!("自动加载密钥失败: {}，将尝试不解密读取", e);
+        }
+    }
+
+    match emu_type.as_str() {
+        "yuzu" => {
+            crate::services::firmware::detect_yuzu_firmware_version()
+                .await
+                .map_err(|e| e.to_string())
+        }
+        "ryujinx" => {
+            crate::services::firmware::detect_ryujinx_firmware_version()
+                .await
+                .map_err(|e| e.to_string())
+        }
+        _ => Err(format!("不支持的模拟器类型: {}", emu_type)),
+    }
+}
+
+/// 加载密钥文件
+#[command]
+pub fn load_keys(path: String) -> Result<(), String> {
+    info!("加载密钥文件: {}", path);
+    crate::services::keys::load_keys(&path).map_err(|e| e.to_string())
+}
+
+/// 检查密钥是否已加载
+#[command]
+pub fn is_keys_loaded() -> bool {
+    crate::services::keys::is_keys_loaded()
+}
+
+/// 自动查找并加载密钥文件
+fn auto_load_keys(emu_type: &str) -> Result<(), String> {
+    let possible_paths = get_possible_key_paths(emu_type);
+
+    for path in possible_paths {
+        if path.exists() {
+            info!("找到密钥文件: {}", path.display());
+            match crate::services::keys::load_keys(&path) {
+                Ok(_) => {
+                    info!("成功加载密钥文件");
+                    return Ok(());
+                }
+                Err(e) => {
+                    info!("加载密钥文件失败: {}", e);
+                    continue;
+                }
+            }
+        }
+    }
+
+    Err("未找到有效的密钥文件".to_string())
+}
+
+/// 获取可能的密钥文件路径
+fn get_possible_key_paths(emu_type: &str) -> Vec<std::path::PathBuf> {
+    let mut paths = Vec::new();
+
+    // Yuzu/Eden/Citron 密钥路径
+    if emu_type == "yuzu" {
+        // Windows: %APPDATA%/yuzu/keys/prod.keys
+        if let Some(data_local) = dirs::data_local_dir() {
+            paths.push(data_local.join("yuzu").join("keys").join("prod.keys"));
+        }
+        // Linux: ~/.local/share/yuzu/keys/prod.keys
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join(".local/share/yuzu/keys/prod.keys"));
+        }
+        // Portable mode
+        let config = crate::config::CONFIG.read();
+        let yuzu_path = &config.yuzu.yuzu_path;
+        paths.push(yuzu_path.join("user").join("keys").join("prod.keys"));
+    }
+
+    // Ryujinx 密钥路径
+    if emu_type == "ryujinx" {
+        // Windows: %APPDATA%/Ryujinx/system/prod.keys
+        if let Some(data_dir) = dirs::data_dir() {
+            paths.push(data_dir.join("Ryujinx").join("system").join("prod.keys"));
+        }
+        // Linux: ~/.config/Ryujinx/system/prod.keys
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join(".config/Ryujinx/system/prod.keys"));
+        }
+        // Portable mode
+        let config = crate::config::CONFIG.read();
+        let ryujinx_path = &config.ryujinx.path;
+        paths.push(ryujinx_path.join("portable").join("system").join("prod.keys"));
+    }
+
+    // 通用路径（两种模拟器都会尝试）
+    if let Some(home) = dirs::home_dir() {
+        // ~/.switch/prod.keys (常见的密钥存放位置)
+        paths.push(home.join(".switch").join("prod.keys"));
+    }
+
+    paths
 }

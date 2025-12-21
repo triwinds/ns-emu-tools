@@ -17,7 +17,9 @@
       "Bash(cargo search:*)",
       "Bash(bun run build)",
       "Bash(bun run type-check:*)",
-      "Bash(cargo tree:*)"
+      "Bash(cargo tree:*)",
+      "Bash(python module\\\\firmware.py:*)",
+      "Bash(uv run python:*)"
     ]
   }
 }

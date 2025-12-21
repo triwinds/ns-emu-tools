@@ -447,6 +447,86 @@ pub fn get_ryujinx_firmware_path() -> PathBuf {
     }
 }
 
+/// 检测 Yuzu 固件版本
+pub async fn detect_yuzu_firmware_version() -> AppResult<String> {
+    info!("开始检测 Yuzu 固件版本");
+
+    let firmware_path = get_yuzu_firmware_path();
+
+    if !firmware_path.exists() {
+        return Err(AppError::DirectoryNotFound(format!(
+            "Yuzu 固件目录不存在: {}",
+            firmware_path.display()
+        )));
+    }
+
+    // 查找系统版本归档 NCA 文件
+    let nca_path = crate::services::nca::find_system_version_nca(&firmware_path)?;
+
+    match nca_path {
+        Some(path) => {
+            info!("找到系统版本归档: {}", path.display());
+
+            // 提取固件版本
+            let version = crate::services::nca::extract_firmware_version(&path)?;
+
+            info!("Yuzu 固件版本: {}", version);
+
+            // 更新配置并保存
+            {
+                let mut config = CONFIG.write();
+                config.yuzu.yuzu_firmware = Some(version.clone());
+                config.save()?;
+            }
+
+            Ok(version)
+        }
+        None => Err(AppError::FileNotFound(
+            "未找到系统版本归档文件".to_string(),
+        )),
+    }
+}
+
+/// 检测 Ryujinx 固件版本
+pub async fn detect_ryujinx_firmware_version() -> AppResult<String> {
+    info!("开始检测 Ryujinx 固件版本");
+
+    let firmware_path = get_ryujinx_firmware_path();
+
+    if !firmware_path.exists() {
+        return Err(AppError::DirectoryNotFound(format!(
+            "Ryujinx 固件目录不存在: {}",
+            firmware_path.display()
+        )));
+    }
+
+    // 查找系统版本归档 NCA 文件（Ryujinx 格式）
+    let nca_path = crate::services::nca::find_system_version_nca_ryujinx(&firmware_path)?;
+
+    match nca_path {
+        Some(path) => {
+            info!("找到系统版本归档: {}", path.display());
+
+            // 提取固件版本
+            let version = crate::services::nca::extract_firmware_version(&path)?;
+
+            info!("Ryujinx 固件版本: {}", version);
+
+            // 更新配置并保存
+            {
+                let mut config = CONFIG.write();
+                config.ryujinx.firmware = Some(version.clone());
+                config.save()?;
+            }
+
+            Ok(version)
+        }
+        None => Err(AppError::FileNotFound(
+            "未找到系统版本归档文件".to_string(),
+        )),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -467,5 +547,259 @@ mod tests {
         let sources = get_available_firmware_sources();
         assert_eq!(sources.len(), 1);
         assert_eq!(sources[0].1, "github");
+    }
+
+    #[tokio::test]
+    #[ignore] // 需要实际的固件文件
+    async fn test_detect_ryujinx_firmware() {
+        // 初始化日志以便查看详细信息
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter("debug")
+            .try_init();
+
+        println!("\n========== 测试 Ryujinx 固件版本检测 ==========\n");
+
+        // 获取固件路径
+        let firmware_path = get_ryujinx_firmware_path();
+        println!("固件路径: {}", firmware_path.display());
+
+        // 检查路径是否存在
+        if !firmware_path.exists() {
+            println!("⚠️  固件目录不存在，跳过测试");
+            println!("提示: 请先在 Ryujinx 中安装固件");
+            return;
+        }
+
+        println!("✓ 固件目录存在\n");
+
+        // 尝试加载密钥文件
+        println!("尝试加载密钥文件...");
+        let key_paths = get_ryujinx_key_paths();
+        let mut keys_loaded = false;
+        for key_path in &key_paths {
+            println!("  检查: {}", key_path.display());
+            if key_path.exists() {
+                match crate::services::keys::load_keys(key_path) {
+                    Ok(_) => {
+                        println!("✓ 成功加载密钥: {}", key_path.display());
+                        keys_loaded = true;
+                        break;
+                    }
+                    Err(e) => {
+                        println!("  加载失败: {}", e);
+                    }
+                }
+            }
+        }
+        if !keys_loaded {
+            println!("⚠️  未找到有效的密钥文件，将尝试不解密读取");
+        }
+        println!();
+
+        // 扫描固件文件
+        println!("开始扫描固件文件...");
+        match crate::services::nca::find_system_version_nca_ryujinx(&firmware_path) {
+            Ok(Some(nca_path)) => {
+                println!("✓ 找到系统版本归档:");
+                println!("  路径: {}", nca_path.display());
+
+                // 尝试提取版本
+                println!("\n开始提取固件版本...");
+                match crate::services::nca::extract_firmware_version(&nca_path) {
+                    Ok(version) => {
+                        println!("✓ 成功检测到固件版本: {}", version);
+                        assert!(!version.is_empty(), "版本字符串不应为空");
+                        assert!(
+                            version.contains('.'),
+                            "版本应该包含点号 (例如: 15.0.0)"
+                        );
+                    }
+                    Err(e) => {
+                        println!("✗ 提取版本失败: {}", e);
+                        if !keys_loaded {
+                            println!("提示: 可能需要密钥文件来解密 NCA");
+                        }
+                        panic!("固件版本提取失败");
+                    }
+                }
+            }
+            Ok(None) => {
+                println!("⚠️  未找到系统版本归档文件 (Title ID: 0100000000000809)");
+                println!("提示: 固件可能不完整或格式不正确");
+            }
+            Err(e) => {
+                println!("✗ 扫描失败: {}", e);
+                panic!("固件扫描失败");
+            }
+        }
+
+        // 清理密钥
+        crate::services::keys::clear_keys();
+
+        println!("\n========== 测试完成 ==========\n");
+    }
+
+    #[tokio::test]
+    #[ignore] // 需要实际的固件文件
+    async fn test_detect_yuzu_firmware() {
+        // 初始化日志以便查看详细信息
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter("debug")
+            .try_init();
+
+        println!("\n========== 测试 Yuzu 固件版本检测 ==========\n");
+
+        // 获取固件路径
+        let firmware_path = get_yuzu_firmware_path();
+        println!("固件路径: {}", firmware_path.display());
+
+        // 检查路径是否存在
+        if !firmware_path.exists() {
+            println!("⚠️  固件目录不存在，跳过测试");
+            println!("提示: 请先在 Yuzu/Eden/Citron 中安装固件");
+            return;
+        }
+
+        println!("✓ 固件目录存在\n");
+
+        // 尝试加载密钥文件
+        println!("尝试加载密钥文件...");
+        let key_paths = get_yuzu_key_paths();
+        let mut keys_loaded = false;
+        for key_path in &key_paths {
+            println!("  检查: {}", key_path.display());
+            if key_path.exists() {
+                match crate::services::keys::load_keys(key_path) {
+                    Ok(_) => {
+                        println!("✓ 成功加载密钥: {}", key_path.display());
+                        keys_loaded = true;
+                        break;
+                    }
+                    Err(e) => {
+                        println!("  加载失败: {}", e);
+                    }
+                }
+            }
+        }
+        if !keys_loaded {
+            println!("⚠️  未找到有效的密钥文件，将尝试不解密读取");
+        }
+        println!();
+
+        // 扫描固件文件
+        println!("开始扫描固件文件...");
+        match crate::services::nca::find_system_version_nca(&firmware_path) {
+            Ok(Some(nca_path)) => {
+                println!("✓ 找到系统版本归档:");
+                println!("  路径: {}", nca_path.display());
+
+                // 尝试提取版本
+                println!("\n开始提取固件版本...");
+                match crate::services::nca::extract_firmware_version(&nca_path) {
+                    Ok(version) => {
+                        println!("✓ 成功检测到固件版本: {}", version);
+                        assert!(!version.is_empty(), "版本字符串不应为空");
+                        assert!(
+                            version.contains('.'),
+                            "版本应该包含点号 (例如: 15.0.0)"
+                        );
+                    }
+                    Err(e) => {
+                        println!("✗ 提取版本失败: {}", e);
+                        if !keys_loaded {
+                            println!("提示: 可能需要密钥文件来解密 NCA");
+                        }
+                        panic!("固件版本提取失败");
+                    }
+                }
+            }
+            Ok(None) => {
+                println!("⚠️  未找到系统版本归档文件 (Title ID: 0100000000000809)");
+                println!("提示: 固件可能不完整或格式不正确");
+            }
+            Err(e) => {
+                println!("✗ 扫描失败: {}", e);
+                panic!("固件扫描失败");
+            }
+        }
+
+        // 清理密钥
+        crate::services::keys::clear_keys();
+
+        println!("\n========== 测试完成 ==========\n");
+    }
+
+    /// 获取 Ryujinx 密钥文件可能的路径
+    fn get_ryujinx_key_paths() -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+
+        // Windows: %APPDATA%/Ryujinx/system/prod.keys
+        if let Some(data_dir) = dirs::data_dir() {
+            paths.push(data_dir.join("Ryujinx").join("system").join("prod.keys"));
+        }
+
+        // Linux: ~/.config/Ryujinx/system/prod.keys
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join(".config/Ryujinx/system/prod.keys"));
+            // 通用位置
+            paths.push(home.join(".switch").join("prod.keys"));
+        }
+
+        paths
+    }
+
+    /// 获取 Yuzu 密钥文件可能的路径
+    fn get_yuzu_key_paths() -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+
+        // Windows: %LOCALAPPDATA%/yuzu/keys/prod.keys
+        if let Some(data_local) = dirs::data_local_dir() {
+            paths.push(data_local.join("yuzu").join("keys").join("prod.keys"));
+        }
+
+        // Linux: ~/.local/share/yuzu/keys/prod.keys
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join(".local/share/yuzu/keys/prod.keys"));
+            // 通用位置
+            paths.push(home.join(".switch").join("prod.keys"));
+        }
+
+        paths
+    }
+
+    #[tokio::test]
+    #[ignore] // 需要实际的固件文件
+    async fn test_full_ryujinx_firmware_detection() {
+        // 初始化日志
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter("debug")
+            .try_init();
+
+        println!("\n========== 完整测试: Ryujinx 固件版本检测流程 ==========\n");
+
+        match detect_ryujinx_firmware_version().await {
+            Ok(version) => {
+                println!("✓ 检测成功!");
+                println!("  固件版本: {}", version);
+
+                // 验证配置已更新
+                let config = CONFIG.read();
+                assert_eq!(
+                    config.ryujinx.firmware,
+                    Some(version),
+                    "配置中的固件版本应该已更新"
+                );
+                println!("✓ 配置已更新");
+            }
+            Err(e) => {
+                println!("⚠️  检测失败: {}", e);
+                println!("这可能是因为:");
+                println!("  1. Ryujinx 未安装");
+                println!("  2. 固件未安装");
+                println!("  3. 固件目录路径不正确");
+            }
+        }
+
+        println!("\n========== 测试完成 ==========\n");
     }
 }
