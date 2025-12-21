@@ -4,7 +4,7 @@
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
-use crate::models::{InstallationEvent, InstallationStatus, InstallationStep};
+use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::ryujinx::{
     get_all_ryujinx_release_infos, get_ryujinx_release_info_by_version, load_ryujinx_change_log,
 };
@@ -92,7 +92,7 @@ pub async fn install_ryujinx_by_version<F>(
     on_event: F,
 ) -> AppResult<()>
 where
-    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
     info!(
         "开始安装 Ryujinx {} 版本: {}",
@@ -117,11 +117,11 @@ where
             info!("当前已是目标版本，跳过安装");
 
             // 更新步骤状态
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "fetch_version".to_string(),
                     title: format!("当前已是目标版本 {} ({}), 跳过安装", target_version, branch),
-                    status: InstallationStatus::Success,
+                    status: ProgressStatus::Success,
                     step_type: "normal".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -132,8 +132,8 @@ where
 
             // 标记其他步骤为取消
             for step_id in &["download", "extract", "install", "check_env"] {
-                on_event(InstallationEvent::StepUpdate {
-                    step: InstallationStep {
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
                         id: step_id.to_string(),
                         title: match *step_id {
                             "download" => format!("下载 Ryujinx {}", branch),
@@ -142,7 +142,7 @@ where
                             "check_env" => "检查运行环境".to_string(),
                             _ => "".to_string(),
                         },
-                        status: InstallationStatus::Cancelled,
+                        status: ProgressStatus::Cancelled,
                         step_type: if *step_id == "download" { "download" } else { "normal" }.to_string(),
                         progress: 0.0,
                         download_speed: "".to_string(),
@@ -157,11 +157,11 @@ where
     }
 
     // 获取版本信息
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "fetch_version".to_string(),
             title: "获取版本信息".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -173,11 +173,11 @@ where
     let download_url = match get_ryujinx_download_url(target_version, branch).await {
         Ok(url) => url,
         Err(e) => {
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "fetch_version".to_string(),
                     title: "获取版本信息".to_string(),
-                    status: InstallationStatus::Error,
+                    status: ProgressStatus::Error,
                     step_type: "normal".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -189,11 +189,11 @@ where
         }
     };
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "fetch_version".to_string(),
             title: "获取版本信息".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -205,11 +205,11 @@ where
     info!("下载 URL: {}", download_url);
 
     // 下载
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "download".to_string(),
             title: format!("下载 Ryujinx {}", branch),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "download".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -243,11 +243,11 @@ where
             Ok(p) => p,
             Err(e) => {
                 *CURRENT_DOWNLOAD_GID.write() = None;
-                on_event_clone(InstallationEvent::StepUpdate {
-                    step: InstallationStep {
+                on_event_clone(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
                         id: "download".to_string(),
                         title: format!("下载 Ryujinx {}", branch),
-                        status: InstallationStatus::Error,
+                        status: ProgressStatus::Error,
                         step_type: "download".to_string(),
                         progress: 0.0,
                         download_speed: "".to_string(),
@@ -260,11 +260,11 @@ where
         };
 
         // 发送进度更新
-        on_event_clone(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event_clone(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "download".to_string(),
                 title: format!("下载 Ryujinx {}", branch),
-                status: InstallationStatus::Running,
+                status: ProgressStatus::Running,
                 step_type: "download".to_string(),
                 progress: progress.percentage,
                 download_speed: progress.speed_string(),
@@ -291,11 +291,11 @@ where
             }
             crate::services::aria2::Aria2DownloadStatus::Error => {
                 *CURRENT_DOWNLOAD_GID.write() = None;
-                on_event_clone(InstallationEvent::StepUpdate {
-                    step: InstallationStep {
+                on_event_clone(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
                         id: "download".to_string(),
                         title: format!("下载 Ryujinx {}", branch),
-                        status: InstallationStatus::Error,
+                        status: ProgressStatus::Error,
                         step_type: "download".to_string(),
                         progress: 0.0,
                         download_speed: "".to_string(),
@@ -307,11 +307,11 @@ where
             }
             crate::services::aria2::Aria2DownloadStatus::Removed => {
                 *CURRENT_DOWNLOAD_GID.write() = None;
-                on_event_clone(InstallationEvent::StepUpdate {
-                    step: InstallationStep {
+                on_event_clone(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
                         id: "download".to_string(),
                         title: format!("下载 Ryujinx {}", branch),
-                        status: InstallationStatus::Cancelled,
+                        status: ProgressStatus::Cancelled,
                         step_type: "download".to_string(),
                         progress: 0.0,
                         download_speed: "".to_string(),
@@ -325,11 +325,11 @@ where
         }
     };
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "download".to_string(),
             title: format!("下载 Ryujinx {}", branch),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "download".to_string(),
             progress: 100.0,
             download_speed: "".to_string(),
@@ -339,11 +339,11 @@ where
     });
 
     // 解压
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "extract".to_string(),
             title: "解压文件".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -356,11 +356,11 @@ where
     let tmp_dir = std::env::temp_dir().join("ryujinx-install");
     if tmp_dir.exists() {
         if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "extract".to_string(),
                     title: "解压文件".to_string(),
-                    status: InstallationStatus::Error,
+                    status: ProgressStatus::Error,
                     step_type: "normal".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -372,11 +372,11 @@ where
         }
     }
     if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "extract".to_string(),
                 title: "解压文件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -389,11 +389,11 @@ where
 
     info!("解压 Ryujinx 文件到: {}", tmp_dir.display());
     if let Err(e) = uncompress(&package_path, &tmp_dir, false) {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "extract".to_string(),
                 title: "解压文件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -404,11 +404,11 @@ where
         return Err(e);
     }
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "extract".to_string(),
             title: "解压文件".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -418,11 +418,11 @@ where
     });
 
     // 安装
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "install".to_string(),
             title: "安装文件".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -433,11 +433,11 @@ where
 
     // 清理旧文件并安装
     if let Err(e) = clear_ryujinx_folder(&ryujinx_path) {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "install".to_string(),
                 title: "安装文件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -453,11 +453,11 @@ where
     info!("复制 Ryujinx 文件到: {}", ryujinx_path.display());
 
     if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "install".to_string(),
                 title: "安装文件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -468,11 +468,11 @@ where
         return Err(e);
     }
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "install".to_string(),
             title: "安装文件".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -485,11 +485,11 @@ where
     std::fs::remove_dir_all(&tmp_dir)?;
 
     // 检查运行环境
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "check_env".to_string(),
             title: "检查运行环境".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -500,11 +500,11 @@ where
 
     if let Err(e) = check_and_install_msvc().await {
         warn!("MSVC 运行库检查失败: {}", e);
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "check_env".to_string(),
                 title: "检查运行环境".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -514,11 +514,11 @@ where
         });
         // 不阻止安装流程，继续执行
     } else {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "check_env".to_string(),
                 title: "检查运行环境".to_string(),
-                status: InstallationStatus::Success,
+                status: ProgressStatus::Success,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -643,7 +643,7 @@ pub async fn install_firmware_to_ryujinx<F>(
     on_event: F,
 ) -> AppResult<()>
 where
-    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
     let config = get_config();
 
@@ -655,10 +655,10 @@ where
 
                 // 发送 Started 事件
                 let steps = vec![
-                    InstallationStep {
+                    ProgressStep {
                         id: "check_firmware".to_string(),
                         title: format!("当前固件已是版本 {}, 跳过安装", version),
-                        status: InstallationStatus::Success,
+                        status: ProgressStatus::Success,
                         step_type: "normal".to_string(),
                         progress: 0.0,
                         download_speed: "".to_string(),
@@ -666,8 +666,8 @@ where
                         error: None,
                     }
                 ];
-                on_event(InstallationEvent::Started { steps: steps.clone() });
-                on_event(InstallationEvent::StepUpdate {
+                on_event(ProgressEvent::Started { steps: steps.clone() });
+                on_event(ProgressEvent::StepUpdate {
                     step: steps[0].clone(),
                 });
                 return Ok(());
@@ -686,40 +686,40 @@ where
 
     // 发送 Started 事件,包含所有步骤
     let steps = vec![
-        InstallationStep {
+        ProgressStep {
             id: "fetch_firmware_info".to_string(),
             title: "获取固件信息".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "download_firmware".to_string(),
             title: "下载固件".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "download".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "extract_firmware".to_string(),
             title: "解压固件".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "reorganize_firmware".to_string(),
             title: "重组织固件文件".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -728,7 +728,7 @@ where
         },
     ];
 
-    on_event(InstallationEvent::Started { steps });
+    on_event(ProgressEvent::Started { steps });
 
     // 调用固件服务进行安装（先解压到临时目录）
     let version_to_install = firmware_version.unwrap_or_else(|| {
@@ -744,11 +744,11 @@ where
     ).await?;
 
     // 步骤5: 重组织固件文件（Ryujinx 的特殊格式）
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "reorganize_firmware".to_string(),
             title: "重组织固件文件".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -758,11 +758,11 @@ where
     });
 
     if let Err(e) = crate::services::firmware::reorganize_firmware_for_ryujinx(&tmp_dir, &firmware_path).await {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "reorganize_firmware".to_string(),
                 title: "重组织固件文件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -775,11 +775,11 @@ where
         return Err(e);
     }
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "reorganize_firmware".to_string(),
             title: "重组织固件文件".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),

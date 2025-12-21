@@ -7,7 +7,7 @@ use crate::error::AppError;
 use crate::models::storage::{self, Storage};
 use crate::repositories::app_info::{self, UpdateCheckResult};
 use crate::repositories::config_data;
-use tauri::command;
+use tauri::{command, Emitter, Window};
 use tracing::info;
 
 /// 获取当前配置
@@ -187,17 +187,114 @@ pub fn load_history_path(emu_type: String) -> Result<Vec<String>, String> {
 
 /// 检测固件版本
 #[command]
-pub async fn detect_firmware_version(emu_type: String) -> Result<String, String> {
+pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result<String, String> {
+    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
+
     info!("检测 {} 固件版本", emu_type);
+
+    // Define steps
+    let steps = vec![
+        ProgressStep {
+            id: "load_keys".to_string(),
+            title: "加载密钥文件".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: String::new(),
+            eta: String::new(),
+            error: None,
+        },
+        ProgressStep {
+            id: "find_nca".to_string(),
+            title: "查找固件文件".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: String::new(),
+            eta: String::new(),
+            error: None,
+        },
+        ProgressStep {
+            id: "extract_version".to_string(),
+            title: "提取版本信息".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: String::new(),
+            eta: String::new(),
+            error: None,
+        },
+    ];
+
+    // Send started event
+    let _ = window.emit("installation-event", ProgressEvent::Started { steps: steps.clone() });
+
+    // Step 1: Load keys
+    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+        step: ProgressStep {
+            id: "load_keys".to_string(),
+            title: "加载密钥文件".to_string(),
+            status: ProgressStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: String::new(),
+            eta: String::new(),
+            error: None,
+        },
+    });
 
     // 尝试自动加载密钥（如果尚未加载）
     if !crate::services::keys::is_keys_loaded() {
         if let Err(e) = auto_load_keys(&emu_type) {
             info!("自动加载密钥失败: {}，将尝试不解密读取", e);
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: Some(format!("加载密钥失败: {}", e)),
+                },
+            });
+            let _ = window.emit("installation-event", ProgressEvent::Finished {
+                success: false,
+                message: Some(format!("加载密钥失败: {}", e))
+            });
+            return Err(e);
         }
     }
 
-    match emu_type.as_str() {
+    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+        step: ProgressStep {
+            id: "load_keys".to_string(),
+            title: "加载密钥文件".to_string(),
+            status: ProgressStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: String::new(),
+            eta: String::new(),
+            error: None,
+        },
+    });
+
+    // Step 2 & 3: Find NCA and extract version
+    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+        step: ProgressStep {
+            id: "find_nca".to_string(),
+            title: "查找固件文件".to_string(),
+            status: ProgressStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: String::new(),
+            eta: String::new(),
+            error: None,
+        },
+    });
+
+    let result = match emu_type.as_str() {
         "yuzu" => {
             crate::services::firmware::detect_yuzu_firmware_version()
                 .await
@@ -209,6 +306,64 @@ pub async fn detect_firmware_version(emu_type: String) -> Result<String, String>
                 .map_err(|e| e.to_string())
         }
         _ => Err(format!("不支持的模拟器类型: {}", emu_type)),
+    };
+
+    match result {
+        Ok(version) => {
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "find_nca".to_string(),
+                    title: "查找固件文件".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: None,
+                },
+            });
+
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "extract_version".to_string(),
+                    title: "提取版本信息".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: None,
+                },
+            });
+
+            let _ = window.emit("installation-event", ProgressEvent::Finished {
+                success: true,
+                message: Some(format!("检测到固件版本: {}", version))
+            });
+
+            Ok(version)
+        }
+        Err(e) => {
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "find_nca".to_string(),
+                    title: "查找固件文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: Some(e.clone()),
+                },
+            });
+
+            let _ = window.emit("installation-event", ProgressEvent::Finished {
+                success: false,
+                message: Some(e.clone())
+            });
+
+            Err(e)
+        }
     }
 }
 

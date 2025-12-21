@@ -390,14 +390,11 @@ async function startRyujinx() {
 }
 
 async function detectFirmwareVersion() {
-  cds.cleanAndShowConsoleDialog()
   try {
     await detectFirmwareVersionApi('ryujinx')
     await configStore.reloadConfig()
-    cds.appendConsoleMessage('固件版本检测完成')
   } catch (error) {
     console.error('检测固件版本失败:', error)
-    cds.appendConsoleMessage('检测固件版本失败: ' + error)
   }
 }
 

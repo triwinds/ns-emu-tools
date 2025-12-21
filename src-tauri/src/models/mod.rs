@@ -5,9 +5,9 @@
 pub mod release;
 pub mod response;
 pub mod storage;
-pub mod installation;
+pub mod progress;
 
 pub use release::*;
 pub use response::*;
 pub use storage::*;
-pub use installation::*;
+pub use progress::*;

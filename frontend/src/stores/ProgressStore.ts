@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
-import type { InstallationStep, InstallationStatus } from '@/types/installation';
+import type { ProgressStep, ProgressStatus } from '@/types/progress';
 
-export const useInstallationStore = defineStore('installation', {
+export const useProgressStore = defineStore('progress', {
     state: () => ({
         dialogOpen: false,
-        steps: [] as InstallationStep[],
+        steps: [] as ProgressStep[],
         currentStepId: null as string | null,
         errorMessage: '', // To store a global error message if needed
     }),
@@ -27,7 +27,7 @@ export const useInstallationStore = defineStore('installation', {
             this.dialogOpen = false;
         },
 
-        setSteps(steps: InstallationStep[]) {
+        setSteps(steps: ProgressStep[]) {
             this.steps = steps;
             if (steps.length > 0) {
                 // Don't auto-start, wait for specific trigger if needed,
@@ -36,7 +36,7 @@ export const useInstallationStore = defineStore('installation', {
         },
 
         // New unified method to update step - handles the new StepUpdate event
-        updateStep(updatedStep: InstallationStep) {
+        updateStep(updatedStep: ProgressStep) {
             const index = this.steps.findIndex(s => s.id === updatedStep.id);
             if (index !== -1) {
                 // Update the step with new data
@@ -55,7 +55,7 @@ export const useInstallationStore = defineStore('installation', {
         },
 
         // Legacy methods - kept for backwards compatibility
-        updateStepStatus(id: string, status: InstallationStatus) {
+        updateStepStatus(id: string, status: ProgressStatus) {
             const step = this.steps.find(s => s.id === id);
             if (step) {
                 step.status = status;

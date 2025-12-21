@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum InstallationStatus {
+pub enum ProgressStatus {
     Pending,
     Running,
     Success,
@@ -12,10 +12,10 @@ pub enum InstallationStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct InstallationStep {
+pub struct ProgressStep {
     pub id: String,
     pub title: String,
-    pub status: InstallationStatus,
+    pub status: ProgressStatus,
     #[serde(rename = "type")]
     pub step_type: String, // "normal" or "download"
     #[serde(default)]
@@ -30,8 +30,8 @@ pub struct InstallationStep {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
-pub enum InstallationEvent {
-    Started { steps: Vec<InstallationStep> },
-    StepUpdate { step: InstallationStep },
+pub enum ProgressEvent {
+    Started { steps: Vec<ProgressStep> },
+    StepUpdate { step: ProgressStep },
     Finished { success: bool, message: Option<String> },
 }

@@ -33,56 +33,56 @@ pub async fn install_yuzu_by_version(
     branch: String,
     window: Window,
 ) -> Result<ApiResponse<()>, String> {
-    use crate::models::{InstallationEvent, InstallationStep, InstallationStatus};
+    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
 
     info!("安装 {} 版本: {}", get_emu_name(&branch), target_version);
 
     // Initial steps
     let steps = vec![
-        InstallationStep {
+        ProgressStep {
             id: "fetch_version".to_string(),
             title: "获取版本信息".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "download".to_string(),
             title: format!("下载 {}", get_emu_name(&branch)),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "download".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "extract".to_string(),
             title: "解压文件".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "install".to_string(),
             title: "安装文件".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
         },
-        InstallationStep {
+        ProgressStep {
             id: "check_env".to_string(),
             title: "检查运行环境".to_string(),
-            status: InstallationStatus::Pending,
+            status: ProgressStatus::Pending,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -92,7 +92,7 @@ pub async fn install_yuzu_by_version(
     ];
 
     // Emit initial event to open dialog and show steps
-    let _ = window.emit("installation-event", InstallationEvent::Started { steps });
+    let _ = window.emit("installation-event", ProgressEvent::Started { steps });
 
     // 安装
     let window_clone = window.clone();
@@ -104,13 +104,13 @@ pub async fn install_yuzu_by_version(
 
     match result {
         Ok(_) => {
-            let _ = window.emit("installation-event", InstallationEvent::Finished { success: true, message: None });
+            let _ = window.emit("installation-event", ProgressEvent::Finished { success: true, message: None });
             let _ = send_notify(&window, &format!("{} 安装成功", get_emu_name(&branch)));
             Ok(ApiResponse::success(()))
         }
         Err(e) => {
             error!("安装失败: {}", e);
-            let _ = window.emit("installation-event", InstallationEvent::Finished { success: false, message: Some(e.to_string()) });
+            let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some(e.to_string()) });
             let _ = send_notify(&window, &format!("安装失败: {}", e));
             Err(e.to_string())
         }

@@ -212,6 +212,7 @@ import {
   onNotifyMessage,
   formatSize,
   formatSpeed,
+  detectFirmwareVersion as detectFirmwareVersionApi,
   type DownloadProgress,
   type NotifyMessage
 } from '@/utils/tauri'
@@ -403,10 +404,12 @@ async function installYuzuHandler() {
 }
 
 async function detectFirmwareVersion() {
-  consoleDialogStore.cleanAndShowConsoleDialog()
-  // TODO: 实现固件版本检测,暂时跳过
-  consoleDialogStore.appendConsoleMessage('固件版本检测功能待实现')
-  await configStore.reloadConfig()
+  try {
+    await detectFirmwareVersionApi('yuzu')
+    await configStore.reloadConfig()
+  } catch (error) {
+    console.error('检测固件版本失败:', error)
+  }
 }
 
 async function loadChangeLog() {

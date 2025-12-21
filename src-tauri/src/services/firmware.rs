@@ -4,7 +4,7 @@
 
 use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
-use crate::models::{InstallationEvent, InstallationStatus, InstallationStep};
+use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::network::{get_github_download_url, request_github_api};
 use crate::utils::common::format_size;
@@ -90,16 +90,16 @@ pub async fn install_firmware<F>(
     on_event: F,
 ) -> AppResult<String>
 where
-    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
     info!("开始安装固件版本: {}", firmware_version);
 
     // 步骤1: 获取固件信息
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "fetch_firmware_info".to_string(),
             title: "获取固件信息".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -111,11 +111,11 @@ where
     let firmware_infos = match get_firmware_infos().await {
         Ok(infos) => infos,
         Err(e) => {
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "fetch_firmware_info".to_string(),
                     title: "获取固件信息".to_string(),
-                    status: InstallationStatus::Error,
+                    status: ProgressStatus::Error,
                     step_type: "normal".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -136,11 +136,11 @@ where
         Some(info) => info,
         None => {
             let err_msg = format!("找不到固件版本: {}", firmware_version);
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "fetch_firmware_info".to_string(),
                     title: "获取固件信息".to_string(),
-                    status: InstallationStatus::Error,
+                    status: ProgressStatus::Error,
                     step_type: "normal".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -152,11 +152,11 @@ where
         }
     };
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "fetch_firmware_info".to_string(),
             title: "获取固件信息".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -166,11 +166,11 @@ where
     });
 
     // 步骤2: 下载固件
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "download_firmware".to_string(),
             title: "下载固件".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "download".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -196,11 +196,11 @@ where
 
     let on_event_clone = on_event.clone();
     let result = match aria2_manager.download_and_wait(&url, options, move |progress| {
-        on_event_clone(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event_clone(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "download_firmware".to_string(),
                 title: "下载固件".to_string(),
-                status: InstallationStatus::Running,
+                status: ProgressStatus::Running,
                 step_type: "download".to_string(),
                 progress: progress.percentage,
                 download_speed: progress.speed_string(),
@@ -211,11 +211,11 @@ where
     }).await {
         Ok(res) => res,
         Err(e) => {
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "download_firmware".to_string(),
                     title: "下载固件".to_string(),
-                    status: InstallationStatus::Error,
+                    status: ProgressStatus::Error,
                     step_type: "download".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -227,11 +227,11 @@ where
         }
     };
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "download_firmware".to_string(),
             title: "下载固件".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "download".to_string(),
             progress: 100.0,
             download_speed: "".to_string(),
@@ -246,11 +246,11 @@ where
         config.setting.download.auto_delete_after_install
     };
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "extract_firmware".to_string(),
             title: "解压固件".to_string(),
-            status: InstallationStatus::Running,
+            status: ProgressStatus::Running,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),
@@ -264,11 +264,11 @@ where
     // 清理目标目录
     if target_firmware_path.exists() {
         if let Err(e) = tokio::fs::remove_dir_all(target_firmware_path).await {
-            on_event(InstallationEvent::StepUpdate {
-                step: InstallationStep {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
                     id: "extract_firmware".to_string(),
                     title: "解压固件".to_string(),
-                    status: InstallationStatus::Error,
+                    status: ProgressStatus::Error,
                     step_type: "normal".to_string(),
                     progress: 0.0,
                     download_speed: "".to_string(),
@@ -280,11 +280,11 @@ where
         }
     }
     if let Err(e) = tokio::fs::create_dir_all(target_firmware_path).await {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "extract_firmware".to_string(),
                 title: "解压固件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -297,11 +297,11 @@ where
 
     // 解压
     if let Err(e) = crate::utils::archive::extract_zip(&result.path, target_firmware_path) {
-        on_event(InstallationEvent::StepUpdate {
-            step: InstallationStep {
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
                 id: "extract_firmware".to_string(),
                 title: "解压固件".to_string(),
-                status: InstallationStatus::Error,
+                status: ProgressStatus::Error,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
@@ -312,11 +312,11 @@ where
         return Err(e);
     }
 
-    on_event(InstallationEvent::StepUpdate {
-        step: InstallationStep {
+    on_event(ProgressEvent::StepUpdate {
+        step: ProgressStep {
             id: "extract_firmware".to_string(),
             title: "解压固件".to_string(),
-            status: InstallationStatus::Success,
+            status: ProgressStatus::Success,
             step_type: "normal".to_string(),
             progress: 0.0,
             download_speed: "".to_string(),

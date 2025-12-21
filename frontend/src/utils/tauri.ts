@@ -174,7 +174,7 @@ export async function loadHistoryPath(emuType: string) {
 
 /** 检测固件版本 */
 export async function detectFirmwareVersion(emuType: string) {
-  return invokeCommand<void>('detect_firmware_version', { emuType })
+  return invokeCommand<string>('detect_firmware_version', { emuType })
 }
 
 // ============ 事件监听封装 ============

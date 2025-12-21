@@ -1,19 +1,19 @@
 <template>
   <router-view />
-  <InstallationDialog />
+  <ProgressDialog />
 </template>
 
 
 <script lang="ts" setup>
 import { onMounted, onUnmounted } from "vue";
 import { useConsoleDialogStore } from "@/stores/ConsoleDialogStore";
-import { useInstallationStore } from "@/stores/InstallationStore"; // Import store
-import InstallationDialog from "@/components/InstallationDialog.vue"; // Import component
+import { useProgressStore } from "@/stores/ProgressStore"; // Import store
+import ProgressDialog from "@/components/ProgressDialog.vue"; // Import component
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event'; // Import listen
 
 const cds = useConsoleDialogStore()
-const installationStore = useInstallationStore() // Init store
+const progressStore = useProgressStore() // Init store
 let pendingWriteSize = false
 let appWindow: any = null
 let unlistenInstallation: any = null; // Store unlisten function
@@ -35,17 +35,22 @@ onMounted(async () => {
 
           switch (payload.type) {
               case 'started':
-                  installationStore.reset();
-                  installationStore.setSteps(payload.steps);
-                  installationStore.openDialog();
+                  progressStore.reset();
+                  progressStore.setSteps(payload.steps);
+                  progressStore.openDialog();
                   break;
               case 'stepUpdate':
                   // New unified event - simply update the step
-                  installationStore.updateStep(payload.step);
+                  progressStore.updateStep(payload.step);
                   break;
               case 'finished':
-                  // Optional: handle overall finished state if needed
-                  // For now, steps indicating success is enough
+                  // 如果有成功消息（比如固件版本号），更新最后一个步骤的 title
+                  if (payload.success && payload.message) {
+                      const lastStep = progressStore.steps[progressStore.steps.length - 1];
+                      if (lastStep) {
+                          lastStep.title = payload.message;
+                      }
+                  }
                   break;
           }
       });

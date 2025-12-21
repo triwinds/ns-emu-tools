@@ -2,7 +2,7 @@
   <v-dialog v-model="store.dialogOpen" max-width="600" persistent>
     <v-card>
       <dialog-title>
-        安装进度
+        进度
       </dialog-title>
       <v-divider></v-divider>
 
@@ -123,13 +123,13 @@
 </template>
 
 <script setup lang="ts">
-import { useInstallationStore } from '@/stores/InstallationStore';
+import { useProgressStore } from '@/stores/ProgressStore';
 import { computed, ref } from 'vue';
 import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline, mdiMinusCircle } from '@mdi/js';
 import { cancelYuzuDownload, cancelRyujinxDownload } from '@/utils/tauri';
 import DialogTitle from '@/components/DialogTitle.vue';
 
-const store = useInstallationStore();
+const store = useProgressStore();
 const isCancelling = ref(false);
 
 const isInstalling = computed(() => {
