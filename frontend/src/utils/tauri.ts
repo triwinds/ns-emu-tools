@@ -424,6 +424,11 @@ export async function installFirmwareToRyujinx(firmwareVersion: string | null) {
   })
 }
 
+/** 取消 Ryujinx 下载 */
+export async function cancelRyujinxDownload() {
+  return invokeCommand<ApiResponse<void>>('cancel_ryujinx_download_command')
+}
+
 // ============ 工具函数 ============
 
 /**

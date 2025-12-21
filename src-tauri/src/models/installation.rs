@@ -7,6 +7,7 @@ pub enum InstallationStatus {
     Running,
     Success,
     Error,
+    Cancelled,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,14 +32,6 @@ pub struct InstallationStep {
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum InstallationEvent {
     Started { steps: Vec<InstallationStep> },
-    StepRunning { id: String },
-    StepSuccess { id: String },
-    StepError { id: String, message: String },
-    DownloadProgress { 
-        id: String, 
-        progress: f64, 
-        speed: String, 
-        eta: String 
-    },
+    StepUpdate { step: InstallationStep },
     Finished { success: bool, message: Option<String> },
 }

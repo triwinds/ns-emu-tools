@@ -39,22 +39,9 @@ onMounted(async () => {
                   installationStore.setSteps(payload.steps);
                   installationStore.openDialog();
                   break;
-              case 'stepRunning':
-                  installationStore.setStepRunning(payload.id);
-                  break;
-              case 'stepSuccess':
-                  installationStore.setStepSuccess(payload.id);
-                  break;
-              case 'stepError':
-                  installationStore.setStepError(payload.id, payload.message);
-                  break;
-              case 'downloadProgress':
-                  installationStore.updateDownloadProgress(
-                      payload.id, 
-                      payload.progress, 
-                      payload.speed, 
-                      payload.eta
-                  );
+              case 'stepUpdate':
+                  // New unified event - simply update the step
+                  installationStore.updateStep(payload.step);
                   break;
               case 'finished':
                   // Optional: handle overall finished state if needed

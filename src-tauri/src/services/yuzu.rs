@@ -4,7 +4,7 @@
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
-use crate::models::InstallationEvent; // Import models
+use crate::models::{InstallationEvent, InstallationStatus, InstallationStep}; // Import models
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
@@ -205,103 +205,283 @@ where
     };
 
     // 获取版本信息
-    on_event(InstallationEvent::StepRunning { id: "fetch_version".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     let _release_info = match get_yuzu_release_info_by_version(target_version, "eden").await {
         Ok(info) => {
             if info.tag_name.is_empty() {
                 let err_msg = format!("未找到 Eden 版本: {}", target_version);
-                on_event(InstallationEvent::StepError {
-                    id: "fetch_version".to_string(),
-                    message: err_msg.clone()
+                on_event(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "fetch_version".to_string(),
+                        title: "获取版本信息".to_string(),
+                        status: InstallationStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(err_msg.clone()),
+                    }
                 });
                 return Err(AppError::Emulator(err_msg));
             }
             info
         }
         Err(e) => {
-            on_event(InstallationEvent::StepError {
-                id: "fetch_version".to_string(),
-                message: e.to_string()
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_version".to_string(),
+                    title: "获取版本信息".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
             });
             return Err(e);
         }
     };
-    on_event(InstallationEvent::StepSuccess { id: "fetch_version".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 下载
-    on_event(InstallationEvent::StepRunning { id: "download".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 {}", "Eden"),
+            status: InstallationStatus::Running,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "eden", move |progress| {
-         on_event_clone(InstallationEvent::DownloadProgress {
-            id: "download".to_string(),
-            progress: progress.percentage,
-            speed: progress.speed_string(),
-            eta: progress.eta_string(),
+         on_event_clone(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "download".to_string(),
+                title: format!("下载 {}", "Eden"),
+                status: InstallationStatus::Running,
+                step_type: "download".to_string(),
+                progress: progress.percentage,
+                download_speed: progress.speed_string(),
+                eta: progress.eta_string(),
+                error: None,
+            }
          });
     }).await {
         Ok(path) => path,
         Err(e) => {
-            on_event(InstallationEvent::StepError {
-                id: "download".to_string(),
-                message: e.to_string()
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "download".to_string(),
+                    title: format!("下载 {}", "Eden"),
+                    status: InstallationStatus::Error,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
             });
             return Err(e);
         }
     };
-    on_event(InstallationEvent::StepSuccess { id: "download".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 {}", "Eden"),
+            status: InstallationStatus::Success,
+            step_type: "download".to_string(),
+            progress: 100.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 解压
-    on_event(InstallationEvent::StepRunning { id: "extract".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     let tmp_dir = std::env::temp_dir().join("eden-install");
     if tmp_dir.exists() {
         if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-            on_event(InstallationEvent::StepError {
-                id: "extract".to_string(),
-                message: format!("清理临时目录失败: {}", e)
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(format!("清理临时目录失败: {}", e)),
+                }
             });
             return Err(e.into());
         }
     }
     if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
-        on_event(InstallationEvent::StepError {
-            id: "extract".to_string(),
-            message: format!("创建临时目录失败: {}", e)
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(format!("创建临时目录失败: {}", e)),
+            }
         });
         return Err(e.into());
     }
 
     if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
-        on_event(InstallationEvent::StepError {
-            id: "extract".to_string(),
-            message: e.to_string()
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
         });
         return Err(e);
     }
-    on_event(InstallationEvent::StepSuccess { id: "extract".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 安装
-    on_event(InstallationEvent::StepRunning { id: "install".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     // 复制文件
     if let Err(e) = copy_back_yuzu_files(&tmp_dir, &yuzu_path) {
-        on_event(InstallationEvent::StepError {
-            id: "install".to_string(),
-            message: e.to_string()
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
         });
         return Err(e);
     }
-    on_event(InstallationEvent::StepSuccess { id: "install".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 检查运行环境
-    on_event(InstallationEvent::StepRunning { id: "check_env".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "check_env".to_string(),
+            title: "检查运行环境".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     if let Err(e) = check_and_install_msvc().await {
         warn!("MSVC 运行库检查失败: {}", e);
-        on_event(InstallationEvent::StepError {
-            id: "check_env".to_string(),
-            message: e.to_string()
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
         });
         // 不阻止安装流程，继续执行
     } else {
-        on_event(InstallationEvent::StepSuccess { id: "check_env".to_string() });
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: InstallationStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+            }
+        });
     }
 
     // 如果配置了自动删除，删除下载文件
@@ -332,79 +512,199 @@ where
     };
 
     // 获取版本信息
-    on_event(InstallationEvent::StepRunning { id: "fetch_version".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     let _release_info = match get_yuzu_release_info_by_version(target_version, "citron").await {
         Ok(info) => {
             if info.tag_name.is_empty() {
                 let err_msg = format!("未找到 Citron 版本: {}", target_version);
-                on_event(InstallationEvent::StepError {
-                    id: "fetch_version".to_string(),
-                    message: err_msg.clone()
+                on_event(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "fetch_version".to_string(),
+                        title: "获取版本信息".to_string(),
+                        status: InstallationStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(err_msg.clone()),
+                    }
                 });
                 return Err(AppError::Emulator(err_msg));
             }
             info
         }
         Err(e) => {
-            on_event(InstallationEvent::StepError {
-                id: "fetch_version".to_string(),
-                message: e.to_string()
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_version".to_string(),
+                    title: "获取版本信息".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
             });
             return Err(e);
         }
     };
-    on_event(InstallationEvent::StepSuccess { id: "fetch_version".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 下载
-    on_event(InstallationEvent::StepRunning { id: "download".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 {}", "Citron"),
+            status: InstallationStatus::Running,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "citron", move |progress| {
-         on_event_clone(InstallationEvent::DownloadProgress {
-            id: "download".to_string(),
-            progress: progress.percentage,
-            speed: progress.speed_string(),
-            eta: progress.eta_string(),
+         on_event_clone(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "download".to_string(),
+                title: format!("下载 {}", "Citron"),
+                status: InstallationStatus::Running,
+                step_type: "download".to_string(),
+                progress: progress.percentage,
+                download_speed: progress.speed_string(),
+                eta: progress.eta_string(),
+                error: None,
+            }
          });
     }).await {
         Ok(path) => path,
         Err(e) => {
-            on_event(InstallationEvent::StepError {
-                id: "download".to_string(),
-                message: e.to_string()
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "download".to_string(),
+                    title: format!("下载 {}", "Citron"),
+                    status: InstallationStatus::Error,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
             });
             return Err(e);
         }
     };
-    on_event(InstallationEvent::StepSuccess { id: "download".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 {}", "Citron"),
+            status: InstallationStatus::Success,
+            step_type: "download".to_string(),
+            progress: 100.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 解压
-    on_event(InstallationEvent::StepRunning { id: "extract".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     let tmp_dir = std::env::temp_dir().join("citron-install");
     if tmp_dir.exists() {
         if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-            on_event(InstallationEvent::StepError {
-                id: "extract".to_string(),
-                message: format!("清理临时目录失败: {}", e)
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(format!("清理临时目录失败: {}", e)),
+                }
             });
             return Err(e.into());
         }
     }
     if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
-        on_event(InstallationEvent::StepError {
-            id: "extract".to_string(),
-            message: format!("创建临时目录失败: {}", e)
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(format!("创建临时目录失败: {}", e)),
+            }
         });
         return Err(e.into());
     }
 
     if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
-        on_event(InstallationEvent::StepError {
-            id: "extract".to_string(),
-            message: e.to_string()
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
         });
         return Err(e);
     }
-    on_event(InstallationEvent::StepSuccess { id: "extract".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // Citron 解压后有一个顶层目录，需要进入
     let mut release_dir = tmp_dir.clone();
@@ -418,9 +718,17 @@ where
                         }
                     }
                     Err(e) => {
-                        on_event(InstallationEvent::StepError {
-                            id: "extract".to_string(),
-                            message: format!("读取解压目录失败: {}", e)
+                        on_event(InstallationEvent::StepUpdate {
+                            step: InstallationStep {
+                                id: "extract".to_string(),
+                                title: "解压文件".to_string(),
+                                status: InstallationStatus::Error,
+                                step_type: "normal".to_string(),
+                                progress: 0.0,
+                                download_speed: "".to_string(),
+                                eta: "".to_string(),
+                                error: Some(format!("读取解压目录失败: {}", e)),
+                            }
                         });
                         return Err(e.into());
                     }
@@ -428,25 +736,63 @@ where
             }
         }
         Err(e) => {
-            on_event(InstallationEvent::StepError {
-                id: "extract".to_string(),
-                message: format!("读取解压目录失败: {}", e)
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(format!("读取解压目录失败: {}", e)),
+                }
             });
             return Err(e.into());
         }
     }
 
     // 安装
-    on_event(InstallationEvent::StepRunning { id: "install".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     // 复制文件
     if let Err(e) = copy_back_yuzu_files(&release_dir, &yuzu_path) {
-        on_event(InstallationEvent::StepError {
-            id: "install".to_string(),
-            message: e.to_string()
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
         });
         return Err(e);
     }
-    on_event(InstallationEvent::StepSuccess { id: "install".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 清理临时目录
     if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
@@ -455,16 +801,46 @@ where
     }
 
     // 检查运行环境
-    on_event(InstallationEvent::StepRunning { id: "check_env".to_string() });
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "check_env".to_string(),
+            title: "检查运行环境".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
     if let Err(e) = check_and_install_msvc().await {
         warn!("MSVC 运行库检查失败: {}", e);
-        on_event(InstallationEvent::StepError {
-            id: "check_env".to_string(),
-            message: e.to_string()
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
         });
         // 不阻止安装流程，继续执行
     } else {
-        on_event(InstallationEvent::StepSuccess { id: "check_env".to_string() });
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: InstallationStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+            }
+        });
     }
 
     // 如果配置了自动删除，删除下载文件
@@ -587,12 +963,68 @@ where
         };
         if cv == target_version && current_branch == branch {
             warn!("当前已是目标版本，跳过安装");
-            // 发送所有步骤完成事件
-            on_event(InstallationEvent::StepSuccess { id: "fetch_version".to_string() });
-            on_event(InstallationEvent::StepSuccess { id: "download".to_string() });
-            on_event(InstallationEvent::StepSuccess { id: "extract".to_string() });
-            on_event(InstallationEvent::StepSuccess { id: "install".to_string() });
-            on_event(InstallationEvent::StepSuccess { id: "check_env".to_string() });
+            // 更新第一个步骤，告知用户跳过原因
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_version".to_string(),
+                    title: format!("当前已是目标版本 {} ({}),跳过安装", target_version, get_emu_name(branch)),
+                    status: InstallationStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+            // 将其他步骤标记为取消
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "download".to_string(),
+                    title: format!("下载 {}", get_emu_name(branch)),
+                    status: InstallationStatus::Cancelled,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: InstallationStatus::Cancelled,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: InstallationStatus::Cancelled,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: InstallationStatus::Cancelled,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
             return Ok(());
         }
     }
@@ -926,33 +1358,64 @@ pub async fn get_yuzu_change_logs() -> AppResult<String> {
 ///
 /// # 参数
 /// * `firmware_version` - 固件版本，None 表示最新版本
-pub async fn install_firmware_to_yuzu(firmware_version: Option<&str>) -> AppResult<()> {
+/// * `on_event` - 事件回调
+pub async fn install_firmware_to_yuzu<F>(
+    firmware_version: Option<&str>,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
+{
     let config = get_config();
 
-    // 检查是否已安装
+    // 检查是否已安装此版本
     if let Some(ref version) = firmware_version {
         if let Some(ref current_firmware) = config.yuzu.yuzu_firmware {
             if current_firmware == version {
-                info!("固件已是最新版本，跳过安装");
+                info!("固件已是版本 {}，跳过安装", version);
+                on_event(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "check_firmware".to_string(),
+                        title: format!("当前固件已是版本 {}, 跳过安装", version),
+                        status: InstallationStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                    }
+                });
                 return Ok(());
             }
         }
     }
 
-    // 固件路径
-    let _firmware_path = get_yuzu_nand_path().join("system/Contents/registered");
+    // 获取固件路径
+    let firmware_path = crate::services::firmware::get_yuzu_firmware_path();
 
-    // TODO: 调用 firmware 服务进行安装
-    // let new_version = install_firmware(firmware_version, &firmware_path).await?;
+    info!("开始安装固件到 Yuzu，路径: {}", firmware_path.display());
+
+    // 调用固件服务进行安装
+    let version_to_install = firmware_version.unwrap_or_else(|| {
+        // 如果没有指定版本，需要获取最新版本
+        // 这里可以从 firmware_infos 中获取第一个版本
+        "latest"
+    });
+
+    let new_version = crate::services::firmware::install_firmware(
+        version_to_install,
+        &firmware_path,
+        on_event.clone(),
+    ).await?;
 
     // 更新配置
-    // {
-    //     let mut cfg = CONFIG.write();
-    //     cfg.yuzu.yuzu_firmware = Some(new_version);
-    //     cfg.save()?;
-    // }
+    {
+        let mut cfg = CONFIG.write();
+        cfg.yuzu.yuzu_firmware = Some(new_version.clone());
+        cfg.save()?;
+    }
 
-    info!("固件安装完成");
+    info!("固件 {} 安装成功到 Yuzu", new_version);
     Ok(())
 }
 

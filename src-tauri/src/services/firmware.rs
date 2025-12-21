@@ -4,7 +4,8 @@
 
 use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
-use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions, Aria2DownloadProgress};
+use crate::models::{InstallationEvent, InstallationStatus, InstallationStep};
+use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::network::{create_client, get_final_url, get_github_download_url, request_github_api};
 use crate::utils::common::{check_file_md5, format_size};
 use serde::{Deserialize, Serialize};
@@ -146,29 +147,102 @@ pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
     Ok(infos)
 }
 
-/// 安装固件
+/// 安装固件（通用版本，支持安装事件）
 pub async fn install_firmware<F>(
     firmware_version: &str,
     target_firmware_path: &Path,
-    on_progress: F,
+    on_event: F,
 ) -> AppResult<String>
 where
-    F: Fn(Aria2DownloadProgress) + Send + 'static,
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
 {
     info!("开始安装固件版本: {}", firmware_version);
 
-    // 获取固件信息
-    let firmware_infos = get_firmware_infos().await?;
+    // 步骤1: 获取固件信息
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_firmware_info".to_string(),
+            title: "获取固件信息".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    let firmware_infos = match get_firmware_infos().await {
+        Ok(infos) => infos,
+        Err(e) => {
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_firmware_info".to_string(),
+                    title: "获取固件信息".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
+            });
+            return Err(e);
+        }
+    };
+
     let firmware_map: std::collections::HashMap<_, _> = firmware_infos
         .iter()
         .map(|fi| (fi.version.as_str(), fi))
         .collect();
 
-    let target_info = firmware_map.get(firmware_version).ok_or_else(|| {
-        AppError::InvalidArgument(format!("找不到固件版本: {}", firmware_version))
-    })?;
+    let target_info = match firmware_map.get(firmware_version) {
+        Some(info) => info,
+        None => {
+            let err_msg = format!("找不到固件版本: {}", firmware_version);
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_firmware_info".to_string(),
+                    title: "获取固件信息".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(err_msg.clone()),
+                }
+            });
+            return Err(AppError::InvalidArgument(err_msg));
+        }
+    };
 
-    // 处理 URL
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_firmware_info".to_string(),
+            title: "获取固件信息".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    // 步骤2: 下载固件
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download_firmware".to_string(),
+            title: "下载固件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
     let url = if target_info.url.contains("github.com") {
         get_github_download_url(&target_info.url)
     } else {
@@ -177,7 +251,6 @@ where
 
     info!("下载固件: {}", url);
 
-    // 使用 aria2 下载固件
     let aria2_manager = get_aria2_manager().await?;
     let options = Aria2DownloadOptions {
         overwrite: false,
@@ -185,9 +258,53 @@ where
         ..Default::default()
     };
 
-    let result = aria2_manager.download_and_wait(&url, options, on_progress).await?;
+    let on_event_clone = on_event.clone();
+    let result = match aria2_manager.download_and_wait(&url, options, move |progress| {
+        on_event_clone(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "download_firmware".to_string(),
+                title: "下载固件".to_string(),
+                status: InstallationStatus::Running,
+                step_type: "download".to_string(),
+                progress: progress.percentage,
+                download_speed: progress.speed_string(),
+                eta: progress.eta_string(),
+                error: None,
+            }
+        });
+    }).await {
+        Ok(res) => res,
+        Err(e) => {
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "download_firmware".to_string(),
+                    title: "下载固件".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
+            });
+            return Err(e);
+        }
+    };
 
-    // 验证 MD5
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download_firmware".to_string(),
+            title: "下载固件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "download".to_string(),
+            progress: 100.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    // 步骤3: 验证 MD5（可选）
     let (verify_md5, auto_delete) = {
         let config = CONFIG.read();
         (config.setting.download.verify_firmware_md5,
@@ -196,29 +313,135 @@ where
 
     if verify_md5 {
         if let Some(ref expected_md5) = target_info.md5 {
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "verify_md5".to_string(),
+                    title: "验证固件完整性".to_string(),
+                    status: InstallationStatus::Running,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+
             info!("验证固件 MD5...");
             if !check_file_md5(&result.path, expected_md5).await? {
-                // 删除损坏的文件
                 let _ = tokio::fs::remove_file(&result.path).await;
-                return Err(AppError::Download("固件 MD5 校验失败".to_string()));
+                let err_msg = "固件 MD5 校验失败";
+                on_event(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "verify_md5".to_string(),
+                        title: "验证固件完整性".to_string(),
+                        status: InstallationStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(err_msg.to_string()),
+                    }
+                });
+                return Err(AppError::Download(err_msg.to_string()));
             }
+
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "verify_md5".to_string(),
+                    title: "验证固件完整性".to_string(),
+                    status: InstallationStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
             info!("MD5 校验通过");
         }
     }
 
-    // 解压固件
+    // 步骤4: 解压固件
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract_firmware".to_string(),
+            title: "解压固件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
     info!("解压固件到: {}", target_firmware_path.display());
 
     // 清理目标目录
     if target_firmware_path.exists() {
-        tokio::fs::remove_dir_all(target_firmware_path).await?;
+        if let Err(e) = tokio::fs::remove_dir_all(target_firmware_path).await {
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "extract_firmware".to_string(),
+                    title: "解压固件".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(format!("清理旧固件失败: {}", e)),
+                }
+            });
+            return Err(e.into());
+        }
     }
-    tokio::fs::create_dir_all(target_firmware_path).await?;
+    if let Err(e) = tokio::fs::create_dir_all(target_firmware_path).await {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract_firmware".to_string(),
+                title: "解压固件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(format!("创建固件目录失败: {}", e)),
+            }
+        });
+        return Err(e.into());
+    }
 
     // 解压
-    crate::utils::archive::extract_zip(&result.path, target_firmware_path)?;
+    if let Err(e) = crate::utils::archive::extract_zip(&result.path, target_firmware_path) {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract_firmware".to_string(),
+                title: "解压固件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
+        });
+        return Err(e);
+    }
 
-    info!("固件 {} 安装成功", firmware_version);
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract_firmware".to_string(),
+            title: "解压固件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    info!("固件 {} 解压成功", firmware_version);
 
     // 清理下载文件
     if auto_delete {
@@ -226,6 +449,57 @@ where
     }
 
     Ok(firmware_version.to_string())
+}
+
+/// Ryujinx 固件文件重组织
+///
+/// Ryujinx 需要特殊的文件结构：每个 NCA 文件放在单独的目录中，文件名为 "00"
+/// 例如: firmware_path/abc123.nca/00
+pub async fn reorganize_firmware_for_ryujinx(
+    tmp_firmware_path: &Path,
+    target_firmware_path: &Path,
+) -> AppResult<()> {
+    info!("重组织固件文件为 Ryujinx 格式");
+
+    // 清理旧固件
+    if target_firmware_path.exists() {
+        tokio::fs::remove_dir_all(target_firmware_path).await?;
+    }
+    tokio::fs::create_dir_all(target_firmware_path).await?;
+
+    // 遍历所有 NCA 文件
+    let mut entries = tokio::fs::read_dir(tmp_firmware_path).await?;
+    while let Some(entry) = entries.next_entry().await? {
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension() {
+                if ext == "nca" {
+                    let file_name = entry.file_name();
+                    let name_str = file_name.to_string_lossy();
+
+                    // 处理 .cnmt.nca 文件：移除 .cnmt 后缀
+                    let new_name = if name_str.ends_with(".cnmt.nca") {
+                        name_str.trim_end_matches(".cnmt.nca").to_string() + ".nca"
+                    } else {
+                        name_str.to_string()
+                    };
+
+                    // 创建目录
+                    let nca_dir = target_firmware_path.join(&new_name);
+                    tokio::fs::create_dir_all(&nca_dir).await?;
+
+                    // 移动文件到目录中，命名为 "00"
+                    let target_file = nca_dir.join("00");
+                    tokio::fs::rename(&path, &target_file).await?;
+
+                    debug!("重组织文件: {} -> {}", path.display(), target_file.display());
+                }
+            }
+        }
+    }
+
+    info!("固件文件重组织完成");
+    Ok(())
 }
 
 /// 获取可用的固件下载源

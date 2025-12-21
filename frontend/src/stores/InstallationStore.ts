@@ -22,7 +22,7 @@ export const useInstallationStore = defineStore('installation', {
         },
 
         closeDialog() {
-            // Prevent closing if running? Or allow with warning? 
+            // Prevent closing if running? Or allow with warning?
             // For now, simple close.
             this.dialogOpen = false;
         },
@@ -35,6 +35,26 @@ export const useInstallationStore = defineStore('installation', {
             }
         },
 
+        // New unified method to update step - handles the new StepUpdate event
+        updateStep(updatedStep: InstallationStep) {
+            const index = this.steps.findIndex(s => s.id === updatedStep.id);
+            if (index !== -1) {
+                // Update the step with new data
+                this.steps[index] = { ...this.steps[index], ...updatedStep };
+
+                // Track current running step
+                if (updatedStep.status === 'running') {
+                    this.currentStepId = updatedStep.id;
+                }
+
+                // Store error message if any
+                if (updatedStep.error) {
+                    this.errorMessage = updatedStep.error;
+                }
+            }
+        },
+
+        // Legacy methods - kept for backwards compatibility
         updateStepStatus(id: string, status: InstallationStatus) {
             const step = this.steps.find(s => s.id === id);
             if (step) {

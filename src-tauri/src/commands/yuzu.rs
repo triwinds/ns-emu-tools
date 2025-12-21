@@ -237,7 +237,11 @@ pub async fn install_firmware_to_yuzu_command(
 
     let _ = send_notify(&window, "开始安装固件...");
 
-    match install_firmware_to_yuzu(firmware_version.as_deref()).await {
+    let window_clone = window.clone();
+    match install_firmware_to_yuzu(firmware_version.as_deref(), move |event| {
+        // 发送安装事件到前端
+        let _ = window_clone.emit("installation-event", event);
+    }).await {
         Ok(_) => {
             let _ = send_notify(&window, "固件安装成功");
             Ok(ApiResponse::success(()))

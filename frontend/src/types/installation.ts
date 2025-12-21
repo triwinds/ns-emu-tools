@@ -1,4 +1,4 @@
-export type InstallationStatus = 'pending' | 'running' | 'success' | 'error';
+export type InstallationStatus = 'pending' | 'running' | 'success' | 'error' | 'cancelled';
 export type InstallationStepType = 'normal' | 'download';
 
 export interface InstallationStep {

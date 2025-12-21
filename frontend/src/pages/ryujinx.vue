@@ -319,20 +319,16 @@ async function detectRyujinxVersion() {
 }
 
 async function installRyujinx() {
-  cds.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
-  cds.persistentConsoleDialog = true
   try {
     const resp = await installRyujinxApi(targetRyujinxVersion.value, selectedBranch.value)
     isRunningInstall.value = false
-    cds.persistentConsoleDialog = false
     cds.appendConsoleMessage(resp.msg || '安装完成')
     if (resp.code === 0) {
       configStore.reloadConfig()
     }
   } catch (error) {
     isRunningInstall.value = false
-    cds.persistentConsoleDialog = false
     // 错误消息已经通过 notify_message 事件发送，不需要在这里重复显示
     console.error('安装 Ryujinx 失败:', error)
   }

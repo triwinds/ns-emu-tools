@@ -5,7 +5,7 @@
         安装进度
       </dialog-title>
       <v-divider></v-divider>
-      
+
       <v-card-text class="pa-0">
         <v-list class="py-0">
             <template v-for="(step, index) in store.steps" :key="step.id">
@@ -35,6 +35,13 @@
                                 :icon="mdiCloseCircle"
                             ></v-icon>
 
+                            <!-- Cancelled -->
+                            <v-icon
+                                v-else-if="step.status === 'cancelled'"
+                                color="grey"
+                                :icon="mdiMinusCircle"
+                            ></v-icon>
+
                             <!-- Pending -->
                             <v-icon
                                 v-else
@@ -45,7 +52,10 @@
                         </div>
                     </template>
 
-                    <v-list-item-title class="text-body-1 font-weight-medium">
+                    <v-list-item-title
+                        class="text-body-1 font-weight-medium"
+                        :class="{ 'text-decoration-line-through text-grey': step.status === 'cancelled' }"
+                    >
                         {{ step.title }}
                     </v-list-item-title>
                     <v-list-item-subtitle v-if="step.description">
@@ -115,8 +125,8 @@
 <script setup lang="ts">
 import { useInstallationStore } from '@/stores/InstallationStore';
 import { computed, ref } from 'vue';
-import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline } from '@mdi/js';
-import { cancelYuzuDownload } from '@/utils/tauri';
+import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline, mdiMinusCircle } from '@mdi/js';
+import { cancelYuzuDownload, cancelRyujinxDownload } from '@/utils/tauri';
 import DialogTitle from '@/components/DialogTitle.vue';
 
 const store = useInstallationStore();
@@ -133,12 +143,29 @@ const isDownloading = computed(() => {
     return store.steps.some(s => s.type === 'download' && s.status === 'running');
 });
 
+// Detect which emulator is being installed based on download step title
+const downloadingEmulator = computed(() => {
+    const downloadStep = store.steps.find(s => s.type === 'download' && s.status === 'running');
+    if (!downloadStep) return null;
+
+    if (downloadStep.title.includes('Ryujinx')) {
+        return 'ryujinx';
+    } else if (downloadStep.title.includes('Eden') || downloadStep.title.includes('Citron') || downloadStep.title.includes('Yuzu')) {
+        return 'yuzu';
+    }
+    return null;
+});
+
 async function handleCancelDownload() {
     if (isCancelling.value) return;
 
     isCancelling.value = true;
     try {
-        await cancelYuzuDownload();
+        if (downloadingEmulator.value === 'ryujinx') {
+            await cancelRyujinxDownload();
+        } else {
+            await cancelYuzuDownload();
+        }
     } catch (error) {
         console.error('取消下载失败:', error);
     } finally {

@@ -31,38 +31,84 @@ pub async fn install_ryujinx_by_version_command(
     branch: String,
     window: Window,
 ) -> Result<ApiResponse<()>, String> {
+    use crate::models::{InstallationEvent, InstallationStep, InstallationStatus};
+
     info!("安装 Ryujinx {} 版本: {}", branch, target_version);
 
-    // 发送通知
-    let _ = send_notify(&window, &format!("开始安装 Ryujinx {} {}...", branch, target_version));
+    // Initial steps
+    let steps = vec![
+        InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 Ryujinx {}", branch),
+            status: InstallationStatus::Pending,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        InstallationStep {
+            id: "check_env".to_string(),
+            title: "检查运行环境".to_string(),
+            status: InstallationStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+    ];
+
+    // Emit initial event to open dialog and show steps
+    let _ = window.emit("installation-event", InstallationEvent::Started { steps });
 
     // 安装
     let window_clone = window.clone();
-    let result = install_ryujinx_by_version(&target_version, &branch, move |progress| {
-        // 发送进度事件到前端
-        let _ = window_clone.emit("download-progress", &progress);
-
-        // 发送文本通知
-        if progress.percentage > 0.0 {
-            let msg = format!(
-                "下载进度: {:.1}% - {} / {} @ {}",
-                progress.percentage,
-                progress.downloaded_string(),
-                progress.total_string(),
-                progress.speed_string()
-            );
-            let _ = send_notify(&window_clone, &msg);
-        }
+    let result = install_ryujinx_by_version(&target_version, &branch, move |event| {
+        // 发送事件到前端
+        let _ = window_clone.emit("installation-event", event);
     })
     .await;
 
     match result {
         Ok(_) => {
+            let _ = window.emit("installation-event", InstallationEvent::Finished { success: true, message: None });
             let _ = send_notify(&window, &format!("Ryujinx {} 安装成功", branch));
             Ok(ApiResponse::success(()))
         }
         Err(e) => {
             error!("安装失败: {}", e);
+            let _ = window.emit("installation-event", InstallationEvent::Finished { success: false, message: Some(e.to_string()) });
             let _ = send_notify(&window, &format!("安装失败: {}", e));
             Err(e.to_string())
         }
@@ -144,7 +190,11 @@ pub async fn install_firmware_to_ryujinx_command(
 
     let _ = send_notify(&window, "开始安装固件...");
 
-    match install_firmware_to_ryujinx(firmware_version.as_deref()).await {
+    let window_clone = window.clone();
+    match install_firmware_to_ryujinx(firmware_version.as_deref(), move |event| {
+        // 发送安装事件到前端
+        let _ = window_clone.emit("installation-event", event);
+    }).await {
         Ok(_) => {
             let _ = send_notify(&window, "固件安装成功");
             Ok(ApiResponse::success(()))
@@ -207,4 +257,18 @@ pub fn detect_ryujinx_version_command() -> Result<ApiResponse<Option<String>>, S
     // 目前仅返回分支信息作为简化实现
     let branch = detect_current_branch();
     Ok(ApiResponse::success(Some(branch)))
+}
+
+/// 取消 Ryujinx 下载
+#[tauri::command]
+pub async fn cancel_ryujinx_download_command() -> Result<ApiResponse<()>, String> {
+    info!("取消 Ryujinx 下载");
+
+    match cancel_ryujinx_download().await {
+        Ok(_) => Ok(ApiResponse::success(())),
+        Err(e) => {
+            error!("取消下载失败: {}", e);
+            Err(e.to_string())
+        }
+    }
 }

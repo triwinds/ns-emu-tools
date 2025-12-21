@@ -79,6 +79,7 @@ fn main() {
             commands::ryujinx::detect_ryujinx_branch_command,
             commands::ryujinx::ask_and_update_ryujinx_path_command,
             commands::ryujinx::detect_ryujinx_version_command,
+            commands::ryujinx::cancel_ryujinx_download_command,
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 应用程序时出错");

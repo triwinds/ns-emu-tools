@@ -4,18 +4,25 @@
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
+use crate::models::{InstallationEvent, InstallationStatus, InstallationStep};
 use crate::repositories::ryujinx::{
     get_all_ryujinx_release_infos, get_ryujinx_release_info_by_version, load_ryujinx_change_log,
 };
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
+use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_final_url;
 use crate::utils::archive::uncompress;
+use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use tracing::{debug, info};
+use std::time::Duration;
+use tracing::{debug, info, warn};
 
 /// Ryujinx 可执行文件名
 const RYUJINX_EXE: &str = "Ryujinx.exe";
+
+/// 当前正在进行的下载任务 GID
+static CURRENT_DOWNLOAD_GID: RwLock<Option<String>> = RwLock::new(None);
 
 /// 获取 Ryujinx 下载 URL
 ///
@@ -78,39 +85,138 @@ pub fn detect_current_branch() -> String {
 /// # 参数
 /// * `target_version` - 目标版本
 /// * `branch` - 分支 (mainline, canary)
-/// * `on_progress` - 下载进度回调
+/// * `on_event` - 事件回调
 pub async fn install_ryujinx_by_version<F>(
     target_version: &str,
     branch: &str,
-    on_progress: F,
+    on_event: F,
 ) -> AppResult<()>
 where
-    F: Fn(crate::services::aria2::Aria2DownloadProgress) + Send + 'static,
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
 {
     info!(
         "开始安装 Ryujinx {} 版本: {}",
         branch, target_version
     );
 
-    let config = get_config();
+    let (ryujinx_path, auto_delete) = {
+        let config = get_config();
+        (
+            PathBuf::from(&config.ryujinx.path),
+            config.setting.download.auto_delete_after_install,
+        )
+    };
 
     // 检查当前版本
     let current_branch = detect_current_branch();
+    let config = get_config();
     if let Some(ref current_version) = config.ryujinx.version {
         if current_version == target_version
             && (branch == "ldn" || current_branch == branch)
         {
             info!("当前已是目标版本，跳过安装");
-            return Err(AppError::Emulator(format!(
-                "当前已是目标版本 {} ({})",
-                target_version, branch
-            )));
+
+            // 更新步骤状态
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_version".to_string(),
+                    title: format!("当前已是目标版本 {} ({}), 跳过安装", target_version, branch),
+                    status: InstallationStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+
+            // 标记其他步骤为取消
+            for step_id in &["download", "extract", "install", "check_env"] {
+                on_event(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: step_id.to_string(),
+                        title: match *step_id {
+                            "download" => format!("下载 Ryujinx {}", branch),
+                            "extract" => "解压文件".to_string(),
+                            "install" => "安装文件".to_string(),
+                            "check_env" => "检查运行环境".to_string(),
+                            _ => "".to_string(),
+                        },
+                        status: InstallationStatus::Cancelled,
+                        step_type: if *step_id == "download" { "download" } else { "normal" }.to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                    }
+                });
+            }
+
+            return Ok(());
         }
     }
 
-    // 获取下载 URL
-    let download_url = get_ryujinx_download_url(target_version, branch).await?;
+    // 获取版本信息
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    let download_url = match get_ryujinx_download_url(target_version, branch).await {
+        Ok(url) => url,
+        Err(e) => {
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "fetch_version".to_string(),
+                    title: "获取版本信息".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
+            });
+            return Err(e);
+        }
+    };
+
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "fetch_version".to_string(),
+            title: "获取版本信息".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
     info!("下载 URL: {}", download_url);
+
+    // 下载
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 Ryujinx {}", branch),
+            status: InstallationStatus::Running,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 使用 aria2 下载
     let aria2 = get_aria2_manager().await?;
@@ -119,34 +225,308 @@ where
         ..Default::default()
     };
 
-    let result = aria2
-        .download_and_wait(&download_url, options, on_progress)
-        .await?;
+    // 添加下载任务并获取 GID
+    let gid = aria2.download(&download_url, options).await?;
 
-    info!("下载完成: {}", result.path.display());
+    // 保存当前下载的 GID（用于取消功能）
+    *CURRENT_DOWNLOAD_GID.write() = Some(gid.clone());
+
+    info!("下载任务已添加，GID: {}", gid);
+
+    // 轮询下载进度
+    let on_event_clone = on_event.clone();
+    let poll_interval = Duration::from_millis(500);
+    let package_path = loop {
+        tokio::time::sleep(poll_interval).await;
+
+        let progress = match aria2.get_download_progress(&gid).await {
+            Ok(p) => p,
+            Err(e) => {
+                *CURRENT_DOWNLOAD_GID.write() = None;
+                on_event_clone(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "download".to_string(),
+                        title: format!("下载 Ryujinx {}", branch),
+                        status: InstallationStatus::Error,
+                        step_type: "download".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(e.to_string()),
+                    }
+                });
+                return Err(e);
+            }
+        };
+
+        // 发送进度更新
+        on_event_clone(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "download".to_string(),
+                title: format!("下载 Ryujinx {}", branch),
+                status: InstallationStatus::Running,
+                step_type: "download".to_string(),
+                progress: progress.percentage,
+                download_speed: progress.speed_string(),
+                eta: progress.eta_string(),
+                error: None,
+            }
+        });
+
+        match progress.status {
+            crate::services::aria2::Aria2DownloadStatus::Complete => {
+                // 从 aria2 获取实际文件路径
+                let status = aria2.get_download_status(&gid).await?;
+                let path = status
+                    .files
+                    .first()
+                    .map(|f| PathBuf::from(&f.path))
+                    .ok_or_else(|| AppError::Aria2("无法获取下载文件路径".to_string()))?;
+
+                // 清除 GID
+                *CURRENT_DOWNLOAD_GID.write() = None;
+
+                info!("下载完成: {}", path.display());
+                break path;
+            }
+            crate::services::aria2::Aria2DownloadStatus::Error => {
+                *CURRENT_DOWNLOAD_GID.write() = None;
+                on_event_clone(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "download".to_string(),
+                        title: format!("下载 Ryujinx {}", branch),
+                        status: InstallationStatus::Error,
+                        step_type: "download".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some("下载失败".to_string()),
+                    }
+                });
+                return Err(AppError::Aria2("下载失败".to_string()));
+            }
+            crate::services::aria2::Aria2DownloadStatus::Removed => {
+                *CURRENT_DOWNLOAD_GID.write() = None;
+                on_event_clone(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "download".to_string(),
+                        title: format!("下载 Ryujinx {}", branch),
+                        status: InstallationStatus::Cancelled,
+                        step_type: "download".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                    }
+                });
+                return Err(AppError::Aria2("下载已取消".to_string()));
+            }
+            _ => continue,
+        }
+    };
+
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "download".to_string(),
+            title: format!("下载 Ryujinx {}", branch),
+            status: InstallationStatus::Success,
+            step_type: "download".to_string(),
+            progress: 100.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    // 解压
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 解压到临时目录
     let tmp_dir = std::env::temp_dir().join("ryujinx-install");
     if tmp_dir.exists() {
-        std::fs::remove_dir_all(&tmp_dir)?;
+        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+            on_event(InstallationEvent::StepUpdate {
+                step: InstallationStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: InstallationStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(format!("清理临时目录失败: {}", e)),
+                }
+            });
+            return Err(e.into());
+        }
     }
-    std::fs::create_dir_all(&tmp_dir)?;
+    if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(format!("创建临时目录失败: {}", e)),
+            }
+        });
+        return Err(e.into());
+    }
 
     info!("解压 Ryujinx 文件到: {}", tmp_dir.display());
-    uncompress(&result.path, &tmp_dir, false)?;
+    if let Err(e) = uncompress(&package_path, &tmp_dir, false) {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
+        });
+        return Err(e);
+    }
+
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "extract".to_string(),
+            title: "解压文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    // 安装
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 清理旧文件并安装
-    let ryujinx_path = PathBuf::from(&config.ryujinx.path);
-    clear_ryujinx_folder(&ryujinx_path)?;
+    if let Err(e) = clear_ryujinx_folder(&ryujinx_path) {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
+        });
+        return Err(e);
+    }
 
     // 复制文件
     let ryujinx_tmp_dir = tmp_dir.join("publish");
     info!("复制 Ryujinx 文件到: {}", ryujinx_path.display());
 
-    copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path)?;
+    if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
+        });
+        return Err(e);
+    }
+
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "install".to_string(),
+            title: "安装文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
 
     // 清理临时目录
     std::fs::remove_dir_all(&tmp_dir)?;
+
+    // 检查运行环境
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "check_env".to_string(),
+            title: "检查运行环境".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    if let Err(e) = check_and_install_msvc().await {
+        warn!("MSVC 运行库检查失败: {}", e);
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
+        });
+        // 不阻止安装流程，继续执行
+    } else {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: InstallationStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+            }
+        });
+    }
 
     // 更新配置
     {
@@ -159,12 +539,9 @@ where
     info!("Ryujinx {} [{}] 安装成功", branch, target_version);
 
     // 如果配置了自动删除，删除下载文件
-    let config = get_config();
-    if config.setting.download.auto_delete_after_install {
-        let _ = std::fs::remove_file(&result.path);
+    if auto_delete {
+        let _ = std::fs::remove_file(&package_path);
     }
-
-    // TODO: 检查并安装 MSVC 运行库
 
     Ok(())
 }
@@ -260,14 +637,33 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
 ///
 /// # 参数
 /// * `firmware_version` - 固件版本，None 表示最新版本
-pub async fn install_firmware_to_ryujinx(firmware_version: Option<&str>) -> AppResult<()> {
+/// * `on_event` - 事件回调
+pub async fn install_firmware_to_ryujinx<F>(
+    firmware_version: Option<&str>,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(InstallationEvent) + Send + Sync + 'static + Clone,
+{
     let config = get_config();
 
-    // 检查是否已安装
+    // 检查是否已安装此版本
     if let Some(ref version) = firmware_version {
         if let Some(ref current_firmware) = config.ryujinx.firmware {
             if current_firmware == version {
-                info!("固件已是最新版本，跳过安装");
+                info!("固件已是版本 {}，跳过安装", version);
+                on_event(InstallationEvent::StepUpdate {
+                    step: InstallationStep {
+                        id: "check_firmware".to_string(),
+                        title: format!("当前固件已是版本 {}, 跳过安装", version),
+                        status: InstallationStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                    }
+                });
                 return Ok(());
             }
         }
@@ -277,51 +673,80 @@ pub async fn install_firmware_to_ryujinx(firmware_version: Option<&str>) -> AppR
     let firmware_path = get_ryujinx_user_folder().join("bis/system/Contents/registered");
     let tmp_dir = firmware_path.parent().unwrap().join("tmp");
 
-    // 确保目录存在
+    // 确保临时目录存在
     std::fs::create_dir_all(&tmp_dir)?;
 
-    // TODO: 调用 firmware 服务进行安装
-    // let new_version = install_firmware(firmware_version, &tmp_dir).await?;
+    info!("开始安装固件到 Ryujinx，临时路径: {}", tmp_dir.display());
 
-    // 重新组织固件文件（Ryujinx 的特殊格式）
-    // if new_version.is_some() {
-    //     // 删除旧固件
-    //     if firmware_path.exists() {
-    //         std::fs::remove_dir_all(&firmware_path)?;
-    //     }
-    //     std::fs::create_dir_all(&firmware_path)?;
-    //
-    //     // 复制固件文件
-    //     for entry in std::fs::read_dir(&tmp_dir)? {
-    //         let entry = entry?;
-    //         let path = entry.path();
-    //         if path.extension().map_or(false, |e| e == "nca") {
-    //             let file_name = path.file_name().unwrap().to_string_lossy();
-    //             // 处理 .cnmt.nca 文件
-    //             let new_name = if file_name.ends_with(".cnmt.nca") {
-    //                 file_name.trim_end_matches(".cnmt.nca").to_string() + ".nca"
-    //             } else {
-    //                 file_name.to_string()
-    //             };
-    //
-    //             let nca_dir = firmware_path.join(&new_name);
-    //             std::fs::create_dir_all(&nca_dir)?;
-    //             std::fs::rename(&path, nca_dir.join("00"))?;
-    //         }
-    //     }
-    //
-    //     // 清理临时目录
-    //     std::fs::remove_dir_all(&tmp_dir)?;
-    //
-    //     // 更新配置
-    //     {
-    //         let mut cfg = CONFIG.write();
-    //         cfg.ryujinx.firmware = Some(new_version.unwrap());
-    //         cfg.save()?;
-    //     }
-    // }
+    // 调用固件服务进行安装（先解压到临时目录）
+    let version_to_install = firmware_version.unwrap_or_else(|| {
+        // 如果没有指定版本，需要获取最新版本
+        "latest"
+    });
 
-    info!("固件安装完成");
+    let on_event_clone = on_event.clone();
+    let new_version = crate::services::firmware::install_firmware(
+        version_to_install,
+        &tmp_dir,
+        on_event_clone,
+    ).await?;
+
+    // 步骤5: 重组织固件文件（Ryujinx 的特殊格式）
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "reorganize_firmware".to_string(),
+            title: "重组织固件文件".to_string(),
+            status: InstallationStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    if let Err(e) = crate::services::firmware::reorganize_firmware_for_ryujinx(&tmp_dir, &firmware_path).await {
+        on_event(InstallationEvent::StepUpdate {
+            step: InstallationStep {
+                id: "reorganize_firmware".to_string(),
+                title: "重组织固件文件".to_string(),
+                status: InstallationStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(e.to_string()),
+            }
+        });
+        // 清理临时目录
+        let _ = std::fs::remove_dir_all(&tmp_dir);
+        return Err(e);
+    }
+
+    on_event(InstallationEvent::StepUpdate {
+        step: InstallationStep {
+            id: "reorganize_firmware".to_string(),
+            title: "重组织固件文件".to_string(),
+            status: InstallationStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    // 清理临时目录
+    std::fs::remove_dir_all(&tmp_dir)?;
+
+    // 更新配置
+    {
+        let mut cfg = CONFIG.write();
+        cfg.ryujinx.firmware = Some(new_version.clone());
+        cfg.save()?;
+    }
+
+    info!("固件 {} 安装成功到 Ryujinx", new_version);
     Ok(())
 }
 
@@ -416,6 +841,28 @@ pub async fn get_all_ryujinx_versions(branch: &str) -> AppResult<Vec<String>> {
     let releases = get_all_ryujinx_release_infos(branch).await?;
     let versions: Vec<String> = releases.iter().map(|r| r.tag_name.clone()).collect();
     Ok(versions)
+}
+
+/// 取消当前的 Ryujinx 下载
+pub async fn cancel_ryujinx_download() -> AppResult<()> {
+    let gid = {
+        let gid_lock = CURRENT_DOWNLOAD_GID.read();
+        gid_lock.clone()
+    };
+
+    if let Some(gid) = gid {
+        info!("取消下载任务: {}", gid);
+        let aria2 = get_aria2_manager().await?;
+        aria2.cancel(&gid).await?;
+
+        // 清除 GID
+        *CURRENT_DOWNLOAD_GID.write() = None;
+
+        info!("下载已取消");
+        Ok(())
+    } else {
+        Err(AppError::Aria2("没有正在进行的下载任务".to_string()))
+    }
 }
 
 #[cfg(test)]
