@@ -400,6 +400,14 @@ pub fn get_yuzu_firmware_path() -> PathBuf {
     nand_path.join("system/Contents/registered")
 }
 
+/// 获取 Yuzu keys 文件路径
+///
+/// 遵循 Python 实现的逻辑：使用 Yuzu 自己的 key 路径
+pub fn get_yuzu_keys_path() -> PathBuf {
+    let user_path = crate::services::yuzu::get_yuzu_user_path();
+    user_path.join("keys/prod.keys")
+}
+
 /// 获取 Ryujinx 固件路径
 pub fn get_ryujinx_firmware_path() -> PathBuf {
     let ryujinx_path = {
@@ -427,6 +435,14 @@ pub fn get_ryujinx_firmware_path() -> PathBuf {
     }
 }
 
+/// 获取 Ryujinx keys 文件路径
+///
+/// 遵循 Python 实现的逻辑：使用 Ryujinx 自己的 key 路径
+pub fn get_ryujinx_keys_path() -> PathBuf {
+    let user_folder = crate::services::ryujinx::get_ryujinx_user_folder();
+    user_folder.join("system/prod.keys")
+}
+
 /// 检测 Yuzu 固件版本
 pub async fn detect_yuzu_firmware_version() -> AppResult<String> {
     info!("开始检测 Yuzu 固件版本");
@@ -439,6 +455,19 @@ pub async fn detect_yuzu_firmware_version() -> AppResult<String> {
             firmware_path.display()
         )));
     }
+
+    // 加载 Yuzu 的 key 文件
+    // 遵循 Python 实现：使用各个模拟器自己的 key，而不是自动查找别的模拟器的 key
+    let key_path = get_yuzu_keys_path();
+    if !key_path.exists() {
+        return Err(AppError::FileNotFound(format!(
+            "未找到 Yuzu keys 文件: {}",
+            key_path.display()
+        )));
+    }
+
+    info!("加载 Yuzu keys: {}", key_path.display());
+    crate::services::keys::load_keys(&key_path)?;
 
     // 查找系统版本归档 NCA 文件
     let nca_path = crate::services::nca::find_system_version_nca(&firmware_path)?;
@@ -479,6 +508,19 @@ pub async fn detect_ryujinx_firmware_version() -> AppResult<String> {
             firmware_path.display()
         )));
     }
+
+    // 加载 Ryujinx 的 key 文件
+    // 遵循 Python 实现：使用各个模拟器自己的 key，而不是自动查找别的模拟器的 key
+    let key_path = get_ryujinx_keys_path();
+    if !key_path.exists() {
+        return Err(AppError::FileNotFound(format!(
+            "未找到 Ryujinx keys 文件: {}",
+            key_path.display()
+        )));
+    }
+
+    info!("加载 Ryujinx keys: {}", key_path.display());
+    crate::services::keys::load_keys(&key_path)?;
 
     // 查找系统版本归档 NCA 文件（Ryujinx 格式）
     let nca_path = crate::services::nca::find_system_version_nca_ryujinx(&firmware_path)?;
