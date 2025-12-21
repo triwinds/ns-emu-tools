@@ -301,7 +301,6 @@ async function deleteHistoryPath(targetPath: string) {
 }
 
 async function detectRyujinxVersion() {
-  cds.cleanAndShowConsoleDialog()
   try {
     const data = await detectRyujinxVersionApi()
     if (data.code === 0) {

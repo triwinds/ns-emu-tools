@@ -251,12 +251,200 @@ pub async fn ask_and_update_ryujinx_path_command(
 
 /// 检测 Ryujinx 版本
 #[tauri::command]
-pub fn detect_ryujinx_version_command() -> Result<ApiResponse<Option<String>>, String> {
+pub async fn detect_ryujinx_version_command(
+    window: Window,
+) -> Result<ApiResponse<Option<String>>, String> {
+    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
+    use crate::services::ryujinx::detect_ryujinx_version;
+
     info!("检测 Ryujinx 版本");
-    // TODO: 实现完整的版本检测逻辑
-    // 目前仅返回分支信息作为简化实现
-    let branch = detect_current_branch();
-    Ok(ApiResponse::success(Some(branch)))
+
+    // 定义检测步骤
+    let steps = vec![
+        ProgressStep {
+            id: "check_exe".to_string(),
+            title: "检查模拟器程序".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        ProgressStep {
+            id: "start_program".to_string(),
+            title: "启动程序检测版本".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+        ProgressStep {
+            id: "detect_version".to_string(),
+            title: "读取版本信息".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        },
+    ];
+
+    // 发送启动事件
+    let _ = window.emit("installation-event", ProgressEvent::Started { steps: steps.clone() });
+
+    // 步骤1: 检查程序
+    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+        step: ProgressStep {
+            id: "check_exe".to_string(),
+            title: "检查模拟器程序".to_string(),
+            status: ProgressStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    let config = crate::config::get_config();
+    let ryujinx_path = std::path::PathBuf::from(&config.ryujinx.path);
+
+    // 检查可执行文件（优先 Ava 版本）
+    let ava_exe = ryujinx_path.join("Ryujinx.Ava.exe");
+    let exe_path = if ava_exe.exists() {
+        ava_exe
+    } else {
+        ryujinx_path.join("Ryujinx.exe")
+    };
+
+    if !exe_path.exists() {
+        let error_msg = format!("未找到模拟器程序: {}", exe_path.display());
+        let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "check_exe".to_string(),
+                title: "检查模拟器程序".to_string(),
+                status: ProgressStatus::Error,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: Some(error_msg.clone()),
+            }
+        });
+        let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some(error_msg.clone()) });
+        return Err(error_msg);
+    }
+
+    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+        step: ProgressStep {
+            id: "check_exe".to_string(),
+            title: "检查模拟器程序".to_string(),
+            status: ProgressStatus::Success,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    // 步骤2: 启动程序
+    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+        step: ProgressStep {
+            id: "start_program".to_string(),
+            title: "启动程序检测版本".to_string(),
+            status: ProgressStatus::Running,
+            step_type: "normal".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+        }
+    });
+
+    match detect_ryujinx_version().await {
+        Ok((version, branch)) => {
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "start_program".to_string(),
+                    title: "启动程序检测版本".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+
+            // 步骤3: 读取版本信息
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "detect_version".to_string(),
+                    title: "读取版本信息".to_string(),
+                    status: ProgressStatus::Running,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                }
+            });
+
+            if let Some(ref v) = version {
+                let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "detect_version".to_string(),
+                        title: format!("检测到版本: {} ({})", v, branch),
+                        status: ProgressStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                    }
+                });
+                let _ = window.emit("installation-event", ProgressEvent::Finished { success: true, message: None });
+            } else {
+                let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "detect_version".to_string(),
+                        title: "未能检测到版本".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some("未能检测到版本".to_string()),
+                    }
+                });
+                let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some("未能检测到版本".to_string()) });
+            }
+
+            Ok(ApiResponse::success(version))
+        }
+        Err(e) => {
+            error!("版本检测失败: {}", e);
+            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "start_program".to_string(),
+                    title: "启动程序检测版本".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                }
+            });
+            let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some(e.to_string()) });
+            Err(e.to_string())
+        }
+    }
 }
 
 /// 取消 Ryujinx 下载

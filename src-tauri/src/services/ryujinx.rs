@@ -18,7 +18,8 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
-/// Ryujinx 可执行文件名
+/// Ryujinx 可执行文件名（优先使用 Ava 版本）
+const RYUJINX_AVA_EXE: &str = "Ryujinx.Ava.exe";
 const RYUJINX_EXE: &str = "Ryujinx.exe";
 
 /// 当前正在进行的下载任务 GID
@@ -57,23 +58,38 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
     )))
 }
 
+/// 获取 Ryujinx 可执行文件路径
+///
+/// 优先返回 Ryujinx.Ava.exe，如果不存在则返回 Ryujinx.exe
+fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
+    let ava_exe = ryujinx_path.join(RYUJINX_AVA_EXE);
+    if ava_exe.exists() {
+        return Some(ava_exe);
+    }
+
+    let exe = ryujinx_path.join(RYUJINX_EXE);
+    if exe.exists() {
+        return Some(exe);
+    }
+
+    None
+}
+
 /// 检测当前 Ryujinx 分支
 ///
-/// 通过检查可执行文件名来判断是 mainline 还是 canary
+/// 通过检查可执行文件名来判断
+/// - Ryujinx.Ava.exe -> ava
+/// - Ryujinx.exe -> mainline
 pub fn detect_current_branch() -> String {
     let config = get_config();
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
 
-    // 检查可执行文件
-    let exe_path = ryujinx_path.join(RYUJINX_EXE);
-    if !exe_path.exists() {
-        return "mainline".to_string();
-    }
-
-    // 尝试从文件版本信息检测（Windows）
-    #[cfg(windows)]
-    {
-        // TODO: 读取 PE 文件版本信息判断是否为 canary
+    if let Some(exe_path) = get_ryujinx_exe_path_internal(&ryujinx_path) {
+        if exe_path.file_name().unwrap().to_string_lossy().contains("Ava") {
+            return "ava".to_string();
+        } else {
+            return "mainline".to_string();
+        }
     }
 
     // 默认返回配置中的分支
@@ -806,11 +822,15 @@ where
 pub fn start_ryujinx() -> AppResult<()> {
     let config = get_config();
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
-    let exe_path = ryujinx_path.join(RYUJINX_EXE);
 
-    if !exe_path.exists() {
-        return Err(AppError::FileNotFound(exe_path.display().to_string()));
-    }
+    let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+        Some(path) => path,
+        None => {
+            return Err(AppError::FileNotFound(
+                format!("未找到 Ryujinx 程序: {}", ryujinx_path.display())
+            ));
+        }
+    };
 
     info!("启动 Ryujinx: {}", exe_path.display());
 
@@ -893,6 +913,152 @@ pub async fn get_all_ryujinx_versions(branch: &str) -> AppResult<Vec<String>> {
     let releases = get_all_ryujinx_release_infos(branch).await?;
     let versions: Vec<String> = releases.iter().map(|r| r.tag_name.clone()).collect();
     Ok(versions)
+}
+
+/// 检测 Ryujinx 版本（通过启动程序并读取窗口标题）
+///
+/// # 返回
+/// (版本号, 分支)
+pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
+    info!("检测 Ryujinx 版本");
+
+    let config = get_config();
+    let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+
+    let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+        Some(path) => path,
+        None => {
+            warn!("未找到 Ryujinx 程序: {}", ryujinx_path.display());
+            return Ok((None, "mainline".to_string()));
+        }
+    };
+
+    // 先检测基础分支（通过文件名）
+    let mut branch = detect_current_branch();
+
+    // 启动程序
+    info!("启动 Ryujinx: {}", exe_path.display());
+    let mut child = Command::new(&exe_path)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()?;
+
+    // 等待窗口创建
+    tokio::time::sleep(Duration::from_secs(3)).await;
+
+    let mut version: Option<String> = None;
+
+    #[cfg(windows)]
+    {
+        use std::sync::{Arc, Mutex};
+        use windows::Win32::Foundation::{HWND, LPARAM};
+        use windows::Win32::UI::WindowsAndMessaging::{
+            EnumWindows, GetWindowTextW, IsWindowVisible,
+        };
+
+        let version_data = Arc::new(Mutex::new((None::<String>, branch.clone())));
+        let version_data_clone = version_data.clone();
+
+        unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> windows::Win32::Foundation::BOOL {
+            if IsWindowVisible(hwnd).as_bool() {
+                let mut text: [u16; 512] = [0; 512];
+                let len = GetWindowTextW(hwnd, &mut text);
+
+                if len > 0 {
+                    let window_title = String::from_utf16_lossy(&text[..len as usize]);
+
+                    let data_ptr = lparam.0 as *const Arc<Mutex<(Option<String>, String)>>;
+                    let data = &*data_ptr;
+
+                    // Ryujinx 窗口标题格式:
+                    // - "Ryujinx 1.1.1234 - ..." (打开了游戏)
+                    // - "Ryujinx 1.1.1234" (没打开游戏)
+                    // - "Ryujinx Console 1.1.1234"
+                    // - "Ryujinx Canary 1.3.236"
+                    // - "Ryujinx Canary Console 1.3.236"
+                    if window_title.starts_with("Ryujinx ") && !window_title.contains('-') {
+                        let mut guard = data.lock().unwrap();
+
+                        // 跳过 "Ryujinx " 前缀
+                        let mut remaining = &window_title[8..];
+
+                        // 检测分支类型
+                        let mut detected_branch = guard.1.clone(); // 默认使用文件名检测的分支
+
+                        // 检测 Canary 分支
+                        if remaining.starts_with("Canary ") {
+                            detected_branch = "canary".to_string();
+                            remaining = &remaining[7..]; // 跳过 "Canary "
+                        }
+
+                        // 跳过 Console 前缀（如果有）
+                        if remaining.starts_with("Console ") {
+                            remaining = &remaining[8..]; // 跳过 "Console "
+                        }
+
+                        // 提取版本号（空格前或全部内容）
+                        let version = if let Some(space_pos) = remaining.find(' ') {
+                            &remaining[..space_pos]
+                        } else {
+                            remaining
+                        };
+
+                        // 检测 LDN 分支（版本号中包含 ldn）
+                        if version.contains("ldn") {
+                            if let Some(ldn_pos) = version.find("ldn") {
+                                guard.0 = Some(version[ldn_pos + 3..].to_string());
+                                guard.1 = "ldn".to_string();
+                            }
+                        } else {
+                            // 设置版本号和分支
+                            guard.0 = Some(version.to_string());
+                            guard.1 = detected_branch;
+                        }
+
+                        return windows::Win32::Foundation::BOOL(0); // Stop enumeration
+                    }
+                }
+            }
+            windows::Win32::Foundation::BOOL(1) // Continue enumeration
+        }
+
+        // 多次尝试，等待窗口出现
+        for _ in 0..30 {
+            unsafe {
+                let _ = EnumWindows(
+                    Some(enum_proc),
+                    LPARAM(&version_data_clone as *const _ as isize),
+                );
+            }
+
+            let guard = version_data.lock().unwrap();
+            if guard.0.is_some() {
+                version = guard.0.clone();
+                branch = guard.1.clone();
+                break;
+            }
+
+            std::thread::sleep(Duration::from_millis(500));
+        }
+    }
+
+    // 结束进程
+    let _ = child.kill();
+    let _ = child.wait();
+
+    // 更新配置
+    if let Some(ref v) = version {
+        info!("检测到 Ryujinx 版本: {}, 分支: {}", v, branch);
+
+        let mut cfg = CONFIG.write();
+        cfg.ryujinx.version = Some(v.clone());
+        cfg.ryujinx.branch = branch.clone();
+        cfg.save()?;
+    } else {
+        warn!("未能检测到 Ryujinx 版本");
+    }
+
+    Ok((version, branch))
 }
 
 /// 取消当前的 Ryujinx 下载

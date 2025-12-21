@@ -1164,12 +1164,27 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
                         return windows::Win32::Foundation::BOOL(0); // Stop enumeration
                     } else if window_title.starts_with("Eden | ") {
                         let mut guard = data.lock().unwrap();
-                        guard.0 = Some(window_title[7..].to_string());
+                        // 提取版本号，去掉可能存在的 MSVC 版本信息
+                        // 例如: "Eden | v0.0.4-rc3 | MSVC 19.44.35219.0" -> "v0.0.4-rc3"
+                        let version_part = &window_title[7..];
+                        let version = if let Some(pipe_pos) = version_part.find(" | ") {
+                            version_part[..pipe_pos].to_string()
+                        } else {
+                            version_part.to_string()
+                        };
+                        guard.0 = Some(version);
                         guard.1 = Some("eden".to_string());
                         return windows::Win32::Foundation::BOOL(0);
                     } else if window_title.starts_with("citron | ") {
                         let mut guard = data.lock().unwrap();
-                        guard.0 = Some(window_title[9..].to_string());
+                        // 提取版本号，去掉可能存在的 MSVC 版本信息
+                        let version_part = &window_title[9..];
+                        let version = if let Some(pipe_pos) = version_part.find(" | ") {
+                            version_part[..pipe_pos].to_string()
+                        } else {
+                            version_part.to_string()
+                        };
+                        guard.0 = Some(version);
                         guard.1 = Some("citron".to_string());
                         return windows::Win32::Foundation::BOOL(0);
                     }

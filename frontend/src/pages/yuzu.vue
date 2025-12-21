@@ -426,7 +426,6 @@ async function loadChangeLog() {
 }
 
 async function detectYuzuVersionHandler() {
-  consoleDialogStore.cleanAndShowConsoleDialog()
   let previousBranch = branch.value
 
   try {
