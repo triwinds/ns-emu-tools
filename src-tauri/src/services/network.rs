@@ -674,4 +674,80 @@ mod tests {
         println!("System proxy: {:?}", proxy);
         assert!(proxy.is_none() || !proxy.unwrap().is_empty());
     }
+
+    #[tokio::test]
+    #[ignore] // 需要网络连接，默认忽略
+    async fn test_github_us_mirrors() {
+        let mut invalid_mirrors = Vec::new();
+
+        // 跳过第一个镜像（与 Python 版本一致）
+        let test_mirrors = &GITHUB_US_MIRRORS[1..];
+
+        for mirror in test_mirrors {
+            print!("testing {}... ", mirror.description);
+
+            // 构建测试 URL
+            let test_url = format!(
+                "{}/XIU2/CloudflareSpeedTest/releases/download/v2.2.2/CloudflareST_windows_amd64.zip",
+                mirror.url
+            );
+
+            match try_test_mirror(&test_url).await {
+                Ok(true) => println!("worked"),
+                Ok(false) => {
+                    println!("failed (invalid content length)");
+                    invalid_mirrors.push(mirror.description.clone());
+                }
+                Err(e) => {
+                    println!("failed: {}", e);
+                    invalid_mirrors.push(mirror.description.clone());
+                }
+            }
+        }
+
+        println!("====================================");
+        if !invalid_mirrors.is_empty() {
+            println!("Invalid mirrors:");
+            for mirror in &invalid_mirrors {
+                println!("  - {}", mirror);
+            }
+        } else {
+            println!("All mirrors are working!");
+        }
+
+        // 如果有失败的镜像，测试失败
+        assert!(
+            invalid_mirrors.is_empty(),
+            "Found {} invalid mirror(s): {:?}",
+            invalid_mirrors.len(),
+            invalid_mirrors
+        );
+    }
+
+    /// 测试单个镜像是否可用
+    async fn try_test_mirror(url: &str) -> Result<bool, String> {
+        let client = Client::builder()
+            .user_agent(CHROME_UA)
+            .timeout(Duration::from_secs(10))
+            .build()
+            .map_err(|e| e.to_string())?;
+
+        let resp = client
+            .head(url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        // 检查 Content-Length
+        if let Some(content_length) = resp.headers().get("content-length") {
+            if let Ok(length_str) = content_length.to_str() {
+                if let Ok(length) = length_str.parse::<u64>() {
+                    // 检查文件大小是否合理（至少 20000 字节）
+                    return Ok(length >= 20000);
+                }
+            }
+        }
+
+        Ok(false)
+    }
 }

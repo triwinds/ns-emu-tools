@@ -6,7 +6,7 @@ use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
-use crate::services::network::{get_github_download_url, request_github_api};
+use crate::services::network::request_github_api;
 use crate::utils::common::format_size;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -179,11 +179,7 @@ where
         }
     });
 
-    let url = if target_info.url.contains("github.com") {
-        get_github_download_url(&target_info.url)
-    } else {
-        target_info.url.clone()
-    };
+    let url = target_info.url.clone();
 
     info!("下载固件: {}", url);
 

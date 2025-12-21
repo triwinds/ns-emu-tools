@@ -8,7 +8,6 @@ use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import mode
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
-use crate::services::network::get_github_download_url;
 use crate::utils::archive::uncompress;
 use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
@@ -83,13 +82,13 @@ where
         let name = asset.name.to_lowercase();
 
         if name.ends_with(".7z") {
-            download_url = Some(get_github_download_url(&asset.download_url));
+            download_url = Some(asset.download_url.clone());
             break;
         } else if name.starts_with("windows-yuzu-ea-") && name.ends_with(".zip") {
-            download_url = Some(get_github_download_url(&asset.download_url));
+            download_url = Some(asset.download_url.clone());
             break;
         } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
-            download_url = Some(get_github_download_url(&asset.download_url));
+            download_url = Some(asset.download_url.clone());
             break;
         } else if name.contains("windows") {
             // for citron
@@ -152,7 +151,18 @@ where
             }
             crate::services::aria2::Aria2DownloadStatus::Error => {
                 *CURRENT_DOWNLOAD_GID.write() = None;
-                return Err(AppError::Aria2("下载失败".to_string()));
+
+                // 获取详细错误信息
+                let error_message = match aria2.get_download_status(&gid).await {
+                    Ok(status) => {
+                        let error_code = status.error_code.as_deref().unwrap_or("未知");
+                        let error_msg = status.error_message.as_deref().unwrap_or("未知错误");
+                        format!("下载失败 (错误码: {}): {}", error_code, error_msg)
+                    }
+                    Err(_) => "下载失败".to_string(),
+                };
+
+                return Err(AppError::Aria2(error_message));
             }
             crate::services::aria2::Aria2DownloadStatus::Removed => {
                 *CURRENT_DOWNLOAD_GID.write() = None;

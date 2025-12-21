@@ -307,6 +307,17 @@ where
             }
             crate::services::aria2::Aria2DownloadStatus::Error => {
                 *CURRENT_DOWNLOAD_GID.write() = None;
+
+                // 获取详细错误信息
+                let error_message = match aria2.get_download_status(&gid).await {
+                    Ok(status) => {
+                        let error_code = status.error_code.as_deref().unwrap_or("未知");
+                        let error_msg = status.error_message.as_deref().unwrap_or("未知错误");
+                        format!("下载失败 (错误码: {}): {}", error_code, error_msg)
+                    }
+                    Err(_) => "下载失败".to_string(),
+                };
+
                 on_event_clone(ProgressEvent::StepUpdate {
                     step: ProgressStep {
                         id: "download".to_string(),
@@ -316,10 +327,10 @@ where
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
-                        error: Some("下载失败".to_string()),
+                        error: Some(error_message.clone()),
                     }
                 });
-                return Err(AppError::Aria2("下载失败".to_string()));
+                return Err(AppError::Aria2(error_message));
             }
             crate::services::aria2::Aria2DownloadStatus::Removed => {
                 *CURRENT_DOWNLOAD_GID.write() = None;
