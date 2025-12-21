@@ -15,8 +15,6 @@
         "title": "NS Emu Tools",
         "width": 1300,
         "height": 850,
-        "minWidth": 1000,
-        "minHeight": 600,
         "resizable": true,
         "fullscreen": false,
         "center": true

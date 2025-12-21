@@ -338,6 +338,15 @@ pub fn update_setting(setting: CommonSetting) -> AppResult<()> {
     config.save()
 }
 
+/// 更新窗口大小
+pub fn update_window_size(width: u32, height: u32) -> AppResult<()> {
+    let mut config = CONFIG.write();
+    config.setting.ui.width = width;
+    config.setting.ui.height = height;
+    info!("更新窗口大小为 {}x{}", width, height);
+    config.save()
+}
+
 /// 获取当前配置的克隆
 pub fn get_config() -> Config {
     CONFIG.read().clone()

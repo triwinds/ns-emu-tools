@@ -5,7 +5,37 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use ns_emu_tools_lib::{commands, logging};
+use tauri::{Manager, WebviewWindow};
 use tracing::info;
+
+/// 设置窗口大小并监听窗口变化事件
+fn setup_window(window: &WebviewWindow) {
+    // 从配置读取窗口大小
+    let config = ns_emu_tools_lib::config::get_config();
+    let width = config.setting.ui.width;
+    let height = config.setting.ui.height;
+
+    // 设置窗口大小
+    if let Err(e) = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+        width,
+        height,
+    })) {
+        tracing::warn!("设置窗口大小失败: {}", e);
+    }
+
+    // 监听窗口大小变化事件
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::Resized(size) = event {
+            let width = size.width;
+            let height = size.height;
+
+            // 更新配置中的窗口大小
+            if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
+                tracing::warn!("保存窗口大小失败: {}", e);
+            }
+        }
+    });
+}
 
 fn main() {
     // 初始化日志系统
@@ -32,6 +62,13 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            // 获取主窗口
+            if let Some(window) = app.get_webview_window("main") {
+                setup_window(&window);
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Common commands
             commands::common::get_config,
@@ -43,6 +80,7 @@ fn main() {
             commands::common::update_setting,
             commands::common::update_last_open_emu_page,
             commands::common::update_dark_state,
+            commands::common::update_window_size,
             commands::common::delete_history_path,
             commands::common::check_update,
             commands::common::load_change_log,

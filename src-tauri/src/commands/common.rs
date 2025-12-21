@@ -123,6 +123,12 @@ pub fn update_dark_state(dark: bool) -> Result<(), String> {
     config::update_dark_state(dark).map_err(|e| e.to_string())
 }
 
+/// 更新窗口大小
+#[command]
+pub fn update_window_size(width: u32, height: u32) -> Result<(), String> {
+    config::update_window_size(width, height).map_err(|e| e.to_string())
+}
+
 /// 删除历史路径
 #[command]
 pub fn delete_history_path(emu_type: String, path: String) -> Result<(), String> {
