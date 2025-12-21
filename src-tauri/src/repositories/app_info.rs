@@ -110,10 +110,28 @@ pub async fn check_update(include_prerelease: bool) -> AppResult<UpdateCheckResu
     );
 
     let latest = get_latest_release(include_prerelease).await?;
+    info!("获取到最新版本: {}", latest.tag_name);
+    info!("最新版本的 assets 数量: {}", latest.assets.len());
+
+    // 打印所有 assets 的名称
+    for (i, asset) in latest.assets.iter().enumerate() {
+        info!("Asset {}: {}", i, asset.name);
+    }
 
     let has_update = is_newer_version(&latest.tag_name, CURRENT_VERSION);
+    info!("是否有更新: {}", has_update);
 
-    let download_url = latest.find_windows_asset().map(|a| a.download_url.clone());
+    let windows_asset = latest.find_windows_asset();
+    let download_url = windows_asset.map(|a| {
+        info!("找到 Windows 资源: {}", a.name);
+        a.download_url.clone()
+    });
+
+    if download_url.is_none() {
+        info!("警告: 未找到 Windows 资源！");
+    } else {
+        info!("下载链接: {:?}", download_url);
+    }
 
     Ok(UpdateCheckResult {
         has_update,

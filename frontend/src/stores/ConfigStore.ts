@@ -1,7 +1,7 @@
 // Utilities
 import { defineStore } from 'pinia'
 import type { AppConfig } from "@/types";
-import { getAppVersion, getConfig, checkUpdate } from "@/utils/tauri";
+import { getAppVersion, getConfig, checkUpdate, type UpdateCheckResult } from "@/utils/tauri";
 
 export const useConfigStore = defineStore('config', {
   state: () => ({
@@ -12,6 +12,7 @@ export const useConfigStore = defineStore('config', {
     } as AppConfig,
     currentVersion: '',
     hasNewVersion: false,
+    updateInfo: null as UpdateCheckResult | null,
   }),
   actions: {
     async reloadConfig() {
@@ -32,17 +33,29 @@ export const useConfigStore = defineStore('config', {
     },
     async checkUpdate(forceShowDialog: boolean) {
       try {
+        console.log('[ConfigStore] 开始检查更新...')
         const result = await checkUpdate(false)
+        console.log('[ConfigStore] 更新检查结果:', {
+          hasUpdate: result.hasUpdate,
+          currentVersion: result.currentVersion,
+          latestVersion: result.latestVersion,
+          downloadUrl: result.downloadUrl,
+          htmlUrl: result.htmlUrl
+        })
+
         this.hasNewVersion = result.hasUpdate
+        this.updateInfo = result
+        console.log('[ConfigStore] updateInfo 已保存:', this.updateInfo)
 
         if (forceShowDialog || this.hasNewVersion) {
+          console.log('[ConfigStore] 显示更新对话框')
           window.$bus.emit('showNewVersionDialog', {
             hasNewVersion: this.hasNewVersion,
             latestVersion: result.latestVersion
           })
         }
       } catch (e) {
-        console.error('Failed to check update:', e)
+        console.error('[ConfigStore] 检查更新失败:', e)
       }
     },
   },

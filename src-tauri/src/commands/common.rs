@@ -8,7 +8,7 @@ use crate::models::storage::{self, Storage};
 use crate::repositories::app_info::{self, UpdateCheckResult};
 use crate::repositories::config_data;
 use tauri::{command, Emitter, Window};
-use tracing::info;
+use tracing::{error, info};
 
 /// 获取当前配置
 #[command]
@@ -447,3 +447,76 @@ fn get_possible_key_paths(emu_type: &str) -> Vec<std::path::PathBuf> {
 
     paths
 }
+
+/// 下载应用更新
+#[command]
+pub async fn download_app_update(
+    window: Window,
+    include_prerelease: bool,
+    download_url: Option<String>,
+) -> Result<String, String> {
+    info!(
+        "开始下载应用更新 (包含预发布: {}, download_url: {:?})",
+        include_prerelease, download_url
+    );
+
+    match crate::services::updater::download_update(&window, include_prerelease, download_url)
+        .await
+    {
+        Ok(path) => Ok(path.to_string_lossy().to_string()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// 安装应用更新并重启
+#[command]
+pub async fn install_app_update(update_file: String) -> Result<(), String> {
+    info!("开始安装应用更新: {}", update_file);
+
+    let update_path = std::path::Path::new(&update_file);
+    match crate::services::updater::install_update(update_path).await {
+        Ok(_) => {
+            info!("更新脚本已启动，程序即将退出");
+            // 等待一小段时间确保脚本启动
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            // 退出程序
+            std::process::exit(0);
+        }
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// 根据 tag 更新自身（一体化更新流程）
+#[command]
+pub async fn update_self_by_tag(tag: String, window: Window) -> Result<(), String> {
+    info!("开始根据 tag 更新自身: {}", tag);
+
+    // 1. 下载并解压更新文件
+    let update_path = match crate::services::updater::update_self_by_tag(&window, &tag).await {
+        Ok(path) => path,
+        Err(e) => {
+            let err_msg = format!("下载更新失败: {}", e);
+            error!("{}", err_msg);
+            return Err(err_msg);
+        }
+    };
+
+    info!("更新文件已准备完成: {}", update_path.display());
+
+    // 2. 安装更新（生成并执行更新脚本）
+    match crate::services::updater::install_update(&update_path).await {
+        Ok(_) => {
+            info!("更新脚本已启动，程序即将退出");
+            // 等待一小段时间确保脚本启动
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            // 退出程序
+            std::process::exit(0);
+        }
+        Err(e) => {
+            let err_msg = format!("安装更新失败: {}", e);
+            error!("{}", err_msg);
+            Err(err_msg)
+        }
+    }
+}
+

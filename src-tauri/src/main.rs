@@ -90,6 +90,9 @@ fn main() {
             commands::common::get_available_firmware_infos,
             commands::common::load_history_path,
             commands::common::detect_firmware_version,
+            commands::common::download_app_update,
+            commands::common::install_app_update,
+            commands::common::update_self_by_tag,
             // Yuzu commands
             commands::yuzu::get_all_yuzu_versions,
             commands::yuzu::install_yuzu_by_version,

@@ -12,6 +12,10 @@ rust-version = "1.70"
 name = "ns_emu_tools_lib"
 crate-type = ["rlib"]
 
+[[bin]]
+name = "NsEmuTools"
+path = "src/main.rs"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

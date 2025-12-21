@@ -136,12 +136,58 @@ impl ReleaseInfo {
     }
 
     /// 查找 Windows 资源
+    ///
+    /// 匹配策略：
+    /// 1. 首先精确查找 "NsEmuTools-dir.7z"
+    /// 2. 如果找不到，查找 "NsEmuTools.exe"
+    /// 3. 如果还找不到，查找 "ns-emu-tools.exe"（Tauri 版本）
     pub fn find_windows_asset(&self) -> Option<&ReleaseAsset> {
-        self.assets.iter().find(|a| {
+        use tracing::info;
+
+        info!("开始查找 Windows 资源，总共有 {} 个 assets", self.assets.len());
+
+        // 打印所有 assets 的名称
+        for asset in &self.assets {
+            info!("  可用文件: {}", asset.name);
+        }
+
+        // 1. 首先查找 NsEmuTools-dir.7z (Python 版本的压缩包)
+        let target = self.assets.iter().find(|a| a.name == "NsEmuTools-dir.7z");
+        if target.is_some() {
+            info!("找到精确匹配: NsEmuTools-dir.7z");
+            return target;
+        }
+        info!("未找到 NsEmuTools-dir.7z");
+
+        // 2. 查找 NsEmuTools.exe (Python 版本)
+        let target = self.assets.iter().find(|a| a.name == "NsEmuTools.exe");
+        if target.is_some() {
+            info!("找到精确匹配: NsEmuTools.exe");
+            return target;
+        }
+        info!("未找到 NsEmuTools.exe");
+
+        // 3. 查找 ns-emu-tools.exe (Tauri 版本)
+        let target = self.assets.iter().find(|a| a.name == "ns-emu-tools.exe");
+        if target.is_some() {
+            info!("找到精确匹配: ns-emu-tools.exe");
+            return target;
+        }
+        info!("未找到 ns-emu-tools.exe");
+
+        // 4. 查找任何包含 "emu-tools" 且以 .exe 或 .7z 结尾的文件
+        let target = self.assets.iter().find(|a| {
             let name_lower = a.name.to_lowercase();
-            (name_lower.contains("win") || name_lower.contains("windows"))
-                && (name_lower.ends_with(".zip") || name_lower.ends_with(".7z"))
-        })
+            name_lower.contains("emu-tools") &&
+            (name_lower.ends_with(".exe") || name_lower.ends_with(".7z") || name_lower.ends_with(".zip"))
+        });
+        if target.is_some() {
+            info!("找到模糊匹配: {}", target.unwrap().name);
+            return target;
+        }
+
+        info!("警告: 未找到任何合适的 Windows 资源文件！");
+        None
     }
 }
 

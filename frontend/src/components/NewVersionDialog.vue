@@ -74,6 +74,7 @@ import md from "@/utils/markdown";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import type {CommonResponse} from "@/types";
 import {useEmitter} from "@/plugins/mitt";
+import {loadChangeLog, downloadAppUpdate, installAppUpdate, updateSelfByTag} from "@/utils/tauri";
 
 let dialog = ref(false)
 const configStore = useConfigStore()
@@ -101,32 +102,56 @@ function openReleasePage() {
   }
 }
 
-function loadReleaseDescription() {
-  window.eel.load_change_log()((resp: CommonResponse<string>) => {
-    if (resp.code === 0) {
-      let rawMd = (resp.data || '').replace('# Change Log\n\n', '')
-      releaseDescriptionHtml.value = md.parse(rawMd)
-    } else {
-      releaseDescriptionHtml.value = '<p>加载失败</p>'
-    }
-  })
+async function loadReleaseDescription() {
+  try {
+    const changelog = await loadChangeLog()
+    let rawMd = (changelog || '').replace('# Change Log\n\n', '')
+    releaseDescriptionHtml.value = md.parse(rawMd)
+  } catch (error) {
+    console.error('加载变更日志失败:', error)
+    releaseDescriptionHtml.value = '<p>加载失败</p>'
+  }
 }
 
-function downloadNET() {
-  cds.cleanAndShowConsoleDialog()
-  window.eel.download_net_by_tag(newVersion.value)((resp: CommonResponse) => {
-    if (resp.code === 0) {
-      cds.appendConsoleMessage('NET 下载完成')
-    } else {
-      cds.appendConsoleMessage(resp.msg || '')
-      cds.appendConsoleMessage('NET 下载失败')
+async function downloadNET() {
+  try {
+    console.log('[NewVersionDialog] 开始下载更新')
+    console.log('[NewVersionDialog] configStore.updateInfo:', configStore.updateInfo)
+    const downloadUrl = configStore.updateInfo?.downloadUrl
+    console.log('[NewVersionDialog] downloadUrl:', downloadUrl)
+
+    if (!downloadUrl) {
+      console.warn('[NewVersionDialog] downloadUrl 为空，将由后端重新检查更新')
     }
-  })
+
+    console.log('[NewVersionDialog] 调用 downloadAppUpdate, includePrerelease=false, downloadUrl=', downloadUrl)
+    const updateFilePath = await downloadAppUpdate(false, downloadUrl)
+    console.log('[NewVersionDialog] 更新文件已下载:', updateFilePath)
+    // 下载完成后可以提示用户安装
+  } catch (error) {
+    console.error('[NewVersionDialog] 下载更新失败:', error)
+  }
 }
 
 async function updateNET() {
-  cds.cleanAndShowConsoleDialog()
-  window.eel.update_net_by_tag(newVersion.value)
+  try {
+    console.log('[NewVersionDialog] 开始自动更新')
+    console.log('[NewVersionDialog] configStore.updateInfo:', configStore.updateInfo)
+    const latestVersion = configStore.updateInfo?.latestVersion
+    console.log('[NewVersionDialog] latestVersion:', latestVersion)
+
+    if (!latestVersion) {
+      console.error('[NewVersionDialog] 无法获取版本号')
+      return
+    }
+
+    console.log('[NewVersionDialog] 调用 updateSelfByTag, version=', latestVersion)
+    await updateSelfByTag(latestVersion)
+    console.log('[NewVersionDialog] 更新命令已发送，程序将自动退出并更新')
+    // 程序会自动退出并更新
+  } catch (error) {
+    console.error('[NewVersionDialog] 更新失败:', error)
+  }
 }
 </script>
 

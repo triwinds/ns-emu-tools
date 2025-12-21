@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::{debug, info, warn};
 
-/// 应用程序版本
-pub const CURRENT_VERSION: &str = "0.6.0";
+/// 应用程序版本（自动从 Cargo.toml 读取）
+pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// User-Agent 字符串
 pub fn user_agent() -> String {

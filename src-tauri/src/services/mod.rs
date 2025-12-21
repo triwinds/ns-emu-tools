@@ -11,6 +11,7 @@ pub mod msvc;
 pub mod nca;
 pub mod network;
 pub mod ryujinx;
+pub mod updater;
 pub mod yuzu;
 
 #[cfg(not(test))]
@@ -34,4 +35,5 @@ pub use firmware::*;
 pub use nca::*;
 pub use network::*;
 pub use ryujinx::*;
+pub use updater::*;
 pub use yuzu::*;

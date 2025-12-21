@@ -147,6 +147,21 @@ export async function loadChangeLog() {
   return invokeCommand<string>('load_change_log')
 }
 
+/** 下载应用更新 */
+export async function downloadAppUpdate(includePrerelease: boolean = false, downloadUrl?: string) {
+  return invokeCommand<string>('download_app_update', { includePrerelease, downloadUrl })
+}
+
+/** 安装应用更新 */
+export async function installAppUpdate(updateFile: string) {
+  return invokeCommand<void>('install_app_update', { updateFile })
+}
+
+/** 根据 tag 更新自身（一体化更新流程） */
+export async function updateSelfByTag(tag: string) {
+  return invokeCommand<void>('update_self_by_tag', { tag })
+}
+
 /** 获取可用的固件下载源 */
 export async function getAvailableFirmwareSources() {
   return invokeCommand<Array<[string, string]>>('get_available_firmware_sources')
