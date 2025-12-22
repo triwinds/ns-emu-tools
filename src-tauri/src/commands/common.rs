@@ -229,58 +229,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
     // Send started event
     let _ = window.emit("installation-event", ProgressEvent::Started { steps: steps.clone() });
 
-    // Step 1: Load keys
-    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "load_keys".to_string(),
-            title: "加载密钥文件".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: String::new(),
-            eta: String::new(),
-            error: None,
-        },
-    });
-
-    // 尝试自动加载密钥（如果尚未加载）
-    if !crate::services::keys::is_keys_loaded() {
-        if let Err(e) = auto_load_keys(&emu_type) {
-            info!("自动加载密钥失败: {}，将尝试不解密读取", e);
-            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "load_keys".to_string(),
-                    title: "加载密钥文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: Some(format!("加载密钥失败: {}", e)),
-                },
-            });
-            let _ = window.emit("installation-event", ProgressEvent::Finished {
-                success: false,
-                message: Some(format!("加载密钥失败: {}", e))
-            });
-            return Err(e);
-        }
-    }
-
-    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "load_keys".to_string(),
-            title: "加载密钥文件".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: String::new(),
-            eta: String::new(),
-            error: None,
-        },
-    });
-
-    // Step 2 & 3: Find NCA and extract version
+    // Step 2 & 3: Find NCA and extract version (keys are loaded in detect functions)
     let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
         step: ProgressStep {
             id: "find_nca".to_string(),
@@ -296,12 +245,12 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
 
     let result = match emu_type.as_str() {
         "yuzu" => {
-            crate::services::firmware::detect_yuzu_firmware_version()
+            crate::services::firmware::detect_yuzu_firmware_version(Some(&window))
                 .await
                 .map_err(|e| e.to_string())
         }
         "ryujinx" => {
-            crate::services::firmware::detect_ryujinx_firmware_version()
+            crate::services::firmware::detect_ryujinx_firmware_version(Some(&window))
                 .await
                 .map_err(|e| e.to_string())
         }
@@ -378,74 +327,6 @@ pub fn load_keys(path: String) -> Result<(), String> {
 #[command]
 pub fn is_keys_loaded() -> bool {
     crate::services::keys::is_keys_loaded()
-}
-
-/// 自动查找并加载密钥文件
-fn auto_load_keys(emu_type: &str) -> Result<(), String> {
-    let possible_paths = get_possible_key_paths(emu_type);
-
-    for path in possible_paths {
-        if path.exists() {
-            info!("找到密钥文件: {}", path.display());
-            match crate::services::keys::load_keys(&path) {
-                Ok(_) => {
-                    info!("成功加载密钥文件");
-                    return Ok(());
-                }
-                Err(e) => {
-                    info!("加载密钥文件失败: {}", e);
-                    continue;
-                }
-            }
-        }
-    }
-
-    Err("未找到有效的密钥文件".to_string())
-}
-
-/// 获取可能的密钥文件路径
-fn get_possible_key_paths(emu_type: &str) -> Vec<std::path::PathBuf> {
-    let mut paths = Vec::new();
-
-    // Yuzu/Eden/Citron 密钥路径
-    if emu_type == "yuzu" {
-        // Windows: %APPDATA%/yuzu/keys/prod.keys
-        if let Some(data_local) = dirs::data_local_dir() {
-            paths.push(data_local.join("yuzu").join("keys").join("prod.keys"));
-        }
-        // Linux: ~/.local/share/yuzu/keys/prod.keys
-        if let Some(home) = dirs::home_dir() {
-            paths.push(home.join(".local/share/yuzu/keys/prod.keys"));
-        }
-        // Portable mode
-        let config = crate::config::CONFIG.read();
-        let yuzu_path = &config.yuzu.yuzu_path;
-        paths.push(yuzu_path.join("user").join("keys").join("prod.keys"));
-    }
-
-    // Ryujinx 密钥路径
-    if emu_type == "ryujinx" {
-        // Windows: %APPDATA%/Ryujinx/system/prod.keys
-        if let Some(data_dir) = dirs::data_dir() {
-            paths.push(data_dir.join("Ryujinx").join("system").join("prod.keys"));
-        }
-        // Linux: ~/.config/Ryujinx/system/prod.keys
-        if let Some(home) = dirs::home_dir() {
-            paths.push(home.join(".config/Ryujinx/system/prod.keys"));
-        }
-        // Portable mode
-        let config = crate::config::CONFIG.read();
-        let ryujinx_path = &config.ryujinx.path;
-        paths.push(ryujinx_path.join("portable").join("system").join("prod.keys"));
-    }
-
-    // 通用路径（两种模拟器都会尝试）
-    if let Some(home) = dirs::home_dir() {
-        // ~/.switch/prod.keys (常见的密钥存放位置)
-        paths.push(home.join(".switch").join("prod.keys"));
-    }
-
-    paths
 }
 
 /// 下载应用更新

@@ -3,6 +3,8 @@
 //! 业务逻辑层，处理核心功能
 
 pub mod aria2;
+pub mod cheats;
+pub mod cheats_parser;
 pub mod crypto;
 pub mod doh;
 pub mod firmware;
@@ -30,6 +32,7 @@ pub mod notifier {
 }
 
 pub use aria2::*;
+pub use cheats::*;
 pub use doh::*;
 pub use firmware::*;
 pub use nca::*;

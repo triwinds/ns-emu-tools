@@ -89,6 +89,7 @@ import type {CheatFileInfo, CheatGameInfo, CheatItem, CommonResponse} from "@/ty
 import {useAppStore} from "@/stores/app";
 import md from "@/utils/markdown";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
+import {invoke} from "@tauri-apps/api/core";
 
 let cheatsInited = ref(false)
 let cheatsFolders = ref<CheatGameInfo[]>([])
@@ -126,7 +127,7 @@ onUnmounted(() => {
 })
 
 async function scanCheatsFolders() {
-  let resp = await window.eel.scan_all_cheats_folder()()
+  let resp = await invoke<CommonResponse<CheatGameInfo[]>>('scan_all_cheats_folder')
   if (resp.code === 0 && resp.data) {
     cheatsFolders.value = resp.data
     loadGameData().then(gameData => {
@@ -155,52 +156,51 @@ function concatFolderItemName(item: CheatGameInfo) {
   return `[${item.game_id}] ${gameName}`
 }
 
-function listAllCheatFilesFromFolder(selectedFolder: string) {
-  window.eel.list_all_cheat_files_from_folder(selectedFolder)((resp: CommonResponse<CheatFileInfo[]>) => {
-    if (resp.code === 0 && resp.data) {
-      cheatFiles.value = resp.data
-      selectedCheatFile.value = resp.data[0]?.path ?? ''
-    } else {
-      cheatsFolders.value = []
-      selectedCheatFile.value = ''
-    }
+async function listAllCheatFilesFromFolder(selectedFolder: string) {
+  const resp = await invoke<CommonResponse<CheatFileInfo[]>>('list_all_cheat_files_from_folder', {
+    folderPath: selectedFolder
   })
+  if (resp.code === 0 && resp.data) {
+    cheatFiles.value = resp.data
+    selectedCheatFile.value = resp.data[0]?.path ?? ''
+  } else {
+    cheatFiles.value = []
+    selectedCheatFile.value = ''
+  }
 }
 
-function loadCheatChunkInfo(selectedCheatFile: string) {
+async function loadCheatChunkInfo(selectedCheatFile: string) {
   cheatItems.value = []
-  window.eel.load_cheat_chunk_info(selectedCheatFile)((resp: CommonResponse<CheatItem[]>) => {
-    if (resp.code === 0 && resp.data) {
-      cheatItems.value = resp.data
-    }
+  const resp = await invoke<CommonResponse<CheatItem[]>>('load_cheat_chunk_info', {
+    cheatFilePath: selectedCheatFile
   })
-  // console.log(selectedCheatFile)
-  // let test = []
-  // for (let i = 0; i < 100; i++) {
-  //   test.push({title: "title " + i, enable: true})
-  // }
-  // cheatItems = test
+  if (resp.code === 0 && resp.data) {
+    cheatItems.value = resp.data
+  }
 }
 
-function saveSelectedCheats() {
+async function saveSelectedCheats() {
   if (!cheatItems.value) {
     return
   }
   let enabledTitles = cheatItems.value.filter(d => d.enable).map(d => d.title)
-  window.eel.update_current_cheats(enabledTitles, selectedCheatFile.value)((resp: CommonResponse) => {
-    if (resp.code === 0) {
-      cds.appendConsoleMessage('保存成功')
-      cds.showConsoleDialog()
-    }
+  const resp = await invoke<CommonResponse>('update_current_cheats', {
+    enableTitles: enabledTitles,
+    cheatFilePath: selectedCheatFile.value
   })
+  if (resp.code === 0) {
+    cds.appendConsoleMessage('保存成功')
+    cds.showConsoleDialog()
+  }
 }
 
-function openCheatModFolder() {
-  window.eel.open_cheat_mod_folder(selectedFolder.value)((resp: CommonResponse) => {
-    if (resp.code === 0) {
-      cds.appendConsoleMessage("打开文件夹成功")
-    }
+async function openCheatModFolder() {
+  const resp = await invoke<CommonResponse>('open_cheat_mod_folder', {
+    folderPath: selectedFolder.value
   })
+  if (resp.code === 0) {
+    cds.appendConsoleMessage("打开文件夹成功")
+  }
 }
 
 function updateAllItemState(state: boolean) {

@@ -121,6 +121,12 @@ fn main() {
             commands::ryujinx::ask_and_update_ryujinx_path_command,
             commands::ryujinx::detect_ryujinx_version_command,
             commands::ryujinx::cancel_ryujinx_download_command,
+            // Cheats commands
+            commands::cheats::scan_all_cheats_folder,
+            commands::cheats::list_all_cheat_files_from_folder,
+            commands::cheats::load_cheat_chunk_info,
+            commands::cheats::update_current_cheats,
+            commands::cheats::open_cheat_mod_folder,
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 应用程序时出错");

@@ -440,7 +440,9 @@ pub fn get_ryujinx_keys_path() -> PathBuf {
 }
 
 /// 检测 Yuzu 固件版本
-pub async fn detect_yuzu_firmware_version() -> AppResult<String> {
+pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> AppResult<String> {
+    use tauri::Emitter;
+
     info!("开始检测 Yuzu 固件版本");
 
     let firmware_path = get_yuzu_firmware_path();
@@ -452,18 +454,77 @@ pub async fn detect_yuzu_firmware_version() -> AppResult<String> {
         )));
     }
 
+    // Step 1: Load keys
+    if let Some(win) = window {
+        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "load_keys".to_string(),
+                title: "加载密钥文件".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: String::new(),
+                eta: String::new(),
+                error: None,
+            },
+        });
+    }
+
     // 加载 Yuzu 的 key 文件
     // 遵循 Python 实现：使用各个模拟器自己的 key，而不是自动查找别的模拟器的 key
     let key_path = get_yuzu_keys_path();
     if !key_path.exists() {
-        return Err(AppError::FileNotFound(format!(
-            "未找到 Yuzu keys 文件: {}",
-            key_path.display()
-        )));
+        let err_msg = format!("未找到 Yuzu keys 文件: {}", key_path.display());
+        if let Some(win) = window {
+            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: Some(err_msg.clone()),
+                },
+            });
+        }
+        return Err(AppError::FileNotFound(err_msg));
     }
 
     info!("加载 Yuzu keys: {}", key_path.display());
-    crate::services::keys::load_keys(&key_path)?;
+    if let Err(e) = crate::services::keys::load_keys(&key_path) {
+        if let Some(win) = window {
+            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: Some(e.to_string()),
+                },
+            });
+        }
+        return Err(e);
+    }
+
+    if let Some(win) = window {
+        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "load_keys".to_string(),
+                title: "加载密钥文件".to_string(),
+                status: ProgressStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: String::new(),
+                eta: String::new(),
+                error: None,
+            },
+        });
+    }
 
     // 查找系统版本归档 NCA 文件
     let nca_path = crate::services::nca::find_system_version_nca(&firmware_path)?;
@@ -493,7 +554,9 @@ pub async fn detect_yuzu_firmware_version() -> AppResult<String> {
 }
 
 /// 检测 Ryujinx 固件版本
-pub async fn detect_ryujinx_firmware_version() -> AppResult<String> {
+pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> AppResult<String> {
+    use tauri::Emitter;
+
     info!("开始检测 Ryujinx 固件版本");
 
     let firmware_path = get_ryujinx_firmware_path();
@@ -505,18 +568,77 @@ pub async fn detect_ryujinx_firmware_version() -> AppResult<String> {
         )));
     }
 
+    // Step 1: Load keys
+    if let Some(win) = window {
+        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "load_keys".to_string(),
+                title: "加载密钥文件".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: String::new(),
+                eta: String::new(),
+                error: None,
+            },
+        });
+    }
+
     // 加载 Ryujinx 的 key 文件
     // 遵循 Python 实现：使用各个模拟器自己的 key，而不是自动查找别的模拟器的 key
     let key_path = get_ryujinx_keys_path();
     if !key_path.exists() {
-        return Err(AppError::FileNotFound(format!(
-            "未找到 Ryujinx keys 文件: {}",
-            key_path.display()
-        )));
+        let err_msg = format!("未找到 Ryujinx keys 文件: {}", key_path.display());
+        if let Some(win) = window {
+            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: Some(err_msg.clone()),
+                },
+            });
+        }
+        return Err(AppError::FileNotFound(err_msg));
     }
 
     info!("加载 Ryujinx keys: {}", key_path.display());
-    crate::services::keys::load_keys(&key_path)?;
+    if let Err(e) = crate::services::keys::load_keys(&key_path) {
+        if let Some(win) = window {
+            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: Some(e.to_string()),
+                },
+            });
+        }
+        return Err(e);
+    }
+
+    if let Some(win) = window {
+        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "load_keys".to_string(),
+                title: "加载密钥文件".to_string(),
+                status: ProgressStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: String::new(),
+                eta: String::new(),
+                error: None,
+            },
+        });
+    }
 
     // 查找系统版本归档 NCA 文件（Ryujinx 格式）
     let nca_path = crate::services::nca::find_system_version_nca_ryujinx(&firmware_path)?;
@@ -795,7 +917,7 @@ mod tests {
 
         println!("\n========== 完整测试: Ryujinx 固件版本检测流程 ==========\n");
 
-        match detect_ryujinx_firmware_version().await {
+        match detect_ryujinx_firmware_version(None).await {
             Ok(version) => {
                 println!("✓ 检测成功!");
                 println!("  固件版本: {}", version);
