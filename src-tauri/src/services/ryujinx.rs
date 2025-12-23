@@ -34,24 +34,31 @@ static CURRENT_DOWNLOAD_GID: RwLock<Option<String>> = RwLock::new(None);
 /// # 返回
 /// 下载 URL
 async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResult<String> {
+    debug!("获取 Ryujinx {} 版本 {} 的下载链接", branch, target_version);
     let release_info = get_ryujinx_release_info_by_version(target_version, branch).await?;
 
     if release_info.tag_name.is_empty() {
+        warn!("未找到 Ryujinx {} 版本: {}", branch, target_version);
         return Err(AppError::Emulator(format!(
             "未找到 Ryujinx {} 版本: {}",
             branch, target_version
         )));
     }
 
+    debug!("找到版本: {}, 资源数量: {}", release_info.tag_name, release_info.assets.len());
+
     // 查找 Windows x64 版本
     for asset in &release_info.assets {
         let name = asset.name.to_lowercase();
+        debug!("检查资源: {} (size: {})", asset.name, asset.size);
         if name.starts_with("ryujinx-") && name.ends_with("-win_x64.zip") {
             let url = get_final_url(&asset.download_url);
+            info!("选择下载资源: {}, URL: {}", asset.name, url);
             return Ok(url);
         }
     }
 
+    warn!("未找到合适的下载资源 for {} [{}]", branch, target_version);
     Err(AppError::Emulator(format!(
         "未找到 Ryujinx {} [{}] 版本的下载链接",
         branch, target_version
@@ -62,16 +69,20 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
 ///
 /// 优先返回 Ryujinx.Ava.exe，如果不存在则返回 Ryujinx.exe
 fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
+    debug!("查找 Ryujinx 可执行文件，路径: {}", ryujinx_path.display());
     let ava_exe = ryujinx_path.join(RYUJINX_AVA_EXE);
     if ava_exe.exists() {
+        debug!("找到 Ryujinx.Ava.exe: {}", ava_exe.display());
         return Some(ava_exe);
     }
 
     let exe = ryujinx_path.join(RYUJINX_EXE);
     if exe.exists() {
+        debug!("找到 Ryujinx.exe: {}", exe.display());
         return Some(exe);
     }
 
+    warn!("未找到 Ryujinx 可执行文件在: {}", ryujinx_path.display());
     None
 }
 
@@ -81,18 +92,22 @@ fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
 /// - Ryujinx.Ava.exe -> ava
 /// - Ryujinx.exe -> mainline
 pub fn detect_current_branch() -> String {
+    debug!("检测 Ryujinx 当前分支");
     let config = get_config();
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
 
     if let Some(exe_path) = get_ryujinx_exe_path_internal(&ryujinx_path) {
         if exe_path.file_name().unwrap().to_string_lossy().contains("Ava") {
+            debug!("通过文件名检测到分支: ava");
             return "ava".to_string();
         } else {
+            debug!("通过文件名检测到分支: mainline");
             return "mainline".to_string();
         }
     }
 
     // 默认返回配置中的分支
+    debug!("使用配置中的分支: {}", config.ryujinx.branch);
     config.ryujinx.branch.clone()
 }
 
@@ -248,16 +263,19 @@ where
     *CURRENT_DOWNLOAD_GID.write() = Some(gid.clone());
 
     info!("下载任务已添加，GID: {}", gid);
+    debug!("开始轮询下载进度");
 
     // 轮询下载进度
     let on_event_clone = on_event.clone();
     let poll_interval = Duration::from_millis(500);
+    let mut poll_count = 0;
     let package_path = loop {
         tokio::time::sleep(poll_interval).await;
 
         let progress = match aria2.get_download_progress(&gid).await {
             Ok(p) => p,
             Err(e) => {
+                warn!("获取下载进度失败 [GID: {}]: {}", gid, e);
                 *CURRENT_DOWNLOAD_GID.write() = None;
                 on_event_clone(ProgressEvent::StepUpdate {
                     step: ProgressStep {
@@ -275,6 +293,15 @@ where
             }
         };
 
+        poll_count += 1;
+        // 每 10 次轮询打印一次 debug 日志（避免日志过多）
+        if poll_count % 10 == 0 {
+            debug!(
+                "下载进度 [GID: {}]: {:.1}%, 速度: {}, 状态: {:?}",
+                gid, progress.percentage, progress.speed_string(), progress.status
+            );
+        }
+
         // 发送进度更新
         on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
@@ -291,21 +318,27 @@ where
 
         match progress.status {
             crate::services::aria2::Aria2DownloadStatus::Complete => {
+                info!("下载完成 [GID: {}]", gid);
                 // 从 aria2 获取实际文件路径
                 let status = aria2.get_download_status(&gid).await?;
                 let path = status
                     .files
                     .first()
                     .map(|f| PathBuf::from(&f.path))
-                    .ok_or_else(|| AppError::Aria2("无法获取下载文件路径".to_string()))?;
+                    .ok_or_else(|| {
+                        warn!("无法获取下载文件路径");
+                        AppError::Aria2("无法获取下载文件路径".to_string())
+                    })?;
 
                 // 清除 GID
                 *CURRENT_DOWNLOAD_GID.write() = None;
 
                 info!("下载完成: {}", path.display());
+                debug!("下载文件大小: {} bytes", progress.total);
                 break path;
             }
             crate::services::aria2::Aria2DownloadStatus::Error => {
+                warn!("下载失败 [GID: {}]", gid);
                 *CURRENT_DOWNLOAD_GID.write() = None;
 
                 // 获取详细错误信息
@@ -313,6 +346,7 @@ where
                     Ok(status) => {
                         let error_code = status.error_code.as_deref().unwrap_or("未知");
                         let error_msg = status.error_message.as_deref().unwrap_or("未知错误");
+                        debug!("下载失败详情: 错误码={}, 错误信息={}", error_code, error_msg);
                         format!("下载失败 (错误码: {}): {}", error_code, error_msg)
                     }
                     Err(_) => "下载失败".to_string(),
@@ -333,6 +367,7 @@ where
                 return Err(AppError::Aria2(error_message));
             }
             crate::services::aria2::Aria2DownloadStatus::Removed => {
+                info!("下载已取消 [GID: {}]", gid);
                 *CURRENT_DOWNLOAD_GID.write() = None;
                 on_event_clone(ProgressEvent::StepUpdate {
                     step: ProgressStep {
@@ -381,7 +416,9 @@ where
 
     // 解压到临时目录
     let tmp_dir = std::env::temp_dir().join("ryujinx-install");
+    debug!("准备解压到临时目录: {}", tmp_dir.display());
     if tmp_dir.exists() {
+        debug!("清理已存在的临时目录");
         if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
@@ -415,6 +452,9 @@ where
     }
 
     info!("解压 Ryujinx 文件到: {}", tmp_dir.display());
+    debug!("解压包路径: {}, 大小: {} bytes",
+        package_path.display(),
+        package_path.metadata().map(|m| m.len()).unwrap_or(0));
     if let Err(e) = uncompress(&package_path, &tmp_dir, false) {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
@@ -459,6 +499,7 @@ where
     });
 
     // 清理旧文件并安装
+    debug!("清理旧 Ryujinx 文件");
     if let Err(e) = clear_ryujinx_folder(&ryujinx_path) {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
@@ -477,7 +518,9 @@ where
 
     // 复制文件
     let ryujinx_tmp_dir = tmp_dir.join("publish");
-    info!("复制 Ryujinx 文件到: {}", ryujinx_path.display());
+    info!("复制 Ryujinx 文件从: {} 到: {}",
+        ryujinx_tmp_dir.display(), ryujinx_path.display());
+    debug!("检查解压后的 publish 目录: {}", ryujinx_tmp_dir.display());
 
     if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
         on_event(ProgressEvent::StepUpdate {
@@ -637,12 +680,14 @@ fn copy_dir_all(src: &Path, dst: &Path) -> AppResult<()> {
 
 /// 获取 Ryujinx 用户文件夹路径
 pub fn get_ryujinx_user_folder() -> PathBuf {
+    debug!("获取 Ryujinx 用户文件夹路径");
     let config = get_config();
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
 
     // 检查是否使用 portable 模式
     let portable_path = ryujinx_path.join("portable");
     if portable_path.exists() {
+        debug!("使用 portable 模式: {}", portable_path.display());
         return portable_path;
     }
 
@@ -651,11 +696,13 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
         let appdata_path = PathBuf::from(appdata);
         let ryujinx_appdata = appdata_path.join("Ryujinx");
         if ryujinx_appdata.exists() {
+            debug!("使用 AppData 目录: {}", ryujinx_appdata.display());
             return ryujinx_appdata;
         }
     }
 
     // 默认创建 portable 目录
+    debug!("创建默认 portable 目录: {}", portable_path.display());
     std::fs::create_dir_all(&portable_path).ok();
     portable_path
 }
@@ -977,6 +1024,7 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
 
     let config = get_config();
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+    debug!("Ryujinx 路径: {}", ryujinx_path.display());
 
     let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
         Some(path) => path,
@@ -991,12 +1039,16 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
 
     // 启动程序
     info!("启动 Ryujinx: {}", exe_path.display());
+    debug!("检测版本时启动 Ryujinx");
     let mut child = Command::new(&exe_path)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()?;
 
+    debug!("Ryujinx 进程 ID: {}", child.id());
+
     // 等待窗口创建
+    debug!("等待窗口创建...");
     tokio::time::sleep(Duration::from_secs(3)).await;
 
     let mut version: Option<String> = None;
@@ -1076,7 +1128,8 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
         }
 
         // 多次尝试，等待窗口出现
-        for _ in 0..30 {
+        debug!("开始枚举窗口标题以检测版本");
+        for i in 0..30 {
             unsafe {
                 let _ = EnumWindows(
                     Some(enum_proc),
@@ -1088,7 +1141,12 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
             if guard.0.is_some() {
                 version = guard.0.clone();
                 branch = guard.1.clone();
+                debug!("第 {} 次尝试找到窗口标题，检测到版本: {:?}, 分支: {:?}", i + 1, version, branch);
                 break;
+            }
+
+            if i % 5 == 0 {
+                debug!("第 {} 次尝试，尚未找到窗口标题", i + 1);
             }
 
             std::thread::sleep(Duration::from_millis(500));
@@ -1096,19 +1154,23 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
     }
 
     // 结束进程
+    debug!("结束 Ryujinx 进程");
     let _ = child.kill();
     let _ = child.wait();
 
     // 更新配置
     if let Some(ref v) = version {
         info!("检测到 Ryujinx 版本: {}, 分支: {}", v, branch);
+        debug!("更新配置文件");
 
         let mut cfg = CONFIG.write();
         cfg.ryujinx.version = Some(v.clone());
         cfg.ryujinx.branch = branch.clone();
         cfg.save()?;
+        debug!("配置文件已保存");
     } else {
         warn!("未能检测到 Ryujinx 版本");
+        debug!("可能的原因: 窗口标题不匹配或窗口创建延迟过长");
     }
 
     Ok((version, branch))

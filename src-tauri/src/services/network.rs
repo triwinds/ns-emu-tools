@@ -240,6 +240,7 @@ pub fn create_client() -> AppResult<Client> {
 
 /// 创建带超时的 HTTP 客户端
 pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
+    debug!("创建 HTTP 客户端，超时: {:?}", timeout);
     let mut builder = Client::builder()
         .user_agent(user_agent())
         .timeout(timeout)
@@ -248,13 +249,21 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
     // 配置代理
     if let Some(proxy_url) = get_proxy_url() {
         if !proxy_url.is_empty() {
-            debug!("使用代理: {}", proxy_url);
-            let proxy = Proxy::all(&proxy_url).map_err(|e| AppError::from(e))?;
+            info!("使用代理创建客户端: {}", proxy_url);
+            let proxy = Proxy::all(&proxy_url).map_err(|e| {
+                warn!("创建代理失败: {}", e);
+                AppError::from(e)
+            })?;
             builder = builder.proxy(proxy);
         }
+    } else {
+        debug!("不使用代理创建客户端");
     }
 
-    builder.build().map_err(|e| AppError::from(e))
+    builder.build().map_err(|e| {
+        warn!("创建 HTTP 客户端失败: {}", e);
+        AppError::from(e)
+    })
 }
 
 /// 创建内存缓存客户端（用于一般请求）
@@ -305,11 +314,22 @@ pub fn get_proxy_url() -> Option<String> {
         config.setting.network.proxy.clone()
     };
 
+    debug!("配置的代理设置: {}", proxy);
+
     if proxy == "system" {
-        get_system_proxy()
+        debug!("使用系统代理");
+        let system_proxy = get_system_proxy();
+        if let Some(ref p) = system_proxy {
+            info!("检测到系统代理: {}", p);
+        } else {
+            debug!("未检测到系统代理");
+        }
+        system_proxy
     } else if proxy.is_empty() {
+        debug!("未配置代理");
         None
     } else if is_valid_url(&proxy) {
+        info!("使用自定义代理: {}", proxy);
         Some(proxy.clone())
     } else {
         warn!("无效的代理 URL: {}", proxy);
@@ -448,8 +468,11 @@ pub fn get_github_download_url(origin_url: &str) -> String {
         config.setting.network.github_download_mirror.clone()
     };
 
+    debug!("获取 GitHub 下载 URL，原始 URL: {}", origin_url);
+    debug!("配置的镜像: {}", mirror);
+
     if mirror.is_empty() || mirror == "direct" {
-        debug!("使用原始 URL: {}", origin_url);
+        info!("使用直连 GitHub: {}", origin_url);
         return origin_url.to_string();
     }
 
@@ -458,12 +481,14 @@ pub fn get_github_download_url(origin_url: &str) -> String {
         let mut rng = rand::rng();
         if let Some(choice) = GITHUB_US_MIRRORS.choose(&mut rng) {
             info!("使用 GitHub 镜像: {}", choice.description);
-            return origin_url.replace("https://github.com", &choice.url);
+            let new_url = origin_url.replace("https://github.com", &choice.url);
+            debug!("镜像 URL: {}", new_url);
+            return new_url;
         }
     }
 
     let new_url = origin_url.replace("https://github.com", &mirror);
-    debug!("使用镜像 URL: {}", new_url);
+    info!("使用自定义镜像 URL: {}", new_url);
     new_url
 }
 
@@ -530,30 +555,41 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
         config.setting.network.github_api_mode.clone()
     };
 
+    debug!("GitHub API 模式: {}", github_api_mode);
+
     let fallback = *GITHUB_API_FALLBACK_FLAG.read();
+    debug!("API 回退标志: {}", fallback);
 
     // 如果不是 CDN 模式且没有回退标志，尝试直连
     if github_api_mode != "cdn" && !fallback {
+        info!("尝试直连 GitHub API");
         // 使用缓存客户端进行直连
         let cached_client = get_cached_client();
         match cached_client.get(url).send().await {
             Ok(resp) => {
+                debug!("直连请求成功，HTTP 状态: {}", resp.status());
                 if let Ok(data) = resp.json::<serde_json::Value>().await {
                     // 检查是否触发 API 限制
                     if let Some(message) = data.get("message").and_then(|m| m.as_str()) {
                         if message.contains("API rate limit exceeded") {
                             warn!("GitHub API 限制: {}", message);
+                            debug!("设置回退标志");
                             *GITHUB_API_FALLBACK_FLAG.write() = true;
                         } else {
+                            debug!("GitHub API 响应成功");
                             return Ok(data);
                         }
                     } else {
+                        debug!("GitHub API 响应成功");
                         return Ok(data);
                     }
+                } else {
+                    warn!("解析 JSON 响应失败，回退到 CDN");
                 }
             }
             Err(e) => {
                 warn!("直连 GitHub API 失败: {}", e);
+                debug!("设置回退标志");
                 *GITHUB_API_FALLBACK_FLAG.write() = true;
             }
         }
@@ -561,9 +597,18 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
 
     // 使用 CDN 和持久化缓存
     let cdn_url = get_override_url(url);
+    info!("使用 CDN 请求 GitHub API: {}", cdn_url);
     let durable_cached_client = get_durable_cached_client();
-    let resp = durable_cached_client.get(&cdn_url).send().await.map_err(|e| AppError::Unknown(e.to_string()))?;
-    let data = resp.json::<serde_json::Value>().await.map_err(|e| AppError::Unknown(e.to_string()))?;
+    let resp = durable_cached_client.get(&cdn_url).send().await.map_err(|e| {
+        warn!("CDN 请求失败: {}", e);
+        AppError::Unknown(e.to_string())
+    })?;
+    debug!("CDN 请求成功，HTTP 状态: {}", resp.status());
+    let data = resp.json::<serde_json::Value>().await.map_err(|e| {
+        warn!("解析 CDN 响应失败: {}", e);
+        AppError::Unknown(e.to_string())
+    })?;
+    debug!("CDN GitHub API 响应成功");
     Ok(data)
 }
 
@@ -576,20 +621,29 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     // 检查缓存
     if let Some(cached_data) = GIT_API_JSON_CACHE.get(url).await {
         info!("✓ 缓存命中 (手动缓存): {}", url);
+        debug!("使用缓存数据，跳过网络请求");
         return Ok(cached_data);
     }
 
     info!("✗ 缓存未命中 (手动缓存): {}", url);
+    debug!("创建新的网络请求");
 
     // 使用普通客户端发送请求（不使用 HTTP 缓存中间件）
     let client = create_client()?;
+    debug!("发送 GET 请求到 Git API");
     let resp = client
         .get(url)
         .send()
         .await
-        .map_err(|e| AppError::Unknown(e.to_string()))?;
+        .map_err(|e| {
+            warn!("Git API 请求失败: {}", e);
+            AppError::Unknown(e.to_string())
+        })?;
+
+    debug!("Git API 响应状态: {}", resp.status());
 
     if !resp.status().is_success() {
+        warn!("Git API 请求失败，HTTP 状态: {}", resp.status());
         return Err(AppError::Unknown(format!(
             "Git API 请求失败: {} - {}",
             resp.status(),

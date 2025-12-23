@@ -282,10 +282,12 @@ impl Aria2Manager {
     /// 启动 aria2 守护进程
     pub async fn start(&self) -> AppResult<()> {
         if self.started.load(Ordering::SeqCst) {
+            debug!("aria2 守护进程已经在运行，跳过启动");
             return Ok(());
         }
 
         // 查找可用端口
+        debug!("查找可用端口用于 aria2 RPC");
         let port = find_available_port()?;
         *self.port.write() = port;
 
@@ -317,13 +319,19 @@ impl Aria2Manager {
 
         // 根据配置添加选项
         let config = get_config();
+        debug!("aria2 配置: disable_ipv6={}, use_doh={}",
+            config.setting.download.disable_aria2_ipv6,
+            config.setting.network.use_doh);
         if config.setting.download.disable_aria2_ipv6 {
             args.push("--disable-ipv6=true".to_string());
+            debug!("禁用 IPv6");
             if config.setting.network.use_doh {
                 args.push("--async-dns-server=223.5.5.5,119.29.29.29".to_string());
+                debug!("使用 DNS over HTTPS (IPv4)");
             }
         } else if config.setting.network.use_doh {
             args.push("--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29".to_string());
+            debug!("使用 DNS over HTTPS (IPv4+IPv6)");
         }
 
         // 删除旧日志
@@ -370,9 +378,11 @@ impl Aria2Manager {
         *self.process.write() = Some(process);
 
         // 等待 aria2 启动
+        debug!("等待 aria2 进程启动...");
         tokio::time::sleep(Duration::from_millis(500)).await;
 
         // 连接 WebSocket
+        debug!("尝试连接 aria2 WebSocket");
         self.connect().await?;
 
         self.started.store(true, Ordering::SeqCst);
@@ -391,6 +401,7 @@ impl Aria2Manager {
         // 重试连接
         let mut last_error = None;
         for i in 0..5 {
+            debug!("尝试连接 aria2 WebSocket，第 {} 次尝试", i + 1);
             match Client::connect(&url, Some(ARIA2_SECRET)).await {
                 Ok(client) => {
                     *self.client.lock().await = Some(client);
@@ -399,7 +410,7 @@ impl Aria2Manager {
                 }
                 Err(e) => {
                     last_error = Some(e);
-                    warn!("aria2 连接失败，重试 {}/5", i + 1);
+                    warn!("aria2 连接失败，重试 {}/5: {:?}", i + 1, last_error);
                     tokio::time::sleep(Duration::from_millis(500)).await;
                 }
             }
@@ -414,7 +425,10 @@ impl Aria2Manager {
     /// 确保客户端已连接
     async fn ensure_connected(&self) -> AppResult<()> {
         if self.client.lock().await.is_none() {
+            debug!("aria2 客户端未连接，尝试重新连接");
             self.connect().await?;
+        } else {
+            debug!("aria2 客户端已连接");
         }
         Ok(())
     }
@@ -537,12 +551,17 @@ impl Aria2Manager {
             .as_ref()
             .ok_or_else(|| AppError::Aria2("aria2 客户端未连接".to_string()))?;
 
+        debug!("调用 aria2 RPC addUri 方法");
         let gid = client
             .add_uri(vec![final_url.clone()], Some(task_options), None, None)
             .await
-            .map_err(|e| AppError::Aria2(format!("添加下载任务失败: {}", e)))?;
+            .map_err(|e| {
+                warn!("添加下载任务失败: {}", e);
+                AppError::Aria2(format!("添加下载任务失败: {}", e))
+            })?;
 
         info!("下载任务已添加，GID: {}", gid);
+        debug!("下载任务详情: filename={}, url={}", filename, final_url);
 
         // 记录活跃下载
         let filename = options
@@ -566,17 +585,30 @@ impl Aria2Manager {
         F: Fn(Aria2DownloadProgress) + Send + 'static,
     {
         let gid = self.download(url, options.clone()).await?;
+        debug!("开始等待下载完成，GID: {}", gid);
 
         // 轮询进度
         let poll_interval = Duration::from_millis(500);
+        let mut last_status = None;
         loop {
             tokio::time::sleep(poll_interval).await;
 
             let progress = self.get_download_progress(&gid).await?;
+
+            // 只在状态变化时打印 debug 日志
+            if last_status.as_ref() != Some(&progress.status) {
+                debug!(
+                    "下载状态变化 [GID: {}]: {:?} -> {:?}, 进度: {:.1}%",
+                    gid, last_status, progress.status, progress.percentage
+                );
+                last_status = Some(progress.status);
+            }
+
             on_progress(progress.clone());
 
             match progress.status {
                 Aria2DownloadStatus::Complete => {
+                    info!("下载完成 [GID: {}]", gid);
                     // 获取下载文件信息
                     let status = self.get_download_status(&gid).await?;
                     let path = status
@@ -588,6 +620,8 @@ impl Aria2Manager {
                         .file_name()
                         .map(|s| s.to_string_lossy().to_string())
                         .unwrap_or_default();
+
+                    debug!("下载文件路径: {}, 大小: {} bytes", path.display(), progress.total);
 
                     // 清理记录
                     self.active_downloads.write().remove(&gid);
@@ -605,6 +639,8 @@ impl Aria2Manager {
                     let error_code = status.error_code.map(|c| c.to_string()).unwrap_or_default();
                     let error_msg = status.error_message.clone().unwrap_or_default();
 
+                    warn!("下载失败 [GID: {}], 错误码: {}, 错误信息: {}", gid, error_code, error_msg);
+
                     // 清理记录
                     self.active_downloads.write().remove(&gid);
 
@@ -614,6 +650,7 @@ impl Aria2Manager {
                     )));
                 }
                 Aria2DownloadStatus::Removed => {
+                    info!("下载已取消 [GID: {}]", gid);
                     self.active_downloads.write().remove(&gid);
                     return Err(AppError::Aria2("下载已取消".to_string()));
                 }
@@ -684,6 +721,7 @@ impl Aria2Manager {
 
     /// 暂停下载
     pub async fn pause(&self, gid: &str) -> AppResult<()> {
+        debug!("暂停下载 [GID: {}]", gid);
         let client = self.client.lock().await;
         let client = client
             .as_ref()
@@ -692,13 +730,18 @@ impl Aria2Manager {
         client
             .pause(gid)
             .await
-            .map_err(|e| AppError::Aria2(format!("暂停下载失败: {}", e)))?;
+            .map_err(|e| {
+                warn!("暂停下载失败 [GID: {}]: {}", gid, e);
+                AppError::Aria2(format!("暂停下载失败: {}", e))
+            })?;
 
+        info!("下载已暂停 [GID: {}]", gid);
         Ok(())
     }
 
     /// 恢复下载
     pub async fn resume(&self, gid: &str) -> AppResult<()> {
+        debug!("恢复下载 [GID: {}]", gid);
         let client = self.client.lock().await;
         let client = client
             .as_ref()
@@ -707,13 +750,18 @@ impl Aria2Manager {
         client
             .unpause(gid)
             .await
-            .map_err(|e| AppError::Aria2(format!("恢复下载失败: {}", e)))?;
+            .map_err(|e| {
+                warn!("恢复下载失败 [GID: {}]: {}", gid, e);
+                AppError::Aria2(format!("恢复下载失败: {}", e))
+            })?;
 
+        info!("下载已恢复 [GID: {}]", gid);
         Ok(())
     }
 
     /// 取消下载
     pub async fn cancel(&self, gid: &str) -> AppResult<()> {
+        debug!("取消下载 [GID: {}]", gid);
         let client = self.client.lock().await;
         let client = client
             .as_ref()
@@ -722,9 +770,13 @@ impl Aria2Manager {
         client
             .remove(gid)
             .await
-            .map_err(|e| AppError::Aria2(format!("取消下载失败: {}", e)))?;
+            .map_err(|e| {
+                warn!("取消下载失败 [GID: {}]: {}", gid, e);
+                AppError::Aria2(format!("取消下载失败: {}", e))
+            })?;
 
         self.active_downloads.write().remove(gid);
+        info!("下载已取消 [GID: {}]", gid);
 
         Ok(())
     }
@@ -1102,11 +1154,14 @@ fn extract_aria2(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<Path
 
 /// 解压 ZIP 文件
 fn extract_zip(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
+    debug!("开始解压 ZIP 文件: {}", archive_path.display());
     let file = fs::File::open(archive_path)
         .map_err(|e| AppError::Aria2(format!("打开 ZIP 文件失败: {}", e)))?;
 
     let mut archive = zip::ZipArchive::new(file)
         .map_err(|e| AppError::Aria2(format!("读取 ZIP 文件失败: {}", e)))?;
+
+    debug!("ZIP 文件包含 {} 个条目", archive.len());
 
     let mut aria2c_path: Option<PathBuf> = None;
 
@@ -1119,6 +1174,7 @@ fn extract_zip(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBu
 
         // 查找 aria2c.exe
         if file_name.ends_with("aria2c.exe") {
+            debug!("找到 aria2c.exe: {}", file_name);
             let output_path = target_dir.join("aria2c.exe");
             let mut output_file = fs::File::create(&output_path)
                 .map_err(|e| AppError::Aria2(format!("创建输出文件失败: {}", e)))?;
@@ -1172,6 +1228,7 @@ fn find_aria2c_in_dir(dir: &PathBuf) -> AppResult<PathBuf> {
 
 /// 确保 aria2 已安装（如果没有则自动下载）
 pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
+    debug!("开始检查 aria2 安装状态");
     // 先尝试查找已安装的 aria2
     if let Ok(path) = try_find_aria2_path() {
         info!("找到已安装的 aria2: {}", path.display());
@@ -1181,6 +1238,7 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
     info!("未找到 aria2，开始自动下载");
 
     // 获取最新版本信息
+    debug!("获取 aria2 最新版本信息");
     let release = get_latest_aria2_release().await?;
 
     // 查找 Windows 64 位版本的资源
@@ -1200,6 +1258,9 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
     let archive_path = temp_dir.join(&asset.name);
     let install_dir = get_aria2_install_dir()?;
 
+    debug!("临时下载路径: {}", archive_path.display());
+    debug!("安装目标路径: {}", install_dir.display());
+
     // 下载
     download_aria2(&asset.browser_download_url, &archive_path).await?;
 
@@ -1207,6 +1268,7 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
     let aria2c_path = extract_aria2(&archive_path, &install_dir)?;
 
     // 清理临时文件
+    debug!("清理临时文件: {}", archive_path.display());
     let _ = fs::remove_file(&archive_path);
 
     info!("aria2 安装完成: {}", aria2c_path.display());

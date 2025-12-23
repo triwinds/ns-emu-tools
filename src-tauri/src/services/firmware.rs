@@ -39,26 +39,43 @@ pub async fn get_firmware_infos() -> AppResult<Vec<FirmwareInfo>> {
 /// 从 GitHub 获取固件信息
 pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
     info!("从 GitHub 获取固件信息");
+    debug!("请求固件 API: {}", GITHUB_FIRMWARE_API);
 
     let data = request_github_api(GITHUB_FIRMWARE_API).await?;
 
     let releases = data
         .as_array()
-        .ok_or_else(|| AppError::InvalidArgument("无效的 API 响应格式".to_string()))?;
+        .ok_or_else(|| {
+            debug!("API 响应格式无效，不是数组类型");
+            AppError::InvalidArgument("无效的 API 响应格式".to_string())
+        })?;
+
+    debug!("收到 {} 个发布版本", releases.len());
 
     let mut infos: Vec<FirmwareInfo> = Vec::new();
 
-    for release in releases {
+    for (idx, release) in releases.iter().enumerate() {
         let assets = match release["assets"].as_array() {
             Some(a) => a,
-            None => continue,
+            None => {
+                debug!("第 {} 个发布版本没有 assets", idx + 1);
+                continue;
+            }
         };
+
+        debug!("第 {} 个发布版本包含 {} 个 assets", idx + 1, assets.len());
 
         // 查找 zip 文件
         let target_asset = assets.iter().find(|asset| {
             asset["content_type"]
                 .as_str()
-                .map(|ct| ct.contains("zip"))
+                .map(|ct| {
+                    let is_zip = ct.contains("zip");
+                    if is_zip {
+                        debug!("找到 zip 资源: {}", asset["name"].as_str().unwrap_or("unknown"));
+                    }
+                    is_zip
+                })
                 .unwrap_or(false)
         });
 
@@ -68,6 +85,8 @@ pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
             let filename = asset["name"].as_str().unwrap_or_default();
             let size = asset["size"].as_u64().unwrap_or(0);
             let download_url = asset["browser_download_url"].as_str().unwrap_or_default();
+
+            debug!("添加固件: {} ({}), 大小: {} bytes", name, version, size);
 
             infos.push(FirmwareInfo {
                 name: name.to_string(),
@@ -79,7 +98,7 @@ pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
         }
     }
 
-    debug!("获取到 {} 个固件版本", infos.len());
+    info!("获取到 {} 个固件版本", infos.len());
     Ok(infos)
 }
 
@@ -109,8 +128,12 @@ where
     });
 
     let firmware_infos = match get_firmware_infos().await {
-        Ok(infos) => infos,
+        Ok(infos) => {
+            debug!("成功获取 {} 个固件信息", infos.len());
+            infos
+        }
         Err(e) => {
+            debug!("获取固件信息失败: {}", e);
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "fetch_firmware_info".to_string(),
@@ -133,9 +156,13 @@ where
         .collect();
 
     let target_info = match firmware_map.get(firmware_version) {
-        Some(info) => info,
+        Some(info) => {
+            debug!("找到目标固件: {}, 大小: {}", info.name, info.size);
+            info
+        }
         None => {
             let err_msg = format!("找不到固件版本: {}", firmware_version);
+            debug!("{}", err_msg);
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "fetch_firmware_info".to_string(),
@@ -182,6 +209,7 @@ where
     let url = target_info.url.clone();
 
     info!("下载固件: {}", url);
+    debug!("固件文件名: {}", target_info.filename);
 
     let aria2_manager = get_aria2_manager().await?;
     let options = Aria2DownloadOptions {
@@ -189,6 +217,8 @@ where
         use_github_mirror: url.contains("github.com"),
         ..Default::default()
     };
+
+    debug!("使用 GitHub 镜像: {}", url.contains("github.com"));
 
     let on_event_clone = on_event.clone();
     let result = match aria2_manager.download_and_wait(&url, options, move |progress| {

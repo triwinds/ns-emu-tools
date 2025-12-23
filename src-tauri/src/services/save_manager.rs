@@ -59,9 +59,12 @@ pub fn get_yuzu_save_path() -> PathBuf {
 
 /// 获取所有用户文件夹名（32位十六进制）
 fn get_all_user_ids() -> AppResult<Vec<String>> {
+    debug!("获取所有用户 ID");
     let save_path = get_yuzu_save_path();
+    debug!("存档路径: {}", save_path.display());
 
     if !save_path.exists() {
+        warn!("存档路径不存在: {}", save_path.display());
         return Ok(Vec::new());
     }
 
@@ -75,12 +78,14 @@ fn get_all_user_ids() -> AppResult<Vec<String>> {
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                 // 检查是否为 32 位十六进制字符串
                 if name.len() == 32 && name.chars().all(|c| c.is_ascii_hexdigit()) {
+                    debug!("找到用户文件夹: {}", name);
                     user_ids.push(name.to_uppercase());
                 }
             }
         }
     }
 
+    info!("找到 {} 个用户", user_ids.len());
     Ok(user_ids)
 }
 
@@ -132,10 +137,14 @@ pub fn get_users_in_save() -> AppResult<Vec<UserInfo>> {
 
 /// 列出指定用户的所有游戏存档
 pub fn list_all_games_by_user_folder(user_folder_name: &str) -> AppResult<Vec<GameSaveInfo>> {
+    info!("列出用户 {} 的所有游戏存档", user_folder_name);
     let save_path = get_yuzu_save_path();
     let user_save_folder = save_path.join(user_folder_name);
 
+    debug!("用户存档目录: {}", user_save_folder.display());
+
     if !user_save_folder.exists() {
+        warn!("用户存档目录不存在: {}", user_save_folder.display());
         return Ok(Vec::new());
     }
 
@@ -149,6 +158,7 @@ pub fn list_all_games_by_user_folder(user_folder_name: &str) -> AppResult<Vec<Ga
         if path.is_dir() {
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                 if game_id_re.is_match(name) {
+                    debug!("找到游戏存档: {}", name);
                     games.push(GameSaveInfo {
                         title_id: name.to_uppercase(),
                         folder: path.to_string_lossy().to_string(),
@@ -158,6 +168,7 @@ pub fn list_all_games_by_user_folder(user_folder_name: &str) -> AppResult<Vec<Ga
         }
     }
 
+    info!("找到 {} 个游戏存档", games.len());
     Ok(games)
 }
 
@@ -181,22 +192,32 @@ pub fn sizeof_fmt(num: u64) -> String {
 
 /// 备份存档文件夹
 pub fn backup_folder(folder_path: &str) -> AppResult<(PathBuf, u64)> {
+    info!("开始备份存档文件夹: {}", folder_path);
     let storage = STORAGE.read();
     let yuzu_save_backup_path = &storage.yuzu_save_backup_path;
+    debug!("备份目标路径: {}", yuzu_save_backup_path.display());
 
     // 确保备份目录存在
     if !yuzu_save_backup_path.exists() {
         info!("创建备份目录: {}", yuzu_save_backup_path.display());
         fs::create_dir_all(yuzu_save_backup_path)?;
+    } else {
+        debug!("备份目录已存在");
     }
 
     let folder_path = PathBuf::from(folder_path);
+    debug!("源文件夹路径: {}", folder_path.display());
 
     // 生成备份文件名: yuzu_{title_id}_{timestamp}.7z
     let folder_name = folder_path
         .file_name()
         .and_then(|n| n.to_str())
-        .ok_or_else(|| AppError::Unknown("无效的文件夹路径".to_string()))?;
+        .ok_or_else(|| {
+            warn!("无效的文件夹路径: {}", folder_path.display());
+            AppError::Unknown("无效的文件夹路径".to_string())
+        })?;
+
+    debug!("文件夹名称 (Title ID): {}", folder_name);
 
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -211,12 +232,16 @@ pub fn backup_folder(folder_path: &str) -> AppResult<(PathBuf, u64)> {
         folder_path.display(),
         backup_filepath.display()
     );
+    debug!("备份文件名: {}, 时间戳: {}", backup_filename, timestamp);
 
     // 压缩文件夹
+    debug!("开始压缩文件夹到 7z 格式");
     compress_folder_to_7z(&folder_path, &backup_filepath)?;
+    debug!("压缩完成");
 
     // 获取备份文件大小
     let file_size = fs::metadata(&backup_filepath)?.len();
+    debug!("备份文件大小: {} bytes", file_size);
 
     info!(
         "{} 备份完成, 大小: {}",
@@ -301,10 +326,13 @@ fn parse_backup_info(file: &Path) -> BackupInfo {
 
 /// 列出所有 Yuzu 备份
 pub fn list_all_yuzu_backups() -> AppResult<Vec<BackupInfo>> {
+    debug!("列出所有 Yuzu 备份");
     let storage = STORAGE.read();
     let backup_path = &storage.yuzu_save_backup_path;
+    debug!("备份路径: {}", backup_path.display());
 
     if !backup_path.exists() {
+        warn!("备份路径不存在: {}", backup_path.display());
         return Ok(Vec::new());
     }
 
@@ -317,19 +345,25 @@ pub fn list_all_yuzu_backups() -> AppResult<Vec<BackupInfo>> {
         if path.is_file() {
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                 if name.starts_with("yuzu_") && name.ends_with(".7z") {
-                    backups.push(parse_backup_info(&path));
+                    debug!("找到备份文件: {}", name);
+                    let backup_info = parse_backup_info(&path);
+                    debug!("解析备份信息: title_id={:?}, bak_time={:?}",
+                        backup_info.title_id, backup_info.bak_time);
+                    backups.push(backup_info);
                 }
             }
         }
     }
 
     // 按备份时间倒序排序
+    debug!("按时间倒序排序备份列表");
     backups.sort_by(|a, b| {
         let time_a = a.bak_time.unwrap_or(0);
         let time_b = b.bak_time.unwrap_or(0);
         time_b.cmp(&time_a)
     });
 
+    info!("找到 {} 个备份文件", backups.len());
     Ok(backups)
 }
 
@@ -338,9 +372,12 @@ pub fn restore_yuzu_save_from_backup(
     user_folder_name: &str,
     backup_path: &str,
 ) -> AppResult<()> {
+    info!("开始还原存档，用户: {}, 备份: {}", user_folder_name, backup_path);
     let backup_path = PathBuf::from(backup_path);
+    debug!("备份文件路径: {}", backup_path.display());
 
     // 检查是否为有效的 7z 文件
+    debug!("验证 7z 文件完整性");
     if !is_7z_file(&backup_path) {
         warn!("{} 看起来不是一个完整的 7z 文件", backup_path.display());
         return Err(AppError::Unknown(format!(
@@ -348,22 +385,31 @@ pub fn restore_yuzu_save_from_backup(
             backup_path.display()
         )));
     }
+    debug!("7z 文件验证通过");
 
     let backup_info = parse_backup_info(&backup_path);
     debug!("备份信息: {:?}", backup_info);
 
     let title_id = backup_info.title_id.ok_or_else(|| {
+        warn!("无法从备份文件名解析 title_id: {}", backup_path.display());
         AppError::Unknown("无法从备份文件名解析 title_id".to_string())
     })?;
+
+    debug!("解析到 Title ID: {}", title_id);
 
     let save_path = get_yuzu_save_path();
     let user_save_path = save_path.join(user_folder_name);
     let target_game_save_path = user_save_path.join(&title_id);
 
+    debug!("目标存档路径: {}", target_game_save_path.display());
+
     // 删除旧的存档目录
     if target_game_save_path.exists() {
         info!("正在清空目录 {}", target_game_save_path.display());
         fs::remove_dir_all(&target_game_save_path)?;
+        debug!("旧存档已删除");
+    } else {
+        debug!("目标目录不存在，无需删除");
     }
 
     info!(
@@ -372,7 +418,9 @@ pub fn restore_yuzu_save_from_backup(
     );
 
     // 解压备份
+    debug!("开始解压 7z 文件");
     crate::utils::archive::extract_7z(&backup_path, &user_save_path)?;
+    debug!("解压完成");
 
     info!("{} 还原完成", backup_path.display());
 

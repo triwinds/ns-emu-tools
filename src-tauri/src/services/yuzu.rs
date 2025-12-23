@@ -52,6 +52,7 @@ where
 {
     // 检查分支是否支持
     if !DOWNLOAD_AVAILABLE_BRANCH.contains(&branch) {
+        warn!("不支持的分支: {}, 支持的分支: {:?}", branch, DOWNLOAD_AVAILABLE_BRANCH);
         return Err(AppError::Emulator(format!(
             "只支持安装分支: {:?}",
             DOWNLOAD_AVAILABLE_BRANCH
@@ -65,9 +66,11 @@ where
     );
 
     // 获取版本信息
+    debug!("获取 {} 版本 {} 的发布信息", get_emu_name(branch), target_version);
     let release_info = get_yuzu_release_info_by_version(target_version, branch).await?;
 
     if release_info.tag_name.is_empty() {
+        warn!("未找到 {} 版本: {}", get_emu_name(branch), target_version);
         return Err(AppError::Emulator(format!(
             "未找到 {} 版本: {}",
             get_emu_name(branch),
@@ -75,35 +78,44 @@ where
         )));
     }
 
+    debug!("找到版本: {}, 资源数量: {}", release_info.tag_name, release_info.assets.len());
+
     // 查找下载 URL
     let mut download_url: Option<String> = None;
 
     for asset in &release_info.assets {
         let name = asset.name.to_lowercase();
+        debug!("检查资源: {} (size: {})", asset.name, asset.size);
 
         if name.ends_with(".7z") {
             download_url = Some(asset.download_url.clone());
+            debug!("选择 .7z 资源: {}", asset.name);
             break;
         } else if name.starts_with("windows-yuzu-ea-") && name.ends_with(".zip") {
             download_url = Some(asset.download_url.clone());
+            debug!("选择 Yuzu EA .zip 资源: {}", asset.name);
             break;
         } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
             download_url = Some(asset.download_url.clone());
+            debug!("选择 Eden .zip 资源: {}", asset.name);
             break;
         } else if name.contains("windows") {
             // for citron
             download_url = Some(asset.download_url.clone());
+            debug!("选择 Windows 资源: {}", asset.name);
             break;
         }
     }
 
     let url = download_url.ok_or_else(|| {
+        warn!("无法找到合适的下载资源");
         AppError::Emulator(format!("无法获取 {} 下载链接", get_emu_name(branch)))
     })?;
 
     info!("下载 {} 从: {}", get_emu_name(branch), url);
 
     // 使用 aria2 下载
+    debug!("创建 aria2 下载任务");
     let aria2 = get_aria2_manager().await?;
     let options = Aria2DownloadOptions {
         use_github_mirror: true,
@@ -117,39 +129,57 @@ where
     *CURRENT_DOWNLOAD_GID.write() = Some(gid.clone());
 
     info!("下载任务已添加，GID: {}", gid);
+    debug!("开始轮询下载进度");
 
     // 轮询下载进度
     let poll_interval = Duration::from_millis(500);
+    let mut poll_count = 0;
     loop {
         tokio::time::sleep(poll_interval).await;
 
         let progress = match aria2.get_download_progress(&gid).await {
             Ok(p) => p,
             Err(e) => {
+                warn!("获取下载进度失败 [GID: {}]: {}", gid, e);
                 *CURRENT_DOWNLOAD_GID.write() = None;
                 return Err(e);
             }
         };
 
+        poll_count += 1;
+        // 每 10 次轮询打印一次 debug 日志（避免日志过多）
+        if poll_count % 10 == 0 {
+            debug!(
+                "下载进度 [GID: {}]: {:.1}%, 速度: {}, 状态: {:?}",
+                gid, progress.percentage, progress.speed_string(), progress.status
+            );
+        }
+
         on_progress(progress.clone());
 
         match progress.status {
             crate::services::aria2::Aria2DownloadStatus::Complete => {
+                info!("下载完成 [GID: {}]", gid);
                 // 从 aria2 获取实际文件路径
                 let status = aria2.get_download_status(&gid).await?;
                 let path = status
                     .files
                     .first()
                     .map(|f| PathBuf::from(&f.path))
-                    .ok_or_else(|| AppError::Aria2("无法获取下载文件路径".to_string()))?;
+                    .ok_or_else(|| {
+                        warn!("无法获取下载文件路径");
+                        AppError::Aria2("无法获取下载文件路径".to_string())
+                    })?;
 
                 // 清除 GID
                 *CURRENT_DOWNLOAD_GID.write() = None;
 
                 info!("下载完成: {}", path.display());
+                debug!("下载文件大小: {} bytes", progress.total);
                 return Ok(path);
             }
             crate::services::aria2::Aria2DownloadStatus::Error => {
+                warn!("下载失败 [GID: {}]", gid);
                 *CURRENT_DOWNLOAD_GID.write() = None;
 
                 // 获取详细错误信息
@@ -157,6 +187,7 @@ where
                     Ok(status) => {
                         let error_code = status.error_code.as_deref().unwrap_or("未知");
                         let error_msg = status.error_message.as_deref().unwrap_or("未知错误");
+                        debug!("下载失败详情: 错误码={}, 错误信息={}", error_code, error_msg);
                         format!("下载失败 (错误码: {}): {}", error_code, error_msg)
                     }
                     Err(_) => "下载失败".to_string(),
@@ -165,6 +196,7 @@ where
                 return Err(AppError::Aria2(error_message));
             }
             crate::services::aria2::Aria2DownloadStatus::Removed => {
+                info!("下载已取消 [GID: {}]", gid);
                 *CURRENT_DOWNLOAD_GID.write() = None;
                 return Err(AppError::Aria2("下载已取消".to_string()));
             }
@@ -183,10 +215,13 @@ where
 /// 解压后的目录路径
 pub fn unzip_yuzu(package_path: &Path, target_dir: Option<&Path>) -> AppResult<PathBuf> {
     info!("解压 Yuzu 文件: {}", package_path.display());
+    debug!("解压包大小: {} bytes", package_path.metadata().map(|m| m.len()).unwrap_or(0));
 
     let extract_dir = target_dir
         .map(|p| p.to_path_buf())
         .unwrap_or_else(|| std::env::temp_dir());
+
+    debug!("解压目标目录: {}", extract_dir.display());
 
     // 解压文件
     uncompress(package_path, &extract_dir, false)?;
@@ -1109,6 +1144,8 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
     info!("检测 Yuzu 版本");
 
     let exe_path = get_yuzu_exe_path();
+    debug!("Yuzu 可执行文件路径: {}", exe_path.display());
+
     if !exe_path.exists() {
         warn!("未找到 Yuzu 程序: {}", exe_path.display());
         return Ok(None);
@@ -1122,10 +1159,14 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
 
     // 启动程序
     info!("启动 Yuzu: {}", exe_path.display());
+    debug!("使用参数启动以检测版本");
     let mut child = Command::new(&exe_path)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()?;
+
+    debug!("Yuzu 进程 ID: {}", child.id());
+    debug!("等待窗口创建...");
 
     // 等待窗口创建
     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -1204,7 +1245,8 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
         }
 
         // 多次尝试，等待窗口出现
-        for _ in 0..30 {
+        debug!("开始枚举窗口标题以检测版本");
+        for i in 0..30 {
             unsafe {
                 let _ = EnumWindows(
                     Some(enum_proc),
@@ -1216,7 +1258,12 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
             if guard.0.is_some() {
                 version = guard.0.clone();
                 branch = guard.1.clone();
+                debug!("第 {} 次尝试找到窗口标题，检测到版本: {:?}, 分支: {:?}", i + 1, version, branch);
                 break;
+            }
+
+            if i % 5 == 0 {
+                debug!("第 {} 次尝试，尚未找到窗口标题", i + 1);
             }
 
             std::thread::sleep(Duration::from_millis(500));
@@ -1224,12 +1271,14 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
     }
 
     // 结束进程
+    debug!("结束 Yuzu 进程");
     let _ = child.kill();
     let _ = child.wait();
 
     // 更新配置
     if let Some(ref v) = version {
         info!("检测到版本: {}, 分支: {:?}", v, branch);
+        debug!("更新配置文件");
 
         let mut cfg = CONFIG.write();
         cfg.yuzu.yuzu_version = Some(v.clone());
@@ -1237,8 +1286,10 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
             cfg.yuzu.branch = b;
         }
         cfg.save()?;
+        debug!("配置文件已保存");
     } else {
         warn!("未能检测到 Yuzu 版本");
+        debug!("可能的原因: 窗口标题不匹配或窗口创建延迟过长");
     }
 
     Ok(version)
@@ -1248,7 +1299,10 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
 pub fn start_yuzu() -> AppResult<()> {
     let exe_path = get_yuzu_exe_path();
 
+    debug!("检查 Yuzu 可执行文件: {}", exe_path.display());
+
     if !exe_path.exists() {
+        warn!("Yuzu 可执行文件不存在: {}", exe_path.display());
         return Err(AppError::FileNotFound(exe_path.display().to_string()));
     }
 

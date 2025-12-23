@@ -27,8 +27,10 @@ impl CheatsService {
     /// 扫描模拟器的 load 目录，找到所有包含金手指的游戏文件夹
     pub fn scan_all_cheats_folder(&self, mod_path: &Path) -> AppResult<Vec<GameCheatFolder>> {
         info!("扫描金手指目录: {:?}", mod_path);
+        debug!("开始扫描，最大深度: 5");
 
         if !mod_path.exists() {
+            warn!("金手指目录不存在: {:?}", mod_path);
             return Err(AppError::DirectoryNotFound(
                 mod_path.to_string_lossy().to_string(),
             ));
@@ -38,6 +40,7 @@ impl CheatsService {
         let cheat_file_re = Regex::new(r"^[\dA-Za-z]{16}\.txt$").unwrap();
 
         let mut result = Vec::new();
+        let mut scanned_dirs = 0;
 
         // 查找所有 cheats 文件夹
         for entry in walkdir::WalkDir::new(mod_path)
@@ -46,23 +49,37 @@ impl CheatsService {
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
+            scanned_dirs += 1;
 
             // 检查是否是 cheats 文件夹
             if !path.is_dir() || path.file_name() != Some(std::ffi::OsStr::new("cheats")) {
                 continue;
             }
 
+            debug!("找到 cheats 文件夹: {:?}", path);
+
             // 获取游戏 ID（cheats 文件夹的祖父文件夹名称）
             let game_id = match path.parent().and_then(|p| p.parent()) {
                 Some(p) => match p.file_name() {
-                    Some(name) => name.to_string_lossy().to_string(),
-                    None => continue,
+                    Some(name) => {
+                        let id = name.to_string_lossy().to_string();
+                        debug!("提取游戏 ID: {}", id);
+                        id
+                    }
+                    None => {
+                        debug!("无法获取父目录文件名");
+                        continue;
+                    }
                 },
-                None => continue,
+                None => {
+                    debug!("无法获取父目录");
+                    continue;
+                }
             };
 
             // 验证游戏 ID 格式
             if !game_id_re.is_match(&game_id) {
+                debug!("游戏 ID 格式无效: {}", game_id);
                 continue;
             }
 
@@ -70,24 +87,35 @@ impl CheatsService {
             let has_cheat_file = fs::read_dir(path)
                 .ok()
                 .map(|entries| {
-                    entries
+                    let mut count = 0;
+                    let has_file = entries
                         .filter_map(|e| e.ok())
                         .any(|e| {
                             if let Some(name) = e.file_name().to_str() {
-                                cheat_file_re.is_match(name)
+                                let matches = cheat_file_re.is_match(name);
+                                if matches {
+                                    count += 1;
+                                    debug!("找到金手指文件: {}", name);
+                                }
+                                matches
                             } else {
                                 false
                             }
-                        })
+                        });
+                    if has_file {
+                        debug!("游戏 {} 有 {} 个金手指文件", game_id, count);
+                    }
+                    has_file
                 })
                 .unwrap_or(false);
 
             if has_cheat_file {
+                debug!("添加游戏到结果: {}", game_id);
                 result.push(GameCheatFolder::new(game_id, path.to_path_buf()));
             }
         }
 
-        info!("找到 {} 个游戏的金手指", result.len());
+        info!("扫描完成: 扫描了 {} 个目录，找到 {} 个游戏的金手指", scanned_dirs, result.len());
         Ok(result)
     }
 
@@ -96,7 +124,10 @@ impl CheatsService {
         &self,
         folder_path: &Path,
     ) -> AppResult<Vec<CheatFileInfo>> {
+        debug!("列出金手指文件，目录: {:?}", folder_path);
+
         if !folder_path.exists() {
+            warn!("目录不存在: {:?}", folder_path);
             return Err(AppError::DirectoryNotFound(
                 folder_path.to_string_lossy().to_string(),
             ));
@@ -116,12 +147,15 @@ impl CheatsService {
             // 只接受 16 位十六进制命名的 .txt 文件
             if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
                 if cheat_file_re.is_match(filename) {
+                    debug!("找到金手指文件: {}", filename);
                     let name = self.read_cheat_name(&path)?;
+                    debug!("金手指名称: {}", name);
                     result.push(CheatFileInfo::new(path, name));
                 }
             }
         }
 
+        info!("找到 {} 个金手指文件", result.len());
         Ok(result)
     }
 
@@ -236,7 +270,11 @@ impl CheatsService {
         cheat_file_path: &Path,
         window: Option<&tauri::Window>,
     ) -> AppResult<()> {
+        info!("更新金手指，文件: {:?}", cheat_file_path);
+        debug!("选中的标题数量: {}", enable_titles.len());
+
         if !cheat_file_path.exists() {
+            warn!("金手指文件不存在: {:?}", cheat_file_path);
             return Err(AppError::FileNotFound(
                 cheat_file_path.to_string_lossy().to_string(),
             ));
@@ -249,7 +287,10 @@ impl CheatsService {
             .ok_or_else(|| AppError::InvalidArgument("无效的文件路径".to_string()))?
             .join("cheats_chunk");
 
+        debug!("chunk 文件夹: {:?}", chunk_folder);
+
         if !chunk_folder.exists() {
+            warn!("仓库目录不存在: {:?}", chunk_folder);
             return Err(AppError::DirectoryNotFound(
                 "仓库目录不存在".to_string(),
             ));
@@ -263,7 +304,10 @@ impl CheatsService {
         let chunk_filename = format!("{}_chunk.txt", &filename[..16]);
         let chunk_file = chunk_folder.join(chunk_filename);
 
+        debug!("chunk 文件: {:?}", chunk_file);
+
         if !chunk_file.exists() {
+            warn!("仓库文件不存在: {:?}", chunk_file);
             return Err(AppError::FileNotFound("仓库文件不存在".to_string()));
         }
 
@@ -287,6 +331,7 @@ impl CheatsService {
         }
 
         // 从 chunk 文件中提取启用的金手指
+        debug!("解析 chunk 文件");
         let chunk_map = self.parse_yuzu_cheat_file(&chunk_file)?;
         debug!(
             "chunk 金手指数量: {}, 标题: {:?}",
@@ -297,13 +342,14 @@ impl CheatsService {
         let mut cheat_map = HashMap::new();
         for title in enable_titles {
             if let Some(entry) = chunk_map.get(title) {
+                debug!("添加金手指: {}", title);
                 cheat_map.insert(title.clone(), entry.clone());
             } else {
                 warn!("标题 [{}] 在 chunk 中不存在", title);
             }
         }
 
-        debug!(
+        info!(
             "选中的金手指数量: {}, 标题: {:?}",
             cheat_map.len(),
             cheat_map.keys().collect::<Vec<_>>()
@@ -312,6 +358,7 @@ impl CheatsService {
         // 保存金手指文件
         info!("保存金手指到 {:?}...", cheat_file_path);
         self.save_cheat_map_to_file(&cheat_map, cheat_file_path)?;
+        info!("金手指更新成功");
 
         Ok(())
     }
