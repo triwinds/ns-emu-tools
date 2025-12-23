@@ -1462,6 +1462,8 @@ pub fn get_yuzu_load_path() -> PathBuf {
 
 /// 更新 Yuzu 安装路径
 pub fn update_yuzu_path(new_yuzu_path: &str) -> AppResult<()> {
+    use crate::models::storage::{add_yuzu_history, get_storage, STORAGE};
+
     let new_path = PathBuf::from(new_yuzu_path);
 
     // 创建目录
@@ -1479,16 +1481,56 @@ pub fn update_yuzu_path(new_yuzu_path: &str) -> AppResult<()> {
         return Ok(());
     }
 
-    // TODO: 保存到历史记录
+    // 保存旧配置到历史记录
+    add_yuzu_history(config.yuzu.clone(), true)?;
+    info!("已保存旧 Yuzu 配置到历史记录: {}", old_path.display());
+
+    // 从历史记录中获取新路径的配置，如果不存在则使用当前配置
+    let new_config = {
+        let storage = get_storage();
+        let new_path_str = new_path
+            .canonicalize()
+            .unwrap_or(new_path.clone())
+            .to_string_lossy()
+            .to_string();
+
+        if let Some(historical_config) = storage.yuzu_history.get(&new_path_str) {
+            info!("从历史记录中恢复 Yuzu 配置");
+            let mut cfg = historical_config.clone();
+            cfg.yuzu_path = new_path.clone();
+            cfg
+        } else {
+            info!("历史记录中没有该路径，使用默认配置");
+            let mut cfg = crate::config::YuzuConfig::default();
+            cfg.yuzu_path = new_path.clone();
+            cfg
+        }
+    };
 
     // 更新配置
     {
         let mut cfg = CONFIG.write();
-        cfg.yuzu.yuzu_path = new_path;
+        cfg.yuzu = new_config.clone();
         cfg.save()?;
     }
 
-    info!("Yuzu 路径已更新");
+    // 如果新路径不在历史记录中，保存到历史记录
+    {
+        let storage = STORAGE.read();
+        let new_path_str = new_path
+            .canonicalize()
+            .unwrap_or(new_path.clone())
+            .to_string_lossy()
+            .to_string();
+
+        if !storage.yuzu_history.contains_key(&new_path_str) {
+            drop(storage); // 释放读锁
+            add_yuzu_history(new_config, true)?;
+            info!("已保存新 Yuzu 配置到历史记录");
+        }
+    }
+
+    info!("Yuzu 路径已更新: {}", new_path.display());
     Ok(())
 }
 

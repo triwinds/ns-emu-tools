@@ -13,6 +13,7 @@ pub mod msvc;
 pub mod nca;
 pub mod network;
 pub mod ryujinx;
+pub mod save_manager;
 pub mod updater;
 pub mod yuzu;
 

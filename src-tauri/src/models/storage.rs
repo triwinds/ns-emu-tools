@@ -4,6 +4,7 @@
 
 use crate::config::{RyujinxConfig, YuzuConfig};
 use crate::error::AppResult;
+use crate::utils::common::normalize_path;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
@@ -76,7 +77,7 @@ impl Storage {
 /// 添加 Yuzu 历史记录
 pub fn add_yuzu_history(config: YuzuConfig, dump: bool) -> AppResult<()> {
     let mut storage = STORAGE.write();
-    let path = config.yuzu_path.canonicalize().unwrap_or(config.yuzu_path.clone());
+    let path = normalize_path(&config.yuzu_path);
     let path_str = path.to_string_lossy().to_string();
     info!("添加 Yuzu 历史记录: {}", path_str);
     storage.yuzu_history.insert(path_str, config);
@@ -89,7 +90,7 @@ pub fn add_yuzu_history(config: YuzuConfig, dump: bool) -> AppResult<()> {
 /// 添加 Ryujinx 历史记录
 pub fn add_ryujinx_history(config: RyujinxConfig, dump: bool) -> AppResult<()> {
     let mut storage = STORAGE.write();
-    let path = config.path.canonicalize().unwrap_or(config.path.clone());
+    let path = normalize_path(&config.path);
     let path_str = path.to_string_lossy().to_string();
     info!("添加 Ryujinx 历史记录: {}", path_str);
     storage.ryujinx_history.insert(path_str, config);
@@ -102,9 +103,7 @@ pub fn add_ryujinx_history(config: RyujinxConfig, dump: bool) -> AppResult<()> {
 /// 删除历史记录路径
 pub fn delete_history_path(emu_type: &str, path_to_delete: &str) -> AppResult<()> {
     let mut storage = STORAGE.write();
-    let abs_path = PathBuf::from(path_to_delete)
-        .canonicalize()
-        .unwrap_or_else(|_| PathBuf::from(path_to_delete))
+    let abs_path = normalize_path(&PathBuf::from(path_to_delete))
         .to_string_lossy()
         .to_string();
 

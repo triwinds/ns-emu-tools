@@ -27,28 +27,42 @@
 import {onMounted} from "vue";
 import type {CommonResponse} from "@/types";
 import {useYuzuSaveStore} from "@/stores/YuzuSaveStore";
+import {invoke} from '@tauri-apps/api/core';
+import {open} from '@tauri-apps/plugin-dialog';
 
 const yuzuSaveStore = useYuzuSaveStore()
-onMounted(() => {
-  window.eel.get_users_in_save()((resp: CommonResponse<{user_id: string, folder: string}[]>) => {
-    if (resp.code === 0) {
-      yuzuSaveStore.userList = resp.data || []
-    }
-  })
-  loadYuzuSaveBackupPath()
-})
-async function askAndUpdateYuzuBackupPath() {
-  await window.eel.ask_and_update_yuzu_save_backup_folder()()
+
+onMounted(async () => {
+  const resp = await invoke<CommonResponse<{user_id: string, folder: string}[]>>('get_users_in_save_cmd')
+  if (resp.code === 0) {
+    yuzuSaveStore.userList = resp.data || []
+  }
   await loadYuzuSaveBackupPath()
+})
+
+async function askAndUpdateYuzuBackupPath() {
+  const selected = await open({
+    directory: true,
+    multiple: false,
+  });
+
+  if (selected && typeof selected === 'string') {
+    await invoke('update_yuzu_save_backup_folder_cmd', {
+      folder: selected
+    })
+    await loadYuzuSaveBackupPath()
+  }
 }
 
 async function loadYuzuSaveBackupPath() {
-  let resp = await window.eel.get_storage()()
-  yuzuSaveStore.yuzuSaveBackupPath = resp.data.yuzu_save_backup_path
+  const resp = await invoke<CommonResponse<string>>('get_yuzu_save_backup_folder_cmd')
+  if (resp.code === 0) {
+    yuzuSaveStore.yuzuSaveBackupPath = resp.data || ''
+  }
 }
 
-function openYuzuBackupFolder() {
-  window.eel.open_yuzu_save_backup_folder()()
+async function openYuzuBackupFolder() {
+  await invoke('open_yuzu_save_backup_folder_cmd')
 }
 </script>
 

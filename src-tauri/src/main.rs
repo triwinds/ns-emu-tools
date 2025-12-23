@@ -82,6 +82,7 @@ fn main() {
             commands::common::update_dark_state,
             commands::common::update_window_size,
             commands::common::delete_history_path,
+            commands::common::delete_path,
             commands::common::check_update,
             commands::common::load_change_log,
             commands::common::get_available_firmware_sources,
@@ -127,6 +128,15 @@ fn main() {
             commands::cheats::load_cheat_chunk_info,
             commands::cheats::update_current_cheats,
             commands::cheats::open_cheat_mod_folder,
+            // Save manager commands
+            commands::save_manager::get_users_in_save_cmd,
+            commands::save_manager::list_all_games_by_user_folder_cmd,
+            commands::save_manager::backup_yuzu_save_folder_cmd,
+            commands::save_manager::get_yuzu_save_backup_folder_cmd,
+            commands::save_manager::update_yuzu_save_backup_folder_cmd,
+            commands::save_manager::list_all_yuzu_backups_cmd,
+            commands::save_manager::restore_yuzu_save_from_backup_cmd,
+            commands::save_manager::open_yuzu_save_backup_folder_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 应用程序时出错");

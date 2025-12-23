@@ -17,6 +17,7 @@ const progressStore = useProgressStore() // Init store
 let pendingWriteSize = false
 let appWindow: any = null
 let unlistenInstallation: any = null; // Store unlisten function
+let unlistenLogMessage: any = null; // Store unlisten function for log messages
 
 try {
   appWindow = getCurrentWindow()
@@ -57,12 +58,27 @@ onMounted(async () => {
   } catch (e) {
       console.error('Failed to setup installation event listener', e);
   }
+
+  // Listen for log messages
+  try {
+      unlistenLogMessage = await listen('log-message', (event: any) => {
+          const message = event.payload;
+          if (message) {
+              cds.appendConsoleMessage(message);
+          }
+      });
+  } catch (e) {
+      console.error('Failed to setup log message listener', e);
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', rememberWindowSize);
   if (unlistenInstallation) {
       unlistenInstallation();
+  }
+  if (unlistenLogMessage) {
+      unlistenLogMessage();
   }
 })
 

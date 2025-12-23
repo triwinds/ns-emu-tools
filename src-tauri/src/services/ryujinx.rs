@@ -883,6 +883,8 @@ pub fn open_ryujinx_keys_folder() -> AppResult<()> {
 
 /// 更新 Ryujinx 安装路径
 pub fn update_ryujinx_path(new_path: &str) -> AppResult<()> {
+    use crate::models::storage::{add_ryujinx_history, get_storage, STORAGE};
+
     let new_path_buf = PathBuf::from(new_path);
 
     // 创建目录
@@ -900,16 +902,56 @@ pub fn update_ryujinx_path(new_path: &str) -> AppResult<()> {
         return Ok(());
     }
 
-    // TODO: 保存到历史记录
+    // 保存旧配置到历史记录
+    add_ryujinx_history(config.ryujinx.clone(), true)?;
+    info!("已保存旧 Ryujinx 配置到历史记录: {}", old_path.display());
+
+    // 从历史记录中获取新路径的配置，如果不存在则使用默认配置
+    let new_config = {
+        let storage = get_storage();
+        let new_path_str = new_path_buf
+            .canonicalize()
+            .unwrap_or(new_path_buf.clone())
+            .to_string_lossy()
+            .to_string();
+
+        if let Some(historical_config) = storage.ryujinx_history.get(&new_path_str) {
+            info!("从历史记录中恢复 Ryujinx 配置");
+            let mut cfg = historical_config.clone();
+            cfg.path = new_path_buf.clone();
+            cfg
+        } else {
+            info!("历史记录中没有该路径，使用默认配置");
+            let mut cfg = crate::config::RyujinxConfig::default();
+            cfg.path = new_path_buf.clone();
+            cfg
+        }
+    };
 
     // 更新配置
     {
         let mut cfg = CONFIG.write();
-        cfg.ryujinx.path = new_path_buf;
+        cfg.ryujinx = new_config.clone();
         cfg.save()?;
     }
 
-    info!("Ryujinx 路径已更新");
+    // 如果新路径不在历史记录中，保存到历史记录
+    {
+        let storage = STORAGE.read();
+        let new_path_str = new_path_buf
+            .canonicalize()
+            .unwrap_or(new_path_buf.clone())
+            .to_string_lossy()
+            .to_string();
+
+        if !storage.ryujinx_history.contains_key(&new_path_str) {
+            drop(storage); // 释放读锁
+            add_ryujinx_history(new_config, true)?;
+            info!("已保存新 Ryujinx 配置到历史记录");
+        }
+    }
+
+    info!("Ryujinx 路径已更新: {}", new_path_buf.display());
     Ok(())
 }
 

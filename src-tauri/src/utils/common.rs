@@ -1,7 +1,7 @@
 //! 通用工具函数
 
 use crate::error::{AppError, AppResult};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tracing::{debug, info};
@@ -63,6 +63,24 @@ pub fn format_duration(seconds: u64) -> String {
         format!("{}m {}s", minutes, secs)
     } else {
         format!("{}s", seconds)
+    }
+}
+
+/// 规范化路径并去除 Windows 长路径前缀
+///
+/// Windows 的 `canonicalize()` 会返回带有 `\\?\` 前缀的路径，
+/// 这个函数会去除该前缀以便正常显示
+pub fn normalize_path(path: &Path) -> PathBuf {
+    let normalized = path
+        .canonicalize()
+        .unwrap_or_else(|_| path.to_path_buf());
+
+    // 去除 Windows 长路径前缀 \\?\
+    let path_str = normalized.to_string_lossy();
+    if path_str.starts_with(r"\\?\") {
+        PathBuf::from(&path_str[4..])
+    } else {
+        normalized
     }
 }
 

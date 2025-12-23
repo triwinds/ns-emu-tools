@@ -135,6 +135,49 @@ pub fn delete_history_path(emu_type: String, path: String) -> Result<(), String>
     storage::delete_history_path(&emu_type, &path).map_err(|e| e.to_string())
 }
 
+/// 删除路径（文件或文件夹）
+#[command]
+pub async fn delete_path(path: String, window: Window) -> Result<(), String> {
+    use std::fs;
+    use std::path::Path;
+
+    let path = Path::new(&path);
+
+    if !path.exists() {
+        let msg = format!("{} 不存在", path.display());
+        let _ = window.emit("message", &msg);
+        return Err(msg);
+    }
+
+    if path.is_dir() {
+        info!("删除文件夹: {}", path.display());
+        let msg = format!("正在删除 {} 目录...", path.display());
+        let _ = window.emit("message", &msg);
+
+        fs::remove_dir_all(path).map_err(|e| {
+            error!("删除文件夹失败: {}", e);
+            e.to_string()
+        })?;
+
+        let msg = format!("{} 删除完成", path.display());
+        let _ = window.emit("message", &msg);
+    } else {
+        info!("删除文件: {}", path.display());
+        let msg = format!("正在删除 {}...", path.display());
+        let _ = window.emit("message", &msg);
+
+        fs::remove_file(path).map_err(|e| {
+            error!("删除文件失败: {}", e);
+            e.to_string()
+        })?;
+
+        let msg = format!("{} 删除完成", path.display());
+        let _ = window.emit("message", &msg);
+    }
+
+    Ok(())
+}
+
 /// 检查应用更新
 #[command]
 pub async fn check_update(include_prerelease: bool) -> Result<UpdateCheckResult, String> {

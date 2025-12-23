@@ -68,6 +68,7 @@ import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import type {CommonResponse, YuzuSaveBackupListItem} from "@/types";
 import {useEmitter} from "@/plugins/mitt";
 import YuzuSaveCommonPart from "@/components/YuzuSaveCommonPart.vue";
+import {invoke} from '@tauri-apps/api/core';
 
 let backupList = ref<YuzuSaveBackupListItem[]>([])
 let backupItemBoxHeight = ref(window.innerHeight - 420)
@@ -91,18 +92,19 @@ onUnmounted(() => {
   emitter.off('yuzuSave:tabChange')
 })
 
-function loadAllYuzuBackups() {
-  window.eel.list_all_yuzu_backups()((resp: CommonResponse<YuzuSaveBackupListItem[]>) => {
-    backupList.value = resp.data || []
-    updateBackupItemBoxHeight()
-    appStore.loadGameData().then(gameData => {
-      let nl = []
-      for (let item of backupList.value) {
-        item.game_name = gameData[item.title_id]
-        nl.push(item)
-      }
-      backupList.value = nl;
-    })
+async function loadAllYuzuBackups() {
+  const resp = await invoke<CommonResponse<YuzuSaveBackupListItem[]>>('list_all_yuzu_backups_cmd')
+
+  backupList.value = resp.data || []
+  updateBackupItemBoxHeight()
+
+  appStore.loadGameData().then(gameData => {
+    let nl = []
+    for (let item of backupList.value) {
+      item.game_name = gameData[item.title_id]
+      nl.push(item)
+    }
+    backupList.value = nl;
   })
 }
 
@@ -121,18 +123,22 @@ function restoreBackup(filepath: string) {
   restoreWaringDialog.value = true
 }
 
-function summitRestoreRequest() {
+async function summitRestoreRequest() {
   restoreWaringDialog.value = false
   cds.cleanAndShowConsoleDialog()
-  window.eel.restore_yuzu_save_from_backup(yuzuSaveStore.selectedUser, restoreBackupFile.value)()
+  await invoke('restore_yuzu_save_from_backup_cmd', {
+    userFolderName: yuzuSaveStore.selectedUser,
+    backupPath: restoreBackupFile.value
+  })
 }
 
-function deletePath(path: string) {
-  window.eel.delete_path(path)((resp: CommonResponse) => {
-    if (resp.code === 0) {
-      loadAllYuzuBackups()
-    }
+async function deletePath(path: string) {
+  const resp = await invoke<CommonResponse>('delete_path', {
+    path: path
   })
+  if (resp.code === 0) {
+    loadAllYuzuBackups()
+  }
 }
 
 function concatGameName(item: YuzuSaveBackupListItem) {

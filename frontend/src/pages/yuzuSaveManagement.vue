@@ -59,6 +59,7 @@ import {useAppStore} from "@/stores/app";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import YuzuSaveRestoreTab from "@/components/YuzuSaveRestoreTab.vue";
 import {useEmitter} from "@/plugins/mitt";
+import {invoke} from '@tauri-apps/api/core';
 
 let tab = ref('')
 const guide = `
@@ -90,22 +91,24 @@ watch(tab, () => {
   emitter.emit('yuzuSave:tabChange', tab)
 })
 
-function reloadGameList() {
-  window.eel.list_all_games_by_user_folder(yuzuSaveStore.selectedUser)((resp: CommonResponse<SaveGameInfo[]>) => {
-    if (resp.code === 0) {
-      gameList.value = resp.data || []
-      if (appStore.gameDataInited) {
-        enrichGameList()
-      } else {
-        appStore.loadGameData().then(() => {
-          enrichGameList()
-        })
-      }
-      if (gameList.value.length > 0) {
-        selectedGameFolder.value = gameList.value[0].folder
-      }
-    }
+async function reloadGameList() {
+  const resp = await invoke<CommonResponse<SaveGameInfo[]>>('list_all_games_by_user_folder_cmd', {
+    folder: yuzuSaveStore.selectedUser
   })
+
+  if (resp.code === 0) {
+    gameList.value = resp.data || []
+    if (appStore.gameDataInited) {
+      enrichGameList()
+    } else {
+      appStore.loadGameData().then(() => {
+        enrichGameList()
+      })
+    }
+    if (gameList.value.length > 0) {
+      selectedGameFolder.value = gameList.value[0].folder
+    }
+  }
 }
 
 function enrichGameList() {
@@ -122,9 +125,11 @@ function concatGameName(item: SaveGameInfo) {
   return `[${item.title_id}] ${gameName}`
 }
 
-function doBackup() {
+async function doBackup() {
   cds.cleanAndShowConsoleDialog()
-  window.eel.backup_yuzu_save_folder(selectedGameFolder.value)()
+  await invoke('backup_yuzu_save_folder_cmd', {
+    folder: selectedGameFolder.value
+  })
 }
 
 </script>
