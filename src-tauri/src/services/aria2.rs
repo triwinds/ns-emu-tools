@@ -561,13 +561,14 @@ impl Aria2Manager {
             })?;
 
         info!("下载任务已添加，GID: {}", gid);
-        debug!("下载任务详情: filename={}, url={}", filename, final_url);
 
         // 记录活跃下载
         let filename = options
             .filename
             .clone()
             .unwrap_or_else(|| extract_filename_from_url(&final_url));
+        debug!("下载任务详情: filename={}, url={}", filename, final_url);
+
         let progress = Aria2DownloadProgress::new(&gid, &filename);
         self.active_downloads.write().insert(gid.clone(), progress);
 

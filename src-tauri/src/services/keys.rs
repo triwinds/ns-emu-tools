@@ -8,7 +8,7 @@ use aes::Aes128;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::RwLock;
-use tracing::{debug, info};
+use tracing::{info};
 
 /// 密钥长度（16 字节 = 128 位）
 const KEY_SIZE: usize = 16;
@@ -162,8 +162,6 @@ impl KeyStore {
 
     /// 派生所有密钥
     fn derive_keys(&mut self) -> AppResult<()> {
-        debug!("开始派生密钥...");
-
         let aes_kek_generation_source = self.get_key("aes_kek_generation_source")?;
         let aes_key_generation_source = self.get_key("aes_key_generation_source")?;
         let titlekek_source = self.get_key("titlekek_source")?;
@@ -205,8 +203,6 @@ impl KeyStore {
                 &aes_kek_generation_source,
                 Some(&aes_key_generation_source),
             );
-
-            debug!("已派生 master_key_{:02x} 相关密钥", i);
         }
 
         info!("密钥派生完成，共 {} 个 master key", self.title_keks.len());

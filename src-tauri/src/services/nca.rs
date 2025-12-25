@@ -9,7 +9,7 @@ use crate::services::keys;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 /// NCA 文件头大小（3072 字节 = 0xC00）
 const NCA_HEADER_SIZE: usize = 0xC00;
@@ -181,7 +181,6 @@ impl NcaHeader {
     /// 从文件中读取并解密 NCA 头部
     pub fn read_from_file<P: AsRef<Path>>(path: P) -> AppResult<Self> {
         let path = path.as_ref();
-        debug!("读取 NCA 文件头: {}", path.display());
 
         let mut file = File::open(path)?;
         let mut header_data = vec![0u8; NCA_HEADER_SIZE];
@@ -305,7 +304,6 @@ impl NcaHeader {
                 key_store.unwrap_key_block(key_block, master_key_index)
             }) {
                 decrypted_keys = keys_result;
-                debug!("已解密 {} 个密钥", decrypted_keys.len());
             }
         }
 
@@ -391,11 +389,6 @@ impl NcaReader {
         let section_start = (section.media_start_offset as u64) * MEDIA_SIZE;
         let section_end = (section.media_end_offset as u64) * MEDIA_SIZE;
         let section_size = section_end - section_start;
-
-        debug!(
-            "读取 Section {}: offset={:#x}, size={:#x}, crypto={:?}",
-            section_index, section_start, section_size, section_header.crypto_type
-        );
 
         // 读取原始数据
         self.file.seek(SeekFrom::Start(section_start))?;
@@ -523,8 +516,6 @@ pub fn extract_firmware_version<P: AsRef<Path>>(nca_path: P) -> AppResult<String
     let magic = b"NX\x00\x00\x00\x00";
 
     if let Some(idx) = find_pattern(&section_data, magic) {
-        debug!("找到版本魔术字节，偏移: {:#x}", idx);
-
         // 版本字符串位于魔术字节 + 0x60 处
         let version_offset = idx + 0x60;
 
@@ -583,20 +574,13 @@ pub fn find_system_version_nca<P: AsRef<Path>>(firmware_dir: P) -> AppResult<Opt
                     // 尝试读取 NCA 头部
                     match NcaHeader::read_from_file(&path) {
                         Ok(header) => {
-                            debug!(
-                                "NCA: {} - Title ID: {}, Type: {:?}",
-                                path.display(),
-                                header.title_id,
-                                header.content_type
-                            );
-
                             if header.is_system_version_archive() {
                                 info!("找到系统版本归档: {}", path.display());
                                 return Ok(Some(path));
                             }
                         }
-                        Err(e) => {
-                            debug!("无法解析 NCA 文件 {}: {}", path.display(), e);
+                        Err(_) => {
+                            // 忽略无法解析的文件
                         }
                     }
                 }
@@ -628,10 +612,7 @@ pub fn find_system_version_nca_ryujinx<P: AsRef<Path>>(
         // 处理 walkdir 错误
         let entry = match entry_result {
             Ok(e) => e,
-            Err(e) => {
-                debug!("遍历目录时出错: {}", e);
-                continue;
-            }
+            Err(_) => continue,
         };
 
         let path = entry.path();
@@ -640,20 +621,13 @@ pub fn find_system_version_nca_ryujinx<P: AsRef<Path>>(
             // 尝试读取 NCA 头部
             match NcaHeader::read_from_file(path) {
                 Ok(header) => {
-                    debug!(
-                        "NCA: {} - Title ID: {}, Type: {:?}",
-                        path.display(),
-                        header.title_id,
-                        header.content_type
-                    );
-
                     if header.is_system_version_archive() {
                         info!("找到系统版本归档: {}", path.display());
                         return Ok(Some(path.to_path_buf()));
                     }
                 }
-                Err(e) => {
-                    debug!("无法解析 NCA 文件 {}: {}", path.display(), e);
+                Err(_) => {
+                    // 忽略无法解析的文件
                 }
             }
         }
