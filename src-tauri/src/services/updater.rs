@@ -5,7 +5,7 @@
 use crate::error::{AppError, AppResult};
 use crate::models::progress::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::app_info;
-use crate::services::network::{create_client, get_github_download_url};
+use crate::services::network::{create_client, get_github_download_source_name, get_github_download_url};
 use crate::utils::archive;
 use futures_util::StreamExt;
 use std::fs;
@@ -50,6 +50,7 @@ pub async fn download_update(
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "download".to_string(),
@@ -60,6 +61,7 @@ pub async fn download_update(
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
     ];
 
@@ -84,6 +86,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -116,6 +119,7 @@ pub async fn download_update(
                         download_speed: String::new(),
                         eta: String::new(),
                         error: Some("当前已是最新版本".to_string()),
+            download_source: None,
                     },
                 },
             );
@@ -152,6 +156,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -160,6 +165,10 @@ pub async fn download_update(
     info!("下载 URL: {}", download_url);
     let mirror_url = get_github_download_url(&download_url);
     info!("镜像 URL: {}", mirror_url);
+
+    // 获取下载源名称
+    let download_source = get_github_download_source_name();
+    info!("下载源: {}", download_source);
 
     let _ = window.emit(
         "installation-event",
@@ -173,6 +182,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+                            download_source: Some(download_source.clone()),
             },
         },
     );
@@ -249,6 +259,7 @@ pub async fn download_update(
                         download_speed: speed_str,
                         eta: eta_str,
                         error: None,
+                                    download_source: Some(download_source.clone()),
                     },
                 },
             );
@@ -267,6 +278,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+                            download_source: Some(download_source.clone()),
             },
         },
     );
@@ -550,6 +562,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "find_asset".to_string(),
@@ -560,6 +573,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "download".to_string(),
@@ -570,6 +584,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
     ];
 
@@ -594,6 +609,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -616,6 +632,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                         download_speed: String::new(),
                         eta: String::new(),
                         error: Some(e.to_string()),
+            download_source: None,
                     },
                 },
             );
@@ -642,6 +659,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -659,6 +677,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -682,6 +701,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                         download_speed: String::new(),
                         eta: String::new(),
                         error: Some(err_msg.clone()),
+            download_source: None,
                     },
                 },
             );
@@ -711,6 +731,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -733,6 +754,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );
@@ -766,6 +788,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(err.to_string()),
+            download_source: None,
                 },
             },
         );
@@ -793,6 +816,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(err_msg.clone()),
+            download_source: None,
                 },
             },
         );
@@ -848,6 +872,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                         download_speed: speed_str,
                         eta: eta_str,
                         error: None,
+            download_source: None,
                     },
                 },
             );
@@ -866,6 +891,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         },
     );

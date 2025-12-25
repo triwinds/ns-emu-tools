@@ -156,6 +156,9 @@ impl Middleware for CacheLoggingMiddleware {
 /// GitHub API 回退标志
 static GITHUB_API_FALLBACK_FLAG: Lazy<RwLock<bool>> = Lazy::new(|| RwLock::new(false));
 
+/// 当前选择的 GitHub 镜像描述（用于显示）
+static CURRENT_GITHUB_MIRROR_DESC: Lazy<RwLock<Option<String>>> = Lazy::new(|| RwLock::new(None));
+
 /// 全局缓存客户端（内存缓存）
 static CACHED_CLIENT: Lazy<ClientWithMiddleware> = Lazy::new(|| {
     create_cached_client().expect("Failed to create cached client")
@@ -481,6 +484,8 @@ pub fn get_github_download_url(origin_url: &str) -> String {
         let mut rng = rand::rng();
         if let Some(choice) = GITHUB_US_MIRRORS.choose(&mut rng) {
             info!("使用 GitHub 镜像: {}", choice.description);
+            // 保存当前选择的镜像描述（用于显示）
+            *CURRENT_GITHUB_MIRROR_DESC.write() = Some(choice.description.clone());
             let new_url = origin_url.replace("https://github.com", &choice.url);
             debug!("镜像 URL: {}", new_url);
             return new_url;
@@ -490,6 +495,71 @@ pub fn get_github_download_url(origin_url: &str) -> String {
     let new_url = origin_url.replace("https://github.com", &mirror);
     info!("使用自定义镜像 URL: {}", new_url);
     new_url
+}
+
+/// 获取 GitHub 下载源名称（用于显示）
+pub fn get_github_download_source_name() -> String {
+    let mirror = {
+        let config = CONFIG.read();
+        config.setting.network.github_download_mirror.clone()
+    };
+
+    if mirror.is_empty() || mirror == "direct" {
+        return "直连".to_string();
+    }
+
+    if mirror == "cloudflare_load_balance" {
+        // 如果已经选择了具体的镜像，返回具体的镜像描述
+        if let Some(ref desc) = *CURRENT_GITHUB_MIRROR_DESC.read() {
+            return desc.clone();
+        }
+        return "Cloudflare CDN 负载均衡".to_string();
+    }
+
+    // 尝试从镜像列表中找到描述
+    let all_mirrors = get_github_mirrors();
+    for m in all_mirrors {
+        if mirror.starts_with(&m.url) || m.url.starts_with(&mirror) {
+            return m.description;
+        }
+    }
+
+    // 如果找不到，返回自定义镜像
+    format!("自定义镜像: {}", mirror)
+}
+
+/// 获取最终 URL 的下载源名称（通用）
+pub fn get_download_source_name(origin_url: &str) -> String {
+    let (github_api_mode, ryujinx_mirror, firmware_source) = {
+        let config = CONFIG.read();
+        let network = &config.setting.network;
+        (
+            network.github_api_mode.clone(),
+            network.ryujinx_git_lab_download_mirror.clone(),
+            network.firmware_download_source.clone(),
+        )
+    };
+
+    if origin_url.starts_with("https://api.github.com") {
+        get_source_name_by_mode(&github_api_mode, "GitHub API")
+    } else if origin_url.starts_with("https://git.ryujinx.app") {
+        get_source_name_by_mode(&ryujinx_mirror, "Ryujinx GitLab")
+    } else if origin_url.contains("archive.org") || origin_url.contains("firmware") {
+        get_source_name_by_mode(&firmware_source, "固件下载")
+    } else if origin_url.starts_with("https://github.com") {
+        get_github_download_source_name()
+    } else {
+        "直连".to_string()
+    }
+}
+
+/// 根据模式获取源名称
+fn get_source_name_by_mode(mode: &str, default_name: &str) -> String {
+    match mode {
+        "direct" => "直连".to_string(),
+        "cdn" => format!("{} CDN", default_name),
+        _ => format!("{} 自动检测", default_name),
+    }
 }
 
 /// 根据网络设置获取最终 URL

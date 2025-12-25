@@ -8,6 +8,7 @@ use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import mode
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
+use crate::services::network::get_github_download_source_name;
 use crate::utils::archive::uncompress;
 use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
@@ -260,6 +261,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     let _release_info = match get_yuzu_release_info_by_version(target_version, "eden").await {
@@ -276,6 +278,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: Some(err_msg.clone()),
+                        download_source: None,
                     }
                 });
                 return Err(AppError::Emulator(err_msg));
@@ -293,6 +296,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+                    download_source: None,
                 }
             });
             return Err(e);
@@ -308,6 +312,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -322,10 +327,13 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "eden", move |progress| {
+         // Eden 从 GitHub 下载，所以可以动态获取 GitHub 镜像信息
+         let download_source = get_github_download_source_name();
          on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download".to_string(),
@@ -336,6 +344,7 @@ where
                 download_speed: progress.speed_string(),
                 eta: progress.eta_string(),
                 error: None,
+                download_source: Some(download_source),
             }
          });
     }).await {
@@ -351,6 +360,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+                    download_source: None,
                 }
             });
             return Err(e);
@@ -366,6 +376,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -380,6 +391,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     let tmp_dir = std::env::temp_dir().join("eden-install");
@@ -395,6 +407,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(format!("清理临时目录失败: {}", e)),
+                    download_source: None,
                 }
             });
             return Err(e.into());
@@ -411,6 +424,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(format!("创建临时目录失败: {}", e)),
+                download_source: None,
             }
         });
         return Err(e.into());
@@ -427,6 +441,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -441,6 +456,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -455,6 +471,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     // 复制文件
@@ -469,6 +486,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -483,6 +501,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -497,6 +516,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     if let Err(e) = check_and_install_msvc().await {
@@ -511,6 +531,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         // 不阻止安装流程，继续执行
@@ -525,6 +546,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: None,
+                download_source: None,
             }
         });
     }
@@ -567,6 +589,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     let _release_info = match get_yuzu_release_info_by_version(target_version, "citron").await {
@@ -583,6 +606,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: Some(err_msg.clone()),
+                        download_source: None,
                     }
                 });
                 return Err(AppError::Emulator(err_msg));
@@ -600,6 +624,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+                    download_source: None,
                 }
             });
             return Err(e);
@@ -615,6 +640,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -629,10 +655,12 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "citron", move |progress| {
+         // Citron 从 git.citron-emu.org 下载，不使用 GitHub 镜像
          on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download".to_string(),
@@ -643,6 +671,7 @@ where
                 download_speed: progress.speed_string(),
                 eta: progress.eta_string(),
                 error: None,
+                download_source: Some("直连".to_string()),
             }
          });
     }).await {
@@ -658,6 +687,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+                    download_source: None,
                 }
             });
             return Err(e);
@@ -673,6 +703,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -687,6 +718,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     let tmp_dir = std::env::temp_dir().join("citron-install");
@@ -702,6 +734,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(format!("清理临时目录失败: {}", e)),
+                    download_source: None,
                 }
             });
             return Err(e.into());
@@ -718,6 +751,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(format!("创建临时目录失败: {}", e)),
+                download_source: None,
             }
         });
         return Err(e.into());
@@ -734,6 +768,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -748,6 +783,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -773,6 +809,7 @@ where
                                 download_speed: "".to_string(),
                                 eta: "".to_string(),
                                 error: Some(format!("读取解压目录失败: {}", e)),
+                                download_source: None,
                             }
                         });
                         return Err(e.into());
@@ -791,6 +828,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(format!("读取解压目录失败: {}", e)),
+                    download_source: None,
                 }
             });
             return Err(e.into());
@@ -808,6 +846,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     // 复制文件
@@ -822,6 +861,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -836,6 +876,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -856,6 +897,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
     if let Err(e) = check_and_install_msvc().await {
@@ -870,6 +912,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         // 不阻止安装流程，继续执行
@@ -884,6 +927,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: None,
+                download_source: None,
             }
         });
     }
@@ -1019,6 +1063,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+                    download_source: None,
                 }
             });
             // 将其他步骤标记为取消
@@ -1032,6 +1077,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+                    download_source: None,
                 }
             });
             on_event(ProgressEvent::StepUpdate {
@@ -1044,6 +1090,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+                    download_source: None,
                 }
             });
             on_event(ProgressEvent::StepUpdate {
@@ -1056,6 +1103,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+                    download_source: None,
                 }
             });
             on_event(ProgressEvent::StepUpdate {
@@ -1068,6 +1116,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+                    download_source: None,
                 }
             });
             return Ok(());
@@ -1628,6 +1677,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: None,
+                        download_source: None,
                     }
                 ];
                 on_event(ProgressEvent::Started { steps: steps.clone() });
@@ -1655,6 +1705,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "download_firmware".to_string(),
@@ -1665,6 +1716,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "extract_firmware".to_string(),
@@ -1675,6 +1727,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
     ];
 

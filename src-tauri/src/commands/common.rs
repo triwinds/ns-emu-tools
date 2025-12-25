@@ -246,6 +246,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "find_nca".to_string(),
@@ -256,6 +257,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "extract_version".to_string(),
@@ -266,6 +268,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
     ];
 
@@ -283,6 +286,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
             download_speed: String::new(),
             eta: String::new(),
             error: None,
+            download_source: None,
         },
     });
 
@@ -312,6 +316,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
                     download_speed: String::new(),
                     eta: String::new(),
                     error: None,
+            download_source: None,
                 },
             });
 
@@ -325,6 +330,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
                     download_speed: String::new(),
                     eta: String::new(),
                     error: None,
+            download_source: None,
                 },
             });
 
@@ -346,6 +352,7 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(e.clone()),
+            download_source: None,
                 },
             });
 

@@ -48,6 +48,7 @@ pub async fn install_yuzu_by_version(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "download".to_string(),
@@ -58,6 +59,7 @@ pub async fn install_yuzu_by_version(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "extract".to_string(),
@@ -68,6 +70,7 @@ pub async fn install_yuzu_by_version(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "install".to_string(),
@@ -78,6 +81,7 @@ pub async fn install_yuzu_by_version(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "check_env".to_string(),
@@ -88,6 +92,7 @@ pub async fn install_yuzu_by_version(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
     ];
 
@@ -137,6 +142,7 @@ pub async fn detect_yuzu_version_command(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "start_program".to_string(),
@@ -147,6 +153,7 @@ pub async fn detect_yuzu_version_command(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "detect_version".to_string(),
@@ -157,6 +164,7 @@ pub async fn detect_yuzu_version_command(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
     ];
 
@@ -174,6 +182,7 @@ pub async fn detect_yuzu_version_command(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -190,6 +199,7 @@ pub async fn detect_yuzu_version_command(
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(error_msg.clone()),
+            download_source: None,
             }
         });
         let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some(error_msg.clone()) });
@@ -206,6 +216,7 @@ pub async fn detect_yuzu_version_command(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -220,6 +231,7 @@ pub async fn detect_yuzu_version_command(
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -235,6 +247,7 @@ pub async fn detect_yuzu_version_command(
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+            download_source: None,
                 }
             });
 
@@ -249,6 +262,7 @@ pub async fn detect_yuzu_version_command(
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+            download_source: None,
                 }
             });
 
@@ -263,6 +277,7 @@ pub async fn detect_yuzu_version_command(
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: None,
+            download_source: None,
                     }
                 });
                 let _ = window.emit("installation-event", ProgressEvent::Finished { success: true, message: None });
@@ -277,6 +292,7 @@ pub async fn detect_yuzu_version_command(
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: Some("未能检测到版本".to_string()),
+            download_source: None,
                     }
                 });
                 let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some("未能检测到版本".to_string()) });
@@ -296,6 +312,7 @@ pub async fn detect_yuzu_version_command(
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+            download_source: None,
                 }
             });
             let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some(e.to_string()) });

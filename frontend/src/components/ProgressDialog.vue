@@ -74,6 +74,13 @@
 
                     <!-- Download Progress details -->
                     <div v-if="step.type === 'download' && step.status === 'running'" class="mt-2">
+                         <!-- Download source badge -->
+                         <div v-if="step.downloadSource" class="mb-2">
+                            <v-chip size="small" color="primary" variant="tonal">
+                                <v-icon start :icon="mdiWeb" size="x-small"></v-icon>
+                                {{ step.downloadSource }}
+                            </v-chip>
+                         </div>
                          <v-progress-linear
                             :model-value="step.progress"
                             color="primary"
@@ -125,7 +132,7 @@
 <script setup lang="ts">
 import { useProgressStore } from '@/stores/ProgressStore';
 import { computed, ref } from 'vue';
-import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline, mdiMinusCircle } from '@mdi/js';
+import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline, mdiMinusCircle, mdiWeb } from '@mdi/js';
 import { cancelYuzuDownload, cancelRyujinxDownload } from '@/utils/tauri';
 import DialogTitle from '@/components/DialogTitle.vue';
 

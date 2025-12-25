@@ -10,7 +10,7 @@ use crate::repositories::ryujinx::{
 };
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
-use crate::services::network::get_final_url;
+use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
 use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
@@ -158,6 +158,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: None,
+                    download_source: None,
                 }
             });
 
@@ -179,6 +180,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: None,
+                        download_source: None,
                     }
                 });
             }
@@ -198,6 +200,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -214,6 +217,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+                    download_source: None,
                 }
             });
             return Err(e);
@@ -230,10 +234,15 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
     info!("下载 URL: {}", download_url);
+
+    // 获取下载源名称
+    let download_source = get_download_source_name(&download_url);
+    debug!("下载源: {}", download_source);
 
     // 下载
     on_event(ProgressEvent::StepUpdate {
@@ -246,6 +255,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: Some(download_source.clone()),
         }
     });
 
@@ -267,6 +277,7 @@ where
 
     // 轮询下载进度
     let on_event_clone = on_event.clone();
+    let download_source_clone = download_source.clone();
     let poll_interval = Duration::from_millis(500);
     let mut poll_count = 0;
     let package_path = loop {
@@ -287,6 +298,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: Some(e.to_string()),
+                        download_source: Some(download_source_clone.clone()),
                     }
                 });
                 return Err(e);
@@ -313,6 +325,7 @@ where
                 download_speed: progress.speed_string(),
                 eta: progress.eta_string(),
                 error: None,
+                download_source: Some(download_source_clone.clone()),
             }
         });
 
@@ -362,6 +375,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: Some(error_message.clone()),
+                        download_source: None,
                     }
                 });
                 return Err(AppError::Aria2(error_message));
@@ -379,6 +393,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: None,
+                        download_source: None,
                     }
                 });
                 return Err(AppError::Aria2("下载已取消".to_string()));
@@ -397,6 +412,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -411,6 +427,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -430,6 +447,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(format!("清理临时目录失败: {}", e)),
+                    download_source: None,
                 }
             });
             return Err(e.into());
@@ -446,6 +464,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(format!("创建临时目录失败: {}", e)),
+                download_source: None,
             }
         });
         return Err(e.into());
@@ -466,6 +485,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -481,6 +501,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -495,6 +516,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -511,6 +533,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -533,6 +556,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         return Err(e);
@@ -548,6 +572,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -565,6 +590,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -580,6 +606,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         // 不阻止安装流程，继续执行
@@ -594,6 +621,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: None,
+                download_source: None,
             }
         });
     }
@@ -738,6 +766,7 @@ where
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: None,
+                        download_source: None,
                     }
                 ];
                 on_event(ProgressEvent::Started { steps: steps.clone() });
@@ -769,6 +798,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "download_firmware".to_string(),
@@ -779,6 +809,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "extract_firmware".to_string(),
@@ -789,6 +820,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
         ProgressStep {
             id: "reorganize_firmware".to_string(),
@@ -799,6 +831,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         },
     ];
 
@@ -828,6 +861,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -842,6 +876,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+                download_source: None,
             }
         });
         // 清理临时目录
@@ -859,6 +894,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 

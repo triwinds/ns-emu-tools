@@ -6,7 +6,7 @@ use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
-use crate::services::network::request_github_api;
+use crate::services::network::{get_download_source_name, request_github_api};
 use crate::utils::common::format_size;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -111,6 +111,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -127,6 +128,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+            download_source: None,
                 }
             });
             return Err(e);
@@ -152,6 +154,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(err_msg.clone()),
+            download_source: None,
                 }
             });
             return Err(AppError::InvalidArgument(err_msg));
@@ -168,10 +171,17 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
     // 步骤2: 下载固件
+    let url = target_info.url.clone();
+
+    // 获取下载源名称
+    let download_source = get_download_source_name(&url);
+    debug!("下载源: {}", download_source);
+
     on_event(ProgressEvent::StepUpdate {
         step: ProgressStep {
             id: "download_firmware".to_string(),
@@ -182,10 +192,9 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+                        download_source: Some(download_source.clone()),
         }
     });
-
-    let url = target_info.url.clone();
 
     info!("下载固件: {}", url);
 
@@ -197,6 +206,7 @@ where
     };
 
     let on_event_clone = on_event.clone();
+    let download_source_clone = download_source.clone();
     let result = match aria2_manager.download_and_wait(&url, options, move |progress| {
         on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
@@ -208,6 +218,7 @@ where
                 download_speed: progress.speed_string(),
                 eta: progress.eta_string(),
                 error: None,
+                            download_source: Some(download_source_clone.clone()),
             }
         });
     }).await {
@@ -223,6 +234,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
+                    download_source: Some(download_source.clone()),
                 }
             });
             return Err(e);
@@ -239,6 +251,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+                        download_source: Some(download_source.clone()),
         }
     });
 
@@ -258,6 +271,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -276,6 +290,7 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(format!("清理旧固件失败: {}", e)),
+                    download_source: None,
                 }
             });
             return Err(e.into());
@@ -292,6 +307,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(format!("创建固件目录失败: {}", e)),
+                download_source: None,
             }
         });
         return Err(e.into());
@@ -309,6 +325,7 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
+            download_source: None,
             }
         });
         return Err(e);
@@ -324,6 +341,7 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
+            download_source: None,
         }
     });
 
@@ -470,6 +488,7 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         });
     }
@@ -490,6 +509,7 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(err_msg.clone()),
+            download_source: None,
                 },
             });
         }
@@ -509,6 +529,7 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(e.to_string()),
+            download_source: None,
                 },
             });
         }
@@ -526,6 +547,7 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         });
     }
@@ -584,6 +606,7 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         });
     }
@@ -604,6 +627,7 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(err_msg.clone()),
+            download_source: None,
                 },
             });
         }
@@ -623,6 +647,7 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(e.to_string()),
+            download_source: None,
                 },
             });
         }
@@ -640,6 +665,7 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
+            download_source: None,
             },
         });
     }

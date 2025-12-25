@@ -21,7 +21,8 @@
       "Bash(python module\\\\firmware.py:*)",
       "Bash(uv run python:*)",
       "Bash(git mv:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(find:*)"
     ]
   }
 }
