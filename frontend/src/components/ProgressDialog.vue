@@ -1,128 +1,165 @@
 <template>
-  <v-dialog v-model="store.dialogOpen" max-width="600" persistent>
-    <v-card>
-      <dialog-title>
-        进度
-      </dialog-title>
+  <v-dialog v-model="store.dialogOpen" max-width="520" persistent>
+    <v-card class="progress-dialog">
+      <!-- Header -->
+      <v-card-title class="dialog-header">
+        <span class="header-title">{{ title }}</span>
+      </v-card-title>
       <v-divider></v-divider>
 
-      <v-card-text class="pa-0">
-        <v-list class="py-0">
-            <template v-for="(step, index) in store.steps" :key="step.id">
-                <v-list-item>
-                    <template v-slot:prepend>
-                        <div class="mr-4 d-flex align-center justify-center" style="width: 24px; height: 24px;">
-                            <!-- Running -->
-                            <v-progress-circular
-                                v-if="step.status === 'running'"
-                                indeterminate
-                                color="primary"
-                                size="20"
-                                width="2"
-                            ></v-progress-circular>
+      <!-- Stepper Content -->
+      <v-card-text class="dialog-content">
+        <div class="stepper">
+          <template v-for="(step, index) in store.steps" :key="step.id">
+            <div 
+              class="step-item"
+              :class="{
+                'completed': step.status === 'success',
+                'running': step.status === 'running',
+                'error': step.status === 'error'
+              }"
+            >
+              <!-- Timeline connector -->
+              <div 
+                v-if="index < store.steps.length - 1" 
+                class="step-connector"
+                :class="{
+                  'connector-completed': step.status === 'success',
+                  'connector-running': step.status === 'running'
+                }"
+              ></div>
 
-                            <!-- Success -->
-                            <v-icon
-                                v-else-if="step.status === 'success'"
-                                color="success"
-                                :icon="mdiCheckCircle"
-                            ></v-icon>
+              <!-- Step Icon -->
+              <div class="step-icon-wrapper">
+                <div 
+                  class="step-icon"
+                  :class="{
+                    'icon-pending': step.status === 'pending',
+                    'icon-running': step.status === 'running',
+                    'icon-success': step.status === 'success',
+                    'icon-error': step.status === 'error',
+                    'icon-cancelled': step.status === 'cancelled'
+                  }"
+                >
+                  <!-- Running spinner -->
+                  <v-progress-circular
+                    v-if="step.status === 'running'"
+                    indeterminate
+                    size="18"
+                    width="2"
+                    color="primary"
+                  ></v-progress-circular>
+                  
+                  <!-- Success icon -->
+                  <v-icon
+                    v-else-if="step.status === 'success'"
+                    size="18"
+                    :icon="mdiCheck"
+                  ></v-icon>
+                  
+                  <!-- Error icon -->
+                  <v-icon
+                    v-else-if="step.status === 'error'"
+                    size="18"
+                    :icon="mdiClose"
+                  ></v-icon>
+                  
+                  <!-- Cancelled icon -->
+                  <v-icon
+                    v-else-if="step.status === 'cancelled'"
+                    size="18"
+                    :icon="mdiMinus"
+                  ></v-icon>
+                  
+                  <!-- Pending icon -->
+                  <v-icon
+                    v-else
+                    size="18"
+                    :icon="mdiCircleOutline"
+                  ></v-icon>
+                </div>
+              </div>
 
-                             <!-- Error -->
-                             <v-icon
-                                v-else-if="step.status === 'error'"
-                                color="error"
-                                :icon="mdiCloseCircle"
-                            ></v-icon>
+              <!-- Step Content -->
+              <div class="step-content">
+                <div 
+                  class="step-title"
+                  :class="{ 'title-pending': step.status === 'pending', 'title-cancelled': step.status === 'cancelled' }"
+                >
+                  {{ step.title }}
+                </div>
 
-                            <!-- Cancelled -->
-                            <v-icon
-                                v-else-if="step.status === 'cancelled'"
-                                color="grey"
-                                :icon="mdiMinusCircle"
-                            ></v-icon>
+                <!-- Step Description -->
+                <div v-if="step.description" class="step-description">
+                  {{ step.description }}
+                </div>
 
-                            <!-- Pending -->
-                            <v-icon
-                                v-else
-                                color="grey"
-                                :icon="mdiCircleOutline"
-                                size="small"
-                            ></v-icon>
-                        </div>
-                    </template>
-
-                    <v-list-item-title
-                        class="text-body-1 font-weight-medium"
-                        :class="{ 'text-decoration-line-through text-grey': step.status === 'cancelled' }"
-                    >
-                        {{ step.title }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle v-if="step.description">
-                        {{ step.description }}
-                    </v-list-item-subtitle>
-
-                    <!-- Error message -->
-                    <div v-if="step.status === 'error' && step.error" class="mt-2">
-                        <v-alert
-                            type="error"
-                            density="compact"
-                            variant="tonal"
-                            :text="step.error"
-                        ></v-alert>
+                <!-- Download Details -->
+                <div v-if="step.type === 'download' && step.status === 'running'" class="download-card">
+                  <div class="download-header">
+                    <div v-if="step.downloadSource" class="download-source">
+                      <v-icon size="14" :icon="mdiWeb"></v-icon>
+                      {{ step.downloadSource }}
                     </div>
-
-                    <!-- Download Progress details -->
-                    <div v-if="step.type === 'download' && step.status === 'running'" class="mt-2">
-                         <!-- Download source badge -->
-                         <div v-if="step.downloadSource" class="mb-2">
-                            <v-chip size="small" color="primary" variant="tonal">
-                                <v-icon start :icon="mdiWeb" size="x-small"></v-icon>
-                                {{ step.downloadSource }}
-                            </v-chip>
-                         </div>
-                         <v-progress-linear
-                            :model-value="step.progress"
-                            color="primary"
-                            height="6"
-                            rounded
-                            striped
-                        ></v-progress-linear>
-                        <div class="d-flex justify-space-between text-caption mt-1 text-grey">
-                            <span>{{ step.progress?.toFixed(1) }}%</span>
-                            <span>{{ step.downloadSpeed }} - ETA: {{ step.eta }}</span>
-                        </div>
+                    <div class="download-percent">{{ step.progress?.toFixed(1) }}%</div>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" :style="{ width: `${step.progress || 0}%` }"></div>
+                  </div>
+                  <div class="download-stats">
+                    <div class="stat">
+                      <v-icon size="14" :icon="mdiSpeedometer"></v-icon>
+                      {{ step.downloadSpeed }}
                     </div>
-                </v-list-item>
-                <v-divider v-if="index < store.steps.length - 1"></v-divider>
-            </template>
-        </v-list>
+                    <div class="stat">
+                      <v-icon size="14" :icon="mdiClockOutline"></v-icon>
+                      ETA: {{ step.eta }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Error Message -->
+                <div v-if="step.status === 'error' && step.error" class="error-message">
+                  {{ step.error }}
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
       </v-card-text>
 
       <v-divider></v-divider>
 
-      <v-card-actions>
+      <!-- Actions -->
+      <v-card-actions class="dialog-actions">
         <v-spacer></v-spacer>
         <!-- Cancel button when downloading -->
         <v-btn
           v-if="isDownloading"
-          color="error"
           variant="text"
+          color="error"
           @click="handleCancelDownload"
           :disabled="isCancelling"
         >
-          {{ isCancelling ? '取消中...' : '取消下载' }}
+          {{ isCancelling ? '取消中...' : '取消' }}
         </v-btn>
-        <!-- Only show close when finished (success or error on last step, or generally if not running?
-             For now, let's just allow close if all done or error)
-        -->
+        <!-- Retry button on error -->
         <v-btn
-          color="primary"
+          v-if="hasError"
           variant="text"
-          @click="store.closeDialog()"
-          :disabled="isInstalling"
+          color="primary"
+          @click="handleRetry"
         >
-          Close
+          重试
+        </v-btn>
+        <!-- Close button -->
+        <v-btn
+          variant="text"
+          color="primary"
+          @click="store.closeDialog()"
+          :disabled="isInstalling && !hasError"
+        >
+          关闭
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -132,51 +169,283 @@
 <script setup lang="ts">
 import { useProgressStore } from '@/stores/ProgressStore';
 import { computed, ref } from 'vue';
-import { mdiCheckCircle, mdiCloseCircle, mdiCircleOutline, mdiMinusCircle, mdiWeb } from '@mdi/js';
+import { 
+  mdiCheck, 
+  mdiClose, 
+  mdiCircleOutline, 
+  mdiMinus, 
+  mdiWeb, 
+  mdiSpeedometer, 
+  mdiClockOutline 
+} from '@mdi/js';
 import { cancelYuzuDownload, cancelRyujinxDownload } from '@/utils/tauri';
-import DialogTitle from '@/components/DialogTitle.vue';
 
 const store = useProgressStore();
 const isCancelling = ref(false);
 
+// Compute dialog title based on current state
+const title = computed(() => {
+  if (hasError.value) return '安装失败';
+  if (store.steps.every(s => s.status === 'success')) return '安装完成';
+  return '安装进度';
+});
+
 const isInstalling = computed(() => {
-    // Simple check: if any step is running, we are installing.
-    // Or if the last step is pending.
-    return store.steps.some(s => s.status === 'running');
+  return store.steps.some(s => s.status === 'running');
 });
 
 const isDownloading = computed(() => {
-    // Check if there's a download step that is currently running
-    return store.steps.some(s => s.type === 'download' && s.status === 'running');
+  return store.steps.some(s => s.type === 'download' && s.status === 'running');
+});
+
+const hasError = computed(() => {
+  return store.steps.some(s => s.status === 'error');
 });
 
 // Detect which emulator is being installed based on download step title
 const downloadingEmulator = computed(() => {
-    const downloadStep = store.steps.find(s => s.type === 'download' && s.status === 'running');
-    if (!downloadStep) return null;
+  const downloadStep = store.steps.find(s => s.type === 'download' && s.status === 'running');
+  if (!downloadStep) return null;
 
-    if (downloadStep.title.includes('Ryujinx')) {
-        return 'ryujinx';
-    } else if (downloadStep.title.includes('Eden') || downloadStep.title.includes('Citron') || downloadStep.title.includes('Yuzu')) {
-        return 'yuzu';
-    }
-    return null;
+  if (downloadStep.title.includes('Ryujinx')) {
+    return 'ryujinx';
+  } else if (downloadStep.title.includes('Eden') || downloadStep.title.includes('Citron') || downloadStep.title.includes('Yuzu')) {
+    return 'yuzu';
+  }
+  return null;
 });
 
 async function handleCancelDownload() {
-    if (isCancelling.value) return;
+  if (isCancelling.value) return;
 
-    isCancelling.value = true;
-    try {
-        if (downloadingEmulator.value === 'ryujinx') {
-            await cancelRyujinxDownload();
-        } else {
-            await cancelYuzuDownload();
-        }
-    } catch (error) {
-        console.error('取消下载失败:', error);
-    } finally {
-        isCancelling.value = false;
+  isCancelling.value = true;
+  try {
+    if (downloadingEmulator.value === 'ryujinx') {
+      await cancelRyujinxDownload();
+    } else {
+      await cancelYuzuDownload();
     }
+  } catch (error) {
+    console.error('取消下载失败:', error);
+  } finally {
+    isCancelling.value = false;
+  }
+}
+
+function handleRetry() {
+  // For now, just close the dialog. The user can retry from the main UI.
+  store.closeDialog();
 }
 </script>
+
+<style scoped>
+.progress-dialog {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-radius: 28px !important;
+}
+
+.dialog-header {
+  padding: 20px 24px 16px;
+}
+
+.header-title {
+  font-size: 1.375rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.dialog-content {
+  padding: 24px;
+}
+
+/* Stepper Styles */
+.stepper {
+  position: relative;
+}
+
+.step-item {
+  display: flex;
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.step-item:last-child {
+  padding-bottom: 0;
+}
+
+/* Timeline connector line */
+.step-connector {
+  position: absolute;
+  left: 15px;
+  top: 36px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(var(--v-theme-on-surface), 0.12);
+  transition: background 0.3s ease;
+}
+
+.step-connector.connector-completed {
+  background: rgb(var(--v-theme-success));
+}
+
+.step-connector.connector-running {
+  background: linear-gradient(180deg, rgb(var(--v-theme-primary)) 0%, rgba(var(--v-theme-on-surface), 0.12) 100%);
+}
+
+/* Step Icon */
+.step-icon-wrapper {
+  width: 32px;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.step-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--v-theme-surface));
+  border: 2px solid rgba(var(--v-theme-on-surface), 0.12);
+  color: rgba(var(--v-theme-on-surface), 0.38);
+  transition: all 0.3s ease;
+}
+
+.step-icon.icon-pending {
+  background: rgb(var(--v-theme-surface));
+  border-color: rgba(var(--v-theme-on-surface), 0.12);
+  color: rgba(var(--v-theme-on-surface), 0.38);
+}
+
+.step-icon.icon-running {
+  border-color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
+}
+
+.step-icon.icon-success {
+  border-color: rgb(var(--v-theme-success));
+  background: rgb(var(--v-theme-success));
+  color: white;
+}
+
+.step-icon.icon-error {
+  border-color: rgb(var(--v-theme-error));
+  background: rgb(var(--v-theme-error));
+  color: white;
+}
+
+.step-icon.icon-cancelled {
+  border-color: rgba(var(--v-theme-on-surface), 0.38);
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  color: rgba(var(--v-theme-on-surface), 0.38);
+}
+
+/* Step Content */
+.step-content {
+  flex: 1;
+  padding-left: 16px;
+  min-width: 0;
+}
+
+.step-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+  line-height: 32px;
+}
+
+.step-title.title-pending {
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.step-title.title-cancelled {
+  color: rgba(var(--v-theme-on-surface), 0.38);
+  text-decoration: line-through;
+}
+
+.step-description {
+  font-size: 0.8125rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  margin-top: 2px;
+}
+
+/* Download Card */
+.download-card {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.download-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.download-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(var(--v-theme-primary), 0.12);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: rgb(var(--v-theme-primary));
+}
+
+.download-percent {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+}
+
+.progress-track {
+  height: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgb(var(--v-theme-primary)), #a78bfa);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.download-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8125rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.download-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Error Message */
+.error-message {
+  background: rgba(var(--v-theme-error), 0.12);
+  border-left: 3px solid rgb(var(--v-theme-error));
+  padding: 12px 16px;
+  border-radius: 0 12px 12px 0;
+  color: rgb(var(--v-theme-error));
+  font-size: 0.875rem;
+  margin-top: 12px;
+}
+
+/* Actions */
+.dialog-actions {
+  padding: 12px 24px 20px;
+}
+</style>
