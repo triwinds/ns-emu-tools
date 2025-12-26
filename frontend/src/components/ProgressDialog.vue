@@ -97,10 +97,14 @@
                 <!-- Download Details -->
                 <div v-if="step.type === 'download' && step.status === 'running'" class="download-card">
                   <div class="download-header">
-                    <div v-if="step.downloadSource" class="download-source">
-                      <v-icon size="14" :icon="mdiWeb"></v-icon>
-                      {{ step.downloadSource }}
-                    </div>
+                    <v-tooltip v-if="step.downloadSource" location="top" :text="step.downloadSource">
+                      <template #activator="{ props }">
+                        <div v-bind="props" class="download-source">
+                          <v-icon size="14" :icon="mdiWeb"></v-icon>
+                          <span class="source-text">{{ step.downloadSource }}</span>
+                        </div>
+                      </template>
+                    </v-tooltip>
                     <div class="download-percent">{{ step.progress?.toFixed(1) }}%</div>
                   </div>
                   <div class="progress-track">
@@ -449,6 +453,7 @@ function handleRetry() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 12px;
 }
 
 .download-source {
@@ -460,6 +465,20 @@ function handleRetry() {
   border-radius: 12px;
   font-size: 0.75rem;
   color: rgb(var(--v-theme-secondary));
+  max-width: calc(100% - 70px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download-source :deep(.v-icon) {
+  flex-shrink: 0;
+}
+
+.source-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .download-percent {
