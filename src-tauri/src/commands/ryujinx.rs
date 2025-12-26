@@ -463,17 +463,3 @@ pub async fn detect_ryujinx_version_command(
         }
     }
 }
-
-/// 取消 Ryujinx 下载
-#[tauri::command]
-pub async fn cancel_ryujinx_download_command() -> Result<ApiResponse<()>, String> {
-    info!("取消 Ryujinx 下载");
-
-    match cancel_ryujinx_download().await {
-        Ok(_) => Ok(ApiResponse::success(())),
-        Err(e) => {
-            error!("取消下载失败: {}", e);
-            Err(e.to_string())
-        }
-    }
-}

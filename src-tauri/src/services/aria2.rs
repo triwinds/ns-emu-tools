@@ -812,15 +812,73 @@ impl Aria2Manager {
         Ok(())
     }
 
-    /// 取消所有下载
-    pub async fn cancel_all(&self) -> AppResult<()> {
+    /// 取消所有下载并返回文件路径列表
+    pub async fn cancel_all(&self) -> AppResult<Vec<String>> {
         let gids: Vec<String> = self.active_downloads.read().keys().cloned().collect();
 
+        let mut file_paths = Vec::new();
+
         for gid in gids {
+            // 获取文件路径
+            if let Ok(status) = self.get_download_status(&gid).await {
+                if let Some(file) = status.files.first() {
+                    file_paths.push(file.path.clone());
+                }
+            }
+
             let _ = self.cancel(&gid).await;
         }
 
-        Ok(())
+        Ok(file_paths)
+    }
+
+    /// 删除下载文件及其 aria2 控制文件
+    ///
+    /// # 参数
+    /// - `file_paths`: 要删除的文件路径列表
+    ///
+    /// # 返回
+    /// 成功删除的文件数量
+    pub fn remove_download_files(file_paths: &[String]) -> AppResult<usize> {
+        let mut removed_count = 0;
+
+        for file_path in file_paths {
+            let path = PathBuf::from(file_path);
+
+            // 删除主文件
+            if path.exists() {
+                debug!("删除下载文件: {}", path.display());
+                if let Err(e) = fs::remove_file(&path) {
+                    warn!("删除文件失败 {}: {}", path.display(), e);
+                } else {
+                    info!("已删除下载文件: {}", path.display());
+                    removed_count += 1;
+                }
+            }
+
+            // 删除 aria2 控制文件
+            Self::remove_aria2_control_file(file_path);
+        }
+
+        Ok(removed_count)
+    }
+
+    /// 删除 aria2 控制文件（.aria2 文件）
+    ///
+    /// aria2 在下载过程中会创建 .aria2 控制文件用于断点续传
+    /// 取消下载时应该一并清理这些文件
+    fn remove_aria2_control_file(file_path: &str) {
+        let control_file = format!("{}.aria2", file_path);
+        let control_path = PathBuf::from(&control_file);
+
+        if control_path.exists() {
+            debug!("删除 aria2 控制文件: {}", control_path.display());
+            if let Err(e) = fs::remove_file(&control_path) {
+                warn!("删除 aria2 控制文件失败 {}: {}", control_path.display(), e);
+            } else {
+                info!("已删除 aria2 控制文件: {}", control_path.display());
+            }
+        }
     }
 
     /// 清理已完成的下载记录

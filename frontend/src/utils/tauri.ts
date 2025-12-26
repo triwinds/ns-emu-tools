@@ -376,9 +376,9 @@ export async function switchYuzuBranch(branch: string) {
   return invokeCommand<ApiResponse<void>>('switch_yuzu_branch', { branch })
 }
 
-/** 取消 Yuzu 下载 */
-export async function cancelYuzuDownload() {
-  return invokeCommand<ApiResponse<void>>('cancel_yuzu_download_command')
+/** 取消下载（统一接口） */
+export async function cancelDownload() {
+  return invokeCommand<ApiResponse<string | null>>('cancel_download_command')
 }
 
 /** 删除历史路径 */
@@ -438,9 +438,9 @@ export async function installFirmwareToRyujinx(firmwareVersion: string | null) {
   })
 }
 
-/** 取消 Ryujinx 下载 */
-export async function cancelRyujinxDownload() {
-  return invokeCommand<ApiResponse<void>>('cancel_ryujinx_download_command')
+/** 删除路径（文件或文件夹） */
+export async function deletePath(path: string) {
+  return invokeCommand<void>('delete_path', { path })
 }
 
 // ============ 工具函数 ============

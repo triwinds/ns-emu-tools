@@ -11,7 +11,7 @@
       <v-card-text class="dialog-content">
         <div class="stepper">
           <template v-for="(step, index) in store.steps" :key="step.id">
-            <div 
+            <div
               class="step-item"
               :class="{
                 'completed': step.status === 'success',
@@ -20,8 +20,8 @@
               }"
             >
               <!-- Timeline connector -->
-              <div 
-                v-if="index < store.steps.length - 1" 
+              <div
+                v-if="index < store.steps.length - 1"
                 class="step-connector"
                 :class="{
                   'connector-completed': step.status === 'success',
@@ -31,7 +31,7 @@
 
               <!-- Step Icon -->
               <div class="step-icon-wrapper">
-                <div 
+                <div
                   class="step-icon"
                   :class="{
                     'icon-pending': step.status === 'pending',
@@ -47,30 +47,30 @@
                     indeterminate
                     size="18"
                     width="2"
-                    color="primary"
+                    color="secondary"
                   ></v-progress-circular>
-                  
+
                   <!-- Success icon -->
                   <v-icon
                     v-else-if="step.status === 'success'"
                     size="18"
                     :icon="mdiCheck"
                   ></v-icon>
-                  
+
                   <!-- Error icon -->
                   <v-icon
                     v-else-if="step.status === 'error'"
                     size="18"
                     :icon="mdiClose"
                   ></v-icon>
-                  
+
                   <!-- Cancelled icon -->
                   <v-icon
                     v-else-if="step.status === 'cancelled'"
                     size="18"
                     :icon="mdiMinus"
                   ></v-icon>
-                  
+
                   <!-- Pending icon -->
                   <v-icon
                     v-else
@@ -82,7 +82,7 @@
 
               <!-- Step Content -->
               <div class="step-content">
-                <div 
+                <div
                   class="step-title"
                   :class="{ 'title-pending': step.status === 'pending', 'title-cancelled': step.status === 'cancelled' }"
                 >
@@ -144,14 +144,14 @@
           {{ isCancelling ? '取消中...' : '取消' }}
         </v-btn>
         <!-- Retry button on error -->
-        <v-btn
+        <!-- <v-btn
           v-if="hasError"
           variant="text"
           color="primary"
           @click="handleRetry"
         >
           重试
-        </v-btn>
+        </v-btn> -->
         <!-- Close button -->
         <v-btn
           variant="text"
@@ -164,24 +164,69 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Delete Files Confirmation Dialog -->
+  <v-dialog
+    v-model="showDeleteConfirm"
+    max-width="420"
+    persistent
+    :scrim="true"
+    style="z-index: 2400;"
+  >
+    <v-card>
+      <v-card-title class="dialog-header">
+        <span class="header-title">取消下载</span>
+      </v-card-title>
+      <v-divider></v-divider>
+
+      <v-card-text class="dialog-content" style="padding: 24px;">
+        <p style="font-size: 0.9375rem; color: rgb(var(--v-theme-on-surface)); margin: 0;">
+          是否同时删除已下载的文件？
+        </p>
+      </v-card-text>
+
+      <v-divider></v-divider>
+
+      <v-card-actions class="dialog-actions">
+        <v-spacer></v-spacer>
+        <v-btn
+          variant="text"
+          color="primary"
+          @click="handleCancelOnly"
+          :disabled="isCancelling"
+        >
+          保留文件
+        </v-btn>
+        <v-btn
+          variant="text"
+          color="error"
+          @click="handleCancelAndDelete"
+          :disabled="isCancelling"
+        >
+          删除文件
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
 import { useProgressStore } from '@/stores/ProgressStore';
 import { computed, ref } from 'vue';
-import { 
-  mdiCheck, 
-  mdiClose, 
-  mdiCircleOutline, 
-  mdiMinus, 
-  mdiWeb, 
-  mdiSpeedometer, 
-  mdiClockOutline 
+import {
+  mdiCheck,
+  mdiClose,
+  mdiCircleOutline,
+  mdiMinus,
+  mdiWeb,
+  mdiSpeedometer,
+  mdiClockOutline
 } from '@mdi/js';
-import { cancelYuzuDownload, cancelRyujinxDownload } from '@/utils/tauri';
+import { cancelDownload, deletePath } from '@/utils/tauri';
 
 const store = useProgressStore();
 const isCancelling = ref(false);
+const showDeleteConfirm = ref(false);
 
 // Compute dialog title based on current state
 const title = computed(() => {
@@ -202,29 +247,47 @@ const hasError = computed(() => {
   return store.steps.some(s => s.status === 'error');
 });
 
-// Detect which emulator is being installed based on download step title
-const downloadingEmulator = computed(() => {
-  const downloadStep = store.steps.find(s => s.type === 'download' && s.status === 'running');
-  if (!downloadStep) return null;
-
-  if (downloadStep.title.includes('Ryujinx')) {
-    return 'ryujinx';
-  } else if (downloadStep.title.includes('Eden') || downloadStep.title.includes('Citron') || downloadStep.title.includes('Yuzu')) {
-    return 'yuzu';
-  }
-  return null;
-});
-
 async function handleCancelDownload() {
   if (isCancelling.value) return;
 
+  // 先弹出确认对话框
+  showDeleteConfirm.value = true;
+}
+
+async function handleCancelAndDelete() {
+  showDeleteConfirm.value = false;
   isCancelling.value = true;
+
   try {
-    if (downloadingEmulator.value === 'ryujinx') {
-      await cancelRyujinxDownload();
-    } else {
-      await cancelYuzuDownload();
+    const result = await cancelDownload();
+    console.log('取消下载结果:', result);
+
+    // 获取下载的文件路径并删除
+    const filePath = result?.data;
+    console.log('下载文件路径:', filePath);
+
+    if (filePath) {
+      try {
+        await deletePath(filePath);
+        console.log('已删除文件:', filePath);
+      } catch (error) {
+        console.error('删除文件失败:', error);
+      }
     }
+  } catch (error) {
+    console.error('取消下载失败:', error);
+  } finally {
+    isCancelling.value = false;
+  }
+}
+
+async function handleCancelOnly() {
+  showDeleteConfirm.value = false;
+  isCancelling.value = true;
+
+  try {
+    const result = await cancelDownload();
+    console.log('取消下载结果（不删除文件）:', result);
   } catch (error) {
     console.error('取消下载失败:', error);
   } finally {
@@ -289,7 +352,7 @@ function handleRetry() {
 }
 
 .step-connector.connector-running {
-  background: linear-gradient(180deg, rgb(var(--v-theme-primary)) 0%, rgba(var(--v-theme-on-surface), 0.12) 100%);
+  background: linear-gradient(180deg, rgb(var(--v-theme-secondary)) 0%, rgba(var(--v-theme-on-surface), 0.12) 100%);
 }
 
 /* Step Icon */
@@ -321,9 +384,9 @@ function handleRetry() {
 }
 
 .step-icon.icon-running {
-  border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.12);
-  color: rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-secondary));
+  background: rgba(var(--v-theme-secondary), 0.12);
+  color: rgb(var(--v-theme-secondary));
 }
 
 .step-icon.icon-success {
@@ -393,16 +456,16 @@ function handleRetry() {
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: rgba(var(--v-theme-primary), 0.12);
+  background: rgba(var(--v-theme-secondary), 0.12);
   border-radius: 12px;
   font-size: 0.75rem;
-  color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-secondary));
 }
 
 .download-percent {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-secondary));
 }
 
 .progress-track {
@@ -415,7 +478,7 @@ function handleRetry() {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgb(var(--v-theme-primary)), #a78bfa);
+  background: linear-gradient(90deg, rgb(var(--v-theme-secondary)), #a78bfa);
   border-radius: 4px;
   transition: width 0.3s ease;
 }

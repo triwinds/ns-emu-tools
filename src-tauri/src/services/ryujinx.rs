@@ -1212,28 +1212,6 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
     Ok((version, branch))
 }
 
-/// 取消当前的 Ryujinx 下载
-pub async fn cancel_ryujinx_download() -> AppResult<()> {
-    let gid = {
-        let gid_lock = CURRENT_DOWNLOAD_GID.read();
-        gid_lock.clone()
-    };
-
-    if let Some(gid) = gid {
-        info!("取消下载任务: {}", gid);
-        let aria2 = get_aria2_manager().await?;
-        aria2.cancel(&gid).await?;
-
-        // 清除 GID
-        *CURRENT_DOWNLOAD_GID.write() = None;
-
-        info!("下载已取消");
-        Ok(())
-    } else {
-        Err(AppError::Aria2("没有正在进行的下载任务".to_string()))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

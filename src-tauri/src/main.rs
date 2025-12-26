@@ -94,6 +94,7 @@ fn main() {
             commands::common::download_app_update,
             commands::common::install_app_update,
             commands::common::update_self_by_tag,
+            commands::common::cancel_download_command,
             // Yuzu commands
             commands::yuzu::get_all_yuzu_versions,
             commands::yuzu::install_yuzu_by_version,
@@ -108,7 +109,6 @@ fn main() {
             commands::yuzu::get_yuzu_change_logs_command,
             commands::yuzu::install_firmware_to_yuzu_command,
             commands::yuzu::switch_yuzu_branch,
-            commands::yuzu::cancel_yuzu_download_command,
             // Ryujinx commands
             commands::ryujinx::get_all_ryujinx_versions_command,
             commands::ryujinx::install_ryujinx_by_version_command,
@@ -121,7 +121,6 @@ fn main() {
             commands::ryujinx::detect_ryujinx_branch_command,
             commands::ryujinx::ask_and_update_ryujinx_path_command,
             commands::ryujinx::detect_ryujinx_version_command,
-            commands::ryujinx::cancel_ryujinx_download_command,
             // Cheats commands
             commands::cheats::scan_all_cheats_folder,
             commands::cheats::list_all_cheat_files_from_folder,
