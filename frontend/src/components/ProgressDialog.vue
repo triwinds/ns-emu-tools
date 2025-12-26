@@ -392,13 +392,13 @@ function handleRetry() {
 .step-icon.icon-success {
   border-color: rgb(var(--v-theme-success));
   background: rgb(var(--v-theme-success));
-  color: white;
+  color: rgb(var(--v-theme-background));
 }
 
 .step-icon.icon-error {
   border-color: rgb(var(--v-theme-error));
   background: rgb(var(--v-theme-error));
-  color: white;
+  color: rgb(var(--v-theme-background));
 }
 
 .step-icon.icon-cancelled {
