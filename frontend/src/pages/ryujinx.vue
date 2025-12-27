@@ -24,7 +24,11 @@
         </v-row>
         <v-row>
           <v-col cols="7">
-            <v-autocomplete label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
+            <v-text-field v-if="isMacOS" label="Ryujinx 路径" v-model="selectedRyujinxPath"
+                          style="cursor: default" variant="underlined" readonly
+                          hint="macOS 下路径固定为 /Applications" persistent-hint>
+            </v-text-field>
+            <v-autocomplete v-else label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
                             @update:model-value="updateRyujinxPathFunc"
                             style="cursor: default" variant="underlined">
               <template v-slot:item="{props, item}">
@@ -42,7 +46,7 @@
             </v-autocomplete>
           </v-col>
           <v-col cols="5">
-            <v-btn size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
+            <v-btn v-if="!isMacOS" size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
                    :disabled='isRunningInstall' @click="askAndUpdateRyujinxPath">修改路径
             </v-btn>
             <v-btn size="large" color="success" variant="outlined" min-width="120px" :disabled='isRunningInstall'
@@ -204,7 +208,8 @@ import {
   askAndUpdateRyujinxPath as askAndUpdateRyujinxPathApi,
   startRyujinx as startRyujinxApi,
   detectFirmwareVersion as detectFirmwareVersionApi,
-  getRyujinxChangeLogs
+  getRyujinxChangeLogs,
+  getPlatform
 } from "@/utils/tauri";
 
 let allRyujinxReleaseInfos = ref<{tag_name: string}[]>([])
@@ -212,6 +217,7 @@ let historyPathList = ref<string[]>([])
 let selectedRyujinxPath = ref('')
 let targetRyujinxVersion = ref('')
 let isRunningInstall = ref(false)
+let platform = ref('')
 let changeLogHtml = ref('<p>加载中...</p>')
 let firmwareWarningMsg = ref(`一般来说，更新固件并不会改善你的游戏体验。只要你的模拟器能够正常识别游戏，并且游戏内的字体显示正常，
 那么你就不需要更新固件。其他问题，比如游戏内材质错误、帧率低等问题与固件无关，可以通过更换模拟器版本或者使用 mod 来解决。
@@ -237,7 +243,10 @@ let latestRyujinxVersion = computed(() => {
   return "加载中"
 })
 
+let isMacOS = computed(() => platform.value === 'macos')
+
 onBeforeMount(async () => {
+  platform.value = await getPlatform()
   await configStore.reloadConfig()
   await loadHistoryPathList()
   appStore.updateAvailableFirmwareInfos()

@@ -71,7 +71,19 @@ pub struct YuzuConfig {
 }
 
 fn default_yuzu_path() -> PathBuf {
-    PathBuf::from("D:\\Yuzu")
+    #[cfg(target_os = "macos")]
+    return PathBuf::from("/Applications");
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("Yuzu");
+        }
+        return PathBuf::from("~/Yuzu");
+    }
+
+    #[cfg(target_os = "windows")]
+    return PathBuf::from("D:\\Yuzu");
 }
 
 fn default_yuzu_branch() -> String {
@@ -107,7 +119,19 @@ pub struct RyujinxConfig {
 }
 
 fn default_ryujinx_path() -> PathBuf {
-    PathBuf::from("D:\\Ryujinx")
+    #[cfg(target_os = "macos")]
+    return PathBuf::from("/Applications");
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("Ryujinx");
+        }
+        return PathBuf::from("~/Ryujinx");
+    }
+
+    #[cfg(target_os = "windows")]
+    return PathBuf::from("D:\\Ryujinx");
 }
 
 fn default_ryujinx_branch() -> String {

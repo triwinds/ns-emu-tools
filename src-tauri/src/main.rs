@@ -75,6 +75,7 @@ fn main() {
             commands::common::save_config,
             commands::common::get_storage,
             commands::common::get_app_version,
+            commands::common::get_platform,
             commands::common::open_folder,
             commands::common::open_url,
             commands::common::update_setting,

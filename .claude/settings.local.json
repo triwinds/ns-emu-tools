@@ -23,7 +23,8 @@
       "Bash(git mv:*)",
       "Bash(wc:*)",
       "Bash(find:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:git.ryujinx.app)"
     ]
   }
 }

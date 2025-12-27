@@ -36,6 +36,19 @@ pub fn get_app_version() -> String {
     CURRENT_VERSION.to_string()
 }
 
+/// 获取当前运行平台
+#[command]
+pub fn get_platform() -> String {
+    #[cfg(target_os = "windows")]
+    return "windows".to_string();
+
+    #[cfg(target_os = "macos")]
+    return "macos".to_string();
+
+    #[cfg(target_os = "linux")]
+    return "linux".to_string();
+}
+
 /// 打开文件夹
 #[command]
 pub async fn open_folder(path: String) -> Result<(), String> {

@@ -10,7 +10,7 @@ use crate::services::network::{get_download_source_name, request_github_api};
 use crate::utils::common::format_size;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 /// GitHub 固件仓库 API
 const GITHUB_FIRMWARE_API: &str = "https://api.github.com/repos/THZoria/NX_Firmware/releases";
@@ -198,7 +198,26 @@ where
 
     info!("下载固件: {}", url);
 
-    let aria2_manager = get_aria2_manager().await?;
+    let aria2_manager = match get_aria2_manager().await {
+        Ok(manager) => manager,
+        Err(e) => {
+            warn!("启动 aria2 失败: {}", e);
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "download_firmware".to_string(),
+                    title: "下载固件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: Some(download_source.clone()),
+                }
+            });
+            return Err(e);
+        }
+    };
     let options = Aria2DownloadOptions {
         overwrite: false,
         use_github_mirror: url.contains("github.com"),

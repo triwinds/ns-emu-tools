@@ -112,6 +112,11 @@ export async function getAppVersion() {
   return invokeCommand<string>('get_app_version')
 }
 
+/** 获取当前运行平台 */
+export async function getPlatform() {
+  return invokeCommand<string>('get_platform')
+}
+
 /** 打开文件夹 */
 export async function openFolder(path: string) {
   return invokeCommand<void>('open_folder', { path })

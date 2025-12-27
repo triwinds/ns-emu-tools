@@ -1,5 +1,9 @@
 import type {AppConfig} from "@/types";
 
+// 注意：这些是示例默认值，实际路径会根据运行平台自动设置
+// Windows: D:\Yuzu, D:\Ryujinx
+// macOS: /Applications
+// Linux: ~/Yuzu, ~/Ryujinx
 export const defaultConfig: AppConfig = {
   "yuzu": {
     "yuzu_path": "D:\\Yuzu",

@@ -9,6 +9,7 @@ use crate::repositories::ryujinx::{
     get_all_ryujinx_release_infos, get_ryujinx_release_info_by_version, load_ryujinx_change_log,
 };
 use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
+#[cfg(target_os = "windows")]
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
@@ -18,9 +19,15 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
-/// Ryujinx 可执行文件名（优先使用 Ava 版本）
-const RYUJINX_AVA_EXE: &str = "Ryujinx.Ava.exe";
-const RYUJINX_EXE: &str = "Ryujinx.exe";
+/// Ryujinx 可执行文件名（根据平台不同）
+#[cfg(target_os = "windows")]
+const RYUJINX_EXE_NAMES: &[&str] = &["Ryujinx.Ava.exe", "Ryujinx.exe"];
+
+#[cfg(target_os = "macos")]
+const RYUJINX_APP_NAME: &str = "Ryujinx.app";
+
+#[cfg(target_os = "linux")]
+const RYUJINX_EXE_NAMES: &[&str] = &["Ryujinx.Ava", "Ryujinx"];
 
 /// 当前正在进行的下载任务 GID
 static CURRENT_DOWNLOAD_GID: RwLock<Option<String>> = RwLock::new(None);
@@ -47,11 +54,25 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
 
     debug!("找到版本: {}, 资源数量: {}", release_info.tag_name, release_info.assets.len());
 
-    // 查找 Windows x64 版本
+    // 根据平台选择资源后缀
+    #[cfg(target_os = "windows")]
+    let suffix = "-win_x64.zip";
+
+    #[cfg(target_os = "macos")]
+    let suffix = "-macos_universal.app.tar.gz";
+
+    #[cfg(target_os = "linux")]
+    let suffix = if cfg!(target_arch = "aarch64") {
+        "-linux_arm64.tar.gz"
+    } else {
+        "-linux_x64.tar.gz"
+    };
+
+    // 查找对应平台的版本
     for asset in &release_info.assets {
         let name = asset.name.to_lowercase();
         debug!("检查资源: {} (size: {})", asset.name, asset.size);
-        if name.starts_with("ryujinx-") && name.ends_with("-win_x64.zip") {
+        if name.starts_with("ryujinx-") && name.ends_with(suffix) {
             let url = get_final_url(&asset.download_url);
             info!("选择下载资源: {}, URL: {}", asset.name, url);
             return Ok(url);
@@ -67,23 +88,36 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
 
 /// 获取 Ryujinx 可执行文件路径
 ///
-/// 优先返回 Ryujinx.Ava.exe，如果不存在则返回 Ryujinx.exe
+/// 根据平台返回对应的可执行文件路径
 fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
     debug!("查找 Ryujinx 可执行文件，路径: {}", ryujinx_path.display());
-    let ava_exe = ryujinx_path.join(RYUJINX_AVA_EXE);
-    if ava_exe.exists() {
-        debug!("找到 Ryujinx.Ava.exe: {}", ava_exe.display());
-        return Some(ava_exe);
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: 查找 Ryujinx.app 并返回实际可执行文件路径
+        let app_path = ryujinx_path.join(RYUJINX_APP_NAME);
+        if app_path.exists() {
+            let exe_path = app_path.join("Contents/MacOS/Ryujinx");
+            debug!("找到 Ryujinx.app: {}", exe_path.display());
+            return Some(exe_path);
+        }
+        warn!("未找到 Ryujinx.app 在: {}", ryujinx_path.display());
+        return None;
     }
 
-    let exe = ryujinx_path.join(RYUJINX_EXE);
-    if exe.exists() {
-        debug!("找到 Ryujinx.exe: {}", exe.display());
-        return Some(exe);
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        // Windows/Linux: 按优先级查找可执行文件
+        for exe_name in RYUJINX_EXE_NAMES {
+            let exe_path = ryujinx_path.join(exe_name);
+            if exe_path.exists() {
+                debug!("找到 {}: {}", exe_name, exe_path.display());
+                return Some(exe_path);
+            }
+        }
+        warn!("未找到 Ryujinx 可执行文件在: {}", ryujinx_path.display());
+        None
     }
-
-    warn!("未找到 Ryujinx 可执行文件在: {}", ryujinx_path.display());
-    None
 }
 
 /// 检测当前 Ryujinx 分支
@@ -260,7 +294,26 @@ where
     });
 
     // 使用 aria2 下载
-    let aria2 = get_aria2_manager().await?;
+    let aria2 = match get_aria2_manager().await {
+        Ok(manager) => manager,
+        Err(e) => {
+            warn!("启动 aria2 失败: {}", e);
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "download".to_string(),
+                    title: format!("下载 Ryujinx {}", branch),
+                    status: ProgressStatus::Error,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: Some(download_source.clone()),
+                }
+            });
+            return Err(e);
+        }
+    };
     let options = Aria2DownloadOptions {
         use_github_mirror: false, // Ryujinx 使用 GitLab，不需要镜像
         ..Default::default()
@@ -539,27 +592,73 @@ where
         return Err(e);
     }
 
-    // 复制文件
-    let ryujinx_tmp_dir = tmp_dir.join("publish");
-    info!("复制 Ryujinx 文件从: {} 到: {}",
-        ryujinx_tmp_dir.display(), ryujinx_path.display());
-    debug!("检查解压后的 publish 目录: {}", ryujinx_tmp_dir.display());
-
-    if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Error,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: Some(e.to_string()),
-                download_source: None,
+    // 复制文件（根据平台不同处理方式）
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: 解压后直接是 Ryujinx.app，查找并复制
+        let mut app_path = None;
+        if let Ok(entries) = std::fs::read_dir(&tmp_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if path.extension().map_or(false, |ext| ext == "app") {
+                    app_path = Some(path);
+                    break;
+                }
             }
-        });
-        return Err(e);
+        }
+
+        let source_app = app_path.ok_or_else(|| AppError::Emulator("未找到 Ryujinx.app".to_string()))?;
+        let dest_app = ryujinx_path.join("Ryujinx.app");
+
+        info!("复制 Ryujinx.app 从: {} 到: {}", source_app.display(), dest_app.display());
+
+        // 删除旧的 .app（如果存在）
+        if dest_app.exists() {
+            std::fs::remove_dir_all(&dest_app)?;
+        }
+
+        if let Err(e) = copy_dir_all(&source_app, &dest_app) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            return Err(e);
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows/Linux: 从 publish 目录复制
+        let ryujinx_tmp_dir = tmp_dir.join("publish");
+        info!("复制 Ryujinx 文件从: {} 到: {}",
+            ryujinx_tmp_dir.display(), ryujinx_path.display());
+        debug!("检查解压后的 publish 目录: {}", ryujinx_tmp_dir.display());
+
+        if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            return Err(e);
+        }
     }
 
     on_event(ProgressEvent::StepUpdate {
@@ -594,23 +693,44 @@ where
         }
     });
 
-    if let Err(e) = check_and_install_msvc().await {
-        warn!("MSVC 运行库检查失败: {}", e);
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Error,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: Some(e.to_string()),
-                download_source: None,
-            }
-        });
-        // 不阻止安装流程，继续执行
-    } else {
+    #[cfg(target_os = "windows")]
+    {
+        if let Err(e) = check_and_install_msvc().await {
+            warn!("MSVC 运行库检查失败: {}", e);
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            // 不阻止安装流程，继续执行
+        } else {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: None,
+                }
+            });
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        // macOS/Linux: 不需要 MSVC 运行库，直接标记为成功
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "check_env".to_string(),
@@ -719,13 +839,41 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
         return portable_path;
     }
 
-    // 使用 AppData 目录
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        let appdata_path = PathBuf::from(appdata);
-        let ryujinx_appdata = appdata_path.join("Ryujinx");
-        if ryujinx_appdata.exists() {
-            debug!("使用 AppData 目录: {}", ryujinx_appdata.display());
-            return ryujinx_appdata;
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: 使用 %APPDATA%/Ryujinx
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let appdata_path = PathBuf::from(appdata);
+            let ryujinx_appdata = appdata_path.join("Ryujinx");
+            if ryujinx_appdata.exists() {
+                debug!("使用 AppData 目录: {}", ryujinx_appdata.display());
+                return ryujinx_appdata;
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: 使用 ~/Library/Application Support/Ryujinx
+        if let Ok(home) = std::env::var("HOME") {
+            let macos_path = PathBuf::from(home)
+                .join("Library/Application Support/Ryujinx");
+            if macos_path.exists() {
+                debug!("使用 macOS Application Support 目录: {}", macos_path.display());
+                return macos_path;
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: 使用 ~/.config/Ryujinx
+        if let Ok(home) = std::env::var("HOME") {
+            let linux_path = PathBuf::from(home).join(".config/Ryujinx");
+            if linux_path.exists() {
+                debug!("使用 Linux config 目录: {}", linux_path.display());
+                return linux_path;
+            }
         }
     }
 
@@ -947,14 +1095,21 @@ pub fn open_ryujinx_keys_folder() -> AppResult<()> {
 
     info!("打开 keys 目录: {}", keys_path.display());
 
-    #[cfg(windows)]
+    #[cfg(target_os = "windows")]
     {
         Command::new("explorer")
             .arg(keys_path.to_string_lossy().to_string())
             .spawn()?;
     }
 
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(keys_path.to_string_lossy().to_string())
+            .spawn()?;
+    }
+
+    #[cfg(target_os = "linux")]
     {
         Command::new("xdg-open")
             .arg(keys_path.to_string_lossy().to_string())
