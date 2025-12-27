@@ -24,7 +24,9 @@
       "Bash(wc:*)",
       "Bash(find:*)",
       "Bash(chmod:*)",
-      "WebFetch(domain:git.ryujinx.app)"
+      "WebFetch(domain:git.ryujinx.app)",
+      "mcp__context7__resolve-library-id",
+      "Bash(mkdir:*)"
     ]
   }
 }
