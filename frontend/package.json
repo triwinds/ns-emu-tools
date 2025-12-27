@@ -32,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@mdi/js": "^7.4.47",
+    "@rollup/rollup-darwin-arm64": "^4.54.0",
     "@tauri-apps/cli": "^2.9.6",
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^22.9.0",
@@ -44,6 +45,7 @@
     "pinia": "^2.1.7",
     "sass": "1.77.8",
     "sass-embedded": "^1.77.8",
+    "sass-embedded-darwin-arm64": "^1.97.1",
     "typescript": "~5.6.3",
     "unplugin-auto-import": "^0.17.6",
     "unplugin-fonts": "^1.1.1",

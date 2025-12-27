@@ -61,6 +61,10 @@ pub enum AppError {
     #[error("无效参数: {0}")]
     InvalidArgument(String),
 
+    /// 不支持的操作
+    #[error("不支持的操作: {0}")]
+    Unsupported(String),
+
     /// 未知错误
     #[error("未知错误: {0}")]
     Unknown(String),
@@ -96,6 +100,9 @@ impl From<AppError> for ErrorResponse {
             AppError::Permission(msg) => (2005, "权限错误".to_string(), Some(msg.clone())),
             AppError::InvalidArgument(msg) => {
                 (3001, "无效参数".to_string(), Some(msg.clone()))
+            }
+            AppError::Unsupported(msg) => {
+                (3002, "不支持的操作".to_string(), Some(msg.clone()))
             }
             AppError::Unknown(msg) => (9999, "未知错误".to_string(), Some(msg.clone())),
         };
@@ -176,6 +183,7 @@ impl AppError {
             AppError::Process(s) => AppError::Process(s.clone()),
             AppError::Permission(s) => AppError::Permission(s.clone()),
             AppError::InvalidArgument(s) => AppError::InvalidArgument(s.clone()),
+            AppError::Unsupported(s) => AppError::Unsupported(s.clone()),
             AppError::Unknown(s) => AppError::Unknown(s.clone()),
         }
     }

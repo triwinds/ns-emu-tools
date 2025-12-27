@@ -1227,7 +1227,9 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
     // - "Eden | v1.0.0"
     // - "citron | v1.0.0"
 
+    #[allow(unused_mut)]
     let mut version: Option<String> = None;
+    #[allow(unused_mut)]
     let mut branch: Option<String> = None;
 
     #[cfg(windows)]

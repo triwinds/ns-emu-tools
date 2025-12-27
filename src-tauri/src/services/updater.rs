@@ -367,13 +367,14 @@ pub async fn install_update(update_file: &Path) -> AppResult<()> {
 
     // 创建更新脚本
     #[cfg(windows)]
-    create_windows_update_script(&current_exe, &new_exe, current_dir)?;
+    {
+        create_windows_update_script(&current_exe, &new_exe, current_dir)?;
+        info!("更新脚本已创建，程序将退出并自动更新");
+        Ok(())
+    }
 
     #[cfg(not(windows))]
-    return Err(AppError::Unsupported("当前仅支持 Windows 平台".to_string()));
-
-    info!("更新脚本已创建，程序将退出并自动更新");
-    Ok(())
+    Err(AppError::Unsupported("当前仅支持 Windows 平台".to_string()))
 }
 
 /// 查找可执行文件

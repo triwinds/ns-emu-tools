@@ -2,7 +2,9 @@
 //!
 //! 提供 WebView2 运行时检测和自动安装功能
 
+#[cfg(target_os = "windows")]
 use tracing::{info, warn, error};
+#[cfg(target_os = "windows")]
 use std::path::PathBuf;
 
 /// 检查 WebView2 是否已安装

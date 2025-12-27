@@ -25,11 +25,32 @@ pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     }))
 });
 
+/// 获取应用程序数据目录
+pub fn app_data_dir() -> PathBuf {
+    // 优先使用 ProjectDirs 获取平台特定的数据目录
+    // macOS: ~/Library/Application Support/com.nsemu.tools
+    // Windows: C:\Users\<User>\AppData\Roaming\com.nsemu.tools
+    // Linux: ~/.config/com.nsemu.tools
+    if let Some(proj_dirs) = directories::ProjectDirs::from("com", "nsemu", "tools") {
+        proj_dirs.data_dir().to_path_buf()
+    } else {
+        // 降级方案：使用当前目录
+        warn!("无法获取应用程序数据目录，使用当前目录");
+        std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+    }
+}
+
 /// 获取配置文件路径
 pub fn config_path() -> PathBuf {
-    std::env::current_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("config.json")
+    let dir = app_data_dir();
+
+    // 确保目录存在
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        warn!("创建应用程序数据目录失败: {}", e);
+    }
+
+    dir.join("config.json")
 }
 
 /// Yuzu/Eden/Citron 模拟器配置

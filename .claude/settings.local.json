@@ -22,7 +22,8 @@
       "Bash(uv run python:*)",
       "Bash(git mv:*)",
       "Bash(wc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

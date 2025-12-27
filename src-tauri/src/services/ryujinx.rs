@@ -1071,6 +1071,7 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
     };
 
     // 先检测基础分支（通过文件名）
+    #[allow(unused_mut)]
     let mut branch = detect_current_branch();
 
     // 启动程序
@@ -1087,6 +1088,7 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
     debug!("等待窗口创建...");
     tokio::time::sleep(Duration::from_secs(3)).await;
 
+    #[allow(unused_mut)]
     let mut version: Option<String> = None;
 
     #[cfg(windows)]

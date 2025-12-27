@@ -8,9 +8,15 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 
 /// 获取日志文件路径
 fn log_file_path() -> PathBuf {
-    std::env::current_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("ns-emu-tools.log")
+    // 使用配置模块提供的应用程序数据目录
+    let dir = crate::config::app_data_dir();
+
+    // 确保目录存在
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        eprintln!("创建日志目录失败: {}", e);
+    }
+
+    dir.join("ns-emu-tools.log")
 }
 
 /// 初始化日志系统
