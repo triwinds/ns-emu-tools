@@ -219,3 +219,4 @@ web/
 http_cache.sqlite
 **/CloudflareSpeedTest/
 storage.json
+.DS_Store
