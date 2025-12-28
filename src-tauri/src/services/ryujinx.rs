@@ -668,6 +668,11 @@ where
 /// 清理 Ryujinx 文件夹（保留用户数据）
 ///
 /// 删除旧的程序文件，但保留用户数据和配置
+///
+/// # 安全说明
+/// - Windows: 只删除 Ryujinx*.exe 可执行文件，不删除整个目录（避免误删其他程序）
+/// - macOS: 只删除 Ryujinx.app，不删除整个目录（避免误删其他应用）
+/// - Linux: 只删除 Ryujinx 可执行文件，不删除整个目录（避免误删其他程序）
 fn clear_ryujinx_folder(ryujinx_path: &Path) -> AppResult<()> {
     if !ryujinx_path.exists() {
         std::fs::create_dir_all(ryujinx_path)?;
@@ -676,26 +681,49 @@ fn clear_ryujinx_folder(ryujinx_path: &Path) -> AppResult<()> {
 
     info!("清理 Ryujinx 目录: {}", ryujinx_path.display());
 
-    // 保留的目录列表
-    let preserve_dirs = vec!["bis", "sdcard", "portable"];
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: 只删除 Ryujinx.app，不删除整个目录
+        // 这样可以避免误删用户放在同一目录下的其他应用程序
+        let app_path = ryujinx_path.join(RYUJINX_APP_NAME);
+        if app_path.exists() {
+            debug!("删除旧的 Ryujinx.app: {}", app_path.display());
+            std::fs::remove_dir_all(&app_path)?;
+        }
+    }
 
-    // 遍历目录
-    for entry in std::fs::read_dir(ryujinx_path)? {
-        let entry = entry?;
-        let path = entry.path();
-        let file_name = entry.file_name();
-        let name_str = file_name.to_string_lossy();
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: 只删除 Ryujinx 可执行文件，不删除整个目录
+        // 这样可以避免误删用户放在同一目录下的其他程序
+        for exe_name in RYUJINX_EXE_NAMES {
+            let exe_path = ryujinx_path.join(exe_name);
+            if exe_path.exists() {
+                debug!("删除可执行文件: {}", exe_path.display());
+                std::fs::remove_file(&exe_path)?;
+            }
+        }
+    }
 
-        // 检查是否需要保留
-        let should_preserve = preserve_dirs.iter().any(|&p| name_str == p);
-
-        if !should_preserve {
-            if path.is_dir() {
-                debug!("删除目录: {}", path.display());
-                std::fs::remove_dir_all(&path)?;
-            } else {
-                debug!("删除文件: {}", path.display());
-                std::fs::remove_file(&path)?;
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: 只删除 Ryujinx*.exe 可执行文件，不删除整个目录
+        // 这样可以避免误删用户放在同一目录下的其他程序
+        // 匹配 Ryujinx*.exe 模式
+        if let Ok(entries) = std::fs::read_dir(ryujinx_path) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if path.is_file() {
+                    if let Some(file_name) = path.file_name() {
+                        let name = file_name.to_string_lossy();
+                        // 匹配 Ryujinx*.exe 模式（不区分大小写）
+                        if name.to_lowercase().starts_with("ryujinx")
+                            && name.to_lowercase().ends_with(".exe") {
+                            debug!("删除可执行文件: {}", path.display());
+                            std::fs::remove_file(&path)?;
+                        }
+                    }
+                }
             }
         }
     }

@@ -69,7 +69,7 @@ pub fn resolve_filename_from_url(url: &str, user_filename: Option<&str>) -> Stri
 /// 支持两种格式：
 /// - filename="example.zip"
 /// - filename*=UTF-8''%E4%B8%AD%E6%96%87.zip (RFC 5987)
-fn parse_content_disposition(header: &str) -> Option<String> {
+pub fn parse_content_disposition(header: &str) -> Option<String> {
     // 优先解析 filename* 格式（支持非 ASCII 字符）
     if let Some(filename) = parse_filename_star(header) {
         return Some(filename);

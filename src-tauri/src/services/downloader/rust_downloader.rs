@@ -7,6 +7,7 @@ use crate::services::downloader::chunk_manager::{ChunkManager, ChunkProgress, Ra
 use crate::services::downloader::client::build_download_client;
 use crate::services::downloader::filename::{resolve_filename, resolve_filename_from_url};
 use crate::services::downloader::manager::{DownloadManager, ProgressCallback};
+use crate::services::downloader::retry_strategy::{ErrorCategory, RetryStrategy};
 use crate::services::downloader::state_store::{
     check_disk_space, get_state_filename, get_temp_filename, ChunkState, DownloadState, StateStore,
 };
@@ -26,7 +27,7 @@ use tokio::fs;
 use tokio::sync::mpsc;
 use tokio::time::interval;
 use tokio_util::sync::CancellationToken;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 /// 状态保存间隔
 const STATE_SAVE_INTERVAL: Duration = Duration::from_secs(5);
@@ -137,7 +138,8 @@ impl DownloadManager for RustDownloader {
 
         let task = Arc::new(DownloadTask::new(
             task_id.clone(),
-            final_url,
+            url.to_string(),  // original_url
+            final_url,        // current url (可能是镜像)
             options,
             client,
         ));
@@ -191,7 +193,8 @@ impl DownloadManager for RustDownloader {
 
         let task = Arc::new(DownloadTask::new(
             task_id.clone(),
-            final_url,
+            url.to_string(),  // original_url
+            final_url,        // current url (可能是镜像)
             options,
             client,
         ));
@@ -343,8 +346,10 @@ impl DownloadManager for RustDownloader {
 struct DownloadTask {
     /// 任务 ID
     id: String,
-    /// 下载 URL
-    url: String,
+    /// 原始下载 URL（用于镜像切换）
+    original_url: String,
+    /// 当前下载 URL（可能是镜像 URL）
+    url: RwLock<String>,
     /// 下载选项
     options: DownloadOptions,
     /// HTTP 客户端
@@ -357,6 +362,8 @@ struct DownloadTask {
     cancel_token: CancellationToken,
     /// 是否暂停
     paused: Arc<AtomicBool>,
+    /// 重试策略
+    retry_strategy: RwLock<RetryStrategy>,
 }
 
 /// 进度信息
@@ -430,18 +437,49 @@ impl ProgressInfo {
 }
 
 impl DownloadTask {
-    fn new(id: String, url: String, options: DownloadOptions, client: Client) -> Self {
+    fn new(id: String, original_url: String, url: String, options: DownloadOptions, client: Client) -> Self {
         let filename = resolve_filename_from_url(&url, options.filename.as_deref());
 
         Self {
             id,
-            url,
+            original_url,
+            url: RwLock::new(url),
             options,
             client,
             status: Arc::new(RwLock::new(DownloadStatus::Waiting)),
             progress: Arc::new(RwLock::new(ProgressInfo::new(&filename))),
             cancel_token: CancellationToken::new(),
             paused: Arc::new(AtomicBool::new(false)),
+            retry_strategy: RwLock::new(RetryStrategy::default()),
+        }
+    }
+
+    /// 获取当前 URL
+    fn get_url(&self) -> String {
+        self.url.read().clone()
+    }
+
+    /// 尝试切换到镜像 URL（仅 GitHub）
+    ///
+    /// 返回 true 表示成功切换到新镜像
+    fn try_switch_mirror(&self) -> bool {
+        // 只有 GitHub URL 才尝试切换镜像
+        if !self.original_url.contains("github.com") && !self.original_url.contains("githubusercontent.com") {
+            return false;
+        }
+
+        // 重新计算镜像 URL
+        let new_url = get_github_download_url(&self.original_url);
+        let current_url = self.get_url();
+
+        // 如果新 URL 与当前 URL 不同，则切换
+        if new_url != current_url {
+            info!("切换到镜像 URL: {} -> {}", current_url, new_url);
+            *self.url.write() = new_url;
+            true
+        } else {
+            debug!("镜像 URL 未变化，保持当前 URL");
+            false
         }
     }
 
@@ -487,7 +525,8 @@ impl DownloadTask {
 
     /// 开始下载
     async fn start(&self) -> AppResult<DownloadResult> {
-        info!("开始下载: {} -> {}", self.url, self.progress.read().filename);
+        let current_url = self.get_url();
+        info!("开始下载: {} -> {}", current_url, self.progress.read().filename);
 
         *self.status.write() = DownloadStatus::Active;
 
@@ -501,13 +540,14 @@ impl DownloadTask {
             fs::create_dir_all(&save_dir).await?;
         }
 
-        // 检测 Range 支持
-        let range_support = ChunkManager::check_range_support(&self.client, &self.url).await?;
+        // 带重试的初始化阶段
+        let (range_support, filename) = self.init_with_retry(&save_dir).await?;
 
         // 更新进度信息
         {
             let mut progress = self.progress.write();
             progress.total = range_support.total_size;
+            progress.filename = filename.clone();
         }
 
         // 检查磁盘空间
@@ -515,35 +555,15 @@ impl DownloadTask {
             check_disk_space(&save_dir, range_support.total_size)?;
         }
 
-        // 发送探测请求获取文件名（如果需要）
-        let filename = if self.options.filename.is_none() {
-            // 发送 HEAD 请求获取响应头
-            let response = self
-                .client
-                .head(&self.url)
-                .send()
-                .await
-                .map_err(|e| AppError::Network(format!("HEAD 请求失败: {}", e)))?;
-
-            resolve_filename(&response, &self.url, self.options.filename.as_deref())
-        } else {
-            self.options.filename.clone().unwrap()
-        };
-
-        // 更新文件名
-        {
-            let mut progress = self.progress.write();
-            progress.filename = filename.clone();
-        }
-
         // 状态存储
         let state_store = StateStore::new(save_dir.clone());
+        let current_url = self.get_url();
 
         // 尝试加载已有状态
         let mut state = if let Some(existing_state) = state_store.load(&filename).await? {
             // 验证一致性
             if existing_state.validate_consistency(
-                &self.url,
+                &current_url,
                 None,
                 range_support.total_size,
                 range_support.etag.as_deref(),
@@ -580,9 +600,6 @@ impl DownloadTask {
 
         // 保存初始状态
         state_store.save(&state).await?;
-
-        // 创建进度通道
-        let (progress_tx, mut progress_rx) = mpsc::unbounded_channel::<ChunkProgress>();
 
         // 临时文件路径
         let temp_path = state.temp_file_path();
@@ -625,45 +642,12 @@ impl DownloadTask {
             }
         });
 
-        // 启动进度聚合任务
-        let progress_clone = self.progress.clone();
-        let state_for_progress = state_clone.clone();
-
-        let progress_handle = tokio::spawn(async move {
-            while let Some(chunk_progress) = progress_rx.recv().await {
-                // 更新分块状态
-                {
-                    let mut state = state_for_progress.write();
-                    if let Some(chunk) = state.chunks.get_mut(chunk_progress.index) {
-                        chunk.downloaded = chunk_progress.downloaded;
-                        chunk.completed = chunk_progress.completed;
-                    }
-                }
-
-                // 更新总进度
-                let total_downloaded: u64 = {
-                    let state = state_for_progress.read();
-                    state.chunks.iter().map(|c| c.downloaded).sum()
-                };
-
-                let mut progress = progress_clone.write();
-                progress.update_speed(total_downloaded);
-            }
-        });
-
-        // 执行下载
-        let download_result = if range_support.supports_range && state.chunks.len() > 1 {
-            // 多连接下载
-            self.download_multi_chunk(&state_clone, &temp_path, progress_tx)
-                .await
-        } else {
-            // 单连接下载
-            self.download_single_chunk(&state_clone, &temp_path, progress_tx)
-                .await
-        };
-
-        // 等待进度任务结束
-        drop(progress_handle);
+        // 带重试的下载阶段
+        let download_result = self.download_with_retry(
+            &state_clone,
+            &temp_path,
+            range_support.supports_range,
+        ).await;
 
         // 停止状态保存任务
         state_save_handle.abort();
@@ -711,6 +695,192 @@ impl DownloadTask {
         }
     }
 
+    /// 带重试的初始化阶段（Range 探测和文件名解析）
+    async fn init_with_retry(&self, _save_dir: &PathBuf) -> AppResult<(RangeSupport, String)> {
+        loop {
+            let current_url = self.get_url();
+
+            // 检测 Range 支持
+            let range_result = ChunkManager::check_range_support(&self.client, &current_url).await;
+
+            match range_result {
+                Ok(range_support) => {
+                    // 获取文件名
+                    let filename = if self.options.filename.is_none() {
+                        let head_result = self.client
+                            .head(&current_url)
+                            .send()
+                            .await;
+
+                        match head_result {
+                            Ok(response) => {
+                                resolve_filename(&response, &current_url, self.options.filename.as_deref())
+                            }
+                            Err(e) => {
+                                let error = AppError::Network(format!("HEAD 请求失败: {}", e));
+                                if !self.handle_retry_error(&error).await {
+                                    return Err(error);
+                                }
+                                continue;
+                            }
+                        }
+                    } else {
+                        self.options.filename.clone().unwrap()
+                    };
+
+                    return Ok((range_support, filename));
+                }
+                Err(e) => {
+                    if !self.handle_retry_error(&e).await {
+                        return Err(e);
+                    }
+                    // 继续重试
+                }
+            }
+        }
+    }
+
+    /// 带重试的下载阶段
+    async fn download_with_retry(
+        &self,
+        state: &Arc<RwLock<DownloadState>>,
+        temp_path: &PathBuf,
+        supports_range: bool,
+    ) -> AppResult<()> {
+        loop {
+            // 创建进度通道
+            let (progress_tx, mut progress_rx) = mpsc::unbounded_channel::<ChunkProgress>();
+
+            // 启动进度聚合任务
+            let progress_clone = self.progress.clone();
+            let state_for_progress = state.clone();
+
+            let progress_handle = tokio::spawn(async move {
+                while let Some(chunk_progress) = progress_rx.recv().await {
+                    // 更新分块状态
+                    {
+                        let mut state = state_for_progress.write();
+                        if let Some(chunk) = state.chunks.get_mut(chunk_progress.index) {
+                            chunk.downloaded = chunk_progress.downloaded;
+                            chunk.completed = chunk_progress.completed;
+                        }
+                    }
+
+                    // 更新总进度
+                    let total_downloaded: u64 = {
+                        let state = state_for_progress.read();
+                        state.chunks.iter().map(|c| c.downloaded).sum()
+                    };
+
+                    let mut progress = progress_clone.write();
+                    progress.update_speed(total_downloaded);
+                }
+            });
+
+            // 执行下载
+            let chunk_count = state.read().chunks.len();
+            let download_result = if supports_range && chunk_count > 1 {
+                // 多连接下载
+                self.download_multi_chunk(state, temp_path, progress_tx).await
+            } else {
+                // 单连接下载
+                self.download_single_chunk(state, temp_path, progress_tx).await
+            };
+
+            // 等待进度任务结束
+            drop(progress_handle);
+
+            match download_result {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    // 检查是否是取消操作
+                    if self.cancel_token.is_cancelled() {
+                        return Err(e);
+                    }
+
+                    if !self.handle_retry_error(&e).await {
+                        return Err(e);
+                    }
+                    // 继续重试
+                    info!("重试下载...");
+                }
+            }
+        }
+    }
+
+    /// 处理重试错误
+    ///
+    /// 返回 true 表示应该重试，false 表示不应重试
+    async fn handle_retry_error(&self, error: &AppError) -> bool {
+        use crate::services::downloader::retry_strategy::RetryAction;
+
+        // 检查是否被取消
+        if self.cancel_token.is_cancelled() {
+            return false;
+        }
+
+        // 检查是否应该重试（在块中确保锁被释放）
+        let should_check = {
+            let retry_strategy = self.retry_strategy.read();
+            retry_strategy.should_retry(error)
+        };
+
+        if !should_check {
+            let category = RetryStrategy::categorize_error(error);
+            warn!("错误不可重试: {:?}, 错误: {}", category, error);
+            return false;
+        }
+
+        // 对于 GitHub URL，尝试切换镜像
+        let category = RetryStrategy::categorize_error(error);
+        if matches!(category, ErrorCategory::Temporary | ErrorCategory::RateLimited | ErrorCategory::DnsError) {
+            if self.try_switch_mirror() {
+                // 成功切换镜像，重置重试计数
+                self.retry_strategy.write().reset();
+            }
+        }
+
+        // 准备重试动作（不持有锁）
+        let retry_action = {
+            let retry_strategy = self.retry_strategy.read();
+            retry_strategy.prepare_retry(error)
+        };
+
+        // 执行重试等待（异步操作，不持有锁）
+        let should_retry = match retry_action {
+            Some(RetryAction::WaitForNetwork { timeout, retry_num, max_retries }) => {
+                warn!(
+                    "网络不可用，等待网络恢复（重试 {}/{}）",
+                    retry_num, max_retries
+                );
+                RetryStrategy::wait_for_network(timeout).await
+            }
+            Some(RetryAction::Sleep { duration, retry_num, max_retries, reason }) => {
+                if reason.contains("限流") {
+                    warn!(
+                        "触发限流，等待 {:?} 后重试（重试 {}/{}）",
+                        duration, retry_num, max_retries
+                    );
+                } else {
+                    info!(
+                        "{}，等待 {:?} 后重试（重试 {}/{}）",
+                        reason, duration, retry_num, max_retries
+                    );
+                }
+                tokio::time::sleep(duration).await;
+                true
+            }
+            None => false,
+        };
+
+        // 如果应该重试，增加重试计数
+        if should_retry {
+            self.retry_strategy.write().increment_retry();
+        }
+
+        should_retry
+    }
+
     /// 创建新的下载状态
     fn create_new_state(
         &self,
@@ -719,7 +889,7 @@ impl DownloadTask {
         range_support: &RangeSupport,
     ) -> DownloadState {
         DownloadState::new(
-            &self.url,
+            &self.get_url(),
             filename,
             save_dir.clone(),
             range_support.total_size,
@@ -740,6 +910,7 @@ impl DownloadTask {
         };
 
         let mut handles = Vec::new();
+        let current_url = self.get_url();
 
         for chunk in chunks {
             if chunk.completed {
@@ -747,7 +918,7 @@ impl DownloadTask {
             }
 
             let client = self.client.clone();
-            let url = self.url.clone();
+            let url = current_url.clone();
             let path = temp_path.clone();
             let tx = progress_tx.clone();
             let cancel_token = self.cancel_token.clone();
@@ -800,9 +971,10 @@ impl DownloadTask {
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
+        let current_url = self.get_url();
         ChunkManager::download_single(
             &self.client,
-            &self.url,
+            &current_url,
             temp_path,
             progress_tx,
             self.cancel_token.clone(),

@@ -358,6 +358,21 @@ pub enum ErrorCategory {
     DiskError,           // 磁盘空间不足/权限问题 -> 不重试，需用户干预
 }
 
+/// 重试动作（避免持锁跨 await 点）
+pub enum RetryAction {
+    WaitForNetwork {
+        timeout: Duration,
+        retry_num: u32,
+        max_retries: u32,
+    },
+    Sleep {
+        duration: Duration,
+        retry_num: u32,
+        max_retries: u32,
+        reason: String,
+    },
+}
+
 impl RetryStrategy {
     // 1. 错误分类
     pub fn categorize_error(error: &AppError) -> ErrorCategory {
@@ -408,19 +423,26 @@ impl RetryStrategy {
         Duration::from_secs(1u64.saturating_shl(self.current_retry))
     }
 
-    // 4. 镜像切换（仅 GitHub）
-    pub fn try_switch_mirror(&mut self, url: &str) -> Option<String> {
-        if url.contains("github.com") {
-            // 必须复用现有镜像策略：services::network::get_github_download_url
-            // 镜像来源受 config.setting.network.github_download_mirror 控制
-            // 对 auto 负载均衡场景，可在一次重试中重新计算镜像 URL
-        }
+    // 4. 准备重试（不持有锁的版本）
+    pub fn prepare_retry(&self, error: &AppError) -> Option<RetryAction> {
+        // 返回需要执行的重试动作，由调用方异步执行
+        // 避免在持有锁时调用 async 方法
     }
 
-    // 5. 网络检测
+    // 5. 增加重试计数
+    pub fn increment_retry(&mut self) {
+        self.current_retry += 1;
+    }
+
+    // 6. 网络检测
     pub async fn check_network_available() -> bool {
         // 尝试连接 8.8.8.8:53, 1.1.1.1:53, 223.5.5.5:53
         // 任意一个成功即可
+    }
+
+    // 7. 等待网络恢复（公共方法）
+    pub async fn wait_for_network(timeout: Duration) -> bool {
+        // 每 5 秒检测一次网络连接，直到网络恢复或超时
     }
 }
 ```
@@ -446,6 +468,11 @@ impl RetryStrategy {
       重试（最多 5 次）
 ```
 
+**避免持锁跨 await 点的设计**：
+- `prepare_retry()` 返回 `Option<RetryAction>`（同步方法）
+- 调用方根据 `RetryAction` 执行异步等待
+- 等待完成后再调用 `increment_retry()` 更新计数
+
 ### 6. 下载任务 (`rust_downloader.rs`)
 
 核心数据结构：
@@ -459,12 +486,14 @@ pub struct RustDownloader {
 
 pub struct DownloadTask {
     id: String,
-    url: String,
+    original_url: String,              // 原始 URL（用于镜像切换）
+    url: RwLock<String>,                // 当前 URL（可能是镜像 URL）
     options: DownloadOptions,
     status: Arc<RwLock<DownloadStatus>>,
     progress: Arc<RwLock<ProgressInfo>>,
     cancel_token: CancellationToken,
     paused: Arc<AtomicBool>,
+    retry_strategy: RwLock<RetryStrategy>,  // 重试策略
 }
 
 struct ProgressInfo {
@@ -479,15 +508,33 @@ struct ProgressInfo {
 ```
 
 **下载流程**：
-1. `download()` - 创建任务，异步启动
+1. `download()` / `download_and_wait()` - 创建任务，异步启动
+   - 检查 `use_github_mirror` 标志，如果为 true 则初始化时使用镜像 URL
+   - 创建 `DownloadTask` 时传入 `original_url` 和 `final_url`
 2. `DownloadTask::start()` - 主下载逻辑
-   - 加载或创建状态文件
+   - 通过 `init_with_retry()` 加载或创建状态文件（带重试）
    - 检测服务器支持（Range、文件大小）
-    - 生成最终 URL/网络策略：复用 `services::network`（镜像/代理/UA）
+   - 生成最终 URL/网络策略：复用 `services::network`（镜像/代理/UA）
    - 创建文件并预分配空间
    - 启动进度聚合任务
-   - 循环：下载 → 失败重试 → 保存状态
-3. `download_and_wait()` - 轮询进度，调用回调
+   - 通过 `download_with_retry()` 执行下载循环（带重试）
+3. `init_with_retry()` - 初始化阶段的重试循环
+   - Range 探测失败时调用 `handle_retry_error()`
+   - HEAD 请求失败时调用 `handle_retry_error()`
+4. `download_with_retry()` - 下载阶段的重试循环
+   - 下载失败时调用 `handle_retry_error()`
+   - 成功则返回，失败且应重试则继续循环
+5. `handle_retry_error()` - 统一的重试错误处理
+   - 检查是否应该重试
+   - 对 GitHub URL 尝试切换镜像（通过 `try_switch_mirror()`）
+   - 使用 `prepare_retry()` 获取重试动作
+   - 执行异步等待（不持有锁）
+   - 增加重试计数
+6. `try_switch_mirror()` - GitHub 镜像切换
+   - 检查是否是 GitHub URL
+   - 调用 `get_github_download_url()` 重新计算镜像 URL
+   - 如果 URL 变化则更新并返回 true
+   - 镜像切换后会重置重试计数
 
 **速度计算（滑动窗口平均）**：
 ```rust
@@ -734,25 +781,39 @@ wiremock = "0.6"
 
 **验证点**：✅ 能够完成单文件下载，显示进度
 
-### Phase 2: 断点续传（增强功能）
+### Phase 2: 断点续传（增强功能）✅ 已完成
 
-1. 实现 `StateStore` - 状态文件读写（原子写 + 远端一致性校验）
-2. 实现 `ChunkManager` - Range 探测改为 GET+Range=0-0，支持 unknown-length 降级
-3. 实现多连接下载 + 安全并发写入（随机写或独立句柄，避免 seek 并发）
-4. 集成断点续传逻辑（resume 时必须校验远端一致性）
-5. 实现 pause/resume 的明确定义（暂停时停止调度/取消进行中请求、速度归零等）
+1. ✅ 实现 `StateStore` - 状态文件读写（原子写 + 远端一致性校验）
+2. ✅ 实现 `ChunkManager` - Range 探测改为 GET+Range=0-0，支持 unknown-length 降级
+3. ✅ 实现多连接下载 + 安全并发写入（每个分块使用独立文件句柄）
+4. ✅ 集成断点续传逻辑（resume 时必须校验远端一致性）
+5. ✅ 实现 pause/resume 的明确定义（暂停时停止调度、速度归零）
 
-**验证点**：下载中断后能够从断点继续
+**实现细节**：
+- `StateStore`：使用 JSON 状态文件 + 原子写入（temp + rename），支持 PID 检查避免多实例冲突
+- `ChunkManager`：使用 `GET + Range: bytes=0-0` 探测，自动降级为单连接下载
+- 多连接下载：每个分块独立打开文件句柄，通过 mpsc channel 聚合进度
+- 断点续传：加载状态文件后验证 URL、ETag、Last-Modified、Content-Length 一致性
+- Pause/Resume：设置暂停标志，下载循环检测并等待，暂停时清空速度采样
+
+**验证点**：✅ 下载中断后能够从断点继续
 
 ### Phase 3: 智能重试（完善功能）✅ 已完成
 
 1. ✅ 实现 `RetryStrategy` - 错误分类（含 HTTP 状态码、429/Retry-After）
 2. ✅ 实现指数退避 + jitter
 3. ✅ 实现网络感知
-4. ⚠️ GitHub 镜像策略：复用 `services::network::get_github_download_url`（遵循现有配置）- 需在 RustDownloader 中集成
-5. ⚠️ 集成到下载主流程 - 需在 RustDownloader 中集成
+4. ✅ GitHub 镜像策略：复用 `services::network::get_github_download_url`（遵循现有配置）- 已在 RustDownloader 中集成
+5. ✅ 集成到下载主流程 - 已在 RustDownloader 中集成
 
-**验证点**：✅ 错误分类正确，重试策略工作正常，网络感知功能正常
+**实现细节**：
+- 初始下载时自动使用 GitHub 镜像（如果 `use_github_mirror` 为 true）
+- 重试时通过 `try_switch_mirror()` 方法切换镜像 URL
+- 使用 `RetryAction` 枚举避免持锁跨 await 点
+- `prepare_retry()` 方法返回重试动作，由调用方异步执行
+- 两个重试循环：`init_with_retry()` 用于初始化阶段，`download_with_retry()` 用于下载阶段
+
+**验证点**：✅ 错误分类正确，重试策略工作正常，网络感知功能正常，GitHub 镜像切换已集成
 
 ### Phase 4: 测试和优化
 
@@ -1099,7 +1160,7 @@ pub fn sanitize_filename(filename: &str) -> String {
 这个实现计划提供了一个完整的、生产级的下载器体系：以 `services::downloader` 作为统一入口，aria2 与 RustDownloader 作为可替换后端。方案 A 的收益是长期可维护、行为一致、可控回退；代价是需要一次性迁移现有下载调用点。
 
 - ✅ 自适应断点续传（单连接/多连接）
-- ✅ 智能重试（错误分类、网络感知、指数退避、镜像切换）
+- ✅ 智能重试（错误分类、网络感知、指数退避、GitHub 镜像切换）
 - ✅ 完整的进度跟踪（速度、ETA、百分比）
 - ✅ 前端无需修改（数据结构与序列化保持一致）
 - ✅ 业务下载调用统一迁移到 `services::downloader`
@@ -1107,4 +1168,31 @@ pub fn sanitize_filename(filename: &str) -> String {
 
 实现优先级按 Phase 1-4 分阶段进行，每个阶段都有明确的验证点，确保稳步推进。
 
-**Phase 1 已完成**，包括基础框架、统一接口、调用方迁移和目录重构。
+**当前进度**：
+- ✅ Phase 1（基础框架）已完成
+- ✅ Phase 2（断点续传）已完成 - 状态持久化、分块下载、一致性校验、pause/resume 均已实现
+- ✅ Phase 3（智能重试）已完成 - 包括错误分类、指数退避、网络感知和 GitHub 镜像切换
+- ✅ Phase 4（测试和优化）已完成
+
+**Phase 4 实现要点**：
+1. 添加了 wiremock 依赖用于 HTTP 服务器模拟集成测试
+2. 创建了完整的集成测试文件 `tests/download_integration_test.rs`
+3. 补充了 `retry_strategy.rs` 的边界测试（403/401/502/503 错误分类、DNS 错误、磁盘错误等）
+4. 补充了 `chunk_manager.rs` 的边界测试（边界值、不规则分块、单分块、大分块数等）
+5. 集成测试覆盖：Range 支持检测、简单下载、分块下载、进度回调、取消下载、Content-Disposition 解析、状态持久化
+6. 涉及真正重试延迟的测试（429 重试、404 不重试）标记为 `#[ignore]`，可通过 `cargo test -- --ignored` 手动运行
+
+**Phase 3 实现要点**：
+1. 使用 `RetryAction` 枚举避免持锁跨 await 点的并发问题
+2. `prepare_retry()` 方法返回同步的重试动作，由调用方异步执行
+3. GitHub 镜像切换集成在初始下载和重试阶段
+4. 两个独立的重试循环：`init_with_retry()` 和 `download_with_retry()`
+5. 统一的错误处理方法 `handle_retry_error()` 处理所有重试逻辑
+
+**Phase 2 实现要点**：
+1. `StateStore` 使用 JSON 格式存储状态，原子写入确保数据完整性
+2. PID 字段用于检测僵尸状态文件，避免多进程冲突
+3. `ChunkManager` 使用 `GET + Range: bytes=0-0` 探测 Range 支持（比 HEAD 更可靠）
+4. 每个分块使用独立文件句柄写入，避免 seek 并发问题
+5. 通过 `mpsc::unbounded_channel` 聚合各分块进度
+6. 下载完成后原子 rename `.part` 文件到最终文件名

@@ -2,8 +2,8 @@
 //!
 //! 独立测试文件，验证 download 模块的基础功能
 
-use ns_emu_tools_lib::services::download::types::*;
-use ns_emu_tools_lib::services::download::DownloadBackend;
+use ns_emu_tools_lib::services::downloader::types::*;
+use ns_emu_tools_lib::services::downloader::DownloadBackend;
 
 #[test]
 fn test_phase1_download_options() {

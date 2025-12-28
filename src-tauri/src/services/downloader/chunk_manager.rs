@@ -479,11 +479,45 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_size_edge_cases() {
+        // 大小写不敏感
+        assert_eq!(parse_size("4m"), Some(4 * 1024 * 1024));
+        assert_eq!(parse_size("4Mb"), Some(4 * 1024 * 1024));
+
+        // 带空格
+        assert_eq!(parse_size("  4M  "), Some(4 * 1024 * 1024));
+
+        // 边界值
+        assert_eq!(parse_size("0"), Some(0));
+        assert_eq!(parse_size("1"), Some(1));
+
+        // 无效输入
+        assert_eq!(parse_size("abc"), None);
+        assert_eq!(parse_size("M"), None);
+    }
+
+    #[test]
     fn test_parse_content_range_total() {
         assert_eq!(parse_content_range_total("bytes 0-0/12345"), Some(12345));
         assert_eq!(parse_content_range_total("bytes 0-999/1000"), Some(1000));
         assert_eq!(parse_content_range_total("bytes */12345"), Some(12345));
         assert_eq!(parse_content_range_total("bytes 0-0/*"), None);
+    }
+
+    #[test]
+    fn test_parse_content_range_edge_cases() {
+        // 带空格
+        assert_eq!(parse_content_range_total("bytes 0-0/ 12345 "), Some(12345));
+
+        // 大文件
+        assert_eq!(
+            parse_content_range_total("bytes 0-0/9999999999999"),
+            Some(9999999999999)
+        );
+
+        // 无效格式
+        assert_eq!(parse_content_range_total("invalid"), None);
+        assert_eq!(parse_content_range_total("bytes 0-0"), None);
     }
 
     #[test]
@@ -535,5 +569,97 @@ mod tests {
 
         assert_eq!(manager.split, 8);
         assert_eq!(manager.min_split_size, 8 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_calculate_chunks_exact_boundary() {
+        // 测试刚好等于 min_split_size 的情况
+        let manager = ChunkManager::new(4, "4M");
+        let chunks = manager.calculate_chunks(4 * 1024 * 1024, true); // 正好 4MB
+
+        // 刚好等于 min_split_size，应该是单连接
+        assert_eq!(chunks.len(), 1);
+    }
+
+    #[test]
+    fn test_calculate_chunks_just_above_boundary() {
+        // 测试刚刚超过 min_split_size 的情况
+        // 分块策略会考虑每块的最小大小，刚好超过 min_split_size 时可能仍是单块
+        let manager = ChunkManager::new(4, "4M");
+        let chunks = manager.calculate_chunks(4 * 1024 * 1024 + 1, true);
+
+        // 验证分块覆盖整个文件
+        let total_size: u64 = chunks.iter().map(|c| c.size()).sum();
+        assert_eq!(total_size, 4 * 1024 * 1024 + 1);
+
+        // 验证至少有 1 个分块
+        assert!(!chunks.is_empty());
+    }
+
+    #[test]
+    fn test_calculate_chunks_uneven_division() {
+        // 测试不能整除的情况
+        let manager = ChunkManager::new(3, "1M");
+        let chunks = manager.calculate_chunks(10 * 1024 * 1024, true); // 10MB, 3 chunks
+
+        assert_eq!(chunks.len(), 3);
+
+        // 验证总大小正确
+        let total_size: u64 = chunks.iter().map(|c| c.size()).sum();
+        assert_eq!(total_size, 10 * 1024 * 1024);
+
+        // 验证分块连续
+        for i in 1..chunks.len() {
+            assert_eq!(chunks[i].start, chunks[i - 1].end + 1);
+        }
+    }
+
+    #[test]
+    fn test_calculate_chunks_single_split() {
+        // 测试 split = 1 的情况
+        let manager = ChunkManager::new(1, "1M");
+        let chunks = manager.calculate_chunks(100 * 1024 * 1024, true);
+
+        // split = 1 应该始终是单连接
+        assert_eq!(chunks.len(), 1);
+    }
+
+    #[test]
+    fn test_calculate_chunks_large_split() {
+        // 测试 split 数量大于合理分块数的情况
+        let manager = ChunkManager::new(100, "1M");
+        let chunks = manager.calculate_chunks(10 * 1024 * 1024, true);
+
+        // 分块数应该受限于实际需要
+        assert!(chunks.len() <= 100);
+        assert!(chunks.len() > 1);
+    }
+
+    #[test]
+    fn test_chunk_progress_default() {
+        let progress = ChunkProgress {
+            index: 5,
+            downloaded: 1000,
+            completed: false,
+        };
+
+        assert_eq!(progress.index, 5);
+        assert_eq!(progress.downloaded, 1000);
+        assert!(!progress.completed);
+    }
+
+    #[test]
+    fn test_range_support_default() {
+        let support = RangeSupport {
+            supports_range: true,
+            total_size: 1000000,
+            etag: Some("abc".to_string()),
+            last_modified: None,
+        };
+
+        assert!(support.supports_range);
+        assert_eq!(support.total_size, 1000000);
+        assert_eq!(support.etag, Some("abc".to_string()));
+        assert!(support.last_modified.is_none());
     }
 }

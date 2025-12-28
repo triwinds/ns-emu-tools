@@ -147,3 +147,5 @@ strip = true
 tempfile = "3.15"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ctor = "0.2"
+# HTTP 服务器模拟（集成测试）
+wiremock = "0.6"

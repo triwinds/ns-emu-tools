@@ -45,23 +45,32 @@ impl Default for TestConfigHelper {
 }
 
 /// 简单的进度打印回调
-pub fn simple_progress_printer(prefix: &str) -> impl Fn(ns_emu_tools_lib::services::aria2::Aria2DownloadProgress) {
+pub fn simple_progress_printer(prefix: &str) -> impl Fn(ns_emu_tools_lib::models::ProgressEvent) + Clone {
+    use ns_emu_tools_lib::models::ProgressEvent;
+
     let prefix = prefix.to_string();
-    let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
 
-    move |progress| {
-        let count = counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-
-        // 每 20 次更新输出一次
-        if count % 20 == 0 || progress.percentage >= 99.9 {
-            tracing::info!(
-                "{} {:.1}% ({}/{} MB) @ {} KB/s",
-                prefix,
-                progress.percentage,
-                progress.downloaded / 1_048_576,
-                progress.total / 1_048_576,
-                progress.speed / 1024
-            );
+    move |event| {
+        match event {
+            ProgressEvent::Started { steps } => {
+                tracing::info!("{} 开始，共 {} 个步骤", prefix, steps.len());
+            }
+            ProgressEvent::StepUpdate { step } => {
+                tracing::info!(
+                    "{} 步骤 [{}] {}: {:?}",
+                    prefix,
+                    step.id,
+                    step.title,
+                    step.status
+                );
+            }
+            ProgressEvent::Finished { success, message } => {
+                if success {
+                    tracing::info!("{} 完成", prefix);
+                } else {
+                    tracing::warn!("{} 失败: {:?}", prefix, message);
+                }
+            }
         }
     }
 }

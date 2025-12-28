@@ -27,6 +27,24 @@ pub enum ErrorCategory {
     DiskError,
 }
 
+/// 重试动作
+#[derive(Debug, Clone)]
+pub enum RetryAction {
+    /// 等待网络恢复
+    WaitForNetwork {
+        timeout: Duration,
+        retry_num: u32,
+        max_retries: u32,
+    },
+    /// 休眠指定时间
+    Sleep {
+        duration: Duration,
+        retry_num: u32,
+        max_retries: u32,
+        reason: String,
+    },
+}
+
 /// 重试策略
 pub struct RetryStrategy {
     /// 最大重试次数
@@ -220,10 +238,67 @@ impl RetryStrategy {
         true
     }
 
+    /// 准备重试（不持有锁的版本）
+    ///
+    /// 返回是否应该重试以及需要等待的操作
+    pub fn prepare_retry(&self, error: &AppError) -> Option<RetryAction> {
+        let category = Self::categorize_error(error);
+
+        match category {
+            ErrorCategory::Permanent | ErrorCategory::DiskError | ErrorCategory::SslError => {
+                debug!("错误不可重试: {:?}", category);
+                None
+            }
+
+            ErrorCategory::NetworkUnavailable => {
+                Some(RetryAction::WaitForNetwork {
+                    timeout: Duration::from_secs(60),
+                    retry_num: self.current_retry + 1,
+                    max_retries: self.max_retries,
+                })
+            }
+
+            ErrorCategory::DnsError => {
+                Some(RetryAction::Sleep {
+                    duration: Duration::from_secs(10),
+                    retry_num: self.current_retry + 1,
+                    max_retries: self.max_retries,
+                    reason: "DNS 解析失败".to_string(),
+                })
+            }
+
+            ErrorCategory::RateLimited => {
+                let delay = self.backoff_delay();
+                Some(RetryAction::Sleep {
+                    duration: delay,
+                    retry_num: self.current_retry + 1,
+                    max_retries: self.max_retries,
+                    reason: "触发限流".to_string(),
+                })
+            }
+
+            ErrorCategory::Temporary => {
+                let delay = self.backoff_delay();
+                Some(RetryAction::Sleep {
+                    duration: delay,
+                    retry_num: self.current_retry + 1,
+                    max_retries: self.max_retries,
+                    reason: "临时错误".to_string(),
+                })
+            }
+        }
+    }
+
+    /// 增加重试计数
+    pub fn increment_retry(&mut self) {
+        self.current_retry += 1;
+    }
+
+
     /// 等待网络恢复
     ///
     /// 每 5 秒检测一次网络连接，直到网络恢复或超时
-    async fn wait_for_network(timeout: Duration) -> bool {
+    pub async fn wait_for_network(timeout: Duration) -> bool {
         let start = std::time::Instant::now();
         let check_interval = Duration::from_secs(5);
 
@@ -367,6 +442,90 @@ mod tests {
     }
 
     #[test]
+    fn test_categorize_http_403() {
+        let error = AppError::Network("403 Forbidden".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::Permanent
+        );
+    }
+
+    #[test]
+    fn test_categorize_http_401() {
+        let error = AppError::Network("401 Unauthorized".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::Permanent
+        );
+    }
+
+    #[test]
+    fn test_categorize_http_502() {
+        let error = AppError::Network("502 Bad Gateway".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::Temporary
+        );
+    }
+
+    #[test]
+    fn test_categorize_http_503() {
+        let error = AppError::Network("503 Service Unavailable".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::Temporary
+        );
+    }
+
+    #[test]
+    fn test_categorize_connection_reset() {
+        let error = AppError::Network("connection reset by peer".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::Temporary
+        );
+    }
+
+    #[test]
+    fn test_categorize_network_unreachable() {
+        let error = AppError::Network("network unreachable".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::NetworkUnavailable
+        );
+    }
+
+    #[test]
+    fn test_categorize_tls_error() {
+        let error = AppError::Network("TLS handshake failed".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::SslError
+        );
+    }
+
+    #[test]
+    fn test_categorize_io_permission_denied() {
+        let error = AppError::Io(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "permission denied",
+        ));
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::DiskError
+        );
+    }
+
+    #[test]
+    fn test_categorize_disk_space_error() {
+        let error = AppError::Download("disk space not enough".to_string());
+        assert_eq!(
+            RetryStrategy::categorize_error(&error),
+            ErrorCategory::DiskError
+        );
+    }
+
+    #[test]
     fn test_should_retry_permanent() {
         let strategy = RetryStrategy::new(5);
         let error = AppError::Network("404 Not Found".to_string());
@@ -386,6 +545,34 @@ mod tests {
         strategy.current_retry = 3;
         let error = AppError::Network("500 Internal Server Error".to_string());
         assert!(!strategy.should_retry(&error));
+    }
+
+    #[test]
+    fn test_should_retry_ssl_error() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("SSL certificate error".to_string());
+        assert!(!strategy.should_retry(&error));
+    }
+
+    #[test]
+    fn test_should_retry_disk_error() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Download("disk space not enough".to_string());
+        assert!(!strategy.should_retry(&error));
+    }
+
+    #[test]
+    fn test_should_retry_dns_error() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("DNS resolution failed".to_string());
+        assert!(strategy.should_retry(&error));
+    }
+
+    #[test]
+    fn test_should_retry_rate_limited() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("429 Too Many Requests".to_string());
+        assert!(strategy.should_retry(&error));
     }
 
     #[test]
@@ -437,6 +624,123 @@ mod tests {
         strategy.current_retry = 3;
         strategy.reset();
         assert_eq!(strategy.current_retry(), 0);
+    }
+
+    #[test]
+    fn test_increment_retry() {
+        let mut strategy = RetryStrategy::new(5);
+        assert_eq!(strategy.current_retry(), 0);
+
+        strategy.increment_retry();
+        assert_eq!(strategy.current_retry(), 1);
+
+        strategy.increment_retry();
+        assert_eq!(strategy.current_retry(), 2);
+    }
+
+    #[test]
+    fn test_max_retries() {
+        let strategy = RetryStrategy::new(10);
+        assert_eq!(strategy.max_retries(), 10);
+    }
+
+    #[test]
+    fn test_default() {
+        let strategy = RetryStrategy::default();
+        assert_eq!(strategy.max_retries(), 5);
+        assert_eq!(strategy.current_retry(), 0);
+    }
+
+    #[test]
+    fn test_prepare_retry_permanent() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("404 Not Found".to_string());
+
+        let action = strategy.prepare_retry(&error);
+        assert!(action.is_none());
+    }
+
+    #[test]
+    fn test_prepare_retry_temporary() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("500 Internal Server Error".to_string());
+
+        let action = strategy.prepare_retry(&error);
+        assert!(action.is_some());
+
+        if let Some(RetryAction::Sleep { reason, .. }) = action {
+            assert_eq!(reason, "临时错误");
+        } else {
+            panic!("Expected Sleep action");
+        }
+    }
+
+    #[test]
+    fn test_prepare_retry_rate_limited() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("429 Too Many Requests".to_string());
+
+        let action = strategy.prepare_retry(&error);
+        assert!(action.is_some());
+
+        if let Some(RetryAction::Sleep { reason, .. }) = action {
+            assert_eq!(reason, "触发限流");
+        } else {
+            panic!("Expected Sleep action for rate limited");
+        }
+    }
+
+    #[test]
+    fn test_prepare_retry_network_unavailable() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("network unreachable".to_string());
+
+        let action = strategy.prepare_retry(&error);
+        assert!(action.is_some());
+
+        if let Some(RetryAction::WaitForNetwork { timeout, .. }) = action {
+            assert_eq!(timeout, Duration::from_secs(60));
+        } else {
+            panic!("Expected WaitForNetwork action");
+        }
+    }
+
+    #[test]
+    fn test_prepare_retry_dns_error() {
+        let strategy = RetryStrategy::new(5);
+        let error = AppError::Network("DNS resolution failed".to_string());
+
+        let action = strategy.prepare_retry(&error);
+        assert!(action.is_some());
+
+        if let Some(RetryAction::Sleep { duration, reason, .. }) = action {
+            assert_eq!(duration, Duration::from_secs(10));
+            assert_eq!(reason, "DNS 解析失败");
+        } else {
+            panic!("Expected Sleep action for DNS error");
+        }
+    }
+
+    #[test]
+    fn test_try_switch_mirror_github() {
+        let strategy = RetryStrategy::new(5);
+
+        // GitHub URL 返回 None（建议在上层处理）
+        let result = strategy.try_switch_mirror("https://github.com/user/repo/releases/download/v1.0/file.zip");
+        assert!(result.is_none());
+
+        // githubusercontent URL 同样
+        let result = strategy.try_switch_mirror("https://raw.githubusercontent.com/user/repo/main/file.txt");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_switch_mirror_non_github() {
+        let strategy = RetryStrategy::new(5);
+
+        // 非 GitHub URL
+        let result = strategy.try_switch_mirror("https://example.com/file.zip");
+        assert!(result.is_none());
     }
 
     #[tokio::test]
