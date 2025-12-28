@@ -223,6 +223,13 @@ pub struct DownloadSetting {
     /// 删除旧的 aria2 日志文件
     #[serde(default = "default_true")]
     pub remove_old_aria2_log_file: bool,
+    /// 下载后端 (auto, aria2, rust)
+    #[serde(default = "default_download_backend")]
+    pub backend: String,
+}
+
+fn default_download_backend() -> String {
+    "auto".to_string()
 }
 
 impl Default for DownloadSetting {
@@ -231,6 +238,7 @@ impl Default for DownloadSetting {
             auto_delete_after_install: true,
             disable_aria2_ipv6: true,
             remove_old_aria2_log_file: true,
+            backend: default_download_backend(),
         }
     }
 }

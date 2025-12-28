@@ -5,7 +5,7 @@
 use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
-use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
+use crate::services::download::{get_download_manager, DownloadOptions};
 use crate::services::network::{get_download_source_name, request_github_api};
 use crate::utils::common::format_size;
 use serde::{Deserialize, Serialize};
@@ -198,10 +198,10 @@ where
 
     info!("下载固件: {}", url);
 
-    let aria2_manager = match get_aria2_manager().await {
+    let download_manager = match get_download_manager().await {
         Ok(manager) => manager,
         Err(e) => {
-            warn!("启动 aria2 失败: {}", e);
+            warn!("获取下载管理器失败: {}", e);
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "download_firmware".to_string(),
@@ -218,7 +218,7 @@ where
             return Err(e);
         }
     };
-    let options = Aria2DownloadOptions {
+    let options = DownloadOptions {
         overwrite: false,
         use_github_mirror: url.contains("github.com"),
         ..Default::default()
@@ -226,7 +226,7 @@ where
 
     let on_event_clone = on_event.clone();
     let download_source_clone = download_source.clone();
-    let result = match aria2_manager.download_and_wait(&url, options, move |progress| {
+    let result = match download_manager.download_and_wait(&url, options, Box::new(move |progress| {
         on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download_firmware".to_string(),
@@ -240,7 +240,7 @@ where
                             download_source: Some(download_source_clone.clone()),
             }
         });
-    }).await {
+    })).await {
         Ok(res) => res,
         Err(e) => {
             on_event(ProgressEvent::StepUpdate {

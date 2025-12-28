@@ -8,12 +8,11 @@ use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::ryujinx::{
     get_all_ryujinx_release_infos, get_ryujinx_release_info_by_version, load_ryujinx_change_log,
 };
-use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
+use crate::services::download::{get_download_manager, DownloadOptions};
 #[cfg(target_os = "windows")]
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
-use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -28,9 +27,6 @@ const RYUJINX_APP_NAME: &str = "Ryujinx.app";
 
 #[cfg(target_os = "linux")]
 const RYUJINX_EXE_NAMES: &[&str] = &["Ryujinx.Ava", "Ryujinx"];
-
-/// 当前正在进行的下载任务 GID
-static CURRENT_DOWNLOAD_GID: RwLock<Option<String>> = RwLock::new(None);
 
 /// 获取 Ryujinx 下载 URL
 ///
@@ -293,11 +289,11 @@ where
         }
     });
 
-    // 使用 aria2 下载
-    let aria2 = match get_aria2_manager().await {
+    // 使用统一下载接口
+    let download_manager = match get_download_manager().await {
         Ok(manager) => manager,
         Err(e) => {
-            warn!("启动 aria2 失败: {}", e);
+            warn!("获取下载管理器失败: {}", e);
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "download".to_string(),
@@ -314,64 +310,20 @@ where
             return Err(e);
         }
     };
-    let options = Aria2DownloadOptions {
+    let options = DownloadOptions {
         use_github_mirror: false, // Ryujinx 使用 GitLab，不需要镜像
         ..Default::default()
     };
 
-    // 添加下载任务并获取 GID
-    let gid = aria2.download(&download_url, options).await?;
-
-    // 保存当前下载的 GID（用于取消功能）
-    *CURRENT_DOWNLOAD_GID.write() = Some(gid.clone());
-
-    info!("下载任务已添加，GID: {}", gid);
-    debug!("开始轮询下载进度");
-
-    // 轮询下载进度
+    // 下载并等待完成
     let on_event_clone = on_event.clone();
     let download_source_clone = download_source.clone();
-    let poll_interval = Duration::from_millis(500);
-    let mut poll_count = 0;
-    let package_path = loop {
-        tokio::time::sleep(poll_interval).await;
-
-        let progress = match aria2.get_download_progress(&gid).await {
-            Ok(p) => p,
-            Err(e) => {
-                warn!("获取下载进度失败 [GID: {}]: {}", gid, e);
-                *CURRENT_DOWNLOAD_GID.write() = None;
-                on_event_clone(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "download".to_string(),
-                        title: format!("下载 Ryujinx {}", branch),
-                        status: ProgressStatus::Error,
-                        step_type: "download".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(e.to_string()),
-                        download_source: Some(download_source_clone.clone()),
-                    }
-                });
-                return Err(e);
-            }
-        };
-
-        poll_count += 1;
-        // 每 10 次轮询打印一次 debug 日志（避免日志过多）
-        if poll_count % 10 == 0 {
-            debug!(
-                "下载进度 [GID: {}]: {:.1}%, 速度: {}, 状态: {:?}",
-                gid, progress.percentage, progress.speed_string(), progress.status
-            );
-        }
-
-        // 发送进度更新
+    let branch_clone = branch.to_string();
+    let result = match download_manager.download_and_wait(&download_url, options, Box::new(move |progress| {
         on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download".to_string(),
-                title: format!("下载 Ryujinx {}", branch),
+                title: format!("下载 Ryujinx {}", branch_clone),
                 status: ProgressStatus::Running,
                 step_type: "download".to_string(),
                 progress: progress.percentage,
@@ -381,79 +333,28 @@ where
                 download_source: Some(download_source_clone.clone()),
             }
         });
-
-        match progress.status {
-            crate::services::aria2::Aria2DownloadStatus::Complete => {
-                info!("下载完成 [GID: {}]", gid);
-                // 从 aria2 获取实际文件路径
-                let status = aria2.get_download_status(&gid).await?;
-                let path = status
-                    .files
-                    .first()
-                    .map(|f| PathBuf::from(&f.path))
-                    .ok_or_else(|| {
-                        warn!("无法获取下载文件路径");
-                        AppError::Aria2("无法获取下载文件路径".to_string())
-                    })?;
-
-                // 清除 GID
-                *CURRENT_DOWNLOAD_GID.write() = None;
-
-                info!("下载完成: {}", path.display());
-                debug!("下载文件大小: {} bytes", progress.total);
-                break path;
-            }
-            crate::services::aria2::Aria2DownloadStatus::Error => {
-                warn!("下载失败 [GID: {}]", gid);
-                *CURRENT_DOWNLOAD_GID.write() = None;
-
-                // 获取详细错误信息
-                let error_message = match aria2.get_download_status(&gid).await {
-                    Ok(status) => {
-                        let error_code = status.error_code.as_deref().unwrap_or("未知");
-                        let error_msg = status.error_message.as_deref().unwrap_or("未知错误");
-                        debug!("下载失败详情: 错误码={}, 错误信息={}", error_code, error_msg);
-                        format!("下载失败 (错误码: {}): {}", error_code, error_msg)
-                    }
-                    Err(_) => "下载失败".to_string(),
-                };
-
-                on_event_clone(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "download".to_string(),
-                        title: format!("下载 Ryujinx {}", branch),
-                        status: ProgressStatus::Error,
-                        step_type: "download".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(error_message.clone()),
-                        download_source: None,
-                    }
-                });
-                return Err(AppError::Aria2(error_message));
-            }
-            crate::services::aria2::Aria2DownloadStatus::Removed => {
-                info!("下载已取消 [GID: {}]", gid);
-                *CURRENT_DOWNLOAD_GID.write() = None;
-                on_event_clone(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "download".to_string(),
-                        title: format!("下载 Ryujinx {}", branch),
-                        status: ProgressStatus::Cancelled,
-                        step_type: "download".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: None,
-                        download_source: None,
-                    }
-                });
-                return Err(AppError::Aria2("下载已取消".to_string()));
-            }
-            _ => continue,
+    })).await {
+        Ok(res) => res,
+        Err(e) => {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "download".to_string(),
+                    title: format!("下载 Ryujinx {}", branch),
+                    status: ProgressStatus::Error,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: Some(download_source.clone()),
+                }
+            });
+            return Err(e);
         }
     };
+
+    let package_path = result.path;
+    info!("下载完成: {}", package_path.display());
 
     on_event(ProgressEvent::StepUpdate {
         step: ProgressStep {

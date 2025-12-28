@@ -8,7 +8,7 @@ use crate::models::storage::{self, Storage};
 use crate::repositories::app_info::{self, UpdateCheckResult};
 use crate::repositories::config_data;
 use tauri::{command, Emitter, Window};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 /// 获取当前配置
 #[command]
@@ -471,29 +471,15 @@ pub async fn update_self_by_tag(tag: String, window: Window) -> Result<(), Strin
 #[command]
 pub async fn cancel_download_command(remove_files: Option<bool>) -> Result<crate::models::response::ApiResponse<Option<String>>, String> {
     use crate::models::response::ApiResponse;
-    use crate::services::aria2::{get_aria2_manager, Aria2Manager};
+    use crate::services::download::get_download_manager;
 
     let should_remove = remove_files.unwrap_or(false);
     info!("取消下载任务，删除文件: {}", should_remove);
 
-    match get_aria2_manager().await {
-        Ok(aria2) => {
-            match aria2.cancel_all().await {
-                Ok(file_paths) => {
-                    let file_path = file_paths.first().cloned();
-
-                    // 如果需要删除文件，调用 remove_download_files
-                    if should_remove && !file_paths.is_empty() {
-                        match Aria2Manager::remove_download_files(&file_paths) {
-                            Ok(count) => {
-                                info!("已删除 {} 个下载文件及其 aria2 控制文件", count);
-                            }
-                            Err(e) => {
-                                warn!("删除下载文件时出错: {}", e);
-                            }
-                        }
-                    }
-
+    match get_download_manager().await {
+        Ok(manager) => {
+            match manager.cancel_all(should_remove).await {
+                Ok(file_path) => {
                     info!("下载已取消，文件路径: {:?}", file_path);
                     Ok(ApiResponse::success(file_path))
                 }
@@ -504,7 +490,7 @@ pub async fn cancel_download_command(remove_files: Option<bool>) -> Result<crate
             }
         }
         Err(e) => {
-            error!("获取 aria2 管理器失败: {}", e);
+            error!("获取下载管理器失败: {}", e);
             Err(e.to_string())
         }
     }

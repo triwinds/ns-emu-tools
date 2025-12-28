@@ -7,6 +7,7 @@ pub mod cheats;
 pub mod cheats_parser;
 pub mod crypto;
 pub mod doh;
+pub mod download;
 pub mod firmware;
 pub mod keys;
 pub mod msvc;
@@ -35,6 +36,7 @@ pub mod notifier {
 pub use aria2::*;
 pub use cheats::*;
 pub use doh::*;
+pub use download::{get_download_manager, DownloadManager, DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus, ProgressCallback};
 pub use firmware::*;
 pub use nca::*;
 pub use network::*;
