@@ -33,11 +33,11 @@ use tracing::{debug, error, info, warn};
 /// 状态保存间隔
 const STATE_SAVE_INTERVAL: Duration = Duration::from_secs(5);
 
-/// 进度更新间隔
-const PROGRESS_UPDATE_INTERVAL: Duration = Duration::from_millis(100);
+/// 进度更新间隔（向前端发送进度的频率）
+const PROGRESS_UPDATE_INTERVAL: Duration = Duration::from_millis(500);
 
-/// 速度采样窗口大小
-const SPEED_WINDOW_SIZE: usize = 5;
+/// 速度采样窗口大小（用于平滑速度计算）
+const SPEED_WINDOW_SIZE: usize = 10;
 
 /// 纯 Rust 下载器
 pub struct RustDownloader {
@@ -379,6 +379,8 @@ struct ProgressInfo {
     filename: String,
     /// 速度采样
     speed_samples: VecDeque<(Instant, u64)>,
+    /// 上次计算的 ETA（用于平滑）
+    last_eta: u64,
 }
 
 impl ProgressInfo {
@@ -389,6 +391,7 @@ impl ProgressInfo {
             speed: 0,
             filename: filename.to_string(),
             speed_samples: VecDeque::with_capacity(SPEED_WINDOW_SIZE + 1),
+            last_eta: u64::MAX,
         }
     }
 
@@ -417,14 +420,37 @@ impl ProgressInfo {
         }
     }
 
-    /// 计算 ETA
-    fn calculate_eta(&self) -> u64 {
+    /// 计算 ETA（使用指数移动平均平滑）
+    fn calculate_eta(&mut self) -> u64 {
         if self.total == 0 || self.speed == 0 {
             return u64::MAX;
         }
 
         let remaining = self.total.saturating_sub(self.downloaded);
-        remaining / self.speed
+        let raw_eta = remaining / self.speed;
+
+        // 使用指数移动平均平滑 ETA
+        // alpha = 0.3 表示新值占 30%，旧值占 70%
+        if self.last_eta == u64::MAX {
+            self.last_eta = raw_eta;
+        } else {
+            // 避免 ETA 变化太剧烈，只有当新值和旧值差距不太大时才平滑
+            let diff_ratio = if raw_eta > self.last_eta {
+                raw_eta as f64 / self.last_eta as f64
+            } else {
+                self.last_eta as f64 / raw_eta as f64
+            };
+
+            // 如果差距太大（超过 2 倍），直接使用新值
+            if diff_ratio > 2.0 {
+                self.last_eta = raw_eta;
+            } else {
+                // 否则使用指数移动平均
+                self.last_eta = ((raw_eta as f64 * 0.3) + (self.last_eta as f64 * 0.7)) as u64;
+            }
+        }
+
+        self.last_eta
     }
 
     /// 计算百分比
@@ -487,15 +513,18 @@ impl DownloadTask {
     /// 获取当前进度
     fn get_progress(&self) -> DownloadProgress {
         let status = *self.status.read();
-        let progress = self.progress.read();
+        let mut progress = self.progress.write();
+
+        let eta = progress.calculate_eta();
+        let percentage = progress.calculate_percentage();
 
         DownloadProgress {
             gid: self.id.clone(),
             downloaded: progress.downloaded,
             total: progress.total,
             speed: progress.speed,
-            percentage: progress.calculate_percentage(),
-            eta: progress.calculate_eta(),
+            percentage,
+            eta,
             filename: progress.filename.clone(),
             status,
         }
@@ -506,10 +535,11 @@ impl DownloadTask {
         self.paused.store(true, Ordering::SeqCst);
         *self.status.write() = DownloadStatus::Paused;
 
-        // 暂停时速度归零
+        // 暂停时速度和 ETA 归零
         let mut progress = self.progress.write();
         progress.speed = 0;
         progress.speed_samples.clear();
+        progress.last_eta = u64::MAX;
     }
 
     /// 恢复下载
@@ -533,10 +563,11 @@ impl DownloadTask {
         if result.is_err() {
             *self.status.write() = DownloadStatus::Error;
 
-            // 错误时速度归零，避免 UI 继续显示旧速度
+            // 错误时速度和 ETA 归零，避免 UI 继续显示旧数据
             let mut progress = self.progress.write();
             progress.speed = 0;
             progress.speed_samples.clear();
+            progress.last_eta = u64::MAX;
         }
 
         result
@@ -1148,10 +1179,16 @@ mod tests {
         progress.total = 1000;
         assert_eq!(progress.calculate_eta(), u64::MAX);
 
-        // 正常计算
+        // 正常计算 - 第一次调用
         progress.speed = 100;
         progress.downloaded = 500;
         assert_eq!(progress.calculate_eta(), 5); // (1000 - 500) / 100 = 5
+
+        // 第二次调用应该使用平滑值
+        progress.downloaded = 600;
+        let eta = progress.calculate_eta();
+        // 平滑后的值应该在原始值 4 和上次值 5 之间
+        assert!(eta >= 3 && eta <= 5);
     }
 
     #[test]
