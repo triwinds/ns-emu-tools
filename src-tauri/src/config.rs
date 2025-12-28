@@ -120,7 +120,12 @@ pub struct RyujinxConfig {
 
 fn default_ryujinx_path() -> PathBuf {
     #[cfg(target_os = "macos")]
-    return PathBuf::from("/Applications");
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("ryujinx");
+        }
+        return PathBuf::from("~/ryujinx");
+    }
 
     #[cfg(target_os = "linux")]
     {

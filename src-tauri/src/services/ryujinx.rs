@@ -867,29 +867,6 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: 优先使用 /Applications/portable（部分用户会把 Ryujinx 用户目录放在这里）
-        // 兼容两种布局：
-        // - /Applications/portable/Ryujinx
-        // - /Applications/portable
-        let portable_root = PathBuf::from("/Applications/portable");
-        let portable_ryujinx = portable_root.join("Ryujinx");
-
-        if portable_ryujinx.exists() {
-            debug!(
-                "使用 macOS /Applications/portable/Ryujinx 目录: {}",
-                portable_ryujinx.display()
-            );
-            return portable_ryujinx;
-        }
-
-        if portable_root.exists() {
-            debug!(
-                "使用 macOS /Applications/portable 目录: {}",
-                portable_root.display()
-            );
-            return portable_root;
-        }
-
         // macOS: 使用 ~/Library/Application Support/Ryujinx
         if let Ok(home) = std::env::var("HOME") {
             let macos_path = PathBuf::from(home)

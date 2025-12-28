@@ -24,11 +24,7 @@
         </v-row>
         <v-row>
           <v-col cols="7">
-            <v-text-field v-if="isMacOS" label="Ryujinx 路径" v-model="selectedRyujinxPath"
-                          style="cursor: default" variant="underlined" readonly
-                          hint="macOS 下路径固定为 /Applications" persistent-hint>
-            </v-text-field>
-            <v-autocomplete v-else label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
+            <v-autocomplete label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
                             @update:model-value="updateRyujinxPathFunc"
                             style="cursor: default" variant="underlined">
               <template v-slot:item="{props, item}">
@@ -46,7 +42,7 @@
             </v-autocomplete>
           </v-col>
           <v-col cols="5">
-            <v-btn v-if="!isMacOS" size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
+            <v-btn size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
                    :disabled='isRunningInstall' @click="askAndUpdateRyujinxPath">修改路径
             </v-btn>
             <v-btn size="large" color="success" variant="outlined" min-width="120px" :disabled='isRunningInstall'
