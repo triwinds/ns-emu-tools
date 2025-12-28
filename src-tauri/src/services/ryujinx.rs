@@ -8,7 +8,7 @@ use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::ryujinx::{
     get_all_ryujinx_release_infos, get_ryujinx_release_info_by_version, load_ryujinx_change_log,
 };
-use crate::services::download::{get_download_manager, DownloadOptions};
+use crate::services::downloader::{get_download_manager, DownloadOptions};
 #[cfg(target_os = "windows")]
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};

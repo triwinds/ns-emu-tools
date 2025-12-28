@@ -5,7 +5,7 @@
 use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
-use crate::services::download::{get_download_manager, DownloadOptions};
+use crate::services::downloader::{get_download_manager, DownloadOptions};
 use crate::services::network::{get_download_source_name, request_github_api};
 use crate::utils::common::format_size;
 use serde::{Deserialize, Serialize};

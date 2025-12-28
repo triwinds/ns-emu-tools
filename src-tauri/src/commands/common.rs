@@ -471,7 +471,7 @@ pub async fn update_self_by_tag(tag: String, window: Window) -> Result<(), Strin
 #[command]
 pub async fn cancel_download_command(remove_files: Option<bool>) -> Result<crate::models::response::ApiResponse<Option<String>>, String> {
     use crate::models::response::ApiResponse;
-    use crate::services::download::get_download_manager;
+    use crate::services::downloader::get_download_manager;
 
     let should_remove = remove_files.unwrap_or(false);
     info!("取消下载任务，删除文件: {}", should_remove);

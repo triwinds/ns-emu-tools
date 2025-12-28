@@ -3,7 +3,7 @@
 //! 提供 Microsoft Visual C++ Redistributable 的检查和安装功能
 
 use crate::error::{AppError, AppResult};
-use crate::services::aria2::{get_aria2_manager, Aria2DownloadOptions};
+use crate::services::downloader::aria2::{get_aria2_manager, Aria2DownloadOptions};
 use std::path::PathBuf;
 use std::process::Command;
 use tracing::{info, warn};

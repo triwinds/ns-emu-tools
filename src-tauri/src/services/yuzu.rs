@@ -6,7 +6,7 @@ use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import models
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
-use crate::services::download::{get_download_manager, DownloadOptions, DownloadProgress};
+use crate::services::downloader::{get_download_manager, DownloadOptions, DownloadProgress};
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_github_download_source_name;
 use crate::utils::archive::uncompress;
