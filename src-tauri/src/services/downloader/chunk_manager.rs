@@ -9,11 +9,15 @@ use reqwest::header::{ACCEPT_ENCODING, CONTENT_LENGTH, CONTENT_RANGE, RANGE};
 use reqwest::Client;
 use std::io::SeekFrom;
 use std::path::Path;
+use std::time::{Duration, Instant};
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, trace, warn};
+
+const WRITE_BUFFER_SIZE: usize = 64 * 1024; // 64KB
+const FLUSH_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Range 支持检测结果
 #[derive(Debug, Clone)]
@@ -222,6 +226,14 @@ impl ChunkManager {
             chunk.index, current_pos, end, chunk.downloaded
         );
 
+        debug!(
+            "发送分块请求: index={}, range=bytes={}-{}, url={}",
+            chunk.index,
+            current_pos,
+            end,
+            url
+        );
+
         // 发送 Range 请求
         let response = client
             .get(url)
@@ -232,6 +244,7 @@ impl ChunkManager {
             .map_err(|e| AppError::Network(format!("分块 {} 请求失败: {}", chunk.index, e)))?;
 
         let status = response.status();
+        debug!("分块响应: index={}, status={}", chunk.index, status);
         if status != reqwest::StatusCode::PARTIAL_CONTENT && status != reqwest::StatusCode::OK {
             return Err(AppError::Network(format!(
                 "分块 {} 下载失败，HTTP 状态码: {}",
@@ -240,6 +253,12 @@ impl ChunkManager {
         }
 
         // 打开文件并定位到写入位置
+        debug!(
+            "打开临时文件准备写入: index={}, path={}, offset={}",
+            chunk.index,
+            file_path.display(),
+            current_pos
+        );
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
@@ -252,7 +271,8 @@ impl ChunkManager {
         // 流式下载
         let mut stream = response.bytes_stream();
         let mut downloaded = chunk.downloaded;
-        let mut buffer = Vec::with_capacity(64 * 1024); // 64KB 缓冲区
+        let mut buffer = Vec::with_capacity(WRITE_BUFFER_SIZE);
+        let mut last_flush = Instant::now();
 
         loop {
             tokio::select! {
@@ -271,12 +291,18 @@ impl ChunkManager {
                             buffer.extend_from_slice(&bytes);
                             downloaded += bytes.len() as u64;
 
-                            // 缓冲区满时写入
-                            if buffer.len() >= 64 * 1024 {
+                            // 缓冲区满或间隔到达时写入，确保慢速连接也能持续写盘/上报进度
+                            if buffer.len() >= WRITE_BUFFER_SIZE || last_flush.elapsed() >= FLUSH_INTERVAL {
                                 file.write_all(&buffer).await?;
                                 buffer.clear();
+                                last_flush = Instant::now();
 
-                                // 发送进度更新
+                                trace!(
+                                    "分块写入/进度: index={}, downloaded={}",
+                                    chunk.index,
+                                    downloaded
+                                );
+
                                 let _ = progress_tx.send(ChunkProgress {
                                     index: chunk.index,
                                     downloaded,
@@ -324,7 +350,7 @@ impl ChunkManager {
         cancel_token: CancellationToken,
         resume_from: u64,
     ) -> AppResult<u64> {
-        debug!("单连接下载: {}", url);
+        debug!("单连接下载: url={}, resume_from={}", url, resume_from);
 
         // 构建请求
         let mut request = client.get(url).header(ACCEPT_ENCODING, "identity");
@@ -341,6 +367,7 @@ impl ChunkManager {
             .map_err(|e| AppError::Network(format!("下载请求失败: {}", e)))?;
 
         let status = response.status();
+        debug!("单连接响应: status={}", status);
         if !status.is_success() {
             return Err(AppError::Network(format!(
                 "下载失败，HTTP 状态码: {}",
@@ -350,6 +377,7 @@ impl ChunkManager {
 
         // 打开文件
         let mut file = if resume_from > 0 {
+            debug!("单连接打开文件续写: path={}, offset={}", file_path.display(), resume_from);
             let mut f = OpenOptions::new()
                 .write(true)
                 .create(true)
@@ -358,13 +386,15 @@ impl ChunkManager {
             f.seek(SeekFrom::Start(resume_from)).await?;
             f
         } else {
+            debug!("单连接创建新文件: path={}", file_path.display());
             File::create(file_path).await?
         };
 
         // 流式下载
         let mut stream = response.bytes_stream();
         let mut downloaded = resume_from;
-        let mut buffer = Vec::with_capacity(64 * 1024);
+        let mut buffer = Vec::with_capacity(WRITE_BUFFER_SIZE);
+        let mut last_flush = Instant::now();
 
         loop {
             tokio::select! {
@@ -381,9 +411,12 @@ impl ChunkManager {
                             buffer.extend_from_slice(&bytes);
                             downloaded += bytes.len() as u64;
 
-                            if buffer.len() >= 64 * 1024 {
+                            if buffer.len() >= WRITE_BUFFER_SIZE || last_flush.elapsed() >= FLUSH_INTERVAL {
                                 file.write_all(&buffer).await?;
                                 buffer.clear();
+                                last_flush = Instant::now();
+
+                                trace!("单连接写入/进度: downloaded={}", downloaded);
 
                                 let _ = progress_tx.send(ChunkProgress {
                                     index: 0,

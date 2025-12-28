@@ -18,6 +18,7 @@ let pendingWriteSize = false
 let appWindow: any = null
 let unlistenInstallation: any = null; // Store unlisten function
 let unlistenLogMessage: any = null; // Store unlisten function for log messages
+let unlistenNotifyMessage: any = null; // Store unlisten function for notify messages
 
 try {
   appWindow = getCurrentWindow()
@@ -70,6 +71,22 @@ onMounted(async () => {
   } catch (e) {
       console.error('Failed to setup log message listener', e);
   }
+
+    // Listen for notify messages (global error/info)
+    try {
+      unlistenNotifyMessage = await listen('notify-message', (event: any) => {
+        const message = event.payload as any;
+        if (message?.content) {
+          cds.appendConsoleMessage(message.content);
+        }
+        // 对 error 类型：自动弹出控制台，确保用户能看到错误信息
+        if (message?.type === 'error') {
+          cds.showConsoleDialog()
+        }
+      });
+    } catch (e) {
+      console.error('Failed to setup notify message listener', e);
+    }
 })
 
 onUnmounted(() => {
@@ -79,6 +96,9 @@ onUnmounted(() => {
   }
   if (unlistenLogMessage) {
       unlistenLogMessage();
+  }
+  if (unlistenNotifyMessage) {
+      unlistenNotifyMessage();
   }
 })
 

@@ -298,7 +298,6 @@ onBeforeMount(async () => {
 
 // 事件监听器
 let unlistenDownload: UnlistenFn | null = null
-let unlistenNotify: UnlistenFn | null = null
 
 onMounted(async () => {
   // 监听下载进度
@@ -309,18 +308,11 @@ onMounted(async () => {
       consoleDialogStore.appendConsoleMessage(msg)
     }
   })
-
-  // 监听通知消息
-  unlistenNotify = await onNotifyMessage((event) => {
-    const message: NotifyMessage = event.payload
-    consoleDialogStore.appendConsoleMessage(message.content)
-  })
 })
 
 onUnmounted(() => {
   // 清理监听器
   if (unlistenDownload) unlistenDownload()
-  if (unlistenNotify) unlistenNotify()
 })
 
 async function updateYuzuReleaseVersions() {

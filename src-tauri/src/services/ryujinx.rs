@@ -534,6 +534,61 @@ where
             });
             return Err(e);
         }
+
+        // macOS 特定处理：设置权限和移除 quarantine 属性
+        debug!("设置 macOS .app bundle 权限");
+
+        // 1. 移除 quarantine 属性
+        let xattr_result = Command::new("xattr")
+            .args(["-r", "-d", "com.apple.quarantine"])
+            .arg(&dest_app)
+            .output();
+
+        match xattr_result {
+            Ok(output) => {
+                if output.status.success() {
+                    debug!("成功移除 quarantine 属性");
+                } else {
+                    // 如果文件本来就没有 quarantine 属性，xattr 会返回错误，这是正常的
+                    debug!("xattr 命令执行完成（文件可能没有 quarantine 属性）");
+                }
+            }
+            Err(e) => {
+                warn!("移除 quarantine 属性失败: {}", e);
+                // 不中断安装流程
+            }
+        }
+
+        // 2. 设置 .app bundle 权限为 755
+        let chmod_app_result = Command::new("chmod")
+            .args(["755"])
+            .arg(&dest_app)
+            .output();
+
+        if let Err(e) = chmod_app_result {
+            warn!("设置 .app 权限失败: {}", e);
+            // 不中断安装流程
+        } else {
+            debug!("成功设置 .app bundle 权限为 755");
+        }
+
+        // 3. 设置可执行文件权限
+        let exe_path = dest_app.join("Contents/MacOS/Ryujinx");
+        if exe_path.exists() {
+            let chmod_exe_result = Command::new("chmod")
+                .args(["+x"])
+                .arg(&exe_path)
+                .output();
+
+            if let Err(e) = chmod_exe_result {
+                warn!("设置可执行文件权限失败: {}", e);
+                // 不中断安装流程
+            } else {
+                debug!("成功设置可执行文件权限");
+            }
+        }
+
+        info!("macOS .app 权限设置完成");
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -559,6 +614,35 @@ where
                 }
             });
             return Err(e);
+        }
+
+        // Linux 特定处理：设置可执行权限
+        #[cfg(target_os = "linux")]
+        {
+            debug!("设置 Linux 可执行文件权限");
+
+            // 设置 Ryujinx 可执行文件权限
+            for exe_name in RYUJINX_EXE_NAMES {
+                let exe_path = ryujinx_path.join(exe_name);
+                if exe_path.exists() {
+                    let chmod_result = Command::new("chmod")
+                        .args(["+x"])
+                        .arg(&exe_path)
+                        .output();
+
+                    match chmod_result {
+                        Ok(_) => {
+                            debug!("成功设置 {} 可执行权限", exe_name);
+                        }
+                        Err(e) => {
+                            warn!("设置 {} 可执行权限失败: {}", exe_name, e);
+                            // 不中断安装流程
+                        }
+                    }
+                }
+            }
+
+            info!("Linux 可执行文件权限设置完成");
         }
     }
 
@@ -783,6 +867,29 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
 
     #[cfg(target_os = "macos")]
     {
+        // macOS: 优先使用 /Applications/portable（部分用户会把 Ryujinx 用户目录放在这里）
+        // 兼容两种布局：
+        // - /Applications/portable/Ryujinx
+        // - /Applications/portable
+        let portable_root = PathBuf::from("/Applications/portable");
+        let portable_ryujinx = portable_root.join("Ryujinx");
+
+        if portable_ryujinx.exists() {
+            debug!(
+                "使用 macOS /Applications/portable/Ryujinx 目录: {}",
+                portable_ryujinx.display()
+            );
+            return portable_ryujinx;
+        }
+
+        if portable_root.exists() {
+            debug!(
+                "使用 macOS /Applications/portable 目录: {}",
+                portable_root.display()
+            );
+            return portable_root;
+        }
+
         // macOS: 使用 ~/Library/Application Support/Ryujinx
         if let Ok(home) = std::env::var("HOME") {
             let macos_path = PathBuf::from(home)

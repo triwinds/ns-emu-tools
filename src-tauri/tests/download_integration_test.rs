@@ -216,6 +216,82 @@ async fn test_download_with_range_support() {
     downloader.stop().await.unwrap();
 }
 
+/// 测试多分块下载：某个分块快速失败时不应被慢分块阻塞（避免“恢复/重试卡住”）
+#[tokio::test]
+async fn test_multi_chunk_fast_fail_does_not_hang() {
+    let mock_server = MockServer::start().await;
+    let temp_dir = TempDir::new().unwrap();
+
+    // 10 字节文件，配合 min_split_size=1、split=2 生成两个分块：0-4 / 5-9
+    let total_size = 10usize;
+    let file_content: Vec<u8> = (0u8..total_size as u8).collect();
+
+    // Range 探测请求（返回 206）
+    Mock::given(method("GET"))
+        .and(path("/hang.bin"))
+        .and(header("Range", "bytes=0-0"))
+        .respond_with(
+            ResponseTemplate::new(206)
+                .insert_header("Content-Range", "bytes 0-0/10")
+                .set_body_bytes(file_content[0..1].to_vec()),
+        )
+        .mount(&mock_server)
+        .await;
+
+    // HEAD 请求
+    Mock::given(method("HEAD"))
+        .and(path("/hang.bin"))
+        .respond_with(ResponseTemplate::new(200).insert_header("Content-Length", "10"))
+        .mount(&mock_server)
+        .await;
+
+    // 分块 0：故意延迟响应（模拟慢分块/卡住）
+    Mock::given(method("GET"))
+        .and(path("/hang.bin"))
+        .and(header("Range", "bytes=0-4"))
+        .respond_with(
+            ResponseTemplate::new(206)
+                .insert_header("Content-Range", "bytes 0-4/10")
+                .set_delay(std::time::Duration::from_secs(5))
+                .set_body_bytes(file_content[0..5].to_vec()),
+        )
+        .mount(&mock_server)
+        .await;
+
+    // 分块 1：快速失败（404 -> Permanent，不触发重试）
+    Mock::given(method("GET"))
+        .and(path("/hang.bin"))
+        .and(header("Range", "bytes=5-9"))
+        .respond_with(ResponseTemplate::new(404))
+        .mount(&mock_server)
+        .await;
+
+    let url = format!("{}/hang.bin", mock_server.uri());
+    let downloader = RustDownloader::new();
+    downloader.start().await.unwrap();
+
+    let options = DownloadOptions {
+        save_dir: Some(temp_dir.path().to_path_buf()),
+        filename: Some("hang.bin".to_string()),
+        overwrite: true,
+        split: 2,
+        min_split_size: "1".to_string(),
+        ..Default::default()
+    };
+
+    // 关键断言：应当快速返回错误，而不是等待慢分块完成
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(1),
+        downloader.download_and_wait(&url, options, Box::new(|_| {})),
+    )
+    .await;
+
+    assert!(result.is_ok(), "download should not hang waiting for slow chunk");
+    assert!(result.unwrap().is_err());
+
+    downloader.stop().await.unwrap();
+}
+
 /// 测试 429 重试
 ///
 /// 注：此测试涉及真正的重试延迟，可能需要较长时间

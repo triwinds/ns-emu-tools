@@ -25,6 +25,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::fs;
 use tokio::sync::mpsc;
+use tokio::task::JoinSet;
 use tokio::time::interval;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, warn};
@@ -525,6 +526,23 @@ impl DownloadTask {
 
     /// 开始下载
     async fn start(&self) -> AppResult<DownloadResult> {
+        // 任何阶段的错误都必须把状态切到 Error，否则前端轮询可能无法结束，
+        // 也就无法在 progress dialog 中展示错误。
+        let result = self.start_impl().await;
+
+        if result.is_err() {
+            *self.status.write() = DownloadStatus::Error;
+
+            // 错误时速度归零，避免 UI 继续显示旧速度
+            let mut progress = self.progress.write();
+            progress.speed = 0;
+            progress.speed_samples.clear();
+        }
+
+        result
+    }
+
+    async fn start_impl(&self) -> AppResult<DownloadResult> {
         let current_url = self.get_url();
         info!("开始下载: {} -> {}", current_url, self.progress.read().filename);
 
@@ -541,7 +559,16 @@ impl DownloadTask {
         }
 
         // 带重试的初始化阶段
+        debug!("初始化下载信息: url={}", current_url);
         let (range_support, filename) = self.init_with_retry(&save_dir).await?;
+        debug!(
+            "初始化完成: filename={}, supports_range={}, total_size={}, etag={:?}, last_modified={:?}",
+            filename,
+            range_support.supports_range,
+            range_support.total_size,
+            range_support.etag,
+            range_support.last_modified
+        );
 
         // 更新进度信息
         {
@@ -560,6 +587,7 @@ impl DownloadTask {
         let current_url = self.get_url();
 
         // 尝试加载已有状态
+        debug!("尝试加载状态文件: {}", filename);
         let mut state = if let Some(existing_state) = state_store.load(&filename).await? {
             // 验证一致性
             if existing_state.validate_consistency(
@@ -577,6 +605,7 @@ impl DownloadTask {
                 self.create_new_state(&filename, &save_dir, &range_support)
             }
         } else {
+            debug!("未找到状态文件，创建新任务状态: {}", filename);
             self.create_new_state(&filename, &save_dir, &range_support)
         };
 
@@ -598,28 +627,107 @@ impl DownloadTask {
             );
         }
 
+        debug!(
+            "分块信息: supports_range={}, chunks={}",
+            range_support.supports_range,
+            state.chunks.len()
+        );
+
         // 保存初始状态
         state_store.save(&state).await?;
+
+        debug!(
+            "状态初始化完成，准备开始下载: {} (supports_range={}, chunks={})",
+            filename,
+            range_support.supports_range,
+            state.chunks.len()
+        );
 
         // 临时文件路径
         let temp_path = state.temp_file_path();
         let final_path = state.final_file_path();
 
+        debug!(
+            "路径信息: temp_path={}, final_path={}",
+            temp_path.display(),
+            final_path.display()
+        );
+
         // 检查目标文件是否存在
-        if final_path.exists() && !self.options.overwrite {
-            return Err(AppError::Download(format!(
-                "文件已存在: {}",
-                final_path.display()
-            )));
+        let t_exists = Instant::now();
+        debug!(
+            "检查目标文件是否存在: path={}, overwrite={}",
+            final_path.display(),
+            self.options.overwrite
+        );
+
+        let final_exists = fs::try_exists(&final_path)
+            .await
+            .map_err(AppError::Io)?;
+        debug!(
+            "目标文件存在检查完成: exists={}, cost_ms={}",
+            final_exists,
+            t_exists.elapsed().as_millis()
+        );
+
+        if final_exists && !self.options.overwrite {
+            info!("目标文件已存在，直接使用: {}", final_path.display());
+
+            // 清理临时文件和状态文件
+            if temp_path.exists() {
+                let _ = fs::remove_file(&temp_path).await;
+            }
+            let state_path = save_dir.join(get_state_filename(&filename));
+            if state_path.exists() {
+                let _ = fs::remove_file(&state_path).await;
+            }
+
+            // 设置状态为完成
+            *self.status.write() = DownloadStatus::Complete;
+
+            // 获取文件大小
+            let file_size = fs::metadata(&final_path).await?.len();
+
+            // 更新进度信息
+            {
+                let mut progress = self.progress.write();
+                progress.downloaded = file_size;
+                progress.total = file_size;
+            }
+
+            return Ok(DownloadResult {
+                path: final_path,
+                filename,
+                size: file_size,
+                gid: self.id.clone(),
+            });
         }
 
         // 预分配文件空间
-        if range_support.total_size > 0 && !temp_path.exists() {
+        let t_temp_exists = Instant::now();
+        debug!("检查临时文件是否存在: path={}", temp_path.display());
+        let temp_exists = fs::try_exists(&temp_path)
+            .await
+            .map_err(AppError::Io)?;
+        debug!(
+            "临时文件存在检查完成: exists={}, cost_ms={}",
+            temp_exists,
+            t_temp_exists.elapsed().as_millis()
+        );
+
+        if range_support.total_size > 0 && !temp_exists {
+            debug!(
+                "预分配临时文件: path={}, size={} bytes",
+                temp_path.display(),
+                range_support.total_size
+            );
             let file = fs::File::create(&temp_path).await?;
             file.set_len(range_support.total_size).await?;
+            debug!("预分配完成: path={}", temp_path.display());
         }
 
         // 启动状态保存任务
+        debug!("准备启动状态定时保存任务");
         let state_store_clone = StateStore::new(save_dir.clone());
         let state_clone = Arc::new(RwLock::new(state.clone()));
         let cancel_token_clone = self.cancel_token.clone();
@@ -628,6 +736,7 @@ impl DownloadTask {
             let state_clone = state_clone.clone();
             async move {
                 let mut interval = interval(STATE_SAVE_INTERVAL);
+                debug!("状态定时保存任务启动");
                 loop {
                     tokio::select! {
                         _ = cancel_token_clone.cancelled() => break,
@@ -639,10 +748,17 @@ impl DownloadTask {
                         }
                     }
                 }
+                debug!("状态定时保存任务退出");
             }
         });
 
         // 带重试的下载阶段
+        debug!("准备进入下载阶段（download_with_retry）");
+        debug!(
+            "开始执行下载阶段: supports_range={}, chunks={}",
+            range_support.supports_range,
+            state_clone.read().chunks.len()
+        );
         let download_result = self.download_with_retry(
             &state_clone,
             &temp_path,
@@ -650,6 +766,7 @@ impl DownloadTask {
         ).await;
 
         // 停止状态保存任务
+        debug!("停止状态定时保存任务");
         state_save_handle.abort();
 
         // 处理下载结果
@@ -688,7 +805,6 @@ impl DownloadTask {
                 let state = state_clone.read().clone();
                 let _ = state_store.save(&state).await;
 
-                *self.status.write() = DownloadStatus::Error;
                 error!("下载失败: {}", e);
                 Err(e)
             }
@@ -787,8 +903,8 @@ impl DownloadTask {
                 self.download_single_chunk(state, temp_path, progress_tx).await
             };
 
-            // 等待进度任务结束
-            drop(progress_handle);
+            // 等待进度任务结束（通道在下载函数返回后会被关闭）
+            let _ = progress_handle.await;
 
             match download_result {
                 Ok(()) => return Ok(()),
@@ -909,7 +1025,7 @@ impl DownloadTask {
             state.chunks.clone()
         };
 
-        let mut handles = Vec::new();
+        let mut join_set: JoinSet<Result<(), AppError>> = JoinSet::new();
         let current_url = self.get_url();
 
         for chunk in chunks {
@@ -924,7 +1040,7 @@ impl DownloadTask {
             let cancel_token = self.cancel_token.clone();
             let paused = self.paused.clone();
 
-            let handle = tokio::spawn(async move {
+            join_set.spawn(async move {
                 // 等待暂停解除
                 while paused.load(Ordering::SeqCst) {
                     if cancel_token.is_cancelled() {
@@ -935,16 +1051,22 @@ impl DownloadTask {
 
                 ChunkManager::download_chunk(&client, &url, &chunk, &path, tx, cancel_token).await
             });
-
-            handles.push(handle);
         }
 
-        // 等待所有分块完成
-        for handle in handles {
-            match handle.await {
+        // 等待所有分块完成：按完成顺序处理，避免“先 await 慢分块导致整体卡住”
+        while let Some(joined) = join_set.join_next().await {
+            match joined {
                 Ok(Ok(())) => {}
-                Ok(Err(e)) => return Err(e),
-                Err(e) => return Err(AppError::Download(format!("分块任务失败: {}", e))),
+                Ok(Err(e)) => {
+                    join_set.abort_all();
+                    while join_set.join_next().await.is_some() {}
+                    return Err(e);
+                }
+                Err(e) => {
+                    join_set.abort_all();
+                    while join_set.join_next().await.is_some() {}
+                    return Err(AppError::Download(format!("分块任务失败: {}", e)));
+                }
             }
         }
 

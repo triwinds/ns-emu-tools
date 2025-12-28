@@ -44,6 +44,71 @@ export interface NotifyMessage {
   persistent: boolean
 }
 
+/** Rust 后端序列化的错误结构（见 src-tauri/src/error.rs 的 ErrorResponse） */
+export interface ErrorResponse {
+  code: number
+  message: string
+  details?: string | null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function tryParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function extractErrorMessage(error: unknown): string {
+  // 1) 直接字符串
+  if (typeof error === 'string') return error
+
+  // 2) 形如 { code, message, details }
+  if (isRecord(error) && typeof error.code === 'number' && typeof error.message === 'string') {
+    const details = typeof error.details === 'string' ? `\n${error.details}` : ''
+    return `${error.message}${details}`
+  }
+
+  // 3) JS Error / InvokeError: 优先 message
+  if (isRecord(error) && typeof error.message === 'string') {
+    const msg = error.message
+    const maybeJson = msg.trim().startsWith('{') ? tryParseJson(msg) : undefined
+    if (
+      isRecord(maybeJson) &&
+      typeof maybeJson.code === 'number' &&
+      typeof maybeJson.message === 'string'
+    ) {
+      const details = typeof maybeJson.details === 'string' ? `\n${maybeJson.details}` : ''
+      return `${maybeJson.message}${details}`
+    }
+    return msg
+  }
+
+  // 4) 兜底
+  try {
+    return String(error)
+  } catch {
+    return 'Unknown error'
+  }
+}
+
+function showGlobalError(cmd: string, error: unknown) {
+  const msg = extractErrorMessage(error)
+  const line = `[ERROR] ${cmd}: ${msg}`
+
+  // 统一输出到控制台窗口（复用现有 ConsoleDialog）
+  try {
+    ;(window as any)?.$bus?.emit?.('APPEND_CONSOLE_MESSAGE', line)
+    ;(window as any)?.$bus?.emit?.('SHOW_CONSOLE_DIALOG')
+  } catch {
+    // ignore
+  }
+}
+
 /** 更新检查结果 */
 export interface UpdateCheckResult {
   hasUpdate: boolean
@@ -86,6 +151,7 @@ export async function invokeCommand<T>(cmd: string, args?: Record<string, unknow
     return await invoke<T>(cmd, args)
   } catch (error) {
     console.error(`Tauri command error [${cmd}]:`, error)
+    showGlobalError(cmd, error)
     throw error
   }
 }

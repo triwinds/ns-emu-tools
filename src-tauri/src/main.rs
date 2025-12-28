@@ -5,7 +5,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use ns_emu_tools_lib::{commands, logging};
-use tauri::{Manager, WebviewWindow};
+use tauri::{Emitter, Manager, WebviewWindow};
 use tracing::info;
 
 /// 设置窗口大小并监听窗口变化事件
@@ -63,6 +63,44 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            // 全局 panic 处理：记录日志，并尽最大努力通知前端展示错误
+            // 注意：panic 后进程可能处于不稳定状态，这里只做 best-effort。
+            {
+                let app_handle = app.handle().clone();
+                std::panic::set_hook(Box::new(move |panic_info| {
+                    let payload = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+                        (*s).to_string()
+                    } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+                        s.clone()
+                    } else {
+                        "<non-string panic payload>".to_string()
+                    };
+
+                    let location = panic_info
+                        .location()
+                        .map(|l| format!("{}:{}", l.file(), l.line()))
+                        .unwrap_or_else(|| "<unknown location>".to_string());
+
+                    let msg = format!("panic at {}: {}", location, payload);
+
+                    tracing::error!("{}", msg);
+
+                    // 前端展示：notify-message
+                    let _ = app_handle.emit(
+                        ns_emu_tools_lib::services::notifier::events::NOTIFY_MESSAGE,
+                        ns_emu_tools_lib::models::response::NotifyMessage::error(
+                            format!("发生严重错误: {}", msg),
+                        ),
+                    );
+
+                    // 同时也发一条 log-message，方便控制台查看
+                    let _ = app_handle.emit(
+                        ns_emu_tools_lib::services::notifier::events::LOG_MESSAGE,
+                        format!("[PANIC] {}", msg),
+                    );
+                }));
+            }
+
             // 获取主窗口
             if let Some(window) = app.get_webview_window("main") {
                 setup_window(&window);
