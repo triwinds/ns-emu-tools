@@ -881,6 +881,8 @@ impl Aria2Manager {
             } else {
                 info!("已删除 aria2 控制文件: {}", control_path.display());
             }
+        } else {
+            debug!("aria2 控制文件不存在: {}", control_path.display());
         }
     }
 
@@ -1285,8 +1287,6 @@ fn extract_7z(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf
 }
 
 /// 解压 TAR 文件（支持 .tar.gz, .tar.bz2, .tar.xz）
-#[cfg(not(target_os = "windows"))]
-#[allow(dead_code)]
 fn extract_tar(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
     use flate2::read::GzDecoder;
     use tar::Archive;

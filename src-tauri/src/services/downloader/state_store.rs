@@ -354,7 +354,6 @@ pub fn get_available_space(path: &Path) -> AppResult<u64> {
 /// 获取可用磁盘空间
 #[cfg(windows)]
 pub fn get_available_space(path: &Path) -> AppResult<u64> {
-    use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
     use windows::core::PCWSTR;

@@ -448,8 +448,8 @@ export async function switchYuzuBranch(branch: string) {
 }
 
 /** 取消下载（统一接口） */
-export async function cancelDownload() {
-  return invokeCommand<ApiResponse<string | null>>('cancel_download_command')
+export async function cancelDownload(removeFiles?: boolean) {
+  return invokeCommand<ApiResponse<string | null>>('cancel_download_command', { removeFiles })
 }
 
 /** 删除历史路径 */

@@ -226,7 +226,7 @@ import {
   mdiSpeedometer,
   mdiClockOutline
 } from '@mdi/js';
-import { cancelDownload, deletePath } from '@/utils/tauri';
+import { cancelDownload } from '@/utils/tauri';
 
 const store = useProgressStore();
 const isCancelling = ref(false);
@@ -263,21 +263,10 @@ async function handleCancelAndDelete() {
   isCancelling.value = true;
 
   try {
-    const result = await cancelDownload();
-    console.log('取消下载结果:', result);
-
-    // 获取下载的文件路径并删除
-    const filePath = result?.data;
-    console.log('下载文件路径:', filePath);
-
-    if (filePath) {
-      try {
-        await deletePath(filePath);
-        console.log('已删除文件:', filePath);
-      } catch (error) {
-        console.error('删除文件失败:', error);
-      }
-    }
+    // 传递 removeFiles: true，让下载管理器负责删除所有相关文件
+    // 包括 aria2 的 .aria2 控制文件或 RustDownloader 的 .part/.download 文件
+    const result = await cancelDownload(true);
+    console.log('取消下载并删除文件结果:', result);
   } catch (error) {
     console.error('取消下载失败:', error);
   } finally {
@@ -290,7 +279,8 @@ async function handleCancelOnly() {
   isCancelling.value = true;
 
   try {
-    const result = await cancelDownload();
+    // 传递 removeFiles: false，仅取消下载但保留文件（用于断点续传）
+    const result = await cancelDownload(false);
     console.log('取消下载结果（不删除文件）:', result);
   } catch (error) {
     console.error('取消下载失败:', error);
