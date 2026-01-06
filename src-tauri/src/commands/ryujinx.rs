@@ -322,16 +322,51 @@ pub async fn detect_ryujinx_version_command(
     let config = crate::config::get_config();
     let ryujinx_path = std::path::PathBuf::from(&config.ryujinx.path);
 
-    // 检查可执行文件（优先 Ava 版本）
-    let ava_exe = ryujinx_path.join("Ryujinx.Ava.exe");
-    let exe_path = if ava_exe.exists() {
-        ava_exe
-    } else {
-        ryujinx_path.join("Ryujinx.exe")
+    // 检查可执行文件（根据平台）
+    let exe_path = {
+        #[cfg(target_os = "macos")]
+        {
+            let app_path = ryujinx_path.join("Ryujinx.app");
+            if app_path.exists() {
+                Some(app_path.join("Contents/MacOS/Ryujinx"))
+            } else {
+                None
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            let ava_exe = ryujinx_path.join("Ryujinx.Ava.exe");
+            let normal_exe = ryujinx_path.join("Ryujinx.exe");
+            if ava_exe.exists() {
+                Some(ava_exe)
+            } else if normal_exe.exists() {
+                Some(normal_exe)
+            } else {
+                None
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            let ava_exe = ryujinx_path.join("Ryujinx.Ava");
+            let normal_exe = ryujinx_path.join("Ryujinx");
+            if ava_exe.exists() {
+                Some(ava_exe)
+            } else if normal_exe.exists() {
+                Some(normal_exe)
+            } else {
+                None
+            }
+        }
     };
 
-    if !exe_path.exists() {
-        let error_msg = format!("未找到模拟器程序: {}", exe_path.display());
+    if exe_path.is_none() || !exe_path.as_ref().unwrap().exists() {
+        let error_msg = if let Some(path) = exe_path {
+            format!("未找到模拟器程序: {}", path.display())
+        } else {
+            format!("未找到模拟器程序在: {}", ryujinx_path.display())
+        };
         let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "check_exe".to_string(),

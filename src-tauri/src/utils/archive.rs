@@ -4,7 +4,7 @@
 
 use crate::error::{AppError, AppResult};
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Seek};
 use std::path::Path;
 use tracing::{debug, error, info, warn};
 
@@ -133,16 +133,83 @@ pub fn extract_tar_xz(filepath: &Path, target_path: &Path) -> AppResult<()> {
 pub fn extract_tar_gz(filepath: &Path, target_path: &Path) -> AppResult<()> {
     info!("解压 tar.gz: {} -> {}", filepath.display(), target_path.display());
 
-    let file = File::open(filepath)?;
+    // 验证文件存在和大小
+    let file_metadata = filepath.metadata()
+        .map_err(|e| AppError::Extract(format!("无法读取文件元数据: {}", e)))?;
+
+    let file_size = file_metadata.len();
+    debug!("tar.gz 文件大小: {} bytes ({:.2} MB)", file_size, file_size as f64 / 1024.0 / 1024.0);
+
+    if file_size == 0 {
+        return Err(AppError::Extract("文件大小为0，可能下载不完整".to_string()));
+    }
+
+    if file_size < 100 {
+        return Err(AppError::Extract(format!("文件过小 ({} bytes)，可能是错误页面或下载失败", file_size)));
+    }
+
+    // 验证 gzip 魔数
+    let mut file = File::open(filepath)?;
+    let mut magic = [0u8; 2];
+    if let Err(e) = file.read_exact(&mut magic) {
+        return Err(AppError::Extract(format!("读取文件头失败: {}", e)));
+    }
+
+    // gzip 文件签名: 1F 8B
+    if magic[0] != 0x1F || magic[1] != 0x8B {
+        warn!("文件头: {:02X} {:02X}, 不是有效的 gzip 文件", magic[0], magic[1]);
+
+        // 尝试读取前100字节查看内容
+        file.rewind()?;
+        let mut preview = vec![0u8; 100.min(file_size as usize)];
+        file.read_exact(&mut preview)?;
+        let preview_str = String::from_utf8_lossy(&preview);
+
+        // 检查是否是 HTML 错误页面
+        if preview_str.to_lowercase().contains("<html") || preview_str.to_lowercase().contains("<!doctype") {
+            return Err(AppError::Extract(
+                format!("下载的文件不是 tar.gz，而是 HTML 页面，可能是下载链接错误或需要认证")
+            ));
+        }
+
+        return Err(AppError::Extract(
+            format!("不是有效的 gzip 文件 (魔数: {:02X} {:02X})，文件可能已损坏或下载不完整", magic[0], magic[1])
+        ));
+    }
+
+    debug!("gzip 文件头验证通过");
+
+    // 重新打开文件进行解压
+    file.rewind()?;
     let decoder = flate2::read::GzDecoder::new(file);
     let mut archive = tar::Archive::new(decoder);
 
     // 创建目标目录
     std::fs::create_dir_all(target_path)?;
 
+    // 解压时提供详细的错误信息
     archive
         .unpack(target_path)
-        .map_err(|e| AppError::Extract(format!("解压 tar.gz 失败: {}", e)))?;
+        .map_err(|e| {
+            error!("解压 tar.gz 失败，文件: {}, 大小: {} bytes, 错误: {}",
+                   filepath.display(), file_size, e);
+
+            // 提供更友好的错误信息
+            let error_msg = e.to_string();
+            if error_msg.contains("failed to iterate") {
+                AppError::Extract(format!(
+                    "无法读取 tar 归档内容 ({}), 可能原因:\n\
+                    1. 文件下载不完整，请重试\n\
+                    2. 文件在下载过程中损坏\n\
+                    3. 磁盘空间不足或权限问题\n\
+                    4. 网络连接在下载时中断\n\
+                    建议: 删除下载的文件并重新下载",
+                    error_msg
+                ))
+            } else {
+                AppError::Extract(format!("解压 tar.gz 失败: {}", error_msg))
+            }
+        })?;
 
     info!("tar.gz 解压完成");
     Ok(())

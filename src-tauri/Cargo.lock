@@ -2808,6 +2808,7 @@ dependencies = [
  "nix 0.29.0",
  "once_cell",
  "parking_lot",
+ "plist",
  "rand 0.9.2",
  "regex",
  "reqwest",

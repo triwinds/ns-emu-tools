@@ -112,6 +112,9 @@ which = "7.0"
 # 目录路径
 dirs = "5.0"
 
+# plist 解析 (macOS)
+plist = "1.7"
+
 # DNS over HTTPS
 hickory-resolver = { version = "0.25", features = ["tokio", "https-ring", "webpki-roots"] }
 hickory-proto = "0.25"

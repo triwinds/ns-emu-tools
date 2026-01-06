@@ -15,6 +15,7 @@ use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+#[cfg(not(target_os = "macos"))]
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -429,6 +430,10 @@ where
         package_path.display(),
         package_path.metadata().map(|m| m.len()).unwrap_or(0));
     if let Err(e) = uncompress(&package_path, &tmp_dir, false) {
+        // 解压失败时，删除可能损坏的下载文件
+        warn!("解压失败，删除可能损坏的文件: {}", package_path.display());
+        let _ = std::fs::remove_file(&package_path);
+
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "extract".to_string(),
@@ -438,11 +443,11 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
-                error: Some(e.to_string()),
+                error: Some(format!("{}\n\n已自动删除损坏的文件，请重新尝试下载。", e)),
                 download_source: None,
             }
         });
-        return Err(e);
+        return Err(AppError::Extract(format!("{}\n\n已自动删除损坏的文件，请重新尝试下载。", e)));
     }
 
     on_event(ProgressEvent::StepUpdate {
@@ -1219,6 +1224,119 @@ pub async fn get_all_ryujinx_versions(branch: &str) -> AppResult<Vec<String>> {
     Ok(versions)
 }
 
+/// macOS: 通过解析 Info.plist 检测版本和分支
+///
+/// # 参数
+/// * `app_path` - Ryujinx.app 路径
+///
+/// # 返回
+/// (版本号, 分支)
+///
+/// # 检测策略
+/// 按优先级使用以下方法检测分支类型：
+/// 1. Copyright 包含 "Ryubing" → Canary 版本（最可靠）
+/// 2. CFBundleIconName 键存在 → Canary 版本（较可靠）
+/// 3. 版本号格式 (1.3.xxx) → 可能是 Canary（辅助判断）
+/// 4. 版本号包含 "ldn" → LDN 分支
+#[cfg(target_os = "macos")]
+fn detect_version_from_binary(app_path: &Path) -> AppResult<(Option<String>, String)> {
+    use std::io::Read;
+
+    // 1. 从 Info.plist 读取版本号
+    let plist_path = app_path.join("Contents/Info.plist");
+    if !plist_path.exists() {
+        debug!("Info.plist 不存在: {}", plist_path.display());
+        return Ok((None, "mainline".to_string()));
+    }
+
+    debug!("读取 Info.plist: {}", plist_path.display());
+    let mut file = std::fs::File::open(&plist_path)?;
+    let mut contents = Vec::new();
+    file.read_to_end(&mut contents)?;
+
+    let plist: plist::Dictionary = plist::from_bytes(&contents)
+        .map_err(|e| AppError::Emulator(format!("解析 Info.plist 失败: {}", e)))?;
+
+    // 读取版本信息（优先使用 CFBundleLongVersionString，因为它更准确）
+    let version = if let Some(plist::Value::String(version)) = plist.get("CFBundleLongVersionString") {
+        // 提取版本号部分 (例如 "1.3.3-e2143d4" -> "1.3.3")
+        let version_part = version.split('-').next().unwrap_or(version).to_string();
+        // 移除可能的尾部引号
+        let version_clean = version_part.trim_end_matches('"').to_string();
+        debug!("从 CFBundleLongVersionString 读取版本: {} -> {}", version, version_clean);
+        Some(version_clean)
+    } else if let Some(plist::Value::String(version)) = plist.get("CFBundleVersion") {
+        debug!("从 CFBundleVersion 读取版本: {}", version);
+        Some(version.clone())
+    } else {
+        None
+    };
+
+    if let Some(ref v) = version {
+        info!("从 Info.plist 检测到版本: {}", v);
+    } else {
+        warn!("Info.plist 中未找到版本信息");
+    }
+
+    // 2. 检测分支 - 使用多种方法按优先级检测
+    let branch = detect_branch_from_plist(&plist, version.as_deref());
+
+    info!("从 Info.plist 检测到版本: {:?}, 分支: {}", version, branch);
+
+    Ok((version, branch))
+}
+
+/// 从 plist 数据中检测分支类型
+///
+/// # 参数
+/// * `plist` - Info.plist 的字典数据
+/// * `version` - 版本号（可选）
+///
+/// # 返回
+/// 分支类型字符串
+#[cfg(target_os = "macos")]
+fn detect_branch_from_plist(plist: &plist::Dictionary, version: Option<&str>) -> String {
+    // 方法1: 检查 Copyright 信息（最可靠）
+    // Canary 版本的 Copyright 包含 "Ryubing and Contributors"
+    if let Some(plist::Value::String(copyright)) = plist.get("NSHumanReadableCopyright") {
+        if copyright.contains("Ryubing") {
+            debug!("通过 Copyright 检测到 Canary 分支: {}", copyright);
+            return "canary".to_string();
+        }
+    }
+
+    // 方法2: 检查 CFBundleIconName 键（较可靠）
+    // Canary 版本有此键，Mainline 版本没有
+    if plist.contains_key("CFBundleIconName") {
+        debug!("通过 CFBundleIconName 键检测到 Canary 分支");
+        return "canary".to_string();
+    }
+
+    // 方法3: 检测 LDN 分支（版本号中包含 ldn）
+    if let Some(v) = version {
+        if v.to_lowercase().contains("ldn") {
+            debug!("从版本号检测到 LDN 分支: {}", v);
+            return "ldn".to_string();
+        }
+    }
+
+    // 方法4: 检查版本号格式（辅助判断）
+    // Canary 版本号通常是 1.3.xxx 格式，且小版本号是三位数
+    if let Some(plist::Value::String(bundle_version)) = plist.get("CFBundleVersion") {
+        if bundle_version.starts_with("1.3.") {
+            let parts: Vec<&str> = bundle_version.split('.').collect();
+            if parts.len() >= 3 && parts[2].len() >= 3 {
+                debug!("通过版本号格式检测到可能的 Canary 分支: {}", bundle_version);
+                return "canary".to_string();
+            }
+        }
+    }
+
+    // 默认为 Mainline
+    debug!("未检测到特殊分支标识，默认为 mainline");
+    "mainline".to_string()
+}
+
 /// 检测 Ryujinx 版本（通过启动程序并读取窗口标题）
 ///
 /// # 返回
@@ -1230,6 +1348,41 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
     debug!("Ryujinx 路径: {}", ryujinx_path.display());
 
+    // macOS: 直接从 Info.plist 和二进制文件读取版本信息
+    #[cfg(target_os = "macos")]
+    {
+        let app_path = ryujinx_path.join(RYUJINX_APP_NAME);
+        if app_path.exists() {
+            match detect_version_from_binary(&app_path) {
+                Ok((Some(version), branch)) => {
+                    info!("检测到 Ryujinx 版本: {}, 分支: {}", version, branch);
+
+                    // 更新配置
+                    let mut cfg = CONFIG.write();
+                    cfg.ryujinx.version = Some(version.clone());
+                    cfg.ryujinx.branch = branch.clone();
+                    cfg.save()?;
+
+                    return Ok((Some(version), branch));
+                }
+                Ok((None, branch)) => {
+                    warn!("未找到版本信息，使用检测到的分支: {}", branch);
+                    return Ok((None, branch));
+                }
+                Err(e) => {
+                    warn!("从 Info.plist 读取版本失败: {}", e);
+                    return Err(e);
+                }
+            }
+        } else {
+            return Err(AppError::FileNotFound(
+                format!("未找到 Ryujinx.app: {}", app_path.display())
+            ));
+        }
+    }
+
+    // 非 macOS 平台：通过启动程序并读取窗口标题进行检测
+    #[cfg(not(target_os = "macos"))]
     let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
         Some(path) => path,
         None => {
@@ -1238,26 +1391,29 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
         }
     };
 
-    // 先检测基础分支（通过文件名）
+    // 先检测基础分支（通过文件名）- 仅用于非 macOS 平台
+    #[cfg(not(target_os = "macos"))]
     #[allow(unused_mut)]
     let mut branch = detect_current_branch();
 
-    // 启动程序
-    info!("启动 Ryujinx: {}", exe_path.display());
-    debug!("检测版本时启动 Ryujinx");
-    let mut child = Command::new(&exe_path)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()?;
+    // 启动程序 - 仅用于非 macOS 平台（Windows/Linux 需要通过窗口标题检测）
+    #[cfg(not(target_os = "macos"))]
+    {
+        info!("启动 Ryujinx: {}", exe_path.display());
+        debug!("检测版本时启动 Ryujinx");
+        let mut child = Command::new(&exe_path)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()?;
 
-    debug!("Ryujinx 进程 ID: {}", child.id());
+        debug!("Ryujinx 进程 ID: {}", child.id());
 
-    // 等待窗口创建
-    debug!("等待窗口创建...");
-    tokio::time::sleep(Duration::from_secs(3)).await;
+        // 等待窗口创建
+        debug!("等待窗口创建...");
+        tokio::time::sleep(Duration::from_secs(3)).await;
 
-    #[allow(unused_mut)]
-    let mut version: Option<String> = None;
+        #[allow(unused_mut)]
+        let mut version: Option<String> = None;
 
     #[cfg(windows)]
     {
@@ -1359,27 +1515,28 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
         }
     }
 
-    // 结束进程
-    debug!("结束 Ryujinx 进程");
-    let _ = child.kill();
-    let _ = child.wait();
+        // 结束进程
+        debug!("结束 Ryujinx 进程");
+        let _ = child.kill();
+        let _ = child.wait();
 
-    // 更新配置
-    if let Some(ref v) = version {
-        info!("检测到 Ryujinx 版本: {}, 分支: {}", v, branch);
-        debug!("更新配置文件");
+        // 更新配置
+        if let Some(ref v) = version {
+            info!("检测到 Ryujinx 版本: {}, 分支: {}", v, branch);
+            debug!("更新配置文件");
 
-        let mut cfg = CONFIG.write();
-        cfg.ryujinx.version = Some(v.clone());
-        cfg.ryujinx.branch = branch.clone();
-        cfg.save()?;
-        debug!("配置文件已保存");
-    } else {
-        warn!("未能检测到 Ryujinx 版本");
-        debug!("可能的原因: 窗口标题不匹配或窗口创建延迟过长");
-    }
+            let mut cfg = CONFIG.write();
+            cfg.ryujinx.version = Some(v.clone());
+            cfg.ryujinx.branch = branch.clone();
+            cfg.save()?;
+            debug!("配置文件已保存");
+        } else {
+            warn!("未能检测到 Ryujinx 版本");
+            debug!("可能的原因: 窗口标题不匹配或窗口创建延迟过长");
+        }
 
-    Ok((version, branch))
+        Ok((version, branch))
+    } // 结束 cfg(not(target_os = "macos")) 代码块
 }
 
 #[cfg(test)]
