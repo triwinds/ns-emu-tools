@@ -4,3 +4,4 @@
 - windows ryujinx 版本检测也换成二进制，然后前端的 tips 描述也改一下
 - Windows 也支持使用 rust downloader，而不是强制下载 aria2
 - settings 页面添加 downloader 的选择
+- rust downloader 显示下载速度波动非常大
