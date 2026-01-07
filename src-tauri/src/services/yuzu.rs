@@ -1575,27 +1575,52 @@ pub fn get_yuzu_user_path() -> PathBuf {
     let config = get_config();
     let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
 
-    // 优先使用本地 user 目录
-    let local_user = yuzu_path.join("user");
-    if local_user.exists() {
-        return local_user;
-    }
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: 用户数据在 ~/Library/Application Support/<app_name>
+        if let Ok(home) = std::env::var("HOME") {
+            let app_support = PathBuf::from(home).join("Library/Application Support");
 
-    // 检查 AppData 目录
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        let appdata_path = PathBuf::from(appdata);
-
-        // 按优先级检查
-        for name in &["yuzu", "eden", "citron"] {
-            let path = appdata_path.join(name);
-            if path.exists() {
-                return path;
+            // 按优先级检查
+            for name in &["eden", "citron", "yuzu"] {
+                let path = app_support.join(name);
+                if path.exists() {
+                    return path;
+                }
             }
+
+            // 默认返回基于当前分支的路径
+            return app_support.join(&config.yuzu.branch);
         }
     }
 
-    // 默认返回本地 user 目录
-    local_user
+    #[cfg(not(target_os = "macos"))]
+    {
+        // 优先使用本地 user 目录
+        let local_user = yuzu_path.join("user");
+        if local_user.exists() {
+            return local_user;
+        }
+
+        // 检查 AppData 目录
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let appdata_path = PathBuf::from(appdata);
+
+            // 按优先级检查
+            for name in &["yuzu", "eden", "citron"] {
+                let path = appdata_path.join(name);
+                if path.exists() {
+                    return path;
+                }
+            }
+        }
+
+        // 默认返回本地 user 目录
+        return local_user;
+    }
+
+    // Fallback
+    yuzu_path.join("user")
 }
 
 /// 打开 Yuzu keys 文件夹
@@ -1965,6 +1990,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::release::{ReleaseAsset, ReleaseInfo};
 
     #[test]
     fn test_get_emu_name() {
@@ -1978,5 +2004,146 @@ mod tests {
         // 测试需要配置环境
         // 这里只是确保函数不会 panic
         let _path = get_yuzu_exe_path();
+    }
+
+    #[test]
+    fn test_select_macos_asset_eden() {
+        let release = ReleaseInfo {
+            name: "v0.0.4-rc3".to_string(),
+            tag_name: "v0.0.4-rc3".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "Eden-Windows-v0.0.4-rc3-amd64-msvc-standard.zip".to_string(),
+                    download_url: "https://example.com/windows.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Eden-macOS-v0.0.4-rc3.tar.gz".to_string(),
+                    download_url: "https://example.com/macos.tar.gz".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Eden-Linux-v0.0.4-rc3-x86_64.AppImage".to_string(),
+                    download_url: "https://example.com/linux.AppImage".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let url = select_macos_asset(&release, "eden");
+        assert_eq!(url, Some("https://example.com/macos.tar.gz".to_string()));
+    }
+
+    #[test]
+    fn test_select_macos_asset_citron() {
+        let release = ReleaseInfo {
+            name: "stable".to_string(),
+            tag_name: "stable-01c042048".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "Citron-windows-stable-01c042048-x64.zip".to_string(),
+                    download_url: "https://example.com/windows.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Citron-macOS-stable-01c042048.dmg".to_string(),
+                    download_url: "https://example.com/macos.dmg".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "citron_stable-01c042048-linux-x86_64.AppImage".to_string(),
+                    download_url: "https://example.com/linux.AppImage".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let url = select_macos_asset(&release, "citron");
+        assert_eq!(url, Some("https://example.com/macos.dmg".to_string()));
+    }
+
+    #[test]
+    fn test_select_macos_asset_no_macos_build() {
+        let release = ReleaseInfo {
+            name: "old-version".to_string(),
+            tag_name: "v0.0.1".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "Citron-windows-stable.zip".to_string(),
+                    download_url: "https://example.com/windows.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "citron-linux-x86_64.AppImage".to_string(),
+                    download_url: "https://example.com/linux.AppImage".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let url = select_macos_asset(&release, "citron");
+        assert_eq!(url, None);
+    }
+
+    #[test]
+    fn test_select_macos_asset_excludes_other_platforms() {
+        let release = ReleaseInfo {
+            name: "test".to_string(),
+            tag_name: "test".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "Eden-Windows-test.zip".to_string(),
+                    download_url: "https://example.com/windows.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Eden-Linux-test.AppImage".to_string(),
+                    download_url: "https://example.com/linux.AppImage".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Eden-Android-test.apk".to_string(),
+                    download_url: "https://example.com/android.apk".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Eden-macOS-test.tar.gz".to_string(),
+                    download_url: "https://example.com/macos.tar.gz".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let url = select_macos_asset(&release, "eden");
+        // 应该只选择 macOS 版本，排除其他平台
+        assert_eq!(url, Some("https://example.com/macos.tar.gz".to_string()));
     }
 }

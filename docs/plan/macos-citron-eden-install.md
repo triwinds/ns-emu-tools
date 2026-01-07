@@ -521,6 +521,8 @@ fn find_app_recursive(dir: &Path, app_name: &str) -> AppResult<PathBuf> {
 - Windows 平台：保持原有的解压到临时目录再复制的逻辑
 - macOS 检查运行环境时跳过 MSVC 检查，直接返回成功；Windows 保持原有 MSVC 检查逻辑
 
+**实现位置**: src-tauri/src/services/yuzu.rs:340-397 (macOS 分支), 399-602 (Windows 分支)
+
 ```rust
 pub async fn install_eden<F>(target_version: &str, on_event: F) -> AppResult<()>
 where
@@ -586,6 +588,8 @@ where
 - Windows 平台：保持原有的解压到临时目录、处理顶层目录、再复制的逻辑
 - macOS 检查运行环境时跳过 MSVC 检查，直接返回成功；Windows 保持原有 MSVC 检查逻辑
 
+**实现位置**: src-tauri/src/services/yuzu.rs:752-806 (macOS 分支), 808-1122 (Windows 分支)
+
 ```rust
 pub async fn install_citron<F>(target_version: &str, on_event: F) -> AppResult<()>
 where
@@ -628,6 +632,11 @@ where
 - **步骤 3.3**: 修改 `DETECT_EXE_LIST` 常量，macOS 版本使用 `.app` 后缀，Windows 版本使用 `.exe` 后缀
 - **步骤 3.4**: 修改 `get_yuzu_exe_path()` 函数，macOS 查找 .app 并返回内部可执行文件路径（`Contents/MacOS/` 下）
 - **步骤 3.5**: 新增 `remove_target_app(branch)` 函数，只删除当前分支对应的应用；保留 `remove_all_executable_file()` 为 deprecated，避免误删其他分支的应用
+
+**实现位置**:
+- DETECT_EXE_LIST: src-tauri/src/services/yuzu.rs:18-23
+- get_yuzu_exe_path: src-tauri/src/services/yuzu.rs:1343-1390
+- remove_target_app: src-tauri/src/services/yuzu.rs:1127-1162
 
 ```rust
 /// 支持的模拟器可执行文件/应用列表
@@ -724,19 +733,26 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
 
 ### 第四阶段：配置路径更新
 
-#### 步骤 4.1：更新默认路径
+#### 步骤 4.1：更新默认路径 ✅ 已完成
 
 **文件**: `src-tauri/src/config.rs` (已完成)
 
-macOS 默认路径已设置为 `~/yuzu`，避免 `/Applications` 的权限/授权问题；`/Applications` 作为可选安装位置保留。
+**实现方案**: macOS 默认路径已设置为 `~/yuzu`，避免 `/Applications` 的权限/授权问题；`/Applications` 作为可选安装位置保留。
 
 ---
 
 ### 第五阶段：用户数据目录支持
 
-#### 步骤 5.1：修改 get_yuzu_user_path 支持 macOS
+#### 步骤 5.1：修改 get_yuzu_user_path 支持 macOS ✅ 已完成
 
 **文件**: `src-tauri/src/services/yuzu.rs` (修改)
+
+**实现方案**:
+- macOS: 用户数据在 `~/Library/Application Support/<app_name>` (eden/citron/yuzu)
+- Windows: 保持原有逻辑，优先使用本地 user 目录，其次检查 AppData 目录
+- 按优先级检查已存在的目录，默认返回基于当前分支的路径
+
+**实现位置**: src-tauri/src/services/yuzu.rs:1574-1624
 
 ```rust
 /// 获取 Yuzu 用户数据目录
@@ -796,9 +812,20 @@ pub fn get_yuzu_user_path() -> PathBuf {
 
 ### 第六阶段：测试与验证
 
-#### 步骤 6.1：添加单元测试
+#### 步骤 6.1：添加单元测试 ✅ 已完成
 
 **文件**: `src-tauri/src/services/yuzu.rs` (修改)
+
+**实现方案**:
+- 添加了 `test_select_macos_asset_eden` 测试：验证 Eden 的 macOS tar.gz 资源筛选
+- 添加了 `test_select_macos_asset_citron` 测试：验证 Citron 的 macOS dmg 资源筛选
+- 添加了 `test_select_macos_asset_no_macos_build` 测试：验证无 macOS 资源时返回 None
+- 添加了 `test_select_macos_asset_excludes_other_platforms` 测试：验证正确排除其他平台资源
+- 修复了 `utils/archive.rs` 中缺少 `PathBuf` 导入的编译错误
+
+**测试结果**: 所有 4 个测试通过 ✅
+
+**实现位置**: src-tauri/src/services/yuzu.rs:2009-2149
 
 ```rust
 #[cfg(test)]
@@ -917,3 +944,46 @@ mod tests {
 - [ ] 覆盖安装（已有版本）正常工作
 - [ ] 安装目录权限异常时提示友好
 - [ ] Windows 功能无回归
+
+---
+
+## 实现总结
+
+### 已完成的功能
+
+1. **平台识别与资源筛选** ✅
+   - 创建了 `utils/platform.rs` 模块用于平台识别
+   - 实现了 `select_macos_asset` 函数，支持 Eden (tar.gz) 和 Citron (dmg) 的资源筛选
+   - 在 `download_yuzu` 中集成了平台判断逻辑
+
+2. **DMG 挂载与解压功能** ✅
+   - 在 `utils/archive.rs` 中实现了 `extract_dmg` 函数
+   - 实现了 `extract_and_install_app_from_tar_gz` 函数
+   - 使用 `hdiutil` 挂载/卸载 DMG，使用 `ditto` 复制 .app
+
+3. **安装流程改造** ✅
+   - 修改了 `install_eden` 支持 macOS (tar.gz 提取)
+   - 修改了 `install_citron` 支持 macOS (DMG 挂载)
+   - 更新了 `DETECT_EXE_LIST` 常量，macOS 使用 .app 后缀
+   - 修改了 `get_yuzu_exe_path` 支持 macOS .app 路径
+   - 实现了 `remove_target_app` 函数，避免误删其他分支的应用
+
+4. **配置路径更新** ✅
+   - macOS 默认路径设置为 `~/yuzu`
+
+5. **用户数据目录支持** ✅
+   - 修改了 `get_yuzu_user_path` 支持 macOS (`~/Library/Application Support/<app_name>`)
+
+### 待完成的任务
+
+1. **实际测试验证** ⚠️
+   - 需要在 macOS 上实际测试 Eden 和 Citron 的安装流程
+   - 验证覆盖安装、权限异常等场景
+   - 验证 Windows 功能无回归
+
+### 下一步行动
+
+1. 在 macOS 上进行实际安装测试（Eden 和 Citron）
+2. 验证覆盖安装场景
+3. 验证路径权限异常场景的错误提示
+4. 在 Windows 上回归测试，确保现有功能正常
