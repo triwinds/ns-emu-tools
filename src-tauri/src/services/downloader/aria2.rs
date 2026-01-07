@@ -1287,6 +1287,7 @@ fn extract_7z(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf
 }
 
 /// 解压 TAR 文件（支持 .tar.gz, .tar.bz2, .tar.xz）
+#[cfg(target_os = "windows")]
 fn extract_tar(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
     use flate2::read::GzDecoder;
     use tar::Archive;

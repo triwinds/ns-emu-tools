@@ -29,7 +29,8 @@
       "Bash(mkdir:*)",
       "WebFetch(domain:api.github.com)",
       "WebFetch(domain:git.citron-emu.org)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cargo clean:*)"
     ]
   }
 }

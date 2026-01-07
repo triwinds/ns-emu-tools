@@ -7,6 +7,7 @@ use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import models
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::downloader::{get_download_manager, DownloadOptions, DownloadProgress};
+#[cfg(not(target_os = "macos"))]
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_github_download_source_name;
 use crate::utils::archive::uncompress;
@@ -1068,6 +1069,7 @@ where
 /// # 参数
 /// * `tmp_dir` - 临时解压目录
 /// * `yuzu_path` - Yuzu 安装目录
+#[cfg(not(target_os = "macos"))]
 fn copy_back_yuzu_files(tmp_dir: &Path, yuzu_path: &Path) -> AppResult<()> {
     info!("复制 Yuzu 文件到: {}", yuzu_path.display());
 
@@ -1101,6 +1103,7 @@ fn copy_back_yuzu_files(tmp_dir: &Path, yuzu_path: &Path) -> AppResult<()> {
 }
 
 /// 递归复制目录
+#[cfg(not(target_os = "macos"))]
 fn copy_dir_all(src: &Path, dst: &Path) -> AppResult<()> {
     if !dst.exists() {
         std::fs::create_dir_all(dst)?;
