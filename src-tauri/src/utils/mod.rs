@@ -4,8 +4,10 @@
 
 pub mod archive;
 pub mod common;
+pub mod platform;
 pub mod webview;
 
 pub use archive::*;
 pub use common::*;
+pub use platform::*;
 pub use webview::*;

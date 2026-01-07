@@ -187,9 +187,11 @@
 
 ### 第一阶段：平台识别与资源筛选
 
-#### 步骤 1.1：创建平台识别工具模块
+#### 步骤 1.1：创建平台识别工具模块 ✅ 已完成
 
 **文件**: `src-tauri/src/utils/platform.rs` (新建)
+
+**实现方案**: 已创建 platform.rs 模块，实现了 Platform 结构体及其相关方法，用于识别当前运行平台（OS 和 架构）。已在 utils/mod.rs 中导出。
 
 ```rust
 //! 平台识别工具模块
@@ -252,9 +254,11 @@ impl Platform {
 
 ---
 
-#### 步骤 1.2：实现 macOS 资源筛选器
+#### 步骤 1.2：实现 macOS 资源筛选器 ✅ 已完成
 
 **文件**: `src-tauri/src/services/yuzu.rs` (修改)
+
+**实现方案**: 已实现 `select_macos_asset` 函数，支持 Eden (macOS + tar.gz) 和 Citron (macOS + dmg) 的资源筛选。已在 `download_yuzu` 函数中集成平台判断逻辑（使用 `cfg!(target_os = "macos")`）。
 
 在 `download_yuzu` 函数中添加 macOS 资源筛选逻辑：
 
@@ -314,9 +318,15 @@ pub async fn download_yuzu<F>(...) -> AppResult<PathBuf> {
 
 ### 第二阶段：DMG 挂载与解压功能
 
-#### 步骤 2.1：实现 DMG 挂载/解压模块
+#### 步骤 2.1：实现 DMG 挂载/解压模块 ✅ 已完成
 
 **文件**: `src-tauri/src/utils/archive.rs` (修改)
+
+**实现方案**: 已在 archive.rs 中添加三个 macOS 专用函数：
+- `extract_dmg()`: 挂载 DMG 文件，查找并复制 .app 到目标目录
+- `extract_and_install_app_from_tar_gz()`: 从 tar.gz 提取 .app 并安装
+- `find_app_recursive()` 和 `find_app_in_dir()`: 查找 .app 的辅助函数
+使用 `hdiutil` 命令挂载/卸载 DMG，使用 `ditto` 命令复制 .app 以保留权限和扩展属性。
 
 添加 DMG 处理函数：
 
@@ -501,9 +511,15 @@ fn find_app_recursive(dir: &Path, app_name: &str) -> AppResult<PathBuf> {
 
 ### 第三阶段：安装流程改造
 
-#### 步骤 3.1：修改 install_eden 支持 macOS
+#### 步骤 3.1：修改 install_eden 支持 macOS ✅ 已完成
 
 **文件**: `src-tauri/src/services/yuzu.rs` (修改)
+
+**实现方案**:
+- 使用 `#[cfg(target_os = "macos")]` 和 `#[cfg(not(target_os = "macos"))]` 区分平台
+- macOS 平台：调用 `extract_and_install_app_from_tar_gz` 直接从 tar.gz 提取并安装 Eden.app
+- Windows 平台：保持原有的解压到临时目录再复制的逻辑
+- macOS 检查运行环境时跳过 MSVC 检查，直接返回成功；Windows 保持原有 MSVC 检查逻辑
 
 ```rust
 pub async fn install_eden<F>(target_version: &str, on_event: F) -> AppResult<()>
@@ -560,9 +576,15 @@ where
 }
 ```
 
-#### 步骤 3.2：修改 install_citron 支持 macOS
+#### 步骤 3.2：修改 install_citron 支持 macOS ✅ 已完成
 
 **文件**: `src-tauri/src/services/yuzu.rs` (修改)
+
+**实现方案**:
+- 使用 `#[cfg(target_os = "macos")]` 和 `#[cfg(not(target_os = "macos"))]` 区分平台
+- macOS 平台：调用 `extract_dmg` 直接挂载 DMG 并复制 Citron.app 到目标目录
+- Windows 平台：保持原有的解压到临时目录、处理顶层目录、再复制的逻辑
+- macOS 检查运行环境时跳过 MSVC 检查，直接返回成功；Windows 保持原有 MSVC 检查逻辑
 
 ```rust
 pub async fn install_citron<F>(target_version: &str, on_event: F) -> AppResult<()>
@@ -598,9 +620,14 @@ where
 
 ---
 
-#### 步骤 3.3：修改可执行文件检测列表
+#### 步骤 3.3-3.5：修改可执行文件检测和删除逻辑 ✅ 已完成
 
 **文件**: `src-tauri/src/services/yuzu.rs` (修改)
+
+**实现方案**:
+- **步骤 3.3**: 修改 `DETECT_EXE_LIST` 常量，macOS 版本使用 `.app` 后缀，Windows 版本使用 `.exe` 后缀
+- **步骤 3.4**: 修改 `get_yuzu_exe_path()` 函数，macOS 查找 .app 并返回内部可执行文件路径（`Contents/MacOS/` 下）
+- **步骤 3.5**: 新增 `remove_target_app(branch)` 函数，只删除当前分支对应的应用；保留 `remove_all_executable_file()` 为 deprecated，避免误删其他分支的应用
 
 ```rust
 /// 支持的模拟器可执行文件/应用列表

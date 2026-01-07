@@ -290,6 +290,183 @@ pub fn list_zip_entries(filepath: &Path) -> AppResult<Vec<String>> {
     Ok(entries)
 }
 
+/// 挂载并提取 DMG 文件中的 .app (仅 macOS)
+#[cfg(target_os = "macos")]
+pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
+    use std::process::Command;
+
+    info!("挂载 DMG: {} -> {}", dmg_path.display(), target_path.display());
+
+    // 创建临时挂载点
+    let mount_point = std::env::temp_dir().join(format!("dmg_mount_{}", std::process::id()));
+    std::fs::create_dir_all(&mount_point)?;
+
+    // 挂载 DMG
+    let mount_result = Command::new("hdiutil")
+        .args(["attach"])
+        .arg(dmg_path)
+        .args(["-nobrowse", "-readonly", "-mountpoint"])
+        .arg(&mount_point)
+        .output()?;
+
+    if !mount_result.status.success() {
+        let _ = std::fs::remove_dir_all(&mount_point);
+        return Err(AppError::Extract(format!(
+            "DMG 挂载失败: {}",
+            String::from_utf8_lossy(&mount_result.stderr)
+        )));
+    }
+
+    // 查找 .app
+    let app_path = find_app_in_dir(&mount_point)?;
+    let app_name = app_path.file_name()
+        .ok_or_else(|| AppError::Extract("无法获取 .app 名称".to_string()))?;
+
+    // 确保目标目录存在
+    std::fs::create_dir_all(target_path)?;
+
+    let target_app = target_path.join(app_name);
+
+    // 如果目标已存在，先删除
+    if target_app.exists() {
+        std::fs::remove_dir_all(&target_app)?;
+    }
+
+    // 使用 ditto 复制 .app（保留权限和扩展属性）
+    let copy_result = Command::new("ditto")
+        .args(["--rsrc", "--extattr"])
+        .arg(&app_path)
+        .arg(&target_app)
+        .output()?;
+
+    // 卸载 DMG（无论复制是否成功都要卸载）
+    let _ = Command::new("hdiutil")
+        .args(["detach", "-quiet"])
+        .arg(&mount_point)
+        .output();
+
+    // 清理挂载点目录
+    let _ = std::fs::remove_dir_all(&mount_point);
+
+    if !copy_result.status.success() {
+        return Err(AppError::Extract(format!(
+            "复制 .app 失败: {}",
+            String::from_utf8_lossy(&copy_result.stderr)
+        )));
+    }
+
+    info!("DMG 提取完成: {}", target_app.display());
+    Ok(target_app)
+}
+
+/// 在目录中查找 .app 包
+#[cfg(target_os = "macos")]
+fn find_app_in_dir(dir: &Path) -> AppResult<PathBuf> {
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(name) = path.file_name() {
+                if name.to_string_lossy().ends_with(".app") {
+                    return Ok(path);
+                }
+            }
+        }
+    }
+    Err(AppError::Extract("DMG 中未找到 .app 文件".to_string()))
+}
+
+/// 从 tar.gz 中提取 .app 并安装 (仅 macOS)
+#[cfg(target_os = "macos")]
+pub fn extract_and_install_app_from_tar_gz(
+    tar_gz_path: &Path,
+    target_path: &Path,
+    app_name: &str, // 例如 "Eden.app"
+) -> AppResult<PathBuf> {
+    use std::process::Command;
+
+    info!("从 tar.gz 提取 .app: {}", tar_gz_path.display());
+
+    // 解压到临时目录
+    let tmp_dir = std::env::temp_dir().join(format!("app_extract_{}", std::process::id()));
+    if tmp_dir.exists() {
+        std::fs::remove_dir_all(&tmp_dir)?;
+    }
+    std::fs::create_dir_all(&tmp_dir)?;
+
+    // 使用现有的 extract_tar_gz
+    extract_tar_gz(tar_gz_path, &tmp_dir)?;
+
+    // 在解压目录中递归查找目标 .app
+    let app_path = find_app_recursive(&tmp_dir, app_name)?;
+
+    // 确保目标目录存在
+    std::fs::create_dir_all(target_path)?;
+
+    let target_app = target_path.join(app_name);
+
+    // 如果目标已存在，先删除
+    if target_app.exists() {
+        std::fs::remove_dir_all(&target_app)?;
+    }
+
+    // 使用 ditto 复制（保留权限和扩展属性）
+    let copy_result = Command::new("ditto")
+        .args(["--rsrc", "--extattr"])
+        .arg(&app_path)
+        .arg(&target_app)
+        .output()?;
+
+    // 清理临时目录
+    let _ = std::fs::remove_dir_all(&tmp_dir);
+
+    if !copy_result.status.success() {
+        return Err(AppError::Extract(format!(
+            "复制 .app 失败: {}",
+            String::from_utf8_lossy(&copy_result.stderr)
+        )));
+    }
+
+    // 验证安装结果
+    let info_plist = target_app.join("Contents/Info.plist");
+    if !info_plist.exists() {
+        return Err(AppError::Extract(
+            ".app 安装验证失败: Contents/Info.plist 不存在".to_string()
+        ));
+    }
+
+    info!(".app 安装完成: {}", target_app.display());
+    Ok(target_app)
+}
+
+/// 递归查找指定名称的 .app
+#[cfg(target_os = "macos")]
+fn find_app_recursive(dir: &Path, app_name: &str) -> AppResult<PathBuf> {
+    // 首先在当前目录查找
+    let direct_path = dir.join(app_name);
+    if direct_path.exists() && direct_path.is_dir() {
+        return Ok(direct_path);
+    }
+
+    // 递归查找子目录
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            let name = path.file_name().map(|n| n.to_string_lossy().to_string());
+            if name.as_deref() == Some(app_name) {
+                return Ok(path);
+            }
+            // 继续在子目录中查找
+            if let Ok(found) = find_app_recursive(&path, app_name) {
+                return Ok(found);
+            }
+        }
+    }
+
+    Err(AppError::Extract(format!("未找到 {}", app_name)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

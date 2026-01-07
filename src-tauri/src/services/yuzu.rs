@@ -15,7 +15,11 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
-/// 支持的模拟器可执行文件列表
+/// 支持的模拟器可执行文件/应用列表
+#[cfg(target_os = "macos")]
+const DETECT_EXE_LIST: &[&str] = &["Eden.app", "Citron.app", "yuzu.app"];
+
+#[cfg(not(target_os = "macos"))]
 const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.exe", "cemu.exe"];
 
 /// 支持下载的分支
@@ -28,6 +32,32 @@ pub fn get_emu_name(branch: &str) -> &'static str {
         "citron" => "Citron",
         _ => "Yuzu",
     }
+}
+
+/// 选择 macOS 下载资源
+fn select_macos_asset(release_info: &crate::models::release::ReleaseInfo, branch: &str) -> Option<String> {
+    for asset in &release_info.assets {
+        let name = &asset.name;
+
+        // 排除其他平台的文件
+        let name_lower = name.to_lowercase();
+        if name_lower.contains("windows") || name_lower.contains("linux") || name_lower.contains("android") {
+            continue;
+        }
+
+        // Eden: 匹配 macOS + .tar.gz
+        if branch == "eden" && name.contains("macOS") && name_lower.ends_with(".tar.gz") {
+            debug!("选择 Eden macOS 资源: {}", name);
+            return Some(asset.download_url.clone());
+        }
+
+        // Citron: 匹配 macOS + .dmg
+        if branch == "citron" && name.contains("macOS") && name_lower.ends_with(".dmg") {
+            debug!("选择 Citron macOS 资源: {}", name);
+            return Some(asset.download_url.clone());
+        }
+    }
+    None
 }
 
 /// 下载 Yuzu/Eden/Citron
@@ -77,32 +107,37 @@ where
 
     debug!("找到版本: {}, 资源数量: {}", release_info.tag_name, release_info.assets.len());
 
-    // 查找下载 URL
-    let mut download_url: Option<String> = None;
+    // 查找下载 URL - 根据平台选择
+    let download_url: Option<String> = if cfg!(target_os = "macos") {
+        select_macos_asset(&release_info, branch)
+    } else {
+        // Windows 筛选逻辑
+        let mut url = None;
+        for asset in &release_info.assets {
+            let name = asset.name.to_lowercase();
+            debug!("检查资源: {} (size: {})", asset.name, asset.size);
 
-    for asset in &release_info.assets {
-        let name = asset.name.to_lowercase();
-        debug!("检查资源: {} (size: {})", asset.name, asset.size);
-
-        if name.ends_with(".7z") {
-            download_url = Some(asset.download_url.clone());
-            debug!("选择 .7z 资源: {}", asset.name);
-            break;
-        } else if name.starts_with("windows-yuzu-ea-") && name.ends_with(".zip") {
-            download_url = Some(asset.download_url.clone());
-            debug!("选择 Yuzu EA .zip 资源: {}", asset.name);
-            break;
-        } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
-            download_url = Some(asset.download_url.clone());
-            debug!("选择 Eden .zip 资源: {}", asset.name);
-            break;
-        } else if name.contains("windows") {
-            // for citron
-            download_url = Some(asset.download_url.clone());
-            debug!("选择 Windows 资源: {}", asset.name);
-            break;
+            if name.ends_with(".7z") {
+                url = Some(asset.download_url.clone());
+                debug!("选择 .7z 资源: {}", asset.name);
+                break;
+            } else if name.starts_with("windows-yuzu-ea-") && name.ends_with(".zip") {
+                url = Some(asset.download_url.clone());
+                debug!("选择 Yuzu EA .zip 资源: {}", asset.name);
+                break;
+            } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
+                url = Some(asset.download_url.clone());
+                debug!("选择 Eden .zip 资源: {}", asset.name);
+                break;
+            } else if name.contains("windows") {
+                // for citron
+                url = Some(asset.download_url.clone());
+                debug!("选择 Windows 资源: {}", asset.name);
+                break;
+            }
         }
-    }
+        url
+    };
 
     let url = download_url.ok_or_else(|| {
         warn!("无法找到合适的下载资源");
@@ -302,23 +337,101 @@ where
         }
     });
 
-    // 解压
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "extract".to_string(),
-            title: "解压文件".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
+    // 解压/安装 - 根据平台区分处理
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: tar.gz -> 提取 .app
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+
+        let app_name = "Eden.app";
+        match crate::utils::archive::extract_and_install_app_from_tar_gz(
+            &package_path,
+            &yuzu_path,
+            app_name,
+        ) {
+            Ok(installed_app) => {
+                info!("Eden.app 已安装到: {}", installed_app.display());
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "install".to_string(),
+                        title: "安装文件".to_string(),
+                        status: ProgressStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                        download_source: None,
+                    }
+                });
+            }
+            Err(e) => {
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "install".to_string(),
+                        title: "安装文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(e.to_string()),
+                        download_source: None,
+                    }
+                });
+                return Err(e);
+            }
         }
-    });
-    let tmp_dir = std::env::temp_dir().join("eden-install");
-    if tmp_dir.exists() {
-        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows: 现有的解压和复制逻辑
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+        let tmp_dir = std::env::temp_dir().join("eden-install");
+        if tmp_dir.exists() {
+            if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "extract".to_string(),
+                        title: "解压文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(format!("清理临时目录失败: {}", e)),
+                        download_source: None,
+                    }
+                });
+                return Err(e.into());
+            }
+        }
+        if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "extract".to_string(),
@@ -328,136 +441,92 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
-                    error: Some(format!("清理临时目录失败: {}", e)),
+                    error: Some(format!("创建临时目录失败: {}", e)),
                     download_source: None,
                 }
             });
             return Err(e.into());
         }
-    }
-    if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
+
+        if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            return Err(e);
+        }
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "extract".to_string(),
                 title: "解压文件".to_string(),
-                status: ProgressStatus::Error,
+                status: ProgressStatus::Success,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
-                error: Some(format!("创建临时目录失败: {}", e)),
+                error: None,
                 download_source: None,
             }
         });
-        return Err(e.into());
-    }
 
-    if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Error,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: Some(e.to_string()),
-                download_source: None,
-            }
-        });
-        return Err(e);
-    }
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "extract".to_string(),
-            title: "解压文件".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-
-    // 安装
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "install".to_string(),
-            title: "安装文件".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-    // 复制文件
-    if let Err(e) = copy_back_yuzu_files(&tmp_dir, &yuzu_path) {
+        // 安装
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "install".to_string(),
                 title: "安装文件".to_string(),
-                status: ProgressStatus::Error,
+                status: ProgressStatus::Running,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
-                error: Some(e.to_string()),
+                error: None,
                 download_source: None,
             }
         });
-        return Err(e);
-    }
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "install".to_string(),
-            title: "安装文件".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
+        // 复制文件
+        if let Err(e) = copy_back_yuzu_files(&tmp_dir, &yuzu_path) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            return Err(e);
         }
-    });
-
-    // 检查运行环境
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "check_env".to_string(),
-            title: "检查运行环境".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-    if let Err(e) = check_and_install_msvc().await {
-        warn!("MSVC 运行库检查失败: {}", e);
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Error,
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: ProgressStatus::Success,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
-                error: Some(e.to_string()),
+                error: None,
                 download_source: None,
             }
         });
-        // 不阻止安装流程，继续执行
-    } else {
+    }
+
+    // 检查运行环境 - macOS 跳过 MSVC 检查
+    #[cfg(target_os = "macos")]
+    {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "check_env".to_string(),
@@ -471,6 +540,56 @@ where
                 download_source: None,
             }
         });
+        // macOS 无需 MSVC，直接成功
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows: 执行 MSVC 检查
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+        if let Err(e) = check_and_install_msvc().await {
+            warn!("MSVC 运行库检查失败: {}", e);
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            // 不阻止安装流程，继续执行
+        } else {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: None,
+                }
+            });
+        }
     }
 
     // 如果配置了自动删除，删除下载文件
@@ -629,216 +748,248 @@ where
         }
     });
 
-    // 解压
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "extract".to_string(),
-            title: "解压文件".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-    let tmp_dir = std::env::temp_dir().join("citron-install");
-    if tmp_dir.exists() {
-        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract".to_string(),
-                    title: "解压文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(format!("清理临时目录失败: {}", e)),
-                    download_source: None,
-                }
-            });
-            return Err(e.into());
-        }
-    }
-    if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Error,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: Some(format!("创建临时目录失败: {}", e)),
-                download_source: None,
-            }
-        });
-        return Err(e.into());
-    }
-
-    if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Error,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: Some(e.to_string()),
-                download_source: None,
-            }
-        });
-        return Err(e);
-    }
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "extract".to_string(),
-            title: "解压文件".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-
-    // Citron 解压后有一个顶层目录，需要进入
-    let mut release_dir = tmp_dir.clone();
-    match std::fs::read_dir(&tmp_dir) {
-        Ok(mut entries) => {
-            if let Some(first_entry) = entries.next() {
-                match first_entry {
-                    Ok(entry) => {
-                        if entry.path().is_dir() {
-                            release_dir = entry.path();
-                        }
-                    }
-                    Err(e) => {
-                        on_event(ProgressEvent::StepUpdate {
-                            step: ProgressStep {
-                                id: "extract".to_string(),
-                                title: "解压文件".to_string(),
-                                status: ProgressStatus::Error,
-                                step_type: "normal".to_string(),
-                                progress: 0.0,
-                                download_speed: "".to_string(),
-                                eta: "".to_string(),
-                                error: Some(format!("读取解压目录失败: {}", e)),
-                                download_source: None,
-                            }
-                        });
-                        return Err(e.into());
-                    }
-                }
-            }
-        }
-        Err(e) => {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract".to_string(),
-                    title: "解压文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(format!("读取解压目录失败: {}", e)),
-                    download_source: None,
-                }
-            });
-            return Err(e.into());
-        }
-    }
-
-    // 安装
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "install".to_string(),
-            title: "安装文件".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-    // 复制文件
-    if let Err(e) = copy_back_yuzu_files(&release_dir, &yuzu_path) {
+    // 解压/安装 - 根据平台区分处理
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: DMG -> 挂载 -> 复制 .app
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "install".to_string(),
                 title: "安装文件".to_string(),
-                status: ProgressStatus::Error,
+                status: ProgressStatus::Running,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
-                error: Some(e.to_string()),
+                error: None,
                 download_source: None,
             }
         });
-        return Err(e);
-    }
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "install".to_string(),
-            title: "安装文件".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
 
-    // 清理临时目录
-    if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-        warn!("清理临时目录失败: {}", e);
-        // 不阻止安装流程
+        match crate::utils::archive::extract_dmg(
+            &package_path,
+            &yuzu_path,
+        ) {
+            Ok(installed_app) => {
+                info!("Citron.app 已安装到: {}", installed_app.display());
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "install".to_string(),
+                        title: "安装文件".to_string(),
+                        status: ProgressStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                        download_source: None,
+                    }
+                });
+            }
+            Err(e) => {
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "install".to_string(),
+                        title: "安装文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(e.to_string()),
+                        download_source: None,
+                    }
+                });
+                return Err(e);
+            }
+        }
     }
 
-    // 检查运行环境
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "check_env".to_string(),
-            title: "检查运行环境".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        }
-    });
-    if let Err(e) = check_and_install_msvc().await {
-        warn!("MSVC 运行库检查失败: {}", e);
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows: 现有的解压和复制逻辑
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Error,
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: ProgressStatus::Running,
                 step_type: "normal".to_string(),
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
-                error: Some(e.to_string()),
+                error: None,
                 download_source: None,
             }
         });
-        // 不阻止安装流程，继续执行
-    } else {
+        let tmp_dir = std::env::temp_dir().join("citron-install");
+        if tmp_dir.exists() {
+            if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "extract".to_string(),
+                        title: "解压文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(format!("清理临时目录失败: {}", e)),
+                        download_source: None,
+                    }
+                });
+                return Err(e.into());
+            }
+        }
+        if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(format!("创建临时目录失败: {}", e)),
+                    download_source: None,
+                }
+            });
+            return Err(e.into());
+        }
+
+        if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "extract".to_string(),
+                    title: "解压文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            return Err(e);
+        }
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "extract".to_string(),
+                title: "解压文件".to_string(),
+                status: ProgressStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+
+        // Citron 解压后有一个顶层目录，需要进入
+        let mut release_dir = tmp_dir.clone();
+        match std::fs::read_dir(&tmp_dir) {
+            Ok(mut entries) => {
+                if let Some(first_entry) = entries.next() {
+                    match first_entry {
+                        Ok(entry) => {
+                            if entry.path().is_dir() {
+                                release_dir = entry.path();
+                            }
+                        }
+                        Err(e) => {
+                            on_event(ProgressEvent::StepUpdate {
+                                step: ProgressStep {
+                                    id: "extract".to_string(),
+                                    title: "解压文件".to_string(),
+                                    status: ProgressStatus::Error,
+                                    step_type: "normal".to_string(),
+                                    progress: 0.0,
+                                    download_speed: "".to_string(),
+                                    eta: "".to_string(),
+                                    error: Some(format!("读取解压目录失败: {}", e)),
+                                    download_source: None,
+                                }
+                            });
+                            return Err(e.into());
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                on_event(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "extract".to_string(),
+                        title: "解压文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(format!("读取解压目录失败: {}", e)),
+                        download_source: None,
+                    }
+                });
+                return Err(e.into());
+            }
+        }
+
+        // 安装
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+        // 复制文件
+        if let Err(e) = copy_back_yuzu_files(&release_dir, &yuzu_path) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            return Err(e);
+        }
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "install".to_string(),
+                title: "安装文件".to_string(),
+                status: ProgressStatus::Success,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+
+        // 清理临时目录
+        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
+            warn!("清理临时目录失败: {}", e);
+            // 不阻止安装流程
+        }
+    }
+
+    // 检查运行环境 - macOS 跳过 MSVC 检查
+    #[cfg(target_os = "macos")]
+    {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "check_env".to_string(),
@@ -852,6 +1003,56 @@ where
                 download_source: None,
             }
         });
+        // macOS 无需 MSVC，直接成功
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows: 执行 MSVC 检查
+        on_event(ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "check_env".to_string(),
+                title: "检查运行环境".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: None,
+            }
+        });
+        if let Err(e) = check_and_install_msvc().await {
+            warn!("MSVC 运行库检查失败: {}", e);
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                }
+            });
+            // 不阻止安装流程，继续执行
+        } else {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "check_env".to_string(),
+                    title: "检查运行环境".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: None,
+                }
+            });
+        }
     }
 
     // 如果配置了自动删除，删除下载文件
@@ -922,17 +1123,71 @@ fn copy_dir_all(src: &Path, dst: &Path) -> AppResult<()> {
 }
 
 /// 删除所有旧的模拟器可执行文件
+/// 删除旧的模拟器（仅删除当前分支对应的）
+pub fn remove_target_app(branch: &str) -> AppResult<()> {
+    info!("删除旧的 {} 应用", branch);
+
+    let config = get_config();
+    let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
+
+    #[cfg(target_os = "macos")]
+    {
+        let app_name = match branch {
+            "eden" => "Eden.app",
+            "citron" => "Citron.app",
+            _ => return Ok(()),
+        };
+        let app_path = yuzu_path.join(app_name);
+        if app_path.exists() {
+            info!("删除旧应用: {}", app_path.display());
+            std::fs::remove_dir_all(&app_path)?;
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let exe_name = match branch {
+            "eden" => "eden.exe",
+            "citron" => "citron.exe",
+            _ => return Ok(()),
+        };
+        let exe_path = yuzu_path.join(exe_name);
+        if exe_path.exists() {
+            info!("删除旧可执行文件: {}", exe_path.display());
+            std::fs::remove_file(&exe_path)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// 删除所有模拟器可执行文件（已废弃，使用 remove_target_app 代替）
+#[deprecated(note = "使用 remove_target_app 代替，以避免误删其他分支的应用")]
 pub fn remove_all_executable_file() -> AppResult<()> {
     info!("删除旧模拟器可执行文件");
 
     let config = get_config();
     let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
 
-    for exe_name in DETECT_EXE_LIST {
-        let exe_path = yuzu_path.join(exe_name);
-        if exe_path.exists() {
-            info!("删除: {}", exe_path.display());
-            std::fs::remove_file(&exe_path)?;
+    #[cfg(target_os = "macos")]
+    {
+        for app_name in DETECT_EXE_LIST {
+            let app_path = yuzu_path.join(app_name);
+            if app_path.exists() {
+                info!("删除: {}", app_path.display());
+                std::fs::remove_dir_all(&app_path)?;
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        for exe_name in DETECT_EXE_LIST {
+            let exe_path = yuzu_path.join(exe_name);
+            if exe_path.exists() {
+                info!("删除: {}", exe_path.display());
+                std::fs::remove_file(&exe_path)?;
+            }
         }
     }
 
@@ -1045,8 +1300,8 @@ where
         }
     }
 
-    // 删除旧的可执行文件
-    remove_all_executable_file()?;
+    // 删除旧的可执行文件/应用（只删除当前分支的）
+    remove_target_app(branch)?;
 
     // 根据分支安装
     match branch {
@@ -1089,23 +1344,49 @@ pub fn get_yuzu_exe_path() -> PathBuf {
     let config = get_config();
     let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
 
-    // 如果配置了重命名为 cemu，或者 yuzu.exe 不存在但 cemu.exe 存在
-    if (config.setting.other.rename_yuzu_to_cemu || !yuzu_path.join("yuzu.exe").exists())
-        && yuzu_path.join("cemu.exe").exists()
+    #[cfg(target_os = "macos")]
     {
-        return yuzu_path.join("cemu.exe");
-    }
-
-    // 按优先级查找可执行文件
-    for exe_name in DETECT_EXE_LIST {
-        let exe_path = yuzu_path.join(exe_name);
-        if exe_path.exists() {
-            return exe_path;
+        // macOS: 查找 .app 并返回其内部的可执行文件
+        for app_name in &["Eden.app", "Citron.app", "yuzu.app"] {
+            let app_path = yuzu_path.join(app_name);
+            if app_path.exists() {
+                // 读取 Info.plist 获取可执行文件名称，或者使用约定路径
+                let macos_dir = app_path.join("Contents/MacOS");
+                if let Ok(entries) = std::fs::read_dir(&macos_dir) {
+                    for entry in entries.flatten() {
+                        let exe_path = entry.path();
+                        if exe_path.is_file() {
+                            return exe_path;
+                        }
+                    }
+                }
+            }
         }
+        // 默认返回 Eden.app 路径
+        yuzu_path.join("Eden.app/Contents/MacOS/Eden")
     }
 
-    // 默认返回 yuzu.exe
-    yuzu_path.join("yuzu.exe")
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows: 查找 .exe 文件
+        // 如果配置了重命名为 cemu，或者 yuzu.exe 不存在但 cemu.exe 存在
+        if (config.setting.other.rename_yuzu_to_cemu || !yuzu_path.join("yuzu.exe").exists())
+            && yuzu_path.join("cemu.exe").exists()
+        {
+            return yuzu_path.join("cemu.exe");
+        }
+
+        // 按优先级查找可执行文件
+        for exe_name in DETECT_EXE_LIST {
+            let exe_path = yuzu_path.join(exe_name);
+            if exe_path.exists() {
+                return exe_path;
+            }
+        }
+
+        // 默认返回 yuzu.exe
+        yuzu_path.join("yuzu.exe")
+    }
 }
 
 /// 检测 Yuzu 版本（通过启动程序并读取窗口标题）
