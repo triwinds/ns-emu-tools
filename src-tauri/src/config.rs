@@ -72,7 +72,12 @@ pub struct YuzuConfig {
 
 fn default_yuzu_path() -> PathBuf {
     #[cfg(target_os = "macos")]
-    return PathBuf::from("/Applications");
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("yuzu");
+        }
+        return PathBuf::from("~/yuzu");
+    }
 
     #[cfg(target_os = "linux")]
     {
