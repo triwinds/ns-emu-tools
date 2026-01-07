@@ -289,9 +289,21 @@ impl DownloadManager for RustDownloader {
 
         let mut first_path = None;
 
-        for task in tasks {
+        // 第一步：取消所有任务
+        for task in &tasks {
             task.cancel();
+        }
 
+        // 第二步：如果需要删除文件，等待状态保存任务退出
+        // 由于我们在状态保存任务中添加了双重检查（tokio::select! + 保存前检查），
+        // 给 100ms 的缓冲时间应该足够让任务检测到取消信号并退出
+        if remove_files && !tasks.is_empty() {
+            debug!("等待状态保存任务退出...");
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+
+        // 第三步：删除文件
+        for task in tasks {
             if remove_files {
                 let progress = task.get_progress();
                 let save_dir = task.options.save_dir.clone().unwrap_or_else(|| {
@@ -301,13 +313,28 @@ impl DownloadManager for RustDownloader {
                 // 删除临时文件
                 let temp_path = save_dir.join(get_temp_filename(&progress.filename));
                 if temp_path.exists() {
-                    let _ = fs::remove_file(&temp_path).await;
+                    match fs::remove_file(&temp_path).await {
+                        Ok(_) => debug!("已删除临时文件: {:?}", temp_path),
+                        Err(e) => warn!("删除临时文件失败: {:?}, 错误: {}", temp_path, e),
+                    }
                 }
 
                 // 删除状态文件
                 let state_path = save_dir.join(get_state_filename(&progress.filename));
                 if state_path.exists() {
-                    let _ = fs::remove_file(&state_path).await;
+                    match fs::remove_file(&state_path).await {
+                        Ok(_) => debug!("已删除状态文件: {:?}", state_path),
+                        Err(e) => warn!("删除状态文件失败: {:?}, 错误: {}", state_path, e),
+                    }
+                }
+
+                // 删除可能存在的临时状态文件（.download.tmp）
+                let temp_state_path = state_path.with_extension("download.tmp");
+                if temp_state_path.exists() {
+                    match fs::remove_file(&temp_state_path).await {
+                        Ok(_) => debug!("已删除临时状态文件: {:?}", temp_state_path),
+                        Err(e) => warn!("删除临时状态文件失败: {:?}, 错误: {}", temp_state_path, e),
+                    }
                 }
 
                 if first_path.is_none() {
@@ -770,8 +797,17 @@ impl DownloadTask {
                 debug!("状态定时保存任务启动");
                 loop {
                     tokio::select! {
-                        _ = cancel_token_clone.cancelled() => break,
+                        _ = cancel_token_clone.cancelled() => {
+                            debug!("检测到取消信号，状态定时保存任务退出");
+                            break;
+                        }
                         _ = interval.tick() => {
+                            // 在保存前再次检查是否被取消，避免竞态条件
+                            if cancel_token_clone.is_cancelled() {
+                                debug!("保存前检测到取消信号，跳过保存");
+                                break;
+                            }
+
                             let state = state_clone.read().clone();
                             if let Err(e) = state_store_clone.save(&state).await {
                                 warn!("保存状态失败: {}", e);
