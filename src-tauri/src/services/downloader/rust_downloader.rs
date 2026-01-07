@@ -483,7 +483,7 @@ impl ProgressInfo {
     /// 计算百分比
     fn calculate_percentage(&self) -> f64 {
         if self.total == 0 {
-            return -1.0;
+            return 0.0;
         }
 
         (self.downloaded as f64 / self.total as f64) * 100.0
@@ -1194,7 +1194,7 @@ mod tests {
         let mut progress = ProgressInfo::new("test.zip");
 
         // 未知大小
-        assert_eq!(progress.calculate_percentage(), -1.0);
+        assert_eq!(progress.calculate_percentage(), 0.0);
 
         // 已知大小
         progress.total = 1000;
