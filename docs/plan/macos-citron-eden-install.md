@@ -3,7 +3,7 @@
 ## 背景与现状
 
 - 当前 Citron / Eden 的下载安装流程主要按 Windows 资源包/可执行文件组织方式实现（如 `*.exe`、Windows zip/7z 资源筛选、MSVC 运行库检查等）。
-- Rust(Tauri) 侧 `YuzuConfig.yuzu_path` 已对 macOS 设定默认值为 `~/yuzu`，但实际下载资源筛选、解压与安装、版本检测等流程仍偏向 Windows 逻辑。
+- Rust(Tauri) 侧 `YuzuConfig.yuzu_path` 已将 macOS 默认值设为 `~/yuzu`，但实际下载资源筛选、解压与安装、版本检测等流程仍偏向 Windows 逻辑。
 
 ## 目标
 
@@ -19,7 +19,8 @@
 ## 关键决策点
 
 1. **安装目标路径与权限**
-   - 默认安装到 `~/yuzu`（用户主目录下），避免权限问题。
+   - 推荐默认安装到 `~/yuzu`（用户主目录下），避免 `/Applications` 需要管理员权限导致安装失败。
+   - 如果用户明确选择 `/Applications`，需要在 UI/日志里提示可能需要授权（或让用户改选可写目录）。
    - 若用户自定义路径写入失败，提示用户检查权限或选择其他目录。
 
 2. **资源包格式**
@@ -88,7 +89,7 @@
 - `yuzu_path` 在 macOS 上语义从"exe 所在目录"转为"安装目录（容纳 *.app）"仍可行，但需要：
   - UI 允许选择目录（而非单个文件）。
   - 后端安装时以 `yuzu_path/{Eden.app|Citron.app}` 作为最终目标。
-- 默认路径为 `~/yuzu`，无需考虑权限降级问题。
+- 推荐默认路径为 `~/yuzu`；若使用 `/Applications` 需考虑权限/授权提示。
 
 ### 5) 运行环境检查步骤改造
 
@@ -270,12 +271,12 @@ fn select_macos_asset(release_info: &ReleaseInfo, branch: &str) -> Option<String
         }
 
         // Eden: 匹配 macOS + .tar.gz
-        if branch == "eden" && name.contains("macOS") && name.ends_with(".tar.gz") {
+        if branch == "eden" && name_lower.contains("macos") && name_lower.ends_with(".tar.gz") {
             return Some(asset.download_url.clone());
         }
 
         // Citron: 匹配 macOS + .dmg
-        if branch == "citron" && name.contains("macOS") && name.ends_with(".dmg") {
+        if branch == "citron" && name_lower.contains("macos") && name_lower.ends_with(".dmg") {
             return Some(asset.download_url.clone());
         }
     }
@@ -333,9 +334,10 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
 
     // 挂载 DMG
     let mount_result = Command::new("hdiutil")
-        .args(["attach", "-nobrowse", "-readonly", "-mountpoint"])
-        .arg(&mount_point)
+        .args(["attach"])
         .arg(dmg_path)
+        .args(["-nobrowse", "-readonly", "-mountpoint"])
+        .arg(&mount_point)
         .output()?;
 
     if !mount_result.status.success() {
@@ -346,7 +348,7 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
         )));
     }
 
-    // 查找 .app
+    // 查找 .app（建议优先按预期 App 名称匹配，其次再兜底“找到第一个 .app”）
     let app_path = find_app_in_dir(&mount_point)?;
     let app_name = app_path.file_name()
         .ok_or_else(|| AppError::Extract("无法获取 .app 名称".to_string()))?;
@@ -358,7 +360,9 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
 
     // 使用 ditto 复制 .app（保留权限和扩展属性）
     let copy_result = Command::new("ditto")
-        .args([&app_path, &target_app])
+        .args(["--rsrc", "--extattr"])
+        .arg(&app_path)
+        .arg(&target_app)
         .output()?;
 
     // 卸载 DMG（无论复制是否成功都要卸载）
@@ -427,14 +431,16 @@ pub fn extract_and_install_app_from_tar_gz(
 
     let target_app = target_path.join(app_name);
 
-    // 如果目标已存在，先删除
+    // 如果目标已存在，先删除（更稳妥的方式是复制到临时目录后原子替换）
     if target_app.exists() {
         std::fs::remove_dir_all(&target_app)?;
     }
 
     // 使用 ditto 复制（保留权限和扩展属性）
     let copy_result = Command::new("ditto")
-        .args([&app_path, &target_app])
+        .args(["--rsrc", "--extattr"])
+        .arg(&app_path)
+        .arg(&target_app)
         .output()?;
 
     // 清理临时目录
@@ -599,7 +605,7 @@ where
 ```rust
 /// 支持的模拟器可执行文件/应用列表
 #[cfg(target_os = "macos")]
-const DETECT_APP_LIST: &[&str] = &["Eden.app", "Citron.app", "yuzu.app"];
+const DETECT_EXE_LIST: &[&str] = &["Eden.app", "Citron.app", "yuzu.app"];
 
 #[cfg(not(target_os = "macos"))]
 const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.exe", "cemu.exe"];
@@ -619,11 +625,15 @@ pub fn get_yuzu_exe_path() -> PathBuf {
         for app_name in &["Eden.app", "Citron.app"] {
             let app_path = yuzu_path.join(app_name);
             if app_path.exists() {
-                // .app/Contents/MacOS/<executable>
-                let exe_name = app_name.trim_end_matches(".app");
-                let exe_path = app_path.join("Contents/MacOS").join(exe_name);
-                if exe_path.exists() {
-                    return exe_path;
+                // 更稳妥：在 .app/Contents/MacOS 下找第一个可执行文件（或读取 Info.plist 的 CFBundleExecutable）
+                let macos_bin_dir = app_path.join("Contents/MacOS");
+                if let Ok(entries) = std::fs::read_dir(&macos_bin_dir) {
+                    for entry in entries.flatten() {
+                        let exe_path = entry.path();
+                        if exe_path.is_file() {
+                            return exe_path;
+                        }
+                    }
                 }
             }
         }
@@ -680,6 +690,9 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
 }
 ```
 
+**注意**：
+- `install_yuzu()` 里当前是无条件调用 `remove_all_executable_file()`；落地本步骤时需要把调用改为 `remove_target_app(branch)`（或将 `remove_all_executable_file()` 改为接收 `branch` 并按分支删除），否则 macOS 下会误用“删除文件”的逻辑处理 `.app` 目录。
+
 ---
 
 ### 第四阶段：配置路径更新
@@ -688,7 +701,7 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
 
 **文件**: `src-tauri/src/config.rs` (已完成)
 
-macOS 默认路径已设置为 `/Applications`，符合规划。
+macOS 默认路径已设置为 `~/yuzu`，避免 `/Applications` 的权限/授权问题；`/Applications` 作为可选安装位置保留。
 
 ---
 
@@ -860,7 +873,7 @@ mod tests {
 | 2.1 | `utils/archive.rs` | 修改 | 添加 DMG 挂载、tar.gz 提取 .app 功能 |
 | 3.1 | `services/yuzu.rs` | 修改 | `install_eden` 添加 macOS 分支 |
 | 3.2 | `services/yuzu.rs` | 修改 | `install_citron` 添加 macOS 分支 |
-| 3.3 | `services/yuzu.rs` | 修改 | 更新检测列表（DETECT_APP_LIST） |
+| 3.3 | `services/yuzu.rs` | 修改 | 更新检测列表（macOS 下 `DETECT_EXE_LIST` 包含 `.app`） |
 | 3.4 | `services/yuzu.rs` | 修改 | `get_yuzu_exe_path` macOS 支持 |
 | 3.5 | `services/yuzu.rs` | 修改 | `remove_target_app` 替换旧逻辑 |
 | 5.1 | `services/yuzu.rs` | 修改 | `get_yuzu_user_path` macOS 支持 |
