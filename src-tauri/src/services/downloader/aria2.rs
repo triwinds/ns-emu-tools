@@ -296,8 +296,14 @@ impl Aria2Manager {
 
         info!("启动 aria2 守护进程，端口: {}", port);
 
-        // 确保 aria2 已安装（如果没有则自动下载）
-        let aria2_path = ensure_aria2_installed().await?;
+        // ⚠️ 关键修改：不再调用 ensure_aria2_installed()
+        // aria2 应该在此之前通过 ensure_aria2_installed_with_progress() 安装
+        // 如果没有找到 aria2，返回错误提示用户
+        let aria2_path = try_find_aria2_path().map_err(|_| {
+            AppError::Aria2(
+                "未找到 aria2。请先通过下载功能触发自动安装，或手动安装 aria2。".to_string(),
+            )
+        })?;
         info!("aria2 路径: {}", aria2_path.display());
 
         // 获取默认下载目录
@@ -1091,23 +1097,23 @@ fn extract_filename_from_url(url: &str) -> String {
 /// Aria2 发布版本信息
 #[cfg(target_os = "windows")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Aria2ReleaseAsset {
-    name: String,
-    browser_download_url: String,
-    size: u64,
+pub(crate) struct Aria2ReleaseAsset {
+    pub(crate) name: String,
+    pub(crate) browser_download_url: String,
+    pub(crate) size: u64,
 }
 
 #[cfg(target_os = "windows")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Aria2ReleaseInfo {
-    tag_name: String,
-    name: String,
-    assets: Vec<Aria2ReleaseAsset>,
+pub(crate) struct Aria2ReleaseInfo {
+    pub(crate) tag_name: String,
+    pub(crate) name: String,
+    pub(crate) assets: Vec<Aria2ReleaseAsset>,
 }
 
 /// 获取 aria2 最新版本信息
 #[cfg(target_os = "windows")]
-async fn get_latest_aria2_release() -> AppResult<Aria2ReleaseInfo> {
+pub(crate) async fn get_latest_aria2_release() -> AppResult<Aria2ReleaseInfo> {
     info!("获取 aria2 最新版本信息");
 
     let api_url = "https://api.github.com/repos/aria2/aria2/releases/latest";
@@ -1198,7 +1204,7 @@ async fn download_aria2(asset_url: &str, save_path: &PathBuf) -> AppResult<()> {
 
 /// 解压 aria2 压缩包
 #[cfg(target_os = "windows")]
-fn extract_aria2(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
+pub(crate) fn extract_aria2(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBuf> {
     info!("开始解压 aria2: {}", archive_path.display());
 
     // 创建目标目录
@@ -1476,7 +1482,7 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
 }
 
 /// 尝试查找 aria2 路径（不抛出错误）
-fn try_find_aria2_path() -> AppResult<PathBuf> {
+pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
     let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
 
     // 获取可执行文件所在目录（打包后的应用程序目录）
@@ -1528,7 +1534,7 @@ fn try_find_aria2_path() -> AppResult<PathBuf> {
 
 /// 获取 aria2 安装目录（exe 所在目录）
 #[cfg(target_os = "windows")]
-fn get_aria2_install_dir() -> AppResult<PathBuf> {
+pub(crate) fn get_aria2_install_dir() -> AppResult<PathBuf> {
     // 优先使用可执行文件所在目录
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {

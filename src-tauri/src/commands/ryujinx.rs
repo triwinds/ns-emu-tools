@@ -36,7 +36,24 @@ pub async fn install_ryujinx_by_version_command(
     info!("安装 Ryujinx {} 版本: {}", branch, target_version);
 
     // Initial steps
-    let steps = vec![
+    let mut steps = vec![];
+
+    // Windows: 添加 aria2 检查步骤
+    #[cfg(target_os = "windows")]
+    steps.push(ProgressStep {
+        id: "install_aria2".to_string(),
+        title: "检查下载工具".to_string(),
+        status: ProgressStatus::Pending,
+        step_type: "download".to_string(),
+        progress: 0.0,
+        download_speed: "".to_string(),
+        eta: "".to_string(),
+        error: None,
+        download_source: Some("GitHub".to_string()),
+    });
+
+    // 其他步骤
+    steps.extend(vec![
         ProgressStep {
             id: "fetch_version".to_string(),
             title: "获取版本信息".to_string(),
@@ -92,10 +109,118 @@ pub async fn install_ryujinx_by_version_command(
             error: None,
             download_source: None,
         },
-    ];
+    ]);
 
     // Emit initial event to open dialog and show steps
     let _ = window.emit("installation-event", ProgressEvent::Started { steps });
+
+    // Windows: 前置检查 aria2（带进度反馈）
+    #[cfg(target_os = "windows")]
+    {
+        use crate::services::downloader::{ensure_aria2_installed_with_progress, format_bytes};
+
+        let window_clone = window.clone();
+
+        // 开始 aria2 检查步骤
+        let _ = window.emit(
+            "installation-event",
+            ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install_aria2".to_string(),
+                    title: "检查下载工具".to_string(),
+                    status: ProgressStatus::Running,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: Some("GitHub".to_string()),
+                },
+            },
+        );
+
+        // 执行安装（带进度回调）
+        match ensure_aria2_installed_with_progress(Some(Box::new(move |progress| {
+            // 将 Aria2InstallProgress 转换为 ProgressStep 并发送
+            let step = ProgressStep {
+                id: "install_aria2".to_string(),
+                title: match progress.stage.as_str() {
+                    "checking" => "检查下载工具".to_string(),
+                    "fetching" => "获取 aria2 版本信息".to_string(),
+                    "downloading" => format!("下载 aria2 ({:.1}%)", progress.percentage),
+                    "extracting" => "解压 aria2".to_string(),
+                    _ => "准备下载工具".to_string(),
+                },
+                status: ProgressStatus::Running,
+                step_type: "download".to_string(),
+                progress: progress.percentage,
+                download_speed: if progress.speed > 0 {
+                    format!("{}/s", format_bytes(progress.speed))
+                } else {
+                    String::new()
+                },
+                eta: if progress.eta > 0 {
+                    format_eta(progress.eta)
+                } else {
+                    String::new()
+                },
+                error: None,
+                download_source: Some("GitHub".to_string()),
+            };
+
+            let _ = window_clone.emit("installation-event", ProgressEvent::StepUpdate { step });
+        })))
+        .await
+        {
+            Ok(_) => {
+                // aria2 安装成功
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::StepUpdate {
+                        step: ProgressStep {
+                            id: "install_aria2".to_string(),
+                            title: "下载工具就绪".to_string(),
+                            status: ProgressStatus::Success,
+                            step_type: "download".to_string(),
+                            progress: 100.0,
+                            download_speed: "".to_string(),
+                            eta: "".to_string(),
+                            error: None,
+                            download_source: Some("GitHub".to_string()),
+                        },
+                    },
+                );
+            }
+            Err(e) => {
+                // aria2 安装失败
+                error!("aria2 安装失败: {}", e);
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::StepUpdate {
+                        step: ProgressStep {
+                            id: "install_aria2".to_string(),
+                            title: "下载工具安装失败".to_string(),
+                            status: ProgressStatus::Error,
+                            step_type: "download".to_string(),
+                            progress: 0.0,
+                            download_speed: "".to_string(),
+                            eta: "".to_string(),
+                            error: Some(e.to_string()),
+                            download_source: Some("GitHub".to_string()),
+                        },
+                    },
+                );
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::Finished {
+                        success: false,
+                        message: Some(format!("下载工具安装失败: {}", e)),
+                    },
+                );
+                return Err(format!("aria2 安装失败: {}", e));
+            }
+        }
+    }
 
     // 安装
     let window_clone = window.clone();
@@ -191,9 +316,142 @@ pub async fn install_firmware_to_ryujinx_command(
     firmware_version: Option<String>,
     window: Window,
 ) -> Result<ApiResponse<()>, String> {
+    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
+
     info!("安装固件到 Ryujinx");
 
     let _ = send_notify(&window, "开始安装固件...");
+
+    // Windows: 前置检查 aria2（带进度反馈）
+    #[cfg(target_os = "windows")]
+    {
+        use crate::services::downloader::{ensure_aria2_installed_with_progress, format_bytes};
+
+        // 定义检查步骤
+        let steps = vec![ProgressStep {
+            id: "install_aria2".to_string(),
+            title: "检查下载工具".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+            download_source: Some("GitHub".to_string()),
+        }];
+
+        // 发送初始事件
+        let _ = window.emit("installation-event", ProgressEvent::Started { steps });
+
+        let window_clone = window.clone();
+
+        // 开始 aria2 检查步骤
+        let _ = window.emit(
+            "installation-event",
+            ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install_aria2".to_string(),
+                    title: "检查下载工具".to_string(),
+                    status: ProgressStatus::Running,
+                    step_type: "download".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: Some("GitHub".to_string()),
+                },
+            },
+        );
+
+        // 执行安装（带进度回调）
+        match ensure_aria2_installed_with_progress(Some(Box::new(move |progress| {
+            // 将 Aria2InstallProgress 转换为 ProgressStep 并发送
+            let step = ProgressStep {
+                id: "install_aria2".to_string(),
+                title: match progress.stage.as_str() {
+                    "checking" => "检查下载工具".to_string(),
+                    "fetching" => "获取 aria2 版本信息".to_string(),
+                    "downloading" => format!("下载 aria2 ({:.1}%)", progress.percentage),
+                    "extracting" => "解压 aria2".to_string(),
+                    _ => "准备下载工具".to_string(),
+                },
+                status: ProgressStatus::Running,
+                step_type: "download".to_string(),
+                progress: progress.percentage,
+                download_speed: if progress.speed > 0 {
+                    format!("{}/s", format_bytes(progress.speed))
+                } else {
+                    String::new()
+                },
+                eta: if progress.eta > 0 {
+                    format_eta(progress.eta)
+                } else {
+                    String::new()
+                },
+                error: None,
+                download_source: Some("GitHub".to_string()),
+            };
+
+            let _ = window_clone.emit("installation-event", ProgressEvent::StepUpdate { step });
+        })))
+        .await
+        {
+            Ok(_) => {
+                // aria2 安装成功
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::StepUpdate {
+                        step: ProgressStep {
+                            id: "install_aria2".to_string(),
+                            title: "下载工具就绪".to_string(),
+                            status: ProgressStatus::Success,
+                            step_type: "download".to_string(),
+                            progress: 100.0,
+                            download_speed: "".to_string(),
+                            eta: "".to_string(),
+                            error: None,
+                            download_source: Some("GitHub".to_string()),
+                        },
+                    },
+                );
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::Finished {
+                        success: true,
+                        message: None,
+                    },
+                );
+            }
+            Err(e) => {
+                // aria2 安装失败
+                error!("aria2 安装失败: {}", e);
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::StepUpdate {
+                        step: ProgressStep {
+                            id: "install_aria2".to_string(),
+                            title: "下载工具安装失败".to_string(),
+                            status: ProgressStatus::Error,
+                            step_type: "download".to_string(),
+                            progress: 0.0,
+                            download_speed: "".to_string(),
+                            eta: "".to_string(),
+                            error: Some(e.to_string()),
+                            download_source: Some("GitHub".to_string()),
+                        },
+                    },
+                );
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::Finished {
+                        success: false,
+                        message: Some(format!("下载工具安装失败: {}", e)),
+                    },
+                );
+                return Err(format!("aria2 安装失败: {}", e));
+            }
+        }
+    }
 
     let window_clone = window.clone();
     match install_firmware_to_ryujinx(firmware_version.as_deref(), move |event| {
@@ -496,5 +754,24 @@ pub async fn detect_ryujinx_version_command(
             let _ = window.emit("installation-event", ProgressEvent::Finished { success: false, message: Some(e.to_string()) });
             Err(e.to_string())
         }
+    }
+}
+
+/// 格式化 ETA（剩余时间）
+fn format_eta(seconds: u64) -> String {
+    if seconds == 0 {
+        return String::new();
+    }
+
+    let hours = seconds / 3600;
+    let minutes = (seconds % 3600) / 60;
+    let secs = seconds % 60;
+
+    if hours > 0 {
+        format!("{}h{}m", hours, minutes)
+    } else if minutes > 0 {
+        format!("{}m{}s", minutes, secs)
+    } else {
+        format!("{}s", secs)
     }
 }

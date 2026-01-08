@@ -17,6 +17,7 @@
 
 pub mod aria2;
 pub mod aria2_backend;
+pub mod aria2_install;
 pub mod chunk_manager;
 pub mod client;
 pub mod filename;
@@ -35,6 +36,9 @@ use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 pub use aria2_backend::Aria2Backend;
+pub use aria2_install::{
+    ensure_aria2_installed_with_progress, format_bytes, Aria2InstallCallback, Aria2InstallProgress,
+};
 pub use manager::{DownloadManager, ProgressCallback};
 pub use rust_downloader::RustDownloader;
 pub use types::{DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus};

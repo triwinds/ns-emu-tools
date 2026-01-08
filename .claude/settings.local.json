@@ -27,6 +27,7 @@
       "WebFetch(domain:git.ryujinx.app)",
       "mcp__context7__resolve-library-id",
       "Bash(mkdir:*)",
+      "Bash(rustc:*)",
       "WebFetch(domain:api.github.com)",
       "WebFetch(domain:git.citron-emu.org)",
       "Bash(curl:*)",
