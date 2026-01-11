@@ -32,7 +32,9 @@
       "WebFetch(domain:git.citron-emu.org)",
       "Bash(curl:*)",
       "Bash(cargo clean:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(uv run:*)"
     ]
   }
 }
