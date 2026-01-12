@@ -4,6 +4,8 @@
 //! 使用 RustDownloader 实现下载功能
 
 use crate::error::{AppError, AppResult};
+use crate::services::downloader::{RustDownloader, DownloadOptions};
+use crate::services::downloader::manager::DownloadManager;
 use std::path::PathBuf;
 
 /// Aria2 安装进度信息

@@ -3,6 +3,7 @@
 //! 暴露给前端的 Ryujinx 管理命令
 
 use crate::models::response::ApiResponse;
+use crate::models::ProgressEvent;
 use crate::services::ryujinx::*;
 use crate::services::notifier::send_notify;
 use tauri::{Emitter, Window};

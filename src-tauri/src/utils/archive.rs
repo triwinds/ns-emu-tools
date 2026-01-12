@@ -5,7 +5,9 @@
 use crate::error::{AppError, AppResult};
 use std::fs::File;
 use std::io::{self, Read, Seek};
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(target_os = "macos")]
+use std::path::PathBuf;
 use tracing::{debug, error, info, warn};
 
 /// 解压文件（自动检测格式）
