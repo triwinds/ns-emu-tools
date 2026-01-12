@@ -15,8 +15,6 @@ use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-#[cfg(not(target_os = "macos"))]
-use std::time::Duration;
 use tracing::{debug, info, warn};
 
 /// Ryujinx 可执行文件名（根据平台不同）
@@ -1320,14 +1318,20 @@ fn detect_branch_from_plist(plist: &plist::Dictionary, version: Option<&str>) ->
         }
     }
 
-    // 方法4: 检查版本号格式（辅助判断）
-    // Canary 版本号通常是 1.3.xxx 格式，且小版本号是三位数
-    if let Some(plist::Value::String(bundle_version)) = plist.get("CFBundleVersion") {
-        if bundle_version.starts_with("1.3.") {
-            let parts: Vec<&str> = bundle_version.split('.').collect();
-            if parts.len() >= 3 && parts[2].len() >= 3 {
-                debug!("通过版本号格式检测到可能的 Canary 分支: {}", bundle_version);
-                return "canary".to_string();
+    // 方法4: 通过版本号格式检测分支（辅助判断）
+    // Canary: 补丁号 >= 100（如 1.3.243）
+    // Mainline: 补丁号 < 100（如 1.3.3）
+    if let Some(v) = version {
+        let parts: Vec<&str> = v.split('.').collect();
+        if parts.len() >= 3 {
+            if let Ok(patch_version) = parts[2].parse::<u32>() {
+                if patch_version >= 100 {
+                    debug!("通过版本号格式检测到 Canary 分支: {}，补丁号={}", v, patch_version);
+                    return "canary".to_string();
+                } else {
+                    debug!("通过版本号格式检测到 Mainline 分支: {}，补丁号={}", v, patch_version);
+                    // 继续，可能是 mainline
+                }
             }
         }
     }
@@ -1335,6 +1339,193 @@ fn detect_branch_from_plist(plist: &plist::Dictionary, version: Option<&str>) ->
     // 默认为 Mainline
     debug!("未检测到特殊分支标识，默认为 mainline");
     "mainline".to_string()
+}
+
+/// Windows: 通过解析 PE 文件版本信息检测版本和分支
+///
+/// # 参数
+/// * `exe_path` - Ryujinx 可执行文件路径
+///
+/// # 返回
+/// (版本号, 分支)
+///
+/// # 检测策略
+/// 按优先级使用以下方法检测分支类型：
+/// 1. LegalCopyright 包含 "Ryubing" → Canary 版本（最可靠）
+/// 2. ProductName 包含 "Canary" → Canary 版本（较可靠）
+/// 3. ProductName 包含 "ldn" → LDN 分支
+/// 4. 文件名包含 "Ava" → Ava 分支
+/// 5. 版本号包含 "ldn" → LDN 分支
+/// 6. 默认 → Mainline
+#[cfg(target_os = "windows")]
+fn detect_version_from_binary(exe_path: &Path) -> AppResult<(Option<String>, String)> {
+    use pelite::pe64::{Pe, PeFile};
+    use pelite::resources::version_info::Language;
+
+    debug!("解析 PE 文件: {}", exe_path.display());
+
+    // 读取 PE 文件
+    let file_data = std::fs::read(exe_path)
+        .map_err(|e| AppError::Emulator(format!("读取文件失败: {}", e)))?;
+
+    // 解析 PE 文件
+    let pe = PeFile::from_bytes(&file_data)
+        .map_err(|e| AppError::Emulator(format!("解析 PE 文件失败: {}", e)))?;
+
+    // 检测分支（通过文件名）
+    let mut branch = "mainline".to_string();
+    if let Some(file_name) = exe_path.file_name() {
+        if file_name.to_string_lossy().contains("Ava") {
+            branch = "ava".to_string();
+        }
+    }
+
+    // 获取版本信息资源
+    let resources = pe.resources()
+        .map_err(|e| AppError::Emulator(format!("获取资源失败: {}", e)))?;
+
+    let version_info = resources.version_info()
+        .map_err(|e| AppError::Emulator(format!("获取版本信息失败: {}", e)))?;
+
+    // 读取 StringFileInfo
+    let mut version: Option<String> = None;
+    let mut copyright_text: Option<String> = None;
+    let mut product_name_text: Option<String> = None;
+    let mut file_desc_text: Option<String> = None;
+
+    // 尝试多个语言 ID (优先使用 0x0000 = 中性语言，因为 Ryujinx 使用这个)
+    let language_ids = [
+        (0x0000, "Neutral"),    // 中性语言（Ryujinx 使用这个）
+        (0x0409, "en-US"),      // 英语-美国
+        (0x0009, "English"),    // 英语
+    ];
+
+    for (lang_id, lang_name) in language_ids.iter() {
+        let lang = Language { lang_id: *lang_id, charset_id: 1200 }; // 1200 = Unicode
+        debug!("尝试读取语言 ID: 0x{:04X} ({})", lang_id, lang_name);
+
+        let mut found_any = false;
+        version_info.strings(lang, |key, value| {
+            found_any = true;
+            debug!("  {}: {}", key, value);
+            match key {
+                "ProductVersion" => {
+                    if version.is_none() {
+                        version = Some(value.to_string());
+                        debug!("从 ProductVersion 读取: {}", value);
+                    }
+                }
+                "FileVersion" => {
+                    if version.is_none() {
+                        version = Some(value.to_string());
+                        debug!("从 FileVersion 读取: {}", value);
+                    }
+                }
+                "LegalCopyright" => {
+                    if copyright_text.is_none() {
+                        copyright_text = Some(value.to_string());
+                    }
+                }
+                "ProductName" => {
+                    if product_name_text.is_none() {
+                        product_name_text = Some(value.to_string());
+                        debug!("ProductName: {}", value);
+                    }
+                }
+                "FileDescription" => {
+                    if file_desc_text.is_none() {
+                        file_desc_text = Some(value.to_string());
+                        debug!("FileDescription: {}", value);
+                    }
+                }
+                _ => {}
+            }
+        });
+
+        // 如果找到了版本信息，就不再尝试其他语言
+        if found_any {
+            debug!("在语言 ID 0x{:04X} ({}) 中找到版本信息", lang_id, lang_name);
+            break;
+        }
+    }
+
+    // 从 LegalCopyright 检测分支（最高优先级）
+    if let Some(ref copyright) = copyright_text {
+        if copyright.contains("Ryubing") {
+            debug!("通过 LegalCopyright 检测到 Canary 分支: {}", copyright);
+            branch = "canary".to_string();
+        }
+    }
+
+    // 从 ProductName 检测分支
+    if let Some(ref product_name) = product_name_text {
+        if product_name.contains("Canary") {
+            debug!("通过 ProductName 检测到 Canary 分支");
+            branch = "canary".to_string();
+        } else if product_name.to_lowercase().contains("ldn") {
+            debug!("通过 ProductName 检测到 LDN 分支");
+            branch = "ldn".to_string();
+        }
+    }
+
+    // 从 FileDescription 检测分支（备选）
+    if let Some(ref file_desc) = file_desc_text {
+        if file_desc.contains("Canary") {
+            branch = "canary".to_string();
+        } else if file_desc.to_lowercase().contains("ldn") {
+            branch = "ldn".to_string();
+        }
+    }
+
+    // 清理版本号
+    if let Some(ref mut v) = version {
+        // 移除 + 号后缀 (例如 "1.3.3+e2143d4" -> "1.3.3")
+        if let Some(plus_pos) = v.find('+') {
+            *v = v[..plus_pos].to_string();
+        }
+        // 移除 - 号后缀
+        if let Some(dash_pos) = v.find('-') {
+            *v = v[..dash_pos].to_string();
+        }
+
+        // 移除尾部的 .0 (例如 "1.3.3.0" -> "1.3.3")
+        while v.ends_with(".0") && v.matches('.').count() > 2 {
+            *v = v[..v.len() - 2].to_string();
+        }
+
+        // 检测版本号中的分支标识
+        if v.to_lowercase().contains("ldn") {
+            if let Some(ldn_idx) = v.to_lowercase().find("ldn") {
+                *v = v[ldn_idx + 3..].to_string();
+                branch = "ldn".to_string();
+            }
+        }
+
+        // 通过版本号格式检测分支（如果还没有从其他字段检测到分支）
+        // Canary: 1.3.xxx（xxx 是三位数，如 1.3.243）
+        // Mainline: 1.3.x（x 是 1-2 位数，如 1.3.3）
+        if branch == "mainline" || branch == "ava" {
+            let parts: Vec<&str> = v.split('.').collect();
+            if parts.len() >= 3 {
+                if let Ok(patch_version) = parts[2].parse::<u32>() {
+                    // Canary 版本号的第三位通常是三位数（>= 100）
+                    if patch_version >= 100 {
+                        debug!("通过版本号格式检测到 Canary 分支: {}，补丁号={}", v, patch_version);
+                        branch = "canary".to_string();
+                    } else {
+                        debug!("通过版本号格式检测到 Mainline 分支: {}，补丁号={}", v, patch_version);
+                        // 保持 mainline
+                    }
+                }
+            }
+        }
+
+        debug!("检测到版本: {}, 分支: {}", v, branch);
+    } else {
+        debug!("未找到版本信息，分支: {}", branch);
+    }
+
+    Ok((version, branch))
 }
 
 /// 检测 Ryujinx 版本（通过启动程序并读取窗口标题）
@@ -1381,162 +1572,71 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
         }
     }
 
-    // 非 macOS 平台：通过启动程序并读取窗口标题进行检测
-    #[cfg(not(target_os = "macos"))]
-    let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
-        Some(path) => path,
-        None => {
-            warn!("未找到 Ryujinx 程序: {}", ryujinx_path.display());
-            return Ok((None, "mainline".to_string()));
-        }
-    };
-
-    // 先检测基础分支（通过文件名）- 仅用于非 macOS 平台
-    #[cfg(not(target_os = "macos"))]
-    #[allow(unused_mut)]
-    let mut branch = detect_current_branch();
-
-    // 启动程序 - 仅用于非 macOS 平台（Windows/Linux 需要通过窗口标题检测）
-    #[cfg(not(target_os = "macos"))]
+    // Windows: 直接从 PE 文件读取版本信息（快速，无需启动程序）
+    #[cfg(target_os = "windows")]
     {
-        info!("启动 Ryujinx: {}", exe_path.display());
-        debug!("检测版本时启动 Ryujinx");
-        let mut child = Command::new(&exe_path)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()?;
-
-        debug!("Ryujinx 进程 ID: {}", child.id());
-
-        // 等待窗口创建
-        debug!("等待窗口创建...");
-        tokio::time::sleep(Duration::from_secs(3)).await;
-
-        #[allow(unused_mut)]
-        let mut version: Option<String> = None;
-
-    #[cfg(windows)]
-    {
-        use std::sync::{Arc, Mutex};
-        use windows::Win32::Foundation::{HWND, LPARAM};
-        use windows::Win32::UI::WindowsAndMessaging::{
-            EnumWindows, GetWindowTextW, IsWindowVisible,
+        let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+            Some(path) => path,
+            None => {
+                warn!("未找到 Ryujinx 程序: {}", ryujinx_path.display());
+                return Ok((None, "mainline".to_string()));
+            }
         };
 
-        let version_data = Arc::new(Mutex::new((None::<String>, branch.clone())));
-        let version_data_clone = version_data.clone();
+        match detect_version_from_binary(&exe_path) {
+            Ok((Some(version), branch)) => {
+                info!("检测到 Ryujinx 版本: {}, 分支: {}", version, branch);
 
-        unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> windows::Win32::Foundation::BOOL {
-            if IsWindowVisible(hwnd).as_bool() {
-                let mut text: [u16; 512] = [0; 512];
-                let len = GetWindowTextW(hwnd, &mut text);
+                // 更新配置
+                let mut cfg = CONFIG.write();
+                cfg.ryujinx.version = Some(version.clone());
+                cfg.ryujinx.branch = branch.clone();
+                cfg.save()?;
 
-                if len > 0 {
-                    let window_title = String::from_utf16_lossy(&text[..len as usize]);
-
-                    let data_ptr = lparam.0 as *const Arc<Mutex<(Option<String>, String)>>;
-                    let data = &*data_ptr;
-
-                    // Ryujinx 窗口标题格式:
-                    // - "Ryujinx 1.1.1234 - ..." (打开了游戏)
-                    // - "Ryujinx 1.1.1234" (没打开游戏)
-                    // - "Ryujinx Console 1.1.1234"
-                    // - "Ryujinx Canary 1.3.236"
-                    // - "Ryujinx Canary Console 1.3.236"
-                    if window_title.starts_with("Ryujinx ") && !window_title.contains('-') {
-                        let mut guard = data.lock().unwrap();
-
-                        // 跳过 "Ryujinx " 前缀
-                        let mut remaining = &window_title[8..];
-
-                        // 检测分支类型
-                        let mut detected_branch = guard.1.clone(); // 默认使用文件名检测的分支
-
-                        // 检测 Canary 分支
-                        if remaining.starts_with("Canary ") {
-                            detected_branch = "canary".to_string();
-                            remaining = &remaining[7..]; // 跳过 "Canary "
-                        }
-
-                        // 跳过 Console 前缀（如果有）
-                        if remaining.starts_with("Console ") {
-                            remaining = &remaining[8..]; // 跳过 "Console "
-                        }
-
-                        // 提取版本号（空格前或全部内容）
-                        let version = if let Some(space_pos) = remaining.find(' ') {
-                            &remaining[..space_pos]
-                        } else {
-                            remaining
-                        };
-
-                        // 检测 LDN 分支（版本号中包含 ldn）
-                        if version.contains("ldn") {
-                            if let Some(ldn_pos) = version.find("ldn") {
-                                guard.0 = Some(version[ldn_pos + 3..].to_string());
-                                guard.1 = "ldn".to_string();
-                            }
-                        } else {
-                            // 设置版本号和分支
-                            guard.0 = Some(version.to_string());
-                            guard.1 = detected_branch;
-                        }
-
-                        return windows::Win32::Foundation::BOOL(0); // Stop enumeration
-                    }
-                }
+                return Ok((Some(version), branch));
             }
-            windows::Win32::Foundation::BOOL(1) // Continue enumeration
-        }
+            Ok((None, branch)) => {
+                warn!("未找到版本信息，使用检测到的分支: {}", branch);
 
-        // 多次尝试，等待窗口出现
-        debug!("开始枚举窗口标题以检测版本");
-        for i in 0..30 {
-            unsafe {
-                let _ = EnumWindows(
-                    Some(enum_proc),
-                    LPARAM(&version_data_clone as *const _ as isize),
-                );
+                // 更新配置
+                let mut cfg = CONFIG.write();
+                cfg.ryujinx.branch = branch.clone();
+                cfg.save()?;
+
+                return Ok((None, branch));
             }
-
-            let guard = version_data.lock().unwrap();
-            if guard.0.is_some() {
-                version = guard.0.clone();
-                branch = guard.1.clone();
-                debug!("第 {} 次尝试找到窗口标题，检测到版本: {:?}, 分支: {:?}", i + 1, version, branch);
-                break;
+            Err(e) => {
+                warn!("从 PE 文件读取版本失败: {}", e);
+                return Err(e);
             }
-
-            if i % 5 == 0 {
-                debug!("第 {} 次尝试，尚未找到窗口标题", i + 1);
-            }
-
-            std::thread::sleep(Duration::from_millis(500));
         }
     }
 
-        // 结束进程
-        debug!("结束 Ryujinx 进程");
-        let _ = child.kill();
-        let _ = child.wait();
+    // Linux: 通过启动程序并读取窗口标题进行检测
+    // TODO: 考虑为 Linux 实现类似的 ELF 二进制检测
+    #[cfg(target_os = "linux")]
+    {
+        let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+            Some(path) => path,
+            None => {
+                warn!("未找到 Ryujinx 程序: {}", ryujinx_path.display());
+                return Ok((None, "mainline".to_string()));
+            }
+        };
+
+        // 检测基础分支（通过文件名）
+        let branch = detect_current_branch();
+
+        info!("Linux 平台暂不支持自动版本检测");
+        warn!("请手动设置版本，或考虑实现 ELF 版本检测");
 
         // 更新配置
-        if let Some(ref v) = version {
-            info!("检测到 Ryujinx 版本: {}, 分支: {}", v, branch);
-            debug!("更新配置文件");
+        let mut cfg = CONFIG.write();
+        cfg.ryujinx.branch = branch.clone();
+        cfg.save()?;
 
-            let mut cfg = CONFIG.write();
-            cfg.ryujinx.version = Some(v.clone());
-            cfg.ryujinx.branch = branch.clone();
-            cfg.save()?;
-            debug!("配置文件已保存");
-        } else {
-            warn!("未能检测到 Ryujinx 版本");
-            debug!("可能的原因: 窗口标题不匹配或窗口创建延迟过长");
-        }
-
-        Ok((version, branch))
-    } // 结束 cfg(not(target_os = "macos")) 代码块
+        Ok((None, branch))
+    }
 }
 
 #[cfg(test)]
@@ -1553,5 +1653,110 @@ mod tests {
     fn test_get_ryujinx_user_folder() {
         // 测试需要配置环境
         let _path = get_ryujinx_user_folder();
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_detect_version_from_binary() {
+        // 从配置中读取 Ryujinx 路径
+        let config = get_config();
+        let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+
+        // 查找可执行文件
+        let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+            Some(path) => path,
+            None => {
+                println!("跳过测试: 未找到 Ryujinx 可执行文件在: {}", ryujinx_path.display());
+                return;
+            }
+        };
+
+        println!("测试可执行文件: {}", exe_path.display());
+        println!("文件大小: {} bytes", exe_path.metadata().unwrap().len());
+
+        // 调用检测函数
+        match detect_version_from_binary(&exe_path) {
+            Ok((version, branch)) => {
+                println!("\n检测结果:");
+                println!("  版本: {:?}", version);
+                println!("  分支: {}", branch);
+
+                // 检查结果是否合理
+                if let Some(ref v) = version {
+                    assert!(!v.is_empty(), "版本号不应为空");
+                    println!("\n✓ 检测成功");
+                } else {
+                    println!("\n✗ 警告: 未检测到版本号");
+                }
+            }
+            Err(e) => {
+                println!("\n✗ 检测失败: {}", e);
+                panic!("版本检测失败: {}", e);
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_pe_version_resource_raw() {
+        use pelite::pe64::{Pe, PeFile};
+        use pelite::resources::version_info::Language;
+
+        // 从配置中读取 Ryujinx 路径
+        let config = get_config();
+        let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+
+        // 查找可执行文件
+        let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+            Some(path) => path,
+            None => {
+                println!("跳过测试: 未找到 Ryujinx 可执行文件");
+                return;
+            }
+        };
+
+        println!("测试文件: {}", exe_path.display());
+
+        // 读取文件
+        let file_data = std::fs::read(&exe_path).expect("读取文件失败");
+        let pe = PeFile::from_bytes(&file_data).expect("解析 PE 文件失败");
+
+        // 获取资源
+        let resources = pe.resources().expect("获取资源失败");
+        let version_info = resources.version_info().expect("获取版本信息失败");
+
+        println!("\n尝试读取版本信息（Language ID: 0x0409, Charset: 1200）:");
+
+        // 尝试默认语言
+        let lang = Language { lang_id: 0x0409, charset_id: 1200 };
+        let mut found_any = false;
+
+        version_info.strings(lang, |key, value| {
+            found_any = true;
+            println!("  {}: {}", key, value);
+        });
+
+        if !found_any {
+            println!("  (未找到任何字符串)");
+
+            // 尝试其他语言
+            println!("\n尝试遍历所有可用语言:");
+            // 注意: pelite 的 version_info API 可能需要手动枚举语言
+            // 这里可以尝试一些常见的语言 ID
+            for lang_id in [0x0000, 0x0009, 0x0409, 0x0809] {
+                for charset_id in [0, 1200, 1252] {
+                    let test_lang = Language { lang_id, charset_id };
+                    println!("\n  尝试 Language ID: 0x{:04X}, Charset: {}", lang_id, charset_id);
+                    let mut found_in_lang = false;
+                    version_info.strings(test_lang, |key, value| {
+                        found_in_lang = true;
+                        println!("    {}: {}", key, value);
+                    });
+                    if !found_in_lang {
+                        println!("    (空)");
+                    }
+                }
+            }
+        }
     }
 }

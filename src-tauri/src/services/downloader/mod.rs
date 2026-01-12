@@ -17,6 +17,7 @@
 
 pub mod aria2;
 pub mod aria2_backend;
+pub mod aria2_install;
 pub mod chunk_manager;
 pub mod client;
 pub mod filename;
@@ -35,6 +36,9 @@ use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 pub use aria2_backend::Aria2Backend;
+pub use aria2_install::{
+    ensure_aria2_installed_with_progress, format_bytes, Aria2InstallCallback, Aria2InstallProgress,
+};
 pub use manager::{DownloadManager, ProgressCallback};
 pub use rust_downloader::RustDownloader;
 pub use types::{DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus};
@@ -138,8 +142,187 @@ pub async fn get_download_manager() -> AppResult<Arc<dyn DownloadManager>> {
     init_download_manager(backend).await
 }
 
-/// 重置下载管理器（仅用于测试）
+/// 重置下载管理器(仅用于测试)
 #[cfg(test)]
 pub fn reset_download_manager() {
     // OnceCell 不支持重置，测试时需要特殊处理
+}
+
+/// 格式化 ETA 时间
+pub fn format_eta(seconds: u64) -> String {
+    if seconds == 0 {
+        return String::new();
+    }
+
+    let hours = seconds / 3600;
+    let minutes = (seconds % 3600) / 60;
+    let secs = seconds % 60;
+
+    if hours > 0 {
+        format!("{}h{}m", hours, minutes)
+    } else if minutes > 0 {
+        format!("{}m{}s", minutes, secs)
+    } else {
+        format!("{}s", secs)
+    }
+}
+
+/// 判断是否需要 aria2（Windows 平台且配置为 auto 或 aria2）
+#[cfg(target_os = "windows")]
+pub fn should_use_aria2() -> bool {
+    let config = crate::config::get_config();
+    let backend = config.setting.download.backend.as_str();
+    backend == "auto" || backend == "aria2"
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn should_use_aria2() -> bool {
+    false
+}
+
+/// 创建安装初始步骤列表（如果需要 aria2 则自动添加 aria2 检查步骤）
+#[cfg(target_os = "windows")]
+pub fn create_installation_steps() -> Vec<crate::models::ProgressStep> {
+    use crate::models::{ProgressStep, ProgressStatus};
+
+    let mut steps = vec![];
+
+    if should_use_aria2() {
+        steps.push(ProgressStep {
+            id: "install_aria2".to_string(),
+            title: "检查下载工具".to_string(),
+            status: ProgressStatus::Pending,
+            step_type: "download".to_string(),
+            progress: 0.0,
+            download_speed: "".to_string(),
+            eta: "".to_string(),
+            error: None,
+            download_source: Some("GitHub".to_string()),
+        });
+    }
+
+    steps
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn create_installation_steps() -> Vec<crate::models::ProgressStep> {
+    vec![]
+}
+
+/// Windows 平台下检查并安装 aria2，带 UI 进度反馈
+#[cfg(target_os = "windows")]
+pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult<()> {
+    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
+    use tauri::Emitter;
+
+    // 如果不需要 aria2，直接返回
+    if !should_use_aria2() {
+        return Ok(());
+    }
+
+    let window_clone = window.clone();
+
+    // 开始 aria2 检查步骤
+    let _ = window.emit(
+        "installation-event",
+        ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "install_aria2".to_string(),
+                title: "检查下载工具".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "download".to_string(),
+                progress: 0.0,
+                download_speed: "".to_string(),
+                eta: "".to_string(),
+                error: None,
+                download_source: Some("GitHub".to_string()),
+            },
+        },
+    );
+
+    // 执行安装（带进度回调）
+    match ensure_aria2_installed_with_progress(Some(Box::new(move |progress| {
+        let step = ProgressStep {
+            id: "install_aria2".to_string(),
+            title: match progress.stage.as_str() {
+                "checking" => "检查下载工具".to_string(),
+                "fetching" => "获取 aria2 版本信息".to_string(),
+                "downloading" => format!("下载 aria2 ({:.1}%)", progress.percentage),
+                "extracting" => "解压 aria2".to_string(),
+                _ => "准备下载工具".to_string(),
+            },
+            status: ProgressStatus::Running,
+            step_type: "download".to_string(),
+            progress: progress.percentage,
+            download_speed: if progress.speed > 0 {
+                format!("{}/s", format_bytes(progress.speed))
+            } else {
+                String::new()
+            },
+            eta: if progress.eta > 0 {
+                format_eta(progress.eta)
+            } else {
+                String::new()
+            },
+            error: None,
+            download_source: Some("GitHub".to_string()),
+        };
+
+        let _ = window_clone.emit("installation-event", ProgressEvent::StepUpdate { step });
+    })))
+    .await
+    {
+        Ok(_) => {
+            // aria2 安装成功
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "install_aria2".to_string(),
+                        title: "下载工具就绪".to_string(),
+                        status: ProgressStatus::Success,
+                        step_type: "download".to_string(),
+                        progress: 100.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: None,
+                        download_source: Some("GitHub".to_string()),
+                    },
+                },
+            );
+            Ok(())
+        }
+        Err(e) => {
+            // aria2 安装失败
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "install_aria2".to_string(),
+                        title: "下载工具安装失败".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "download".to_string(),
+                        progress: 0.0,
+                        download_speed: "".to_string(),
+                        eta: "".to_string(),
+                        error: Some(e.to_string()),
+                        download_source: Some("GitHub".to_string()),
+                    },
+                },
+            );
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::Finished {
+                    success: false,
+                    message: Some(format!("下载工具安装失败: {}", e)),
+                },
+            );
+            Err(e)
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub async fn check_and_install_aria2_with_ui(_window: tauri::Window) -> AppResult<()> {
+    Ok(())
 }

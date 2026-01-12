@@ -1621,9 +1621,6 @@ pub fn get_yuzu_user_path() -> PathBuf {
         // 默认返回本地 user 目录
         return local_user;
     }
-
-    // Fallback
-    yuzu_path.join("user")
 }
 
 /// 打开 Yuzu keys 文件夹

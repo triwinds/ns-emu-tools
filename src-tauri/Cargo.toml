@@ -132,6 +132,8 @@ windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_Storage_FileSystem",
 ] }
+# PE 文件解析（用于版本检测）
+pelite = "0.10"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29", features = ["user"] }

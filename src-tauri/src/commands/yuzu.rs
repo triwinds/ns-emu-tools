@@ -37,8 +37,11 @@ pub async fn install_yuzu_by_version(
 
     info!("安装 {} 版本: {}", get_emu_name(&branch), target_version);
 
-    // Initial steps
-    let steps = vec![
+    // 创建初始步骤（自动包含 aria2 检查步骤，如果需要）
+    let mut steps = crate::services::downloader::create_installation_steps();
+
+    // 其他步骤
+    steps.extend(vec![
         ProgressStep {
             id: "fetch_version".to_string(),
             title: "获取版本信息".to_string(),
@@ -94,10 +97,21 @@ pub async fn install_yuzu_by_version(
             error: None,
             download_source: None,
         },
-    ];
+    ]);
 
     // Emit initial event to open dialog and show steps
     let _ = window.emit("installation-event", ProgressEvent::Started { steps });
+
+    // Windows: 检查并安装 aria2（如果需要）
+    #[cfg(target_os = "windows")]
+    {
+        use crate::services::downloader::check_and_install_aria2_with_ui;
+
+        if let Err(e) = check_and_install_aria2_with_ui(window.clone()).await {
+            error!("aria2 安装失败: {}", e);
+            return Err(format!("aria2 安装失败: {}", e));
+        }
+    }
 
     // 安装
     let window_clone = window.clone();
@@ -411,9 +425,37 @@ pub async fn install_firmware_to_yuzu_command(
     firmware_version: Option<String>,
     window: Window,
 ) -> Result<ApiResponse<()>, String> {
+    use crate::models::ProgressEvent;
+
     info!("安装固件到 Yuzu");
 
     let _ = send_notify(&window, "开始安装固件...");
+
+    // Windows: 检查并安装 aria2（如果需要）
+    #[cfg(target_os = "windows")]
+    {
+        use crate::services::downloader::{check_and_install_aria2_with_ui, should_use_aria2};
+
+        // 如果需要 aria2，显示进度对话框
+        if should_use_aria2() {
+            let steps = crate::services::downloader::create_installation_steps();
+            let _ = window.emit("installation-event", ProgressEvent::Started { steps });
+
+            if let Err(e) = check_and_install_aria2_with_ui(window.clone()).await {
+                error!("aria2 安装失败: {}", e);
+                return Err(format!("aria2 安装失败: {}", e));
+            }
+
+            // aria2 检查完成，关闭对话框
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::Finished {
+                    success: true,
+                    message: None,
+                },
+            );
+        }
+    }
 
     let window_clone = window.clone();
     match install_firmware_to_yuzu(firmware_version.as_deref(), move |event| {
