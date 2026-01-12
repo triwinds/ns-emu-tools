@@ -1580,11 +1580,26 @@ pub fn get_yuzu_user_path() -> PathBuf {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: 用户数据在 ~/Library/Application Support/<app_name>
-        if let Ok(home) = std::env::var("HOME") {
-            let app_support = PathBuf::from(home).join("Library/Application Support");
+        // 优先使用本地 user 目录（便携版）
+        let local_user = yuzu_path.join("user");
+        if local_user.exists() {
+            return local_user;
+        }
 
-            // 按优先级检查
+        if let Ok(home) = std::env::var("HOME") {
+            let home_path = PathBuf::from(home);
+
+            // 先检查 ~/.local/share (eden 使用这个目录)
+            let local_share = home_path.join(".local/share");
+            for name in &["eden", "citron", "yuzu"] {
+                let path = local_share.join(name);
+                if path.exists() {
+                    return path;
+                }
+            }
+
+            // 再检查 ~/Library/Application Support (citron 和 yuzu 可能使用这个)
+            let app_support = home_path.join("Library/Application Support");
             for name in &["eden", "citron", "yuzu"] {
                 let path = app_support.join(name);
                 if path.exists() {
@@ -1593,11 +1608,14 @@ pub fn get_yuzu_user_path() -> PathBuf {
             }
 
             // 默认返回基于当前分支的路径
-            return app_support.join(&config.yuzu.branch);
+            return local_share.join(&config.yuzu.branch);
         }
+
+        // Fallback 到本地 user 目录
+        return local_user;
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
     {
         // 优先使用本地 user 目录
         let local_user = yuzu_path.join("user");
@@ -1621,6 +1639,34 @@ pub fn get_yuzu_user_path() -> PathBuf {
         // 默认返回本地 user 目录
         return local_user;
     }
+
+    #[cfg(target_os = "linux")]
+    {
+        // 优先使用本地 user 目录
+        let local_user = yuzu_path.join("user");
+        if local_user.exists() {
+            return local_user;
+        }
+
+        // 检查 ~/.local/share 目录
+        if let Ok(home) = std::env::var("HOME") {
+            let local_share = PathBuf::from(home).join(".local/share");
+
+            // 按优先级检查
+            for name in &["eden", "citron", "yuzu"] {
+                let path = local_share.join(name);
+                if path.exists() {
+                    return path;
+                }
+            }
+
+            // 默认返回基于当前分支的路径
+            return local_share.join(&config.yuzu.branch);
+        }
+
+        // 默认返回本地 user 目录
+        return local_user;
+    }
 }
 
 /// 打开 Yuzu keys 文件夹
@@ -1634,14 +1680,21 @@ pub fn open_yuzu_keys_folder() -> AppResult<()> {
 
     info!("打开 keys 目录: {}", keys_path.display());
 
-    #[cfg(windows)]
+    #[cfg(target_os = "windows")]
     {
         Command::new("explorer")
             .arg(keys_path.to_string_lossy().to_string())
             .spawn()?;
     }
 
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(keys_path.to_string_lossy().to_string())
+            .spawn()?;
+    }
+
+    #[cfg(target_os = "linux")]
     {
         Command::new("xdg-open")
             .arg(keys_path.to_string_lossy().to_string())

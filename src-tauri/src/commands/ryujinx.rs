@@ -205,8 +205,6 @@ pub async fn install_firmware_to_ryujinx_command(
     firmware_version: Option<String>,
     window: Window,
 ) -> Result<ApiResponse<()>, String> {
-    use crate::models::ProgressEvent;
-
     info!("安装固件到 Ryujinx");
 
     let _ = send_notify(&window, "开始安装固件...");
