@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 from dataclasses import dataclass, field
 from typing import Optional, Dict
 from pathlib import Path
@@ -32,8 +33,27 @@ config = None
 shared = {}
 
 
+def _normalize_path(path_str: Optional[str]) -> Optional[str]:
+    if path_str is None:
+        return None
+    return str(Path(path_str).expanduser().absolute())
+
+
+def _apply_platform_defaults():
+    system = platform.system()
+    if system == 'Darwin':
+        if not config.yuzu.yuzu_path or config.yuzu.yuzu_path.startswith('D:\\'):
+            config.yuzu.yuzu_path = str(Path.home().joinpath('Applications', 'Eden.app'))
+        if not config.ryujinx.path or config.ryujinx.path.startswith('D:\\'):
+            config.ryujinx.path = str(Path.home().joinpath('Applications', 'Ryujinx.app'))
+    elif system != 'Windows':
+        if not config.yuzu.yuzu_path or config.yuzu.yuzu_path.startswith('D:\\'):
+            config.yuzu.yuzu_path = str(Path.home().joinpath('yuzu'))
+        if not config.ryujinx.path or config.ryujinx.path.startswith('D:\\'):
+            config.ryujinx.path = str(Path.home().joinpath('Ryujinx'))
+
+
 def log_versions():
-    import platform
     logger.info(f'system version: {platform.platform()}')
     logger.info(f'current version: {current_version}')
 
@@ -115,10 +135,11 @@ class Config:
 if os.path.exists(config_path):
     with open(config_path, 'r', encoding='utf-8') as f:
         config = Config.from_dict(json.load(f))
-        config.yuzu.yuzu_path = str(Path(config.yuzu.yuzu_path).absolute())
-        config.ryujinx.path = str(Path(config.ryujinx.path).absolute())
 if not config:
     config = Config()
+_apply_platform_defaults()
+config.yuzu.yuzu_path = _normalize_path(config.yuzu.yuzu_path)
+config.ryujinx.path = _normalize_path(config.ryujinx.path)
 
 
 def dump_config():
