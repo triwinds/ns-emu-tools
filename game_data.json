@@ -33,8 +33,8 @@
   "0100D4900E82C000": "Metro 2033 Redux",
   "01004AD014BF0000": "Sonic Frontiers",
   "0100A4E017372000": "Pyramid Quest",
-  "0100429011144000": "Subnautica",
-  "010014C011146000": "Subnautica: Below Zero",
+  "0100429011144000": "Subnautica - Nintendo Switch™ 2 Edition",
+  "010014C011146000": "Subnautica: Below Zero - Nintendo Switch™ 2 Edition",
   "01000A6013F86000": "Strange Field Football",
   "010097C01336A000": "Spooky Chase",
   "0100134011E32000": "Skate City",
@@ -822,7 +822,7 @@
   "0100B1400D92A000": "Unit 4",
   "010076B011EC8000": "Baila Latino",
   "01003350102E2000": "Barbarous: Tavern of Emyr",
-  "01007B000C834000": "Asphalt Legends",
+  "01007B000C834000": "Asphalt Legends – Nintendo Switch™ 2 Edition",
   "0100A51013550000": "Death Tales",
   "0100D5800DECA000": "Asemblance",
   "0100CDD00DA70000": "Artifact Adventure Gaiden DX",
@@ -14370,5 +14370,11 @@
   "0100E09023B20000": "Bonnie Bear Saves Frogtime",
   "0100E38021D9E000": "LOVE ETERNAL",
   "0100F13025DD2000": "Tiny Garden",
-  "0100F77025F18000": "Manny’s"
+  "0100F77025F18000": "Manny’s",
+  "010083A01FC3C000": "METAL GEAR SOLID: MASTER COLLECTION Vol.2 BONUS CONTENT",
+  "0100863026B86000": "UNDER THE ISLAND",
+  "010089601C4F6000": "METAL GEAR SOLID 4: Guns of the Patriots - Master Collection Version",
+  "0100A0A0264E4000": "Peaceful Fishing Story",
+  "0100A380266EA000": "Gas Ratio",
+  "0100BA9026DAC000": "PancitoMerge"
 }
