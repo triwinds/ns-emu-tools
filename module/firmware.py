@@ -22,15 +22,15 @@ def _detect_firmware_version(emu_type: str):
     version = None
     if emu_type == 'yuzu':
         from module.yuzu import get_yuzu_nand_path, get_yuzu_user_path
-        firmware_path = get_yuzu_nand_path().joinpath(r'system\Contents\registered')
-        key_path = get_yuzu_user_path().joinpath(r'keys/prod.keys')
+        firmware_path = get_yuzu_nand_path().joinpath('system', 'Contents', 'registered')
+        key_path = get_yuzu_user_path().joinpath('keys', 'prod.keys')
         for file in firmware_path.glob('*.nca'):
             if not file.name.endswith('.cnmt.nca'):
                 firmware_files.append(file)
     else:
         from module.ryujinx import get_ryujinx_user_folder
-        firmware_path = get_ryujinx_user_folder().joinpath(r'bis\system\Contents\registered')
-        key_path = get_ryujinx_user_folder().joinpath(r'system/prod.keys')
+        firmware_path = get_ryujinx_user_folder().joinpath('bis', 'system', 'Contents', 'registered')
+        key_path = get_ryujinx_user_folder().joinpath('system', 'prod.keys')
         for p in firmware_path.glob('**/00'):
             if p.is_file():
                 firmware_files.append(p)
