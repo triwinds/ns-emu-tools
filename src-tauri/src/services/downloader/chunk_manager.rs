@@ -205,7 +205,7 @@ impl ChunkManager {
         url: &str,
         chunk: &ChunkState,
         file_path: &Path,
-        progress_tx: mpsc::Sender<ChunkProgress>,
+        progress_tx: mpsc::UnboundedSender<ChunkProgress>,
         cancel_token: CancellationToken,
     ) -> AppResult<()> {
         let current_pos = chunk.current_position();
@@ -213,13 +213,11 @@ impl ChunkManager {
 
         // 如果已完成，直接返回
         if chunk.completed || current_pos > end {
-            let _ = progress_tx
-                .send(ChunkProgress {
-                    index: chunk.index,
-                    downloaded: chunk.downloaded,
-                    completed: true,
-                })
-                .await;
+            let _ = progress_tx.send(ChunkProgress {
+                index: chunk.index,
+                downloaded: chunk.downloaded,
+                completed: true,
+            });
             return Ok(());
         }
 
@@ -305,13 +303,11 @@ impl ChunkManager {
                                     downloaded
                                 );
 
-                                let _ = progress_tx
-                                    .send(ChunkProgress {
-                                        index: chunk.index,
-                                        downloaded,
-                                        completed: false,
-                                    })
-                                    .await;
+                                let _ = progress_tx.send(ChunkProgress {
+                                    index: chunk.index,
+                                    downloaded,
+                                    completed: false,
+                                });
                             }
                         }
                         Some(Err(e)) => {
@@ -330,13 +326,11 @@ impl ChunkManager {
                             file.sync_all().await?;
 
                             // 发送完成进度
-                            let _ = progress_tx
-                                .send(ChunkProgress {
-                                    index: chunk.index,
-                                    downloaded,
-                                    completed: true,
-                                })
-                                .await;
+                            let _ = progress_tx.send(ChunkProgress {
+                                index: chunk.index,
+                                downloaded,
+                                completed: true,
+                            });
 
                             debug!("分块 {} 下载完成，共 {} 字节", chunk.index, downloaded);
                             return Ok(());
@@ -352,7 +346,7 @@ impl ChunkManager {
         client: &Client,
         url: &str,
         file_path: &Path,
-        progress_tx: mpsc::Sender<ChunkProgress>,
+        progress_tx: mpsc::UnboundedSender<ChunkProgress>,
         cancel_token: CancellationToken,
         resume_from: u64,
     ) -> AppResult<u64> {
@@ -424,13 +418,11 @@ impl ChunkManager {
 
                                 trace!("单连接写入/进度: downloaded={}", downloaded);
 
-                                let _ = progress_tx
-                                    .send(ChunkProgress {
-                                        index: 0,
-                                        downloaded,
-                                        completed: false,
-                                    })
-                                    .await;
+                                let _ = progress_tx.send(ChunkProgress {
+                                    index: 0,
+                                    downloaded,
+                                    completed: false,
+                                });
                             }
                         }
                         Some(Err(e)) => {
@@ -446,13 +438,11 @@ impl ChunkManager {
                             }
                             file.sync_all().await?;
 
-                            let _ = progress_tx
-                                .send(ChunkProgress {
-                                    index: 0,
-                                    downloaded,
-                                    completed: true,
-                                })
-                                .await;
+                            let _ = progress_tx.send(ChunkProgress {
+                                index: 0,
+                                downloaded,
+                                completed: true,
+                            });
 
                             return Ok(downloaded);
                         }
