@@ -36,6 +36,9 @@ const STATE_SAVE_INTERVAL: Duration = Duration::from_secs(5);
 /// 进度更新间隔（向前端发送进度的频率）
 const PROGRESS_UPDATE_INTERVAL: Duration = Duration::from_millis(500);
 
+/// 下载阶段进度通道容量（有界，防止进度堆积占用过多内存）
+const PROGRESS_CHANNEL_CAPACITY: usize = 256;
+
 /// 速度采样窗口大小（用于平滑速度计算）
 const SPEED_WINDOW_SIZE: usize = 10;
 
@@ -408,6 +411,41 @@ struct ProgressInfo {
     speed_samples: VecDeque<(Instant, u64)>,
     /// 上次计算的 ETA（用于平滑）
     last_eta: u64,
+}
+
+/// 进度聚合器（按分块增量更新，避免每次全量求和）
+struct ProgressAccumulator {
+    /// 各分块当前已下载字节
+    chunk_downloaded: Vec<u64>,
+    /// 总已下载字节
+    total_downloaded: u64,
+}
+
+impl ProgressAccumulator {
+    fn from_chunks(chunks: &[ChunkState]) -> Self {
+        let chunk_downloaded = chunks.iter().map(|chunk| chunk.downloaded).collect::<Vec<_>>();
+        let total_downloaded = chunk_downloaded.iter().sum();
+
+        Self {
+            chunk_downloaded,
+            total_downloaded,
+        }
+    }
+
+    fn update(&mut self, chunk_progress: &ChunkProgress) -> Option<u64> {
+        let current = self.chunk_downloaded.get_mut(chunk_progress.index)?;
+
+        // 防御性处理：忽略倒退进度，避免旧事件污染总进度
+        if chunk_progress.downloaded < *current {
+            return Some(self.total_downloaded);
+        }
+
+        let delta = chunk_progress.downloaded - *current;
+        *current = chunk_progress.downloaded;
+        self.total_downloaded = self.total_downloaded.saturating_add(delta);
+
+        Some(self.total_downloaded)
+    }
 }
 
 impl ProgressInfo {
@@ -932,13 +970,18 @@ impl DownloadTask {
     ) -> AppResult<()> {
         loop {
             // 创建进度通道
-            let (progress_tx, mut progress_rx) = mpsc::unbounded_channel::<ChunkProgress>();
+            let (progress_tx, mut progress_rx) = mpsc::channel::<ChunkProgress>(PROGRESS_CHANNEL_CAPACITY);
 
             // 启动进度聚合任务
             let progress_clone = self.progress.clone();
             let state_for_progress = state.clone();
 
             let progress_handle = tokio::spawn(async move {
+                let mut accumulator = {
+                    let state = state_for_progress.read();
+                    ProgressAccumulator::from_chunks(&state.chunks)
+                };
+
                 while let Some(chunk_progress) = progress_rx.recv().await {
                     // 更新分块状态
                     {
@@ -946,17 +989,20 @@ impl DownloadTask {
                         if let Some(chunk) = state.chunks.get_mut(chunk_progress.index) {
                             chunk.downloaded = chunk_progress.downloaded;
                             chunk.completed = chunk_progress.completed;
+                        } else {
+                            warn!(
+                                "收到非法分块进度: index={}, chunks={}",
+                                chunk_progress.index,
+                                state.chunks.len()
+                            );
+                            continue;
                         }
                     }
 
-                    // 更新总进度
-                    let total_downloaded: u64 = {
-                        let state = state_for_progress.read();
-                        state.chunks.iter().map(|c| c.downloaded).sum()
-                    };
-
-                    let mut progress = progress_clone.write();
-                    progress.update_speed(total_downloaded);
+                    if let Some(total_downloaded) = accumulator.update(&chunk_progress) {
+                        let mut progress = progress_clone.write();
+                        progress.update_speed(total_downloaded);
+                    }
                 }
             });
 
@@ -1085,7 +1131,7 @@ impl DownloadTask {
         &self,
         state: &Arc<RwLock<DownloadState>>,
         temp_path: &PathBuf,
-        progress_tx: mpsc::UnboundedSender<ChunkProgress>,
+        progress_tx: mpsc::Sender<ChunkProgress>,
     ) -> AppResult<()> {
         let chunks: Vec<ChunkState> = {
             let state = state.read();
@@ -1145,7 +1191,7 @@ impl DownloadTask {
         &self,
         state: &Arc<RwLock<DownloadState>>,
         temp_path: &PathBuf,
-        progress_tx: mpsc::UnboundedSender<ChunkProgress>,
+        progress_tx: mpsc::Sender<ChunkProgress>,
     ) -> AppResult<()> {
         let resume_from: u64 = {
             let state = state.read();
@@ -1225,6 +1271,63 @@ mod tests {
         let eta = progress.calculate_eta();
         // 平滑后的值应该在原始值 4 和上次值 5 之间
         assert!(eta >= 3 && eta <= 5);
+    }
+
+    #[test]
+    fn test_progress_accumulator_incremental_update() {
+        let mut chunk0 = ChunkState::new(0, 0, 99);
+        chunk0.downloaded = 10;
+
+        let mut chunk1 = ChunkState::new(1, 100, 199);
+        chunk1.downloaded = 20;
+
+        let mut accumulator = ProgressAccumulator::from_chunks(&[chunk0, chunk1]);
+        assert_eq!(accumulator.total_downloaded, 30);
+
+        let total = accumulator
+            .update(&ChunkProgress {
+                index: 1,
+                downloaded: 35,
+                completed: false,
+            })
+            .unwrap();
+        assert_eq!(total, 45);
+
+        let total = accumulator
+            .update(&ChunkProgress {
+                index: 0,
+                downloaded: 50,
+                completed: false,
+            })
+            .unwrap();
+        assert_eq!(total, 85);
+    }
+
+    #[test]
+    fn test_progress_accumulator_ignore_stale_and_invalid_progress() {
+        let mut chunk0 = ChunkState::new(0, 0, 99);
+        chunk0.downloaded = 60;
+
+        let mut accumulator = ProgressAccumulator::from_chunks(&[chunk0]);
+        assert_eq!(accumulator.total_downloaded, 60);
+
+        // 倒退进度应被忽略，总量不变
+        let total = accumulator
+            .update(&ChunkProgress {
+                index: 0,
+                downloaded: 50,
+                completed: false,
+            })
+            .unwrap();
+        assert_eq!(total, 60);
+
+        // 非法分块索引返回 None
+        let total = accumulator.update(&ChunkProgress {
+            index: 3,
+            downloaded: 10,
+            completed: false,
+        });
+        assert!(total.is_none());
     }
 
     #[test]
