@@ -41,9 +41,24 @@ pub fn app_data_dir() -> PathBuf {
     }
 }
 
+/// 获取有效配置目录
+///
+/// 如果可执行文件所在目录中已存在 config.json，优先使用该目录；
+/// 否则使用平台特定的 app_data 目录。
+pub fn effective_config_dir() -> PathBuf {
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            if exe_dir.join("config.json").exists() {
+                return exe_dir.to_path_buf();
+            }
+        }
+    }
+    app_data_dir()
+}
+
 /// 获取配置文件路径
 pub fn config_path() -> PathBuf {
-    let dir = app_data_dir();
+    let dir = effective_config_dir();
 
     // 确保目录存在
     if let Err(e) = std::fs::create_dir_all(&dir) {
@@ -345,6 +360,7 @@ impl Config {
     /// 从文件加载配置
     pub fn load() -> AppResult<Self> {
         let path = config_path();
+        info!("配置文件路径: {}", path.display());
         if path.exists() {
             info!("从 {} 加载配置", path.display());
             let content = std::fs::read_to_string(&path)?;
@@ -352,7 +368,7 @@ impl Config {
             debug!("配置加载成功");
             Ok(config)
         } else {
-            info!("配置文件不存在，创建默认配置");
+            info!("配置文件不存在，创建默认配置: {}", path.display());
             let config = Self::default();
             config.save()?;
             Ok(config)
