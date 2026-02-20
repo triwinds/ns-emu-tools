@@ -248,9 +248,9 @@ let branches = [
     available: true
   },
   {
-    text: 'Citron',
+    text: 'Citron (项目已关闭)',
     value: 'citron',
-    available: true
+    available: false
   },
   {
     text: 'Yuzu 主线 (项目已关闭)',
