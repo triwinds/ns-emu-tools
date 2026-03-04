@@ -21,7 +21,6 @@ export const defaultConfig: AppConfig = {
     "ui": {
       "lastOpenEmuPage": "",
       "dark": true,
-      "mode": "auto",
       "width": 1300,
       "height": 850
     },

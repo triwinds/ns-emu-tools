@@ -278,9 +278,6 @@ pub struct UiSetting {
     /// 是否深色模式
     #[serde(default = "default_true")]
     pub dark: bool,
-    /// 主题模式 (auto, light, dark)
-    #[serde(default = "default_theme_mode")]
-    pub mode: String,
     /// 窗口宽度
     #[serde(default = "default_width")]
     pub width: u32,
@@ -291,10 +288,6 @@ pub struct UiSetting {
 
 fn default_last_page() -> String {
     "ryujinx".to_string()
-}
-
-fn default_theme_mode() -> String {
-    "auto".to_string()
 }
 
 fn default_width() -> u32 {
@@ -310,7 +303,6 @@ impl Default for UiSetting {
         Self {
             last_open_emu_page: default_last_page(),
             dark: true,
-            mode: default_theme_mode(),
             width: default_width(),
             height: default_height(),
         }

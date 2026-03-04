@@ -338,7 +338,6 @@ export interface DownloadSetting {
 export interface UiSetting {
   lastOpenEmuPage: string
   dark: boolean
-  mode: string
   width: number
   height: number
 }
