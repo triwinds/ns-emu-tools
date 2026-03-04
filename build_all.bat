@@ -48,4 +48,4 @@ echo Build completed successfully!
 echo ================================
 echo.
 echo Executable location: src-tauri\target\release\
-pause
+@REM pause

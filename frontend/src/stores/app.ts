@@ -4,8 +4,6 @@ import type {CheatGameInfo} from "@/types";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
 import { getAvailableFirmwareInfos, getGameData, type FirmwareInfo } from '@/utils/tauri'
 
-const cds = useConsoleDialogStore()
-
 export const useAppStore = defineStore('app', {
   state: () => ({
     targetFirmwareVersion: null as string | null,
@@ -25,6 +23,7 @@ export const useAppStore = defineStore('app', {
           this.availableFirmwareInfos = infos
           this.targetFirmwareVersion = infos[0]?.version ?? null
         } catch (error) {
+          const cds = useConsoleDialogStore()
           cds.showConsoleDialog()
           cds.appendConsoleMessage('固件信息加载异常: ' + error)
           console.error('获取固件信息失败:', error)

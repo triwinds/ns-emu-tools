@@ -13,6 +13,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event'; // Import listen
 import { ask } from '@tauri-apps/plugin-dialog';
 import { deletePath } from '@/utils/tauri';
+import { openUrlWithDefaultBrowser } from '@/utils/common';
 
 const cds = useConsoleDialogStore()
 const progressStore = useProgressStore() // Init store
@@ -22,6 +23,16 @@ let unlistenInstallation: any = null; // Store unlisten function
 let unlistenLogMessage: any = null; // Store unlisten function for log messages
 let unlistenNotifyMessage: any = null; // Store unlisten function for notify messages
 
+function handleLinkClick(e: MouseEvent) {
+  const target = (e.target as HTMLElement).closest('a')
+  if (!target) return
+  const href = target.getAttribute('href')
+  if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+    e.preventDefault()
+    openUrlWithDefaultBrowser(href)
+  }
+}
+
 try {
   appWindow = getCurrentWindow()
 } catch (e) {
@@ -30,6 +41,7 @@ try {
 
 onMounted(async () => {
   window.addEventListener('resize', rememberWindowSize);
+  document.addEventListener('click', handleLinkClick);
 
   // Listen for installation events
   try {
@@ -96,6 +108,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', rememberWindowSize);
+  document.removeEventListener('click', handleLinkClick);
   if (unlistenInstallation) {
       unlistenInstallation();
   }

@@ -3,13 +3,12 @@
 import {useAppStore} from "@/stores/app";
 import { openUrl, getGameData as getGameDataFromTauri } from "@/utils/tauri";
 
-const appStore = useAppStore()
-
 export function openUrlWithDefaultBrowser(url: string) {
     openUrl(url)
 }
 
 export async function loadGameData(): Promise<Record<string, any>> {
+    const appStore = useAppStore()
     if (appStore.gameDataInited && !('unknown' in appStore.gameData)) {
         return appStore.gameData
     }
