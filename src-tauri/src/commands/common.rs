@@ -7,7 +7,8 @@ use crate::error::AppError;
 use crate::models::storage::{self, Storage};
 use crate::repositories::app_info::{self, UpdateCheckResult};
 use crate::repositories::config_data;
-use tauri::{command, Emitter, Window};
+use tauri::{command, AppHandle, Emitter, Window};
+use tauri_plugin_opener::OpenerExt;
 use tracing::{error, info};
 
 /// 获取当前配置
@@ -88,34 +89,9 @@ pub async fn open_folder(path: String) -> Result<(), String> {
 
 /// 打开 URL
 #[command]
-pub async fn open_url(url: String) -> Result<(), String> {
+pub fn open_url(url: String, app: AppHandle) -> Result<(), String> {
     info!("打开 URL: {}", url);
-
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("cmd")
-            .args(["/c", "start", "", &url])
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open")
-            .arg(&url)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        std::process::Command::new("xdg-open")
-            .arg(&url)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-
-    Ok(())
+    app.opener().open_url(&url, None::<&str>).map_err(|e| e.to_string())
 }
 
 /// 更新设置
