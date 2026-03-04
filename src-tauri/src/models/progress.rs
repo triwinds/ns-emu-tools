@@ -104,4 +104,5 @@ pub enum ProgressEvent {
     Started { steps: Vec<ProgressStep> },
     StepUpdate { step: ProgressStep },
     Finished { success: bool, message: Option<String> },
+    CorruptedFile { path: String },
 }

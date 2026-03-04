@@ -11,6 +11,8 @@ import { useProgressStore } from "@/stores/ProgressStore"; // Import store
 import ProgressDialog from "@/components/ProgressDialog.vue"; // Import component
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event'; // Import listen
+import { ask } from '@tauri-apps/plugin-dialog';
+import { deletePath } from '@/utils/tauri';
 
 const cds = useConsoleDialogStore()
 const progressStore = useProgressStore() // Init store
@@ -53,6 +55,9 @@ onMounted(async () => {
                           lastStep.title = payload.message;
                       }
                   }
+                  break;
+              case 'corruptedFile':
+                  handleCorruptedFile(payload.path);
                   break;
           }
       });
@@ -101,6 +106,20 @@ onUnmounted(() => {
       unlistenNotifyMessage();
   }
 })
+
+async function handleCorruptedFile(filePath: string) {
+  const shouldDelete = await ask(
+      '下载的文件可能已损坏，是否删除该文件以便重新下载？',
+      { title: '文件损坏', kind: 'warning' }
+  );
+  if (shouldDelete) {
+      try {
+          await deletePath(filePath);
+      } catch (e) {
+          console.error('删除损坏文件失败:', e);
+      }
+  }
+}
 
 async function rememberWindowSize() {
   if (!pendingWriteSize && appWindow) {

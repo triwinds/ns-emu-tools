@@ -344,8 +344,11 @@ where
                 download_speed: "".to_string(),
                 eta: "".to_string(),
                 error: Some(e.to_string()),
-            download_source: None,
+                download_source: None,
             }
+        });
+        on_event(ProgressEvent::CorruptedFile {
+            path: result.path.to_string_lossy().to_string(),
         });
         return Err(e);
     }
