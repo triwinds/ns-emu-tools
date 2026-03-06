@@ -19,6 +19,7 @@ import {useEmitter} from "@/plugins/mitt";
 import {mdiBrightness6, mdiConsole} from '@mdi/js'
 import {useTheme} from "vuetify";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
+import {updateDarkState} from "@/utils/tauri";
 
 const emitter = useEmitter()
 const theme = useTheme()
@@ -33,6 +34,6 @@ function showConsoleDialog() {
 
 function switchDarkLight() {
   theme.global.name.value = theme.global.name.value === 'dark' ? 'light' : 'dark'
-  window.eel.update_dark_state(theme.global.name.value === 'dark')()
+  updateDarkState(theme.global.name.value === 'dark')
 }
 </script>

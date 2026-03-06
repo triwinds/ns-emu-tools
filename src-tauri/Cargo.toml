@@ -1,0 +1,157 @@
+[package]
+name = "ns-emu-tools"
+version = "0.6.0"
+description = "NS Emu Tools - Nintendo Switch Emulator Management Tool"
+authors = ["NS Emu Tools Contributors"]
+license = "GPL-3.0"
+repository = "https://github.com/triwinds/ns-emu-tools"
+edition = "2021"
+rust-version = "1.70"
+
+[lib]
+name = "ns_emu_tools_lib"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "NsEmuTools"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri 框架
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-process = "2"
+tauri-plugin-opener = "2"
+
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls", "gzip", "deflate"], default-features = false }
+
+# 序列化
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# 错误处理
+thiserror = "2.0"
+anyhow = "1.0"
+
+# 异步 trait
+async-trait = "0.1"
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+
+# 压缩/解压
+zip = "2.2"
+sevenz-rust = "0.6"
+tar = "0.4"
+xz2 = "0.1"
+flate2 = "1.0"
+bzip2 = "0.4"
+
+# 文件系统
+walkdir = "2.5"
+directories = "5.0"
+
+# 进程管理
+sysinfo = "0.32"
+
+# 全局状态
+once_cell = "1.20"
+parking_lot = "0.12"
+
+# 取消令牌
+tokio-util = "0.7"
+
+# UUID 生成（用于默认文件名和任务 ID）
+uuid = { version = "1.0", features = ["v4"] }
+
+# 异步流
+futures-util = "0.3"
+
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+
+# 正则表达式
+regex = "1.11"
+
+# URL 处理
+url = "2.5"
+
+# 随机数
+rand = "0.9"
+
+# MD5 哈希
+md5 = "0.7"
+
+# AES 加密
+aes = "0.8"
+cipher = { version = "0.4", features = ["block-padding"] }
+ctr = "0.9"
+hex = "0.4"
+crc32fast = "1.4"
+
+# URL 编解码
+urlencoding = "2.1"
+
+# aria2 RPC 客户端
+aria2-ws = "0.5"
+
+# 查找可执行文件
+which = "7.0"
+
+# 目录路径
+dirs = "5.0"
+
+# plist 解析 (macOS)
+plist = "1.7"
+
+# DNS over HTTPS
+hickory-resolver = { version = "0.25", features = ["tokio", "https-ring", "webpki-roots"] }
+hickory-proto = "0.25"
+http-cache-reqwest = { version = "0.15.0", features = ["manager-moka"] }
+reqwest-middleware = "0.4.2"
+moka = { version = "0.12", features = ["future"] }
+
+[target.'cfg(windows)'.dependencies]
+# Windows API
+windows = { version = "0.58", features = [
+    "Win32_System_Registry",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+] }
+# PE 文件解析（用于版本检测）
+pelite = "0.10"
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.29", features = ["user"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+[dev-dependencies]
+tempfile = "3.15"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ctor = "0.2"
+# HTTP 服务器模拟（集成测试）
+wiremock = "0.6"

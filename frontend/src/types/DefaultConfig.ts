@@ -1,5 +1,9 @@
 import type {AppConfig} from "@/types";
 
+// 注意：这些是示例默认值，实际路径会根据运行平台自动设置
+// Windows: D:\Yuzu, D:\Ryujinx
+// macOS: /Applications
+// Linux: ~/Yuzu, ~/Ryujinx
 export const defaultConfig: AppConfig = {
   "yuzu": {
     "yuzu_path": "D:\\Yuzu",
@@ -17,7 +21,6 @@ export const defaultConfig: AppConfig = {
     "ui": {
       "lastOpenEmuPage": "",
       "dark": true,
-      "mode": "auto",
       "width": 1300,
       "height": 850
     },
@@ -33,7 +36,7 @@ export const defaultConfig: AppConfig = {
       "autoDeleteAfterInstall": true,
       "disableAria2Ipv6": true,
       "removeOldAria2LogFile": true,
-      "verifyFirmwareMd5": true
+      "backend": "auto"
     },
     "other": {
       "rename_yuzu_to_cemu": false

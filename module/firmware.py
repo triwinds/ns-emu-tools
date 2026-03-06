@@ -205,6 +205,6 @@ def get_available_firmware_sources():
 
 if __name__ == '__main__':
     from pprint import pp
-    detect_firmware_version('yuzu')
+    detect_firmware_version('ryujinx')
     # pp(get_firmware_infos())
     # pp(get_firmware_infos_from_github())

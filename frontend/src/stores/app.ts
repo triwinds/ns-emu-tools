@@ -1,14 +1,13 @@
 // Utilities
 import { defineStore } from 'pinia'
-import type {CheatGameInfo, CommonResponse} from "@/types";
+import type {CheatGameInfo} from "@/types";
 import {useConsoleDialogStore} from "@/stores/ConsoleDialogStore";
-
-const cds = useConsoleDialogStore()
+import { getAvailableFirmwareInfos, getGameData, type FirmwareInfo } from '@/utils/tauri'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
-    targetFirmwareVersion: null,
-    availableFirmwareInfos: [],
+    targetFirmwareVersion: null as string | null,
+    availableFirmwareInfos: [] as FirmwareInfo[],
     gameData: {} as {[key: string]: string}
   }),
   getters: {
@@ -17,27 +16,32 @@ export const useAppStore = defineStore('app', {
     }
   },
   actions: {
-    updateAvailableFirmwareInfos() {
+    async updateAvailableFirmwareInfos() {
         this.targetFirmwareVersion = null
-        window.eel.get_available_firmware_infos()((data: CommonResponse) => {
-            if (data['code'] === 0) {
-              const infos = data['data']
-              this.availableFirmwareInfos = infos
-              this.targetFirmwareVersion = infos[0]['version']
-            } else {
-                cds.showConsoleDialog()
-                cds.appendConsoleMessage('固件信息加载异常.')
-            }
-        })
+        try {
+          const infos = await getAvailableFirmwareInfos()
+          this.availableFirmwareInfos = infos
+          this.targetFirmwareVersion = infos[0]?.version ?? null
+        } catch (error) {
+          const cds = useConsoleDialogStore()
+          cds.showConsoleDialog()
+          cds.appendConsoleMessage('固件信息加载异常: ' + error)
+          console.error('获取固件信息失败:', error)
+        }
     },
     async loadGameData() {
       if (this.gameDataInited && !('unknown' in this.gameData)) {
           return this.gameData
       }
-      const resp = await window.eel.get_game_data()()
-      const gameData = resp.code === 0 ? resp.data : {'unknown': 'unknown'}
-      this.gameData = gameData
-      return gameData
+      try {
+        const gameData = await getGameData()
+        this.gameData = gameData && Object.keys(gameData).length > 0 ? gameData : {'unknown': 'unknown'}
+        return this.gameData
+      } catch (error) {
+        console.error('获取游戏数据失败:', error)
+        this.gameData = {'unknown': 'unknown'}
+        return this.gameData
+      }
     }
   }
 })

@@ -1,20 +1,25 @@
 // Utilities
 
-
 import {useAppStore} from "@/stores/app";
-
-const appStore = useAppStore()
+import { openUrl, getGameData as getGameDataFromTauri } from "@/utils/tauri";
 
 export function openUrlWithDefaultBrowser(url: string) {
-    window.eel.open_url_in_default_browser(url)()
+    openUrl(url)
 }
 
-export async function loadGameData() {
+export async function loadGameData(): Promise<Record<string, any>> {
+    const appStore = useAppStore()
     if (appStore.gameDataInited && !('unknown' in appStore.gameData)) {
         return appStore.gameData
     }
-    const resp = await window.eel.get_game_data()()
-    const gameData = resp.code === 0 ? resp.data : {'unknown': 'unknown'}
-    appStore.gameData = gameData
-    return gameData
+    try {
+        const gameData = await getGameDataFromTauri()
+        appStore.gameData = gameData
+        return gameData
+    } catch (e) {
+        console.error('Failed to load game data:', e)
+        const fallback = {'unknown': 'unknown'}
+        appStore.gameData = fallback
+        return fallback
+    }
 }

@@ -144,10 +144,10 @@ def restore_yuzu_save_from_backup(user_folder_name: str, backup_path: str):
 if __name__ == '__main__':
     # print(get_all_user_ids())
     # print(convert_to_uuid('97A1DAE861CD445AB9645267B3AB99BE'))
-    # print(get_users_in_save())
+    print(get_users_in_save())
     # pprint(list_all_games_by_user_folder('97A1DAE861CD445AB9645267B3AB99BE'))
     # storage.yuzu_save_backup_path = 'R:/'
     # backup_folder('D:\\Yuzu\\user\\nand\\user\\save\\0000000000000000\\97A1DAE861CD445AB9645267B3AB99BE\\0100F3400332C000')
     # pprint(list_all_yuzu_backups())
-    restore_yuzu_save_from_backup('97A1DAE861CD445AB9645267B3AB99BE',
-                                  'D:\\yuzu_save_backup\\yuzu_0100F2C0115B6000_1685114415.7z')
+    # restore_yuzu_save_from_backup('97A1DAE861CD445AB9645267B3AB99BE',
+    #                               'D:\\yuzu_save_backup\\yuzu_0100F2C0115B6000_1685114415.7z')

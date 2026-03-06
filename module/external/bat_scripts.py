@@ -5,14 +5,8 @@ switch_ui_path = Path('切换 UI 启动模式.bat')
 switch_ui_template = """@echo off
 chcp>nul 2>nul 65001
 cd>nul 2>nul /D %~dp0
-set net_path=""
-if exist "NsEmuTools.exe" (
-    set net_path="NsEmuTools.exe"
-)
-if exist "NsEmuTools-console.exe" (
-    set net_path="NsEmuTools-console.exe"
-)
-if %net_path% == "" (
+set net_path="NsEmuTools.exe"
+if not exist "NsEmuTools.exe" (
     echo 无法在当前目录找到 NsEmuTools 可执行文件, 请将 bat 脚本与 exe 放置在同一目录下。
     pause
 )

@@ -1,6 +1,7 @@
 // Utilities
 import { defineStore } from 'pinia'
-import type {AppConfig, CommonResponse} from "@/types";
+import type { AppConfig } from "@/types";
+import { getAppVersion, getConfig, checkUpdate, type UpdateCheckResult } from "@/utils/tauri";
 
 export const useConfigStore = defineStore('config', {
   state: () => ({
@@ -11,33 +12,51 @@ export const useConfigStore = defineStore('config', {
     } as AppConfig,
     currentVersion: '',
     hasNewVersion: false,
+    updateInfo: null as UpdateCheckResult | null,
   }),
   actions: {
     async reloadConfig() {
-      const resp = await window.eel.get_config()()
-      if (resp.code === 0) {
-        this.config = resp.data
+      try {
+        const config = await getConfig()
+        this.config = config as unknown as AppConfig
+      } catch (e) {
+        console.error('Failed to load config:', e)
       }
     },
-    initCurrentVersion() {
-      window.eel.get_current_version()((resp: CommonResponse) => {
-        if (resp['code'] === 0) {
-          this.currentVersion = resp.data
-        } else {
-          this.currentVersion = '未知'
-        }
-      })
+    async initCurrentVersion() {
+      try {
+        this.currentVersion = await getAppVersion()
+      } catch (e) {
+        console.error('Failed to get app version:', e)
+        this.currentVersion = '未知'
+      }
     },
-    checkUpdate(forceShowDialog: boolean) {
-      window.eel.check_update()((data: CommonResponse) => {
-        if (data['code'] === 0 && data['data']) {
-            this.hasNewVersion = true
-        }
+    async checkUpdate(forceShowDialog: boolean) {
+      try {
+        console.log('[ConfigStore] 开始检查更新...')
+        const result = await checkUpdate(false)
+        console.log('[ConfigStore] 更新检查结果:', {
+          hasUpdate: result.hasUpdate,
+          currentVersion: result.currentVersion,
+          latestVersion: result.latestVersion,
+          downloadUrl: result.downloadUrl,
+          htmlUrl: result.htmlUrl
+        })
+
+        this.hasNewVersion = result.hasUpdate
+        this.updateInfo = result
+        console.log('[ConfigStore] updateInfo 已保存:', this.updateInfo)
+
         if (forceShowDialog || this.hasNewVersion) {
-            window.$bus.emit('showNewVersionDialog',
-                {hasNewVersion: this.hasNewVersion, latestVersion: data['msg']})
+          console.log('[ConfigStore] 显示更新对话框')
+          window.$bus.emit('showNewVersionDialog', {
+            hasNewVersion: this.hasNewVersion,
+            latestVersion: result.latestVersion
+          })
         }
-      })
+      } catch (e) {
+        console.error('[ConfigStore] 检查更新失败:', e)
+      }
     },
   },
   getters: {

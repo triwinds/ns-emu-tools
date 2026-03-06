@@ -28,12 +28,6 @@
 
 从 [GitHub 发布页(稳定版本)](https://github.com/triwinds/ns-emu-tools/releases) 或 
 [CI 自动构建](https://github.com/triwinds/ns-emu-tools/actions/workflows/ci-build.yaml) 下载 exe 文件，然后双击运行即可。
-<details>
-<summary>NsEmuTools.exe 和 NsEmuTools-console.exe 有什么区别？</summary>
-NsEmuTools.exe 和 NsEmuTools-console.exe 在实际的功能上并没有任何差异，
-其主要的差别在于 console 会在启动的时候多一个命令行窗口，这也许可以解决某些杀毒软件的误报问题，
-详情见 <a href="https://github.com/triwinds/ns-emu-tools/issues/2">#2</a>.
-</details>
 
 
 ### 二、使用源码运行
@@ -53,7 +47,7 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 ## 启动参数
 
 ```
-usage: NsEmuTools-console.exe [-h] [-m {webview,browser,chrome,edge,user default}]
+usage: NsEmuTools.exe [-h] [-m {webview,browser,chrome,edge,user default}]
                               [--switch-mode {auto,webview,browser,chrome,edge,user default}]
 
 options:

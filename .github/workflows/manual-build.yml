@@ -13,22 +13,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
     - uses: actions/setup-node@v4
       with:
         node-version: 22
     - uses: oven-sh/setup-bun@v2
-    - run: |
-        cd .\frontend
-        bun install
-        bun run build
-    - run: |
-        pip install uv
-        uv sync
-        uv run pyinstaller --noconfirm --onefile --windowed --icon "./web/favicon.ico" --add-data "./module/*.exe;./module/" --add-data "./web;web/" --additional-hooks-dir=".\\hooks" "./main_devnull.py" --name "NsEmuTools"
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: src-tauri
+    - name: Install frontend dependencies
+      working-directory: frontend
+      run: bun install
+    - name: Build frontend
+      working-directory: frontend
+      run: bun run build
+    - name: Build Rust executable
+      run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
     - uses: actions/upload-artifact@v4
       with:
-        path: dist/*
-        name: NsEmuTools
+        path: src-tauri/target/release/NsEmuTools.exe
+        name: NsEmuTools-windows-exe
+        if-no-files-found: error

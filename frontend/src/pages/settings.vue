@@ -94,10 +94,20 @@
         <v-row>
           <v-col><p class="text-success text-h5">下载设置</p></v-col>
         </v-row>
+        <v-select
+            v-model="setting.download.backend"
+            :items="availableDownloadBackend"
+            item-title="name"
+            item-value="value"
+            label="下载器选择"
+            persistent-hint
+            hint="重启程序后生效。Auto: 优先使用 aria2，不可用时自动切换到 Rust 下载器；Aria2: 强制使用 aria2（多线程下载，需要下载 aria2）；Rust: 强制使用纯 Rust 下载器（内置，无需额外下载）"
+            variant="underlined"
+            color="primary"
+        ></v-select>
         <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.autoDeleteAfterInstall" label="安装完成后自动删除下载的安装包"></v-switch>
         <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.disableAria2Ipv6" label="aria2 禁用 IPv6 (重启程序后生效)"></v-switch>
         <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.removeOldAria2LogFile" label="启动 aria2 前删除旧的日志"></v-switch>
-        <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.download.verifyFirmwareMd5" label="固件下载完成后校验 md5"></v-switch>
 
 
         <v-divider style="margin-bottom: 10px"></v-divider>
@@ -117,6 +127,7 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import {onBeforeMount, onMounted, ref, watch} from "vue";
 import type {NameValueItem, Setting} from "@/types";
 import {defaultConfig} from "@/types/DefaultConfig";
+import { updateSetting, getAvailableFirmwareSources, getGithubMirrors } from "@/utils/tauri";
 import {
   mdiHelpCircle
 } from '@mdi/js'
@@ -133,6 +144,11 @@ let availableNetworkMode = [
   {name: '根据系统代理自动决定', value: 'auto-detect'},
   {name: '[美国 Cloudflare CDN] - 自建代理服务器', value: 'cdn'},
   {name: '直连', value: 'direct'},
+]
+let availableDownloadBackend = [
+  {name: 'Auto - 自动选择（推荐）', value: 'auto'},
+  {name: 'Aria2 - 多线程下载', value: 'aria2'},
+  {name: 'Rust - 内置下载器', value: 'rust'},
 ]
 let availableFirmwareDownloadSource = ref<NameValueItem[]>([])
 let availableGithubDownloadSource = ref<NameValueItem[]>([])
@@ -172,30 +188,34 @@ onMounted(async () => {
   updateProxyMode()
   watch(setting, async (newValue) => {
     console.log(newValue)
-    let resp = await window.eel.update_setting(newValue)()
-    if (resp['code'] === 0) {
-      configStore.config = resp['data']
+    try {
+      await updateSetting(newValue)
+      await configStore.reloadConfig()
+    } catch (e) {
+      console.error('Failed to update setting:', e)
     }
   }, {deep: true, immediate: false})
 })
 
 async function loadAvailableFirmwareDownloadSource() {
-  let resp = await window.eel.get_available_firmware_sources()();
-  console.log(resp)
-  if (resp.code === 0) {
-    for (let source of resp.data) {
+  try {
+    const sources = await getAvailableFirmwareSources()
+    for (const source of sources) {
       availableFirmwareDownloadSource.value.push({name: source[0], value: source[1]})
     }
+  } catch (e) {
+    console.error('Failed to load firmware sources:', e)
   }
 }
 
 async function loadAvailableGithubDownloadSource() {
-  let resp = await window.eel.get_github_mirrors()()
-  console.log(resp)
-  if (resp.code === 0) {
-    for (let mirror of resp.data) {
+  try {
+    const mirrors = await getGithubMirrors()
+    for (const mirror of mirrors) {
       availableGithubDownloadSource.value.push({name: mirror[2], value: mirror[0]})
     }
+  } catch (e) {
+    console.error('Failed to load github mirrors:', e)
   }
 }
 

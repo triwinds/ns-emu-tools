@@ -23,13 +23,13 @@ dependencies = [
     "chardet>=5.2.0,<6",
     "pywebview>=4.2.2,<5",
     "dataclasses-json>=0.5.14",
-    "pyinstaller>=6.3.0,<7",
     "nsz",
     "orjson>=3.10.18",
+    "pefile>=2023.2.7",
 ]
 
 [dependency-groups]
-dev = ["pyinstaller>=6.0.0,<7"]
+dev = []
 
 [tool.uv]
 

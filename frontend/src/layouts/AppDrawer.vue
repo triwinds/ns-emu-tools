@@ -16,6 +16,7 @@ import {useEmitter} from "@/plugins/mitt";
 import {useDisplay, useTheme} from "vuetify";
 import {useConfigStore} from "@/stores/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
+import {updateLastOpenEmuPage} from "@/utils/tauri";
 
 const emitter = useEmitter()
 let open = ref<string[]>([])
@@ -28,12 +29,12 @@ const theme = useTheme()
 
 
 onMounted(async () => {
-  configStore.initCurrentVersion()
+  await configStore.initCurrentVersion()
   await configStore.reloadConfig()
   configStore.checkUpdate(false)
   if (!['yuzu', 'ryujinx'].includes(configStore.config.setting.ui.lastOpenEmuPage)) {
     configStore.config.setting.ui.lastOpenEmuPage = 'ryujinx'
-    window.eel.update_last_open_emu_page('ryujinx')()
+    updateLastOpenEmuPage('ryujinx')
   }
   console.log(router.currentRoute.value.path)
   if (router.currentRoute.value.path === '/'
