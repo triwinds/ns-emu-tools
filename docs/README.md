@@ -121,7 +121,8 @@ docs/
 - Vite (构建工具)
 
 **工具**:
-- PyInstaller (打包)
+- Rust + Cargo (桌面端构建)
+- Tauri 2 (桌面应用框架)
 - GitHub Actions (CI/CD)
 - Sentry (错误追踪)
 
@@ -191,7 +192,8 @@ docs/
 - [Vue 3 官方文档](https://vuejs.org/)
 - [Vuetify 3 官方文档](https://vuetifyjs.com/)
 - [Eel 文档](https://github.com/python-eel/Eel)
-- [PyInstaller 文档](https://pyinstaller.org/)
+- [Rust 官方文档](https://www.rust-lang.org/learn)
+- [Tauri 官方文档](https://tauri.app/)
 
 ### 相关项目
 

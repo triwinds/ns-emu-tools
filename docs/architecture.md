@@ -149,18 +149,13 @@ ns-emu-tools/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── build_tools/            # 构建工具
-│   └── zip_files.py
-│
-├── hooks/                  # Git hooks
-│
+├── src-tauri/              # Rust/Tauri 桌面端
 ├── web/                    # 编译后的前端资源
-│
-├── config.py              # 配置管理
-├── ui.py                  # 浏览器模式入口
-├── ui_webview.py          # WebView 模式入口
-├── main.py                # 主入口
-├── pyproject.toml         # Python 项目配置
+├── config.py               # Python 版本配置管理
+├── ui.py                   # 旧浏览器模式入口
+├── ui_webview.py           # 旧 WebView 模式入口
+├── main.py                 # 旧 Python 主入口
+├── pyproject.toml          # Python 项目配置
 └── README.md
 
 ```
@@ -568,11 +563,9 @@ python ui_webview.py
 
 ### 打包发布
 
-#### PyInstaller 配置
-- 使用 PyInstaller 打包为独立 exe
-- 两个版本:
-  - `NsEmuTools.exe` (无控制台窗口)
-  - `NsEmuTools-console.exe` (带控制台窗口)
+#### Rust/Tauri 构建
+- 使用 `cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools` 生成 Windows 可执行文件
+- 当前发布仅保留单个 `NsEmuTools.exe` 产物
 
 #### CI/CD
 - GitHub Actions 自动构建

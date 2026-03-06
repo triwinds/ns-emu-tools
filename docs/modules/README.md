@@ -45,7 +45,6 @@ NsEmuTools 是一个 Nintendo Switch 模拟器管理工具，支持 Yuzu 系列 
 | [repository.md](repository.md) | 数据访问层 |
 | [utils.md](utils.md) | 工具函数模块 |
 | [config.md](config.md) | 配置和存储管理 |
-| [hooks.md](hooks.md) | PyInstaller 打包钩子 |
 
 ## 模块依赖关系
 

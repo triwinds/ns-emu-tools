@@ -138,55 +138,48 @@ impl ReleaseInfo {
     /// 查找 Windows 资源
     ///
     /// 匹配策略：
-    /// 1. 首先精确查找 "NsEmuTools-dir.7z"
-    /// 2. 如果找不到，查找 "NsEmuTools.exe"
-    /// 3. 如果还找不到，查找 "ns-emu-tools.exe"（Tauri 版本）
+    /// 1. 首先精确查找 `NsEmuTools.exe`
+    /// 2. 其次兼容查找 `ns-emu-tools.exe`
+    /// 3. 最后模糊匹配任意包含 `emu-tools` 的 `.exe` 文件
     pub fn find_windows_asset(&self) -> Option<&ReleaseAsset> {
         use tracing::info;
 
         info!("开始查找 Windows 资源，总共有 {} 个 assets", self.assets.len());
 
-        // 打印所有 assets 的名称
         for asset in &self.assets {
             info!("  可用文件: {}", asset.name);
         }
 
-        // 1. 首先查找 NsEmuTools-dir.7z (Python 版本的压缩包)
-        let target = self.assets.iter().find(|a| a.name == "NsEmuTools-dir.7z");
-        if target.is_some() {
-            info!("找到精确匹配: NsEmuTools-dir.7z");
-            return target;
-        }
-        info!("未找到 NsEmuTools-dir.7z");
-
-        // 2. 查找 NsEmuTools.exe (Python 版本)
-        let target = self.assets.iter().find(|a| a.name == "NsEmuTools.exe");
+        let target = self
+            .assets
+            .iter()
+            .find(|a| a.name.eq_ignore_ascii_case("NsEmuTools.exe"));
         if target.is_some() {
             info!("找到精确匹配: NsEmuTools.exe");
             return target;
         }
         info!("未找到 NsEmuTools.exe");
 
-        // 3. 查找 ns-emu-tools.exe (Tauri 版本)
-        let target = self.assets.iter().find(|a| a.name == "ns-emu-tools.exe");
+        let target = self
+            .assets
+            .iter()
+            .find(|a| a.name.eq_ignore_ascii_case("ns-emu-tools.exe"));
         if target.is_some() {
-            info!("找到精确匹配: ns-emu-tools.exe");
+            info!("找到兼容匹配: ns-emu-tools.exe");
             return target;
         }
         info!("未找到 ns-emu-tools.exe");
 
-        // 4. 查找任何包含 "emu-tools" 且以 .exe 或 .7z 结尾的文件
         let target = self.assets.iter().find(|a| {
             let name_lower = a.name.to_lowercase();
-            name_lower.contains("emu-tools") &&
-            (name_lower.ends_with(".exe") || name_lower.ends_with(".7z") || name_lower.ends_with(".zip"))
+            name_lower.contains("emu-tools") && name_lower.ends_with(".exe")
         });
-        if target.is_some() {
-            info!("找到模糊匹配: {}", target.unwrap().name);
-            return target;
+        if let Some(asset) = target {
+            info!("找到模糊匹配: {}", asset.name);
+            return Some(asset);
         }
 
-        info!("警告: 未找到任何合适的 Windows 资源文件！");
+        info!("警告: 未找到任何合适的 Windows 可执行文件！");
         None
     }
 }
@@ -259,8 +252,8 @@ mod tests {
                     content_type: None,
                 },
                 ReleaseAsset {
-                    name: "test-windows-x64.zip".to_string(),
-                    download_url: "https://example.com/windows.zip".to_string(),
+                    name: "NsEmuTools.exe".to_string(),
+                    download_url: "https://example.com/NsEmuTools.exe".to_string(),
                     size: 0,
                     content_type: None,
                 },
@@ -268,6 +261,6 @@ mod tests {
         };
 
         let asset = release.find_windows_asset().unwrap();
-        assert_eq!(asset.name, "test-windows-x64.zip");
+        assert_eq!(asset.name, "NsEmuTools.exe");
     }
 }

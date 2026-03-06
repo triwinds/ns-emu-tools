@@ -387,7 +387,7 @@ fn find_executable(dir: &Path) -> AppResult<PathBuf> {
         {
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("exe") {
                 let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-                // 匹配 NsEmuTools.exe 或 NsEmuTools-console.exe
+                // 匹配 NsEmuTools.exe 等 Windows 可执行文件
                 if file_name.to_lowercase().contains("nsemutools") {
                     return Ok(path.to_path_buf());
                 }
@@ -417,7 +417,7 @@ fn create_windows_update_script(
 ) -> AppResult<()> {
     let script_path = target_dir.join("update.bat");
 
-    // 获取解压后的文件夹路径（与Python版本一致）
+    // 获取更新脚本路径
     let extract_folder = new_exe.parent().ok_or_else(|| {
         AppError::Unknown("无法获取更新文件父目录".to_string())
     })?;

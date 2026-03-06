@@ -109,9 +109,7 @@ def download_net_by_tag(tag: str):
     execute_path = Path(sys.argv[0])
     logger.info(f'execute_path: {execute_path}')
     asset_map = {asset['name']: asset for asset in release_info['assets']}
-    target_asset = asset_map.get('NsEmuTools-dir.7z')
-    if not target_asset:
-        target_asset = asset_map.get(execute_path.name, asset_map.get('NsEmuTools.exe'))
+    target_asset = asset_map.get(execute_path.name, asset_map.get('NsEmuTools.exe'))
     target_file_name = target_asset["name"]
     logger.info(f'target_file_name: {target_file_name}')
     logger.info(f'start download {target_file_name}, version: [{tag}]')
@@ -128,22 +126,15 @@ def download_net_by_tag(tag: str):
 
 
 def update_self_by_tag(tag: str):
-    # upgrade_files_path = download_path.joinpath('upgrade_files')
-    # upgrade_file_path = upgrade_files_path.joinpath('NsEmuTools.7z')
     upgrade_file_path = download_net_by_tag(tag)
     upgrade_files_folder = upgrade_file_path.parent
     if not upgrade_file_path:
         logger.error(f'something wrong in downloading.')
         send_notify(f'下载时出现问题, 更新已取消.')
         return
-    if upgrade_file_path.name.endswith('.7z'):
-        from utils.package import uncompress
-        uncompress(upgrade_file_path, upgrade_file_path.parent)
-        upgrade_file_path.unlink()
-        upgrade_files_folder = upgrade_file_path.parent.joinpath('NsEmuTools')
-    target_path = Path('NsEmuTools.exe') if Path('NsEmuTools.exe').exists() else Path('NsEmuTools-console.exe')
-    
-    # 获取当前程序的临时目录（如果是 PyInstaller 打包的）
+    target_path = Path('NsEmuTools.exe')
+
+    # 获取当前程序的临时目录（如果是旧打包版本）
     current_meipass = getattr(sys, '_MEIPASS', '')
     
     script = script_template\

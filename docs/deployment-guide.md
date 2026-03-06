@@ -16,19 +16,20 @@
 ### 环境要求
 
 - **操作系统**: Windows 10/11
-- **Python**: 3.11+
-- **Node.js**: 20.x
+- **Rust**: stable toolchain（建议通过 `rustup` 安装）
+- **Node.js**: 22.x
+- **Bun**: 1.x
 - **磁盘空间**: 至少 2GB 可用空间
 
 ### 安装构建工具
 
 ```bash
-# 安装 Python 依赖
-uv sync
-
 # 安装前端依赖
 cd frontend
 bun install
+
+# 确认 Rust 工具链可用
+cargo --version
 ```
 
 ## 本地构建
@@ -67,138 +68,46 @@ export default defineConfig({
 
 ### 2. 构建后端可执行文件
 
-#### 使用 PyInstaller
+#### 使用 Cargo 构建
 
-项目使用 PyInstaller 将 Python 应用打包为独立的 exe 文件。
-
-**构建脚本** (`build.spec`):
-```python
-# -*- mode: python ; coding: utf-8 -*-
-
-block_cipher = None
-
-a = Analysis(
-    ['ui.py'],
-    pathex=[],
-    binaries=[],
-    datas=[
-        ('web', 'web'),
-        ('module/aria2c.exe', 'module'),
-        ('module/storage.json', 'module'),
-    ],
-    hiddenimports=[
-        'api',
-        'module',
-        'repository',
-        'utils',
-        'exception',
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
-    noarchive=False,
-)
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
-exe = EXE(
-    pyz,
-    a.scripts,
-    [],
-    exclude_binaries=True,
-    name='NsEmuTools',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    console=False,  # 无控制台窗口
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon='icon.ico'
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='NsEmuTools',
-)
-```
+当前桌面端发布使用 Rust/Tauri 构建。
 
 **执行构建**:
 
 ```bash
-# 方式 1: 使用 spec 文件
-pyinstaller build.spec
+# 1. 构建前端
+cd frontend
+bun run build
+cd ..
 
-# 方式 2: 命令行参数
-pyinstaller --name=NsEmuTools ^
-    --windowed ^
-    --onedir ^
-    --add-data="web;web" ^
-    --add-data="module/aria2c.exe;module" ^
-    --add-data="module/storage.json;module" ^
-    --hidden-import=api ^
-    --hidden-import=module ^
-    --hidden-import=repository ^
-    --icon=icon.ico ^
-    ui.py
+# 2. 构建 Windows 可执行文件
+cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
 ```
 
-**构建两个版本**:
+**构建产物**:
 
-1. **无控制台版本** (`NsEmuTools.exe`):
+1. **主程序** (`NsEmuTools.exe`):
    ```bash
-   pyinstaller --windowed ui.py
-   ```
-
-2. **带控制台版本** (`NsEmuTools-console.exe`):
-   ```bash
-   pyinstaller --console ui.py
+   cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
    ```
 
 **输出目录**:
 ```
-dist/
-└── NsEmuTools/
-    ├── NsEmuTools.exe
-    ├── _internal/
-    │   ├── Python DLLs
-    │   ├── 依赖库
-    │   └── ...
-    └── web/
-        └── 前端资源
+src-tauri/
+└── target/
+    └── release/
+        └── NsEmuTools.exe
 ```
 
 ### 3. 打包发布文件
 
 ```bash
-# 使用 build_tools/zip_files.py
-python build_tools/zip_files.py
-
-# 或手动打包
-cd dist
-7z a NsEmuTools-v0.5.9-windows-x64.zip NsEmuTools/
+# 当前发布流程无需额外打包
+# 直接使用构建出的 exe 文件即可
 ```
 
 **打包内容**:
 - `NsEmuTools.exe` - 主程序
-- `NsEmuTools-console.exe` - 带控制台版本
-- `_internal/` - 依赖文件
-- `web/` - 前端资源
-- `README.md` - 使用说明
-- `LICENSE` - 许可证
 
 ## CI/CD 自动构建
 
@@ -209,75 +118,60 @@ cd dist
 **工作流文件** (`.github/workflows/ci-build.yaml`):
 
 ```yaml
-name: CI Build
+name: CI build
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  release:
-    types: [ created ]
+    branches:
+      - main
+    tags:
+      - '*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
+    - uses: actions/setup-node@v4
       with:
-        python-version: '3.11'
+        node-version: 22
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+    - uses: oven-sh/setup-bun@v2
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2
       with:
-        node-version: '20'
-
-    - name: Install Python dependencies
-      run: |
-        pip install uv
-        uv sync
+        workspaces: src-tauri
 
     - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install -g bun
-        bun install
+      working-directory: frontend
+      run: bun install
 
     - name: Build frontend
-      run: |
-        cd frontend
-        bun build
+      working-directory: frontend
+      run: bun run build
 
-    - name: Build executable
-      run: |
-        pyinstaller build.spec
-        pyinstaller build-console.spec
-
-    - name: Package release
-      run: |
-        python build_tools/zip_files.py
+    - name: Build Rust executable
+      run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: NsEmuTools-windows-x64
-        path: dist/*.zip
+        name: NsEmuTools-windows-exe
+        path: src-tauri/target/release/NsEmuTools.exe
+        if-no-files-found: error
 
-    - name: Upload to release
-      if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v2.2.2
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: dist/NsEmuTools-${{ github.event.release.tag_name }}-windows-x64.zip
-        asset_name: NsEmuTools-${{ github.event.release.tag_name }}-windows-x64.zip
-        asset_content_type: application/zip
+        draft: true
+        files: src-tauri/target/release/NsEmuTools.exe
 ```
 
 ### 触发构建
@@ -288,15 +182,12 @@ jobs:
    ```
    自动触发构建，生成 artifact
 
-2. **创建 Pull Request**:
-   自动触发构建，验证代码
-
-3. **创建 Release**:
+2. **创建 Release**:
    ```bash
    git tag v0.5.10
    git push origin v0.5.10
    ```
-   自动构建并上传到 GitHub Releases
+   自动构建并上传 `NsEmuTools.exe` 到 GitHub Releases
 
 ### 查看构建结果
 
@@ -520,17 +411,13 @@ DEL "%~f0"
 
 ### 构建失败
 
-#### 问题: PyInstaller 找不到模块
+#### 问题: Cargo 或 Rust 依赖构建失败
 
 **解决方案**:
-```python
-# 在 build.spec 中添加 hiddenimports
-hiddenimports=[
-    'api',
-    'module',
-    'repository',
-    'missing_module',  # 添加缺失的模块
-]
+```bash
+rustup update
+cargo clean --manifest-path src-tauri/Cargo.toml
+cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
 ```
 
 #### 问题: 前端构建失败
@@ -545,57 +432,28 @@ bun install
 bun build
 ```
 
-#### 问题: 打包后文件过大
+#### 问题: 发布产物体积偏大
 
 **解决方案**:
-1. 启用 UPX 压缩:
-   ```python
-   exe = EXE(
-       ...
-       upx=True,
-   )
-   ```
-
-2. 排除不必要的模块:
-   ```python
-   excludes=[
-       'tkinter',
-       'matplotlib',
-       'numpy',
-   ]
-   ```
+1. 检查 `src-tauri/Cargo.toml` 中的 `profile.release` 配置是否启用了 `lto`、`strip` 和较小的 `opt-level`。
+2. 仅发布 `NsEmuTools.exe`，不要再额外打包 installer 或 archive。
 
 ### 运行时错误
 
-#### 问题: 找不到 web 资源
+#### 问题: 找不到前端资源
 
 **解决方案**:
-确保 `web/` 目录被正确打包:
-```python
-datas=[
-    ('web', 'web'),
-]
-```
+确保先执行 `bun run build`，并保持 `src-tauri/tauri.conf.json` 中的 `frontendDist` 指向 `../web`。
 
 #### 问题: Aria2 启动失败
 
 **解决方案**:
-确保 `aria2c.exe` 被打包:
-```python
-datas=[
-    ('module/aria2c.exe', 'module'),
-]
-```
+确保 `module/aria2c.exe` 位于可执行文件附近，或让程序自动下载/安装 aria2。
 
 #### 问题: 配置文件丢失
 
 **解决方案**:
-打包默认配置:
-```python
-datas=[
-    ('module/storage.json', 'module'),
-]
-```
+检查运行目录中的配置文件是否可写，并确认升级脚本没有清理用户数据目录。
 
 ### 更新失败
 
@@ -619,40 +477,21 @@ timeout /t 5
 
 ### 减小包体积
 
-1. **使用 UPX 压缩**:
-   ```python
-   upx=True
-   ```
+1. **优化 Rust release 配置**:
+   检查 `lto`、`codegen-units`、`strip` 和 `opt-level`。
 
-2. **排除不必要的依赖**:
-   ```python
-   excludes=['tkinter', 'test', 'unittest']
-   ```
-
-3. **使用 --onefile** (可选):
-   ```bash
-   pyinstaller --onefile ui.py
-   ```
-   注意: 启动速度会变慢
+2. **减少无用资源**:
+   发布时仅保留 `NsEmuTools.exe`，不要附带 archive、installer 或历史兼容产物。
 
 ### 加快启动速度
 
-1. **使用 --onedir** (推荐):
+1. **优先使用 release 构建**:
    ```bash
-   pyinstaller --onedir ui.py
+   cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
    ```
 
-2. **延迟导入**:
-   ```python
-   def some_function():
-       import heavy_module  # 延迟导入
-       heavy_module.do_something()
-   ```
-
-3. **预编译 Python 文件**:
-   ```bash
-   python -m compileall .
-   ```
+2. **减少启动时初始化工作**:
+   将高耗时逻辑延后到真正使用时再执行。
 
 ## 安全考虑
 
