@@ -11,7 +11,8 @@ use tracing::{debug, info};
 const EDEN_RELEASES_API: &str = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases";
 
 /// Citron 仓库 API 地址
-const CITRON_RELEASES_API: &str = "https://git.citron-emu.org/api/v1/repos/Citron/Emulator/releases";
+const CITRON_RELEASES_API: &str =
+    "https://git.citron-emu.org/api/v1/repos/Citron/Emulator/releases";
 
 /// 获取所有 Yuzu 系列版本（根据分支）
 pub async fn get_all_yuzu_release_versions(branch: &str) -> AppResult<Vec<String>> {
@@ -82,9 +83,8 @@ pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<Releas
     let url = format!("{}/tags/{}", EDEN_RELEASES_API, version);
     let data = request_git_api(&url).await?;
 
-    ReleaseInfo::from_forgejo_api(&data).ok_or_else(|| {
-        AppError::InvalidArgument(format!("无法解析 Eden 版本 {} 的信息", version))
-    })
+    ReleaseInfo::from_forgejo_api(&data)
+        .ok_or_else(|| AppError::InvalidArgument(format!("无法解析 Eden 版本 {} 的信息", version)))
 }
 
 // ============ Citron 相关函数 ============

@@ -7,8 +7,8 @@
 
 #[cfg(test)]
 mod tests {
-    use super::super::types::*;
     use super::super::manager::ProgressCallback;
+    use super::super::types::*;
 
     #[test]
     fn test_download_options_default() {

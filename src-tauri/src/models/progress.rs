@@ -63,7 +63,11 @@ impl ProgressStep {
     }
 
     /// 创建一个下载步骤
-    pub fn download(id: impl Into<String>, title: impl Into<String>, status: ProgressStatus) -> Self {
+    pub fn download(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        status: ProgressStatus,
+    ) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
@@ -90,7 +94,12 @@ impl ProgressStep {
     }
 
     /// 设置进度
-    pub fn with_progress(mut self, progress: f64, speed: impl Into<String>, eta: impl Into<String>) -> Self {
+    pub fn with_progress(
+        mut self,
+        progress: f64,
+        speed: impl Into<String>,
+        eta: impl Into<String>,
+    ) -> Self {
         self.progress = progress;
         self.download_speed = speed.into();
         self.eta = eta.into();
@@ -101,8 +110,17 @@ impl ProgressStep {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum ProgressEvent {
-    Started { steps: Vec<ProgressStep> },
-    StepUpdate { step: ProgressStep },
-    Finished { success: bool, message: Option<String> },
-    CorruptedFile { path: String },
+    Started {
+        steps: Vec<ProgressStep>,
+    },
+    StepUpdate {
+        step: ProgressStep,
+    },
+    Finished {
+        success: bool,
+        message: Option<String>,
+    },
+    CorruptedFile {
+        path: String,
+    },
 }

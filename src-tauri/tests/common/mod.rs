@@ -45,31 +45,31 @@ impl Default for TestConfigHelper {
 }
 
 /// 简单的进度打印回调
-pub fn simple_progress_printer(prefix: &str) -> impl Fn(ns_emu_tools_lib::models::ProgressEvent) + Clone {
+pub fn simple_progress_printer(
+    prefix: &str,
+) -> impl Fn(ns_emu_tools_lib::models::ProgressEvent) + Clone {
     use ns_emu_tools_lib::models::ProgressEvent;
 
     let prefix = prefix.to_string();
 
-    move |event| {
-        match event {
-            ProgressEvent::Started { steps } => {
-                tracing::info!("{} 开始，共 {} 个步骤", prefix, steps.len());
-            }
-            ProgressEvent::StepUpdate { step } => {
-                tracing::info!(
-                    "{} 步骤 [{}] {}: {:?}",
-                    prefix,
-                    step.id,
-                    step.title,
-                    step.status
-                );
-            }
-            ProgressEvent::Finished { success, message } => {
-                if success {
-                    tracing::info!("{} 完成", prefix);
-                } else {
-                    tracing::warn!("{} 失败: {:?}", prefix, message);
-                }
+    move |event| match event {
+        ProgressEvent::Started { steps } => {
+            tracing::info!("{} 开始，共 {} 个步骤", prefix, steps.len());
+        }
+        ProgressEvent::StepUpdate { step } => {
+            tracing::info!(
+                "{} 步骤 [{}] {}: {:?}",
+                prefix,
+                step.id,
+                step.title,
+                step.status
+            );
+        }
+        ProgressEvent::Finished { success, message } => {
+            if success {
+                tracing::info!("{} 完成", prefix);
+            } else {
+                tracing::warn!("{} 失败: {:?}", prefix, message);
             }
         }
     }
@@ -78,34 +78,19 @@ pub fn simple_progress_printer(prefix: &str) -> impl Fn(ns_emu_tools_lib::models
 /// 断言路径存在
 #[allow(dead_code)]
 pub fn assert_path_exists(path: &std::path::Path, message: &str) {
-    assert!(
-        path.exists(),
-        "{}: 路径不存在: {}",
-        message,
-        path.display()
-    );
+    assert!(path.exists(), "{}: 路径不存在: {}", message, path.display());
 }
 
 /// 断言文件存在
 #[allow(dead_code)]
 pub fn assert_file_exists(path: &std::path::Path, message: &str) {
     assert_path_exists(path, message);
-    assert!(
-        path.is_file(),
-        "{}: 不是文件: {}",
-        message,
-        path.display()
-    );
+    assert!(path.is_file(), "{}: 不是文件: {}", message, path.display());
 }
 
 /// 断言目录存在
 #[allow(dead_code)]
 pub fn assert_dir_exists(path: &std::path::Path, message: &str) {
     assert_path_exists(path, message);
-    assert!(
-        path.is_dir(),
-        "{}: 不是目录: {}",
-        message,
-        path.display()
-    );
+    assert!(path.is_dir(), "{}: 不是目录: {}", message, path.display());
 }

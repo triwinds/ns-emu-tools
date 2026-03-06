@@ -16,10 +16,7 @@ fn setup_window(window: &WebviewWindow) {
     let height = config.setting.ui.height;
 
     // 设置窗口大小
-    if let Err(e) = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
-        width,
-        height,
-    })) {
+    if let Err(e) = window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height })) {
         tracing::warn!("设置窗口大小失败: {}", e);
     }
 
@@ -43,10 +40,7 @@ fn main() {
     // 这样日志可以持续写入文件
     let _guard = Box::leak(Box::new(logging::init()));
 
-    info!(
-        "启动 NS Emu Tools v{}",
-        ns_emu_tools_lib::CURRENT_VERSION
-    );
+    info!("启动 NS Emu Tools v{}", ns_emu_tools_lib::CURRENT_VERSION);
 
     // 检查并安装 WebView2 运行时
     // 如果未安装，会提示用户并自动下载安装
@@ -88,9 +82,10 @@ fn main() {
                     // 前端展示：notify-message
                     let _ = app_handle.emit(
                         ns_emu_tools_lib::services::notifier::events::NOTIFY_MESSAGE,
-                        ns_emu_tools_lib::models::response::NotifyMessage::error(
-                            format!("发生严重错误: {}", msg),
-                        ),
+                        ns_emu_tools_lib::models::response::NotifyMessage::error(format!(
+                            "发生严重错误: {}",
+                            msg
+                        )),
                     );
 
                     // 同时也发一条 log-message，方便控制台查看

@@ -47,7 +47,10 @@ pub mod notifier {
 pub use cheats::*;
 pub use doh::*;
 pub use downloader::aria2::*;
-pub use downloader::{get_download_manager, DownloadManager, DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus, ProgressCallback};
+pub use downloader::{
+    get_download_manager, DownloadManager, DownloadOptions, DownloadProgress, DownloadResult,
+    DownloadStatus, ProgressCallback,
+};
 pub use firmware::*;
 pub use nca::*;
 pub use network::*;

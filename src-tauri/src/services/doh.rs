@@ -4,15 +4,15 @@
 
 use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
+use hickory_proto::xfer::Protocol;
 use hickory_resolver::config::{NameServerConfig, ResolverConfig, ResolverOpts};
 use hickory_resolver::name_server::TokioConnectionProvider;
 use hickory_resolver::{Resolver, TokioResolver};
-use hickory_proto::xfer::Protocol;
-use std::net::SocketAddr;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::net::IpAddr;
+use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
 
@@ -81,9 +81,10 @@ impl DohResolver {
         opts.attempts = 2;
         opts.cache_size = 256;
 
-        let resolver = Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
-            .with_options(opts)
-            .build();
+        let resolver =
+            Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
+                .with_options(opts)
+                .build();
 
         Ok(Self { resolver, try_ipv6 })
     }
@@ -102,9 +103,10 @@ impl DohResolver {
         opts.attempts = 2;
         opts.cache_size = 256;
 
-        let resolver = Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
-            .with_options(opts)
-            .build();
+        let resolver =
+            Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
+                .with_options(opts)
+                .build();
 
         Ok(Self { resolver, try_ipv6 })
     }
@@ -123,9 +125,10 @@ impl DohResolver {
         opts.attempts = 2;
         opts.cache_size = 256;
 
-        let resolver = Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
-            .with_options(opts)
-            .build();
+        let resolver =
+            Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
+                .with_options(opts)
+                .build();
 
         Ok(Self { resolver, try_ipv6 })
     }
@@ -144,9 +147,10 @@ impl DohResolver {
         opts.attempts = 2;
         opts.cache_size = 256;
 
-        let resolver = Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
-            .with_options(opts)
-            .build();
+        let resolver =
+            Resolver::builder_with_config(resolver_config, TokioConnectionProvider::default())
+                .with_options(opts)
+                .build();
 
         Ok(Self { resolver, try_ipv6 })
     }
@@ -286,7 +290,11 @@ mod tests {
         let resolver = DohResolver::with_alidns().unwrap();
         let result = resolver.resolve("github.com").await;
         println!("AliDNS DoH resolve result: {:?}", result);
-        assert!(result.is_ok(), "AliDNS DoH resolve failed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "AliDNS DoH resolve failed: {:?}",
+            result.err()
+        );
     }
 
     #[tokio::test]
@@ -294,7 +302,11 @@ mod tests {
         let resolver = DohResolver::with_google().unwrap();
         let result = resolver.resolve("github.com").await;
         println!("Google DoH resolve result: {:?}", result);
-        assert!(result.is_ok(), "Google DoH resolve failed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Google DoH resolve failed: {:?}",
+            result.err()
+        );
     }
 
     #[test]

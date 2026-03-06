@@ -139,8 +139,8 @@ impl DownloadManager for RustDownloader {
 
         let task = Arc::new(DownloadTask::new(
             task_id.clone(),
-            url.to_string(),  // original_url
-            final_url,        // current url (可能是镜像)
+            url.to_string(), // original_url
+            final_url,       // current url (可能是镜像)
             options,
             client,
         ));
@@ -194,8 +194,8 @@ impl DownloadManager for RustDownloader {
 
         let task = Arc::new(DownloadTask::new(
             task_id.clone(),
-            url.to_string(),  // original_url
-            final_url,        // current url (可能是镜像)
+            url.to_string(), // original_url
+            final_url,       // current url (可能是镜像)
             options,
             client,
         ));
@@ -306,9 +306,10 @@ impl DownloadManager for RustDownloader {
         for task in tasks {
             if remove_files {
                 let progress = task.get_progress();
-                let save_dir = task.options.save_dir.clone().unwrap_or_else(|| {
-                    dirs::download_dir().unwrap_or_else(|| PathBuf::from("."))
-                });
+                let save_dir =
+                    task.options.save_dir.clone().unwrap_or_else(|| {
+                        dirs::download_dir().unwrap_or_else(|| PathBuf::from("."))
+                    });
 
                 // 删除临时文件
                 let temp_path = save_dir.join(get_temp_filename(&progress.filename));
@@ -491,7 +492,13 @@ impl ProgressInfo {
 }
 
 impl DownloadTask {
-    fn new(id: String, original_url: String, url: String, options: DownloadOptions, client: Client) -> Self {
+    fn new(
+        id: String,
+        original_url: String,
+        url: String,
+        options: DownloadOptions,
+        client: Client,
+    ) -> Self {
         let filename = resolve_filename_from_url(&url, options.filename.as_deref());
 
         Self {
@@ -518,7 +525,9 @@ impl DownloadTask {
     /// 返回 true 表示成功切换到新镜像
     fn try_switch_mirror(&self) -> bool {
         // 只有 GitHub URL 才尝试切换镜像
-        if !self.original_url.contains("github.com") && !self.original_url.contains("githubusercontent.com") {
+        if !self.original_url.contains("github.com")
+            && !self.original_url.contains("githubusercontent.com")
+        {
             return false;
         }
 
@@ -602,14 +611,20 @@ impl DownloadTask {
 
     async fn start_impl(&self) -> AppResult<DownloadResult> {
         let current_url = self.get_url();
-        info!("开始下载: {} -> {}", current_url, self.progress.read().filename);
+        info!(
+            "开始下载: {} -> {}",
+            current_url,
+            self.progress.read().filename
+        );
 
         *self.status.write() = DownloadStatus::Active;
 
         // 确定保存目录
-        let save_dir = self.options.save_dir.clone().unwrap_or_else(|| {
-            dirs::download_dir().unwrap_or_else(|| PathBuf::from("."))
-        });
+        let save_dir = self
+            .options
+            .save_dir
+            .clone()
+            .unwrap_or_else(|| dirs::download_dir().unwrap_or_else(|| PathBuf::from(".")));
 
         // 确保目录存在
         if !save_dir.exists() {
@@ -673,16 +688,11 @@ impl DownloadTask {
         state.last_modified = range_support.last_modified.clone();
 
         // 计算分块
-        let chunk_manager = ChunkManager::new(
-            self.options.split,
-            &self.options.min_split_size,
-        );
+        let chunk_manager = ChunkManager::new(self.options.split, &self.options.min_split_size);
 
         if state.chunks.is_empty() {
-            state.chunks = chunk_manager.calculate_chunks(
-                range_support.total_size,
-                range_support.supports_range,
-            );
+            state.chunks = chunk_manager
+                .calculate_chunks(range_support.total_size, range_support.supports_range);
         }
 
         debug!(
@@ -719,9 +729,7 @@ impl DownloadTask {
             self.options.overwrite
         );
 
-        let final_exists = fs::try_exists(&final_path)
-            .await
-            .map_err(AppError::Io)?;
+        let final_exists = fs::try_exists(&final_path).await.map_err(AppError::Io)?;
         debug!(
             "目标文件存在检查完成: exists={}, cost_ms={}",
             final_exists,
@@ -764,9 +772,7 @@ impl DownloadTask {
         // 预分配文件空间
         let t_temp_exists = Instant::now();
         debug!("检查临时文件是否存在: path={}", temp_path.display());
-        let temp_exists = fs::try_exists(&temp_path)
-            .await
-            .map_err(AppError::Io)?;
+        let temp_exists = fs::try_exists(&temp_path).await.map_err(AppError::Io)?;
         debug!(
             "临时文件存在检查完成: exists={}, cost_ms={}",
             temp_exists,
@@ -826,11 +832,9 @@ impl DownloadTask {
             range_support.supports_range,
             state_clone.read().chunks.len()
         );
-        let download_result = self.download_with_retry(
-            &state_clone,
-            &temp_path,
-            range_support.supports_range,
-        ).await;
+        let download_result = self
+            .download_with_retry(&state_clone, &temp_path, range_support.supports_range)
+            .await;
 
         // 停止状态保存任务
         debug!("停止状态定时保存任务");
@@ -890,15 +894,14 @@ impl DownloadTask {
                 Ok(range_support) => {
                     // 获取文件名
                     let filename = if self.options.filename.is_none() {
-                        let head_result = self.client
-                            .head(&current_url)
-                            .send()
-                            .await;
+                        let head_result = self.client.head(&current_url).send().await;
 
                         match head_result {
-                            Ok(response) => {
-                                resolve_filename(&response, &current_url, self.options.filename.as_deref())
-                            }
+                            Ok(response) => resolve_filename(
+                                &response,
+                                &current_url,
+                                self.options.filename.as_deref(),
+                            ),
                             Err(e) => {
                                 let error = AppError::Network(format!("HEAD 请求失败: {}", e));
                                 if !self.handle_retry_error(&error).await {
@@ -964,10 +967,12 @@ impl DownloadTask {
             let chunk_count = state.read().chunks.len();
             let download_result = if supports_range && chunk_count > 1 {
                 // 多连接下载
-                self.download_multi_chunk(state, temp_path, progress_tx).await
+                self.download_multi_chunk(state, temp_path, progress_tx)
+                    .await
             } else {
                 // 单连接下载
-                self.download_single_chunk(state, temp_path, progress_tx).await
+                self.download_single_chunk(state, temp_path, progress_tx)
+                    .await
             };
 
             // 等待进度任务结束（通道在下载函数返回后会被关闭）
@@ -1016,7 +1021,10 @@ impl DownloadTask {
 
         // 对于 GitHub URL，尝试切换镜像
         let category = RetryStrategy::categorize_error(error);
-        if matches!(category, ErrorCategory::Temporary | ErrorCategory::RateLimited | ErrorCategory::DnsError) {
+        if matches!(
+            category,
+            ErrorCategory::Temporary | ErrorCategory::RateLimited | ErrorCategory::DnsError
+        ) {
             if self.try_switch_mirror() {
                 // 成功切换镜像，重置重试计数
                 self.retry_strategy.write().reset();
@@ -1031,14 +1039,23 @@ impl DownloadTask {
 
         // 执行重试等待（异步操作，不持有锁）
         let should_retry = match retry_action {
-            Some(RetryAction::WaitForNetwork { timeout, retry_num, max_retries }) => {
+            Some(RetryAction::WaitForNetwork {
+                timeout,
+                retry_num,
+                max_retries,
+            }) => {
                 warn!(
                     "网络不可用，等待网络恢复（重试 {}/{}）",
                     retry_num, max_retries
                 );
                 RetryStrategy::wait_for_network(timeout).await
             }
-            Some(RetryAction::Sleep { duration, retry_num, max_retries, reason }) => {
+            Some(RetryAction::Sleep {
+                duration,
+                retry_num,
+                max_retries,
+                reason,
+            }) => {
                 if reason.contains("限流") {
                     warn!(
                         "触发限流，等待 {:?} 后重试（重试 {}/{}）",

@@ -147,7 +147,9 @@ impl DownloadState {
         // URL 必须匹配（原始 URL 或解析后的 URL）
         let url_matches = self.url == url
             || self.resolved_url.as_deref() == Some(url)
-            || resolved_url.map_or(false, |r| self.url == r || self.resolved_url.as_deref() == Some(r));
+            || resolved_url.map_or(false, |r| {
+                self.url == r || self.resolved_url.as_deref() == Some(r)
+            });
 
         if !url_matches {
             debug!("URL 不匹配: 状态文件 URL={}, 请求 URL={}", self.url, url);
@@ -311,7 +313,10 @@ fn is_process_running(pid: u32) -> bool {
     use sysinfo::{Pid, System};
 
     let mut system = System::new();
-    system.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[Pid::from_u32(pid)]), true);
+    system.refresh_processes(
+        sysinfo::ProcessesToUpdate::Some(&[Pid::from_u32(pid)]),
+        true,
+    );
     system.process(Pid::from_u32(pid)).is_some()
 }
 
@@ -355,8 +360,8 @@ pub fn get_available_space(path: &Path) -> AppResult<u64> {
 #[cfg(windows)]
 pub fn get_available_space(path: &Path) -> AppResult<u64> {
     use std::os::windows::ffi::OsStrExt;
-    use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
     use windows::core::PCWSTR;
+    use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
 
     let path_wide: Vec<u16> = path
         .as_os_str()
@@ -456,7 +461,10 @@ mod tests {
             true,
         );
 
-        assert_eq!(state.state_file_path(), PathBuf::from("/tmp/file.zip.download"));
+        assert_eq!(
+            state.state_file_path(),
+            PathBuf::from("/tmp/file.zip.download")
+        );
         assert_eq!(state.temp_file_path(), PathBuf::from("/tmp/file.zip.part"));
         assert_eq!(state.final_file_path(), PathBuf::from("/tmp/file.zip"));
     }

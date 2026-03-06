@@ -265,15 +265,9 @@ mod tests {
             Some("中文.zip".to_string())
         );
 
-        assert_eq!(
-            extract_filename_from_url("https://example.com/"),
-            None
-        );
+        assert_eq!(extract_filename_from_url("https://example.com/"), None);
 
-        assert_eq!(
-            extract_filename_from_url("https://example.com/path/"),
-            None
-        );
+        assert_eq!(extract_filename_from_url("https://example.com/path/"), None);
     }
 
     #[test]

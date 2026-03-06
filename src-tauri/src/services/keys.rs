@@ -8,7 +8,7 @@ use aes::Aes128;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::RwLock;
-use tracing::{info};
+use tracing::info;
 
 /// 密钥长度（16 字节 = 128 位）
 const KEY_SIZE: usize = 16;
@@ -113,15 +113,11 @@ impl KeyStore {
     /// 获取原始密钥（字节数组）
     fn get_key(&self, name: &str) -> AppResult<[u8; KEY_SIZE]> {
         let hex_str = self.keys.get(name).ok_or_else(|| {
-            AppError::InvalidArgument(format!(
-                "密钥 {} 不存在于 {}",
-                name, self.loaded_file
-            ))
+            AppError::InvalidArgument(format!("密钥 {} 不存在于 {}", name, self.loaded_file))
         })?;
 
-        let bytes = hex::decode(hex_str).map_err(|e| {
-            AppError::InvalidArgument(format!("无效的密钥格式 {}: {}", name, e))
-        })?;
+        let bytes = hex::decode(hex_str)
+            .map_err(|e| AppError::InvalidArgument(format!("无效的密钥格式 {}: {}", name, e)))?;
 
         if bytes.len() != KEY_SIZE {
             return Err(AppError::InvalidArgument(format!(
@@ -212,15 +208,11 @@ impl KeyStore {
     /// 获取 header key（32 字节）
     pub fn get_header_key(&self) -> AppResult<[u8; 32]> {
         let hex_str = self.keys.get("header_key").ok_or_else(|| {
-            AppError::InvalidArgument(format!(
-                "header_key 不存在于 {}",
-                self.loaded_file
-            ))
+            AppError::InvalidArgument(format!("header_key 不存在于 {}", self.loaded_file))
         })?;
 
-        let bytes = hex::decode(hex_str).map_err(|e| {
-            AppError::InvalidArgument(format!("无效的 header_key 格式: {}", e))
-        })?;
+        let bytes = hex::decode(hex_str)
+            .map_err(|e| AppError::InvalidArgument(format!("无效的 header_key 格式: {}", e)))?;
 
         if bytes.len() != 32 {
             return Err(AppError::InvalidArgument(format!(
@@ -236,9 +228,10 @@ impl KeyStore {
 
     /// 获取 title kek
     pub fn get_title_kek(&self, index: usize) -> AppResult<[u8; KEY_SIZE]> {
-        self.title_keks.get(index).copied().ok_or_else(|| {
-            AppError::InvalidArgument(format!("title_kek_{:02x} 不存在", index))
-        })
+        self.title_keks
+            .get(index)
+            .copied()
+            .ok_or_else(|| AppError::InvalidArgument(format!("title_kek_{:02x} 不存在", index)))
     }
 
     /// 获取 key area key

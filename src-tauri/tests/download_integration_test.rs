@@ -6,9 +6,7 @@ use ns_emu_tools_lib::services::downloader::chunk_manager::ChunkManager;
 use ns_emu_tools_lib::services::downloader::filename::parse_content_disposition;
 use ns_emu_tools_lib::services::downloader::manager::DownloadManager;
 use ns_emu_tools_lib::services::downloader::rust_downloader::RustDownloader;
-use ns_emu_tools_lib::services::downloader::state_store::{
-    ChunkState, DownloadState, StateStore,
-};
+use ns_emu_tools_lib::services::downloader::state_store::{ChunkState, DownloadState, StateStore};
 use ns_emu_tools_lib::services::downloader::types::DownloadOptions;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -286,7 +284,10 @@ async fn test_multi_chunk_fast_fail_does_not_hang() {
     )
     .await;
 
-    assert!(result.is_ok(), "download should not hang waiting for slow chunk");
+    assert!(
+        result.is_ok(),
+        "download should not hang waiting for slow chunk"
+    );
     assert!(result.unwrap().is_err());
 
     downloader.stop().await.unwrap();
@@ -582,10 +583,7 @@ async fn test_cancel_download() {
 
     Mock::given(method("HEAD"))
         .and(path("/large.zip"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("Content-Length", "100000000"),
-        )
+        .respond_with(ResponseTemplate::new(200).insert_header("Content-Length", "100000000"))
         .mount(&mock_server)
         .await;
 
@@ -739,27 +737,45 @@ fn test_error_categorization() {
 
     // 404 错误 - 永久错误
     let error = AppError::Network("404 Not Found".to_string());
-    assert_eq!(RetryStrategy::categorize_error(&error), ErrorCategory::Permanent);
+    assert_eq!(
+        RetryStrategy::categorize_error(&error),
+        ErrorCategory::Permanent
+    );
 
     // 429 错误 - 限流
     let error = AppError::Network("429 Too Many Requests".to_string());
-    assert_eq!(RetryStrategy::categorize_error(&error), ErrorCategory::RateLimited);
+    assert_eq!(
+        RetryStrategy::categorize_error(&error),
+        ErrorCategory::RateLimited
+    );
 
     // 500 错误 - 临时错误
     let error = AppError::Network("500 Internal Server Error".to_string());
-    assert_eq!(RetryStrategy::categorize_error(&error), ErrorCategory::Temporary);
+    assert_eq!(
+        RetryStrategy::categorize_error(&error),
+        ErrorCategory::Temporary
+    );
 
     // 超时 - 临时错误
     let error = AppError::Network("connection timeout".to_string());
-    assert_eq!(RetryStrategy::categorize_error(&error), ErrorCategory::Temporary);
+    assert_eq!(
+        RetryStrategy::categorize_error(&error),
+        ErrorCategory::Temporary
+    );
 
     // SSL 错误 - 不可重试
     let error = AppError::Network("SSL certificate error".to_string());
-    assert_eq!(RetryStrategy::categorize_error(&error), ErrorCategory::SslError);
+    assert_eq!(
+        RetryStrategy::categorize_error(&error),
+        ErrorCategory::SslError
+    );
 
     // DNS 错误 - 可重试
     let error = AppError::Network("DNS resolution failed".to_string());
-    assert_eq!(RetryStrategy::categorize_error(&error), ErrorCategory::DnsError);
+    assert_eq!(
+        RetryStrategy::categorize_error(&error),
+        ErrorCategory::DnsError
+    );
 }
 
 /// 测试指数退避

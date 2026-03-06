@@ -167,11 +167,8 @@ impl ChunkManager {
         }
 
         // 计算实际分块数量
-        let chunk_count = std::cmp::min(
-            self.split as u64,
-            total_size / self.min_split_size,
-        )
-        .max(1) as usize;
+        let chunk_count =
+            std::cmp::min(self.split as u64, total_size / self.min_split_size).max(1) as usize;
 
         let chunk_size = total_size / chunk_count as u64;
         let mut chunks = Vec::with_capacity(chunk_count);
@@ -187,7 +184,10 @@ impl ChunkManager {
             chunks.push(ChunkState::new(i, start, end));
         }
 
-        debug!("分块策略: {} 个分块，每块约 {} 字节", chunk_count, chunk_size);
+        debug!(
+            "分块策略: {} 个分块，每块约 {} 字节",
+            chunk_count, chunk_size
+        );
         chunks
     }
 
@@ -228,10 +228,7 @@ impl ChunkManager {
 
         debug!(
             "发送分块请求: index={}, range=bytes={}-{}, url={}",
-            chunk.index,
-            current_pos,
-            end,
-            url
+            chunk.index, current_pos, end, url
         );
 
         // 发送 Range 请求
@@ -377,7 +374,11 @@ impl ChunkManager {
 
         // 打开文件
         let mut file = if resume_from > 0 {
-            debug!("单连接打开文件续写: path={}, offset={}", file_path.display(), resume_from);
+            debug!(
+                "单连接打开文件续写: path={}, offset={}",
+                file_path.display(),
+                resume_from
+            );
             let mut f = OpenOptions::new()
                 .write(true)
                 .create(true)

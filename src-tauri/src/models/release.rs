@@ -144,7 +144,10 @@ impl ReleaseInfo {
     pub fn find_windows_asset(&self) -> Option<&ReleaseAsset> {
         use tracing::info;
 
-        info!("开始查找 Windows 资源，总共有 {} 个 assets", self.assets.len());
+        info!(
+            "开始查找 Windows 资源，总共有 {} 个 assets",
+            self.assets.len()
+        );
 
         for asset in &self.assets {
             info!("  可用文件: {}", asset.name);
@@ -232,7 +235,10 @@ mod tests {
         let release = ReleaseInfo::from_forgejo_api(&json).unwrap();
         assert_eq!(release.tag_name, "v0.0.4-rc3");
         assert_eq!(release.assets.len(), 1);
-        assert_eq!(release.assets[0].download_url, "https://git.eden-emu.dev/attachments/test.zip");
+        assert_eq!(
+            release.assets[0].download_url,
+            "https://git.eden-emu.dev/attachments/test.zip"
+        );
     }
 
     #[test]

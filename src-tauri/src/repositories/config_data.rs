@@ -29,12 +29,10 @@ impl GithubMirror {
 
 /// 获取可用的固件下载源
 pub fn get_available_firmware_sources() -> Vec<NameValuePair> {
-    vec![
-        (
-            "由 github.com/THZoria/NX_Firmware 提供的固件".to_string(),
-            "github".to_string(),
-        ),
-    ]
+    vec![(
+        "由 github.com/THZoria/NX_Firmware 提供的固件".to_string(),
+        "github".to_string(),
+    )]
 }
 
 /// 获取可用的 GitHub 镜像列表
@@ -154,7 +152,10 @@ pub async fn get_game_data() -> AppResult<HashMap<String, Value>> {
     match resp {
         Ok(response) => {
             if response.status().is_success() {
-                let data = response.json::<HashMap<String, Value>>().await.map_err(|e| AppError::Unknown(e.to_string()))?;
+                let data = response
+                    .json::<HashMap<String, Value>>()
+                    .await
+                    .map_err(|e| AppError::Unknown(e.to_string()))?;
                 info!("成功获取 {} 个游戏数据", data.len());
                 Ok(data)
             } else {

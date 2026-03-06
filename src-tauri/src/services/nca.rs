@@ -208,9 +208,7 @@ impl NcaHeader {
     /// 解析 NCA 头部数据
     pub fn parse(data: &[u8], was_encrypted: bool) -> AppResult<Self> {
         if data.len() < NCA_HEADER_SIZE {
-            return Err(AppError::InvalidArgument(
-                "NCA 头部数据不完整".to_string(),
-            ));
+            return Err(AppError::InvalidArgument("NCA 头部数据不完整".to_string()));
         }
 
         // 读取魔术字节
@@ -236,7 +234,11 @@ impl NcaHeader {
         let key_index = data[NCA_KEY_INDEX_OFFSET];
 
         // 读取 NCA 大小
-        let size = u64::from_le_bytes(data[NCA_SIZE_OFFSET..NCA_SIZE_OFFSET + 8].try_into().unwrap());
+        let size = u64::from_le_bytes(
+            data[NCA_SIZE_OFFSET..NCA_SIZE_OFFSET + 8]
+                .try_into()
+                .unwrap(),
+        );
 
         // 读取 Title ID (8 字节，little-endian)
         let title_id_bytes = &data[NCA_TITLE_ID_OFFSET..NCA_TITLE_ID_OFFSET + 8];
@@ -256,10 +258,8 @@ impl NcaHeader {
             let offset = NCA_SECTION_TABLE_OFFSET + i * NCA_SECTION_ENTRY_SIZE;
             let section_data = &data[offset..offset + NCA_SECTION_ENTRY_SIZE];
 
-            let media_start_offset =
-                u32::from_le_bytes(section_data[0..4].try_into().unwrap());
-            let media_end_offset =
-                u32::from_le_bytes(section_data[4..8].try_into().unwrap());
+            let media_start_offset = u32::from_le_bytes(section_data[0..4].try_into().unwrap());
+            let media_end_offset = u32::from_le_bytes(section_data[4..8].try_into().unwrap());
 
             let enabled = media_end_offset > media_start_offset;
 
@@ -277,7 +277,8 @@ impl NcaHeader {
             let header_data = &data[offset..offset + NCA_SECTION_HEADER_SIZE];
 
             let fs_type = FsType::from_u8(header_data[0x03]).unwrap_or(FsType::None);
-            let crypto_type_val = CryptoType::from_u8(header_data[0x04]).unwrap_or(CryptoType::None);
+            let crypto_type_val =
+                CryptoType::from_u8(header_data[0x04]).unwrap_or(CryptoType::None);
 
             // Crypto Counter 在 0x140-0x148
             let mut crypto_counter = [0u8; 16];
@@ -297,12 +298,13 @@ impl NcaHeader {
         // 解密 Key Block
         let mut decrypted_keys = Vec::new();
         if was_encrypted && keys::is_keys_loaded() {
-            let master_key_index = std::cmp::max(crypto_type, crypto_type2).saturating_sub(1) as usize;
+            let master_key_index =
+                std::cmp::max(crypto_type, crypto_type2).saturating_sub(1) as usize;
             let key_block = &data[NCA_KEY_BLOCK_OFFSET..NCA_KEY_BLOCK_OFFSET + 0x40];
 
-            if let Ok(keys_result) = keys::with_keys(|key_store| {
-                key_store.unwrap_key_block(key_block, master_key_index)
-            }) {
+            if let Ok(keys_result) =
+                keys::with_keys(|key_store| key_store.unwrap_key_block(key_block, master_key_index))
+            {
                 decrypted_keys = keys_result;
             }
         }
@@ -507,7 +509,8 @@ pub fn extract_firmware_version<P: AsRef<Path>>(nca_path: P) -> AppResult<String
     // 限制读取大小
     let max_read_size = 10 * 1024 * 1024; // 10 MB
     let section = &reader.header.sections[section_idx];
-    let section_size = ((section.media_end_offset - section.media_start_offset) as u64) * MEDIA_SIZE;
+    let section_size =
+        ((section.media_end_offset - section.media_start_offset) as u64) * MEDIA_SIZE;
     let read_size = std::cmp::min(section_size, max_read_size) as usize;
 
     let section_data = reader.read_section_range(section_idx, 0, read_size)?;
@@ -548,7 +551,9 @@ fn find_pattern(data: &[u8], pattern: &[u8]) -> Option<usize> {
 }
 
 /// 扫描目录中的所有 NCA 文件，找到系统版本归档
-pub fn find_system_version_nca<P: AsRef<Path>>(firmware_dir: P) -> AppResult<Option<std::path::PathBuf>> {
+pub fn find_system_version_nca<P: AsRef<Path>>(
+    firmware_dir: P,
+) -> AppResult<Option<std::path::PathBuf>> {
     let firmware_dir = firmware_dir.as_ref();
     info!("扫描固件目录: {}", firmware_dir.display());
 

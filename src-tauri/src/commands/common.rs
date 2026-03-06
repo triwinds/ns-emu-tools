@@ -102,7 +102,9 @@ pub async fn open_config_folder() -> Result<(), String> {
 #[command]
 pub fn open_url(url: String, app: AppHandle) -> Result<(), String> {
     info!("打开 URL: {}", url);
-    app.opener().open_url(&url, None::<&str>).map_err(|e| e.to_string())
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
 /// 更新设置
@@ -189,9 +191,7 @@ pub async fn check_update(include_prerelease: bool) -> Result<UpdateCheckResult,
 /// 加载变更日志
 #[command]
 pub async fn load_change_log() -> Result<String, String> {
-    app_info::load_change_log()
-        .await
-        .map_err(|e| e.to_string())
+    app_info::load_change_log().await.map_err(|e| e.to_string())
 }
 
 /// 获取可用的固件下载源
@@ -208,7 +208,8 @@ pub fn get_github_mirrors() -> Vec<(String, String, String)> {
 
 /// 获取游戏数据映射
 #[command]
-pub async fn get_game_data() -> Result<std::collections::HashMap<String, serde_json::Value>, String> {
+pub async fn get_game_data() -> Result<std::collections::HashMap<String, serde_json::Value>, String>
+{
     config_data::get_game_data()
         .await
         .map_err(|e| e.to_string())
@@ -216,7 +217,8 @@ pub async fn get_game_data() -> Result<std::collections::HashMap<String, serde_j
 
 /// 获取可用固件信息列表
 #[command]
-pub async fn get_available_firmware_infos() -> Result<Vec<crate::services::firmware::FirmwareInfo>, String> {
+pub async fn get_available_firmware_infos(
+) -> Result<Vec<crate::services::firmware::FirmwareInfo>, String> {
     crate::services::firmware::get_firmware_infos()
         .await
         .map_err(|e| e.to_string())
@@ -231,7 +233,7 @@ pub fn load_history_path(emu_type: String) -> Result<Vec<String>, String> {
 /// 检测固件版本
 #[command]
 pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result<String, String> {
-    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
+    use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 
     info!("检测 {} 固件版本", emu_type);
 
@@ -273,93 +275,112 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
     ];
 
     // Send started event
-    let _ = window.emit("installation-event", ProgressEvent::Started { steps: steps.clone() });
+    let _ = window.emit(
+        "installation-event",
+        ProgressEvent::Started {
+            steps: steps.clone(),
+        },
+    );
 
     // Step 2 & 3: Find NCA and extract version (keys are loaded in detect functions)
-    let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "find_nca".to_string(),
-            title: "查找固件文件".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: String::new(),
-            eta: String::new(),
-            error: None,
-            download_source: None,
+    let _ = window.emit(
+        "installation-event",
+        ProgressEvent::StepUpdate {
+            step: ProgressStep {
+                id: "find_nca".to_string(),
+                title: "查找固件文件".to_string(),
+                status: ProgressStatus::Running,
+                step_type: "normal".to_string(),
+                progress: 0.0,
+                download_speed: String::new(),
+                eta: String::new(),
+                error: None,
+                download_source: None,
+            },
         },
-    });
+    );
 
     let result = match emu_type.as_str() {
-        "yuzu" => {
-            crate::services::firmware::detect_yuzu_firmware_version(Some(&window))
-                .await
-                .map_err(|e| e.to_string())
-        }
-        "ryujinx" => {
-            crate::services::firmware::detect_ryujinx_firmware_version(Some(&window))
-                .await
-                .map_err(|e| e.to_string())
-        }
+        "yuzu" => crate::services::firmware::detect_yuzu_firmware_version(Some(&window))
+            .await
+            .map_err(|e| e.to_string()),
+        "ryujinx" => crate::services::firmware::detect_ryujinx_firmware_version(Some(&window))
+            .await
+            .map_err(|e| e.to_string()),
         _ => Err(format!("不支持的模拟器类型: {}", emu_type)),
     };
 
     match result {
         Ok(version) => {
-            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "find_nca".to_string(),
-                    title: "查找固件文件".to_string(),
-                    status: ProgressStatus::Success,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: None,
-            download_source: None,
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "find_nca".to_string(),
+                        title: "查找固件文件".to_string(),
+                        status: ProgressStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: None,
+                        download_source: None,
+                    },
                 },
-            });
+            );
 
-            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract_version".to_string(),
-                    title: "提取版本信息".to_string(),
-                    status: ProgressStatus::Success,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: None,
-            download_source: None,
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "extract_version".to_string(),
+                        title: "提取版本信息".to_string(),
+                        status: ProgressStatus::Success,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: None,
+                        download_source: None,
+                    },
                 },
-            });
+            );
 
-            let _ = window.emit("installation-event", ProgressEvent::Finished {
-                success: true,
-                message: Some(format!("检测到固件版本: {}", version))
-            });
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::Finished {
+                    success: true,
+                    message: Some(format!("检测到固件版本: {}", version)),
+                },
+            );
 
             Ok(version)
         }
         Err(e) => {
-            let _ = window.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "find_nca".to_string(),
-                    title: "查找固件文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: Some(e.clone()),
-            download_source: None,
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "find_nca".to_string(),
+                        title: "查找固件文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: Some(e.clone()),
+                        download_source: None,
+                    },
                 },
-            });
+            );
 
-            let _ = window.emit("installation-event", ProgressEvent::Finished {
-                success: false,
-                message: Some(e.clone())
-            });
+            let _ = window.emit(
+                "installation-event",
+                ProgressEvent::Finished {
+                    success: false,
+                    message: Some(e.clone()),
+                },
+            );
 
             Err(e)
         }
@@ -391,8 +412,7 @@ pub async fn download_app_update(
         include_prerelease, download_url
     );
 
-    match crate::services::updater::download_update(&window, include_prerelease, download_url)
-        .await
+    match crate::services::updater::download_update(&window, include_prerelease, download_url).await
     {
         Ok(path) => Ok(path.to_string_lossy().to_string()),
         Err(e) => Err(e.to_string()),
@@ -456,7 +476,9 @@ pub async fn update_self_by_tag(tag: String, window: Window) -> Result<(), Strin
 /// # 参数
 /// - `remove_files`: 是否删除已下载的文件和 aria2 控制文件
 #[command]
-pub async fn cancel_download_command(remove_files: Option<bool>) -> Result<crate::models::response::ApiResponse<Option<String>>, String> {
+pub async fn cancel_download_command(
+    remove_files: Option<bool>,
+) -> Result<crate::models::response::ApiResponse<Option<String>>, String> {
     use crate::models::response::ApiResponse;
     use crate::services::downloader::get_download_manager;
 
@@ -464,22 +486,19 @@ pub async fn cancel_download_command(remove_files: Option<bool>) -> Result<crate
     info!("取消下载任务，删除文件: {}", should_remove);
 
     match get_download_manager().await {
-        Ok(manager) => {
-            match manager.cancel_all(should_remove).await {
-                Ok(file_path) => {
-                    info!("下载已取消，文件路径: {:?}", file_path);
-                    Ok(ApiResponse::success(file_path))
-                }
-                Err(e) => {
-                    error!("取消下载失败: {}", e);
-                    Err(e.to_string())
-                }
+        Ok(manager) => match manager.cancel_all(should_remove).await {
+            Ok(file_path) => {
+                info!("下载已取消，文件路径: {:?}", file_path);
+                Ok(ApiResponse::success(file_path))
             }
-        }
+            Err(e) => {
+                error!("取消下载失败: {}", e);
+                Err(e.to_string())
+            }
+        },
         Err(e) => {
             error!("获取下载管理器失败: {}", e);
             Err(e.to_string())
         }
     }
 }
-

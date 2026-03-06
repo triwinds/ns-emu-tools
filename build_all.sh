@@ -9,7 +9,7 @@ echo
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Step 1: Build frontend
-echo "[1/2] Building frontend..."
+echo "[1/3] Building frontend..."
 cd "$ROOT_DIR/frontend"
 if [ ! -f package.json ]; then
     echo "Error: frontend/package.json not found!"
@@ -30,14 +30,24 @@ fi
 echo "Frontend build completed successfully!"
 echo
 
-# Step 2: Build Tauri backend
-echo "[2/2] Building Tauri backend..."
+# Step 2: Format Rust backend
+echo "[2/3] Formatting Rust backend..."
 cd "$ROOT_DIR/src-tauri"
 if [ ! -f Cargo.toml ]; then
     echo "Error: src-tauri/Cargo.toml not found!"
     exit 1
 fi
 
+cargo fmt
+if [ $? -ne 0 ]; then
+    echo "Error: Rust formatting failed!"
+    exit 1
+fi
+echo "Rust formatting completed successfully!"
+echo
+
+# Step 3: Build Tauri backend
+echo "[3/3] Building Tauri backend..."
 cargo build --release
 if [ $? -ne 0 ]; then
     echo "Error: Tauri build failed!"

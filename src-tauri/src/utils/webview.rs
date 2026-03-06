@@ -3,9 +3,9 @@
 //! 提供 WebView2 运行时检测和自动安装功能
 
 #[cfg(target_os = "windows")]
-use tracing::{info, warn, error};
-#[cfg(target_os = "windows")]
 use std::path::PathBuf;
+#[cfg(target_os = "windows")]
+use tracing::{error, info, warn};
 
 /// 检查 WebView2 是否已安装
 ///
@@ -13,9 +13,9 @@ use std::path::PathBuf;
 /// 在其他平台上始终返回 true（因为它们使用系统 webview）
 #[cfg(target_os = "windows")]
 pub fn check_webview2_installed() -> bool {
-    use windows::Win32::System::Registry::*;
     use windows::core::w;
     use windows::Win32::Foundation::ERROR_SUCCESS;
+    use windows::Win32::System::Registry::*;
 
     // WebView2 Runtime 的注册表位置
     let registry_paths = [
@@ -25,18 +25,12 @@ pub fn check_webview2_installed() -> bool {
 
     for path in &registry_paths {
         let mut key = HKEY::default();
-        let result = unsafe {
-            RegOpenKeyExW(
-                HKEY_LOCAL_MACHINE,
-                *path,
-                0,
-                KEY_READ,
-                &mut key,
-            )
-        };
+        let result = unsafe { RegOpenKeyExW(HKEY_LOCAL_MACHINE, *path, 0, KEY_READ, &mut key) };
 
         if result == ERROR_SUCCESS {
-            unsafe { let _ = RegCloseKey(key); }
+            unsafe {
+                let _ = RegCloseKey(key);
+            }
             info!("检测到 WebView2 Runtime 已安装");
             return true;
         }
@@ -45,18 +39,12 @@ pub fn check_webview2_installed() -> bool {
     // 也检查用户级别的安装
     for path in &registry_paths {
         let mut key = HKEY::default();
-        let result = unsafe {
-            RegOpenKeyExW(
-                HKEY_CURRENT_USER,
-                *path,
-                0,
-                KEY_READ,
-                &mut key,
-            )
-        };
+        let result = unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, *path, 0, KEY_READ, &mut key) };
 
         if result == ERROR_SUCCESS {
-            unsafe { let _ = RegCloseKey(key); }
+            unsafe {
+                let _ = RegCloseKey(key);
+            }
             info!("检测到 WebView2 Runtime 已安装（用户级别）");
             return true;
         }
@@ -110,7 +98,7 @@ fn install_webview2(installer_path: &PathBuf) -> anyhow::Result<()> {
 
     // 运行安装程序
     let status = std::process::Command::new(installer_path)
-        .arg("/install")  // 静默安装
+        .arg("/install") // 静默安装
         .status()?;
 
     if status.success() {
@@ -125,8 +113,8 @@ fn install_webview2(installer_path: &PathBuf) -> anyhow::Result<()> {
 /// 显示消息对话框
 #[cfg(target_os = "windows")]
 fn show_message_box(title: &str, message: &str, is_question: bool) -> bool {
-    use windows::Win32::UI::WindowsAndMessaging::*;
     use windows::core::PCWSTR;
+    use windows::Win32::UI::WindowsAndMessaging::*;
 
     let title_wide: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
     let message_wide: Vec<u16> = message.encode_utf16().chain(std::iter::once(0)).collect();
@@ -184,9 +172,7 @@ pub fn check_and_install_on_startup() -> anyhow::Result<()> {
     let rt = tokio::runtime::Runtime::new()?;
 
     // 下载安装程序
-    let installer_path = rt.block_on(async {
-        download_webview2_bootstrapper().await
-    })?;
+    let installer_path = rt.block_on(async { download_webview2_bootstrapper().await })?;
 
     // 运行安装程序
     install_webview2(&installer_path)?;

@@ -19,9 +19,7 @@ const MSVC_KEY_DLL: &str = "msvcp140_atomic_wait.dll";
 /// 通过检查系统目录中是否存在关键 DLL 文件来判断
 pub fn is_msvc_installed() -> bool {
     if let Ok(windir) = std::env::var("windir") {
-        let dll_path = PathBuf::from(windir)
-            .join("System32")
-            .join(MSVC_KEY_DLL);
+        let dll_path = PathBuf::from(windir).join("System32").join(MSVC_KEY_DLL);
 
         let installed = dll_path.exists();
         if installed {
@@ -49,13 +47,11 @@ async fn download_msvc_installer() -> AppResult<PathBuf> {
         ..Default::default()
     };
 
-    let result = aria2.download_and_wait(
-        MSVC_DOWNLOAD_URL,
-        options,
-        |progress| {
+    let result = aria2
+        .download_and_wait(MSVC_DOWNLOAD_URL, options, |progress| {
             info!("下载进度: {}%", progress.percentage);
-        },
-    ).await?;
+        })
+        .await?;
 
     info!("MSVC 安装包下载完成: {}", result.path.display());
     Ok(result.path)

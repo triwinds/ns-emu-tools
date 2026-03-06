@@ -36,8 +36,7 @@ pub fn app_data_dir() -> PathBuf {
     } else {
         // 降级方案：使用当前目录
         warn!("无法获取应用程序数据目录，使用当前目录");
-        std::env::current_dir()
-            .unwrap_or_else(|_| PathBuf::from("."))
+        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
     }
 }
 

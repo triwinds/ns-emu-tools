@@ -10,9 +10,9 @@
 
 use crate::config::get_config;
 use crate::error::{AppError, AppResult};
-use crate::services::network::{get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA};
 #[cfg(target_os = "windows")]
 use crate::services::network::request_github_api;
+use crate::services::network::{get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA};
 use aria2_ws::response::GlobalStat as Aria2GlobalStat;
 use aria2_ws::response::Status as Aria2Status;
 use aria2_ws::{Client, TaskOptions};
@@ -331,9 +331,10 @@ impl Aria2Manager {
 
         // 根据配置添加选项
         let config = get_config();
-        debug!("aria2 配置: disable_ipv6={}, use_doh={}",
-            config.setting.download.disable_aria2_ipv6,
-            config.setting.network.use_doh);
+        debug!(
+            "aria2 配置: disable_ipv6={}, use_doh={}",
+            config.setting.download.disable_aria2_ipv6, config.setting.network.use_doh
+        );
         if config.setting.download.disable_aria2_ipv6 {
             args.push("--disable-ipv6=true".to_string());
             debug!("禁用 IPv6");
@@ -342,7 +343,9 @@ impl Aria2Manager {
                 debug!("使用 DNS over HTTPS (IPv4)");
             }
         } else if config.setting.network.use_doh {
-            args.push("--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29".to_string());
+            args.push(
+                "--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29".to_string(),
+            );
             debug!("使用 DNS over HTTPS (IPv4+IPv6)");
         }
 
@@ -471,11 +474,7 @@ impl Aria2Manager {
     }
 
     /// 添加下载任务
-    pub async fn download(
-        &self,
-        url: &str,
-        options: Aria2DownloadOptions,
-    ) -> AppResult<String> {
+    pub async fn download(&self, url: &str, options: Aria2DownloadOptions) -> AppResult<String> {
         self.ensure_connected().await?;
 
         // 处理 URL（应用镜像）
@@ -536,8 +535,14 @@ impl Aria2Manager {
 
         // 额外选项
         let mut extra = serde_json::Map::new();
-        extra.insert("min-split-size".to_string(), serde_json::json!(options.min_split_size));
-        extra.insert("allow-overwrite".to_string(), serde_json::json!(options.overwrite.to_string()));
+        extra.insert(
+            "min-split-size".to_string(),
+            serde_json::json!(options.min_split_size),
+        );
+        extra.insert(
+            "allow-overwrite".to_string(),
+            serde_json::json!(options.overwrite.to_string()),
+        );
         extra.insert("auto-file-renaming".to_string(), serde_json::json!("false"));
 
         task_options.extra_options = extra.clone();
@@ -634,7 +639,11 @@ impl Aria2Manager {
                         .map(|s| s.to_string_lossy().to_string())
                         .unwrap_or_default();
 
-                    debug!("下载文件路径: {}, 大小: {} bytes", path.display(), progress.total);
+                    debug!(
+                        "下载文件路径: {}, 大小: {} bytes",
+                        path.display(),
+                        progress.total
+                    );
 
                     // 清理记录
                     self.active_downloads.write().remove(&gid);
@@ -652,7 +661,10 @@ impl Aria2Manager {
                     let error_code = status.error_code.map(|c| c.to_string()).unwrap_or_default();
                     let error_msg = status.error_message.clone().unwrap_or_default();
 
-                    warn!("下载失败 [GID: {}], 错误码: {}, 错误信息: {}", gid, error_code, error_msg);
+                    warn!(
+                        "下载失败 [GID: {}], 错误码: {}, 错误信息: {}",
+                        gid, error_code, error_msg
+                    );
 
                     // 清理记录
                     self.active_downloads.write().remove(&gid);
@@ -740,13 +752,10 @@ impl Aria2Manager {
             .as_ref()
             .ok_or_else(|| AppError::Aria2("aria2 客户端未连接".to_string()))?;
 
-        client
-            .pause(gid)
-            .await
-            .map_err(|e| {
-                warn!("暂停下载失败 [GID: {}]: {}", gid, e);
-                AppError::Aria2(format!("暂停下载失败: {}", e))
-            })?;
+        client.pause(gid).await.map_err(|e| {
+            warn!("暂停下载失败 [GID: {}]: {}", gid, e);
+            AppError::Aria2(format!("暂停下载失败: {}", e))
+        })?;
 
         info!("下载已暂停 [GID: {}]", gid);
         Ok(())
@@ -760,13 +769,10 @@ impl Aria2Manager {
             .as_ref()
             .ok_or_else(|| AppError::Aria2("aria2 客户端未连接".to_string()))?;
 
-        client
-            .unpause(gid)
-            .await
-            .map_err(|e| {
-                warn!("恢复下载失败 [GID: {}]: {}", gid, e);
-                AppError::Aria2(format!("恢复下载失败: {}", e))
-            })?;
+        client.unpause(gid).await.map_err(|e| {
+            warn!("恢复下载失败 [GID: {}]: {}", gid, e);
+            AppError::Aria2(format!("恢复下载失败: {}", e))
+        })?;
 
         info!("下载已恢复 [GID: {}]", gid);
         Ok(())
@@ -780,13 +786,10 @@ impl Aria2Manager {
             .as_ref()
             .ok_or_else(|| AppError::Aria2("aria2 客户端未连接".to_string()))?;
 
-        client
-            .remove(gid)
-            .await
-            .map_err(|e| {
-                warn!("取消下载失败 [GID: {}]: {}", gid, e);
-                AppError::Aria2(format!("取消下载失败: {}", e))
-            })?;
+        client.remove(gid).await.map_err(|e| {
+            warn!("取消下载失败 [GID: {}]: {}", gid, e);
+            AppError::Aria2(format!("取消下载失败: {}", e))
+        })?;
 
         self.active_downloads.write().remove(gid);
         info!("下载已取消 [GID: {}]", gid);
@@ -1018,7 +1021,11 @@ fn find_available_port() -> AppResult<u16> {
 /// 注意：此函数已被 `ensure_aria2_installed()` 替代，保留用于兼容性
 #[allow(dead_code)]
 fn get_aria2_path() -> AppResult<PathBuf> {
-    let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
+    let aria2_name = if cfg!(windows) {
+        "aria2c.exe"
+    } else {
+        "aria2c"
+    };
 
     // 获取可执行文件所在目录（打包后的应用程序目录）
     if let Ok(exe_path) = std::env::current_exe() {
@@ -1057,7 +1064,9 @@ fn get_aria2_path() -> AppResult<PathBuf> {
         // 开发时可能从 src-tauri 目录运行，检查上级目录的 module
         let parent_module_path = cwd.join("..").join("module").join(aria2_name);
         if parent_module_path.exists() {
-            let canonical = parent_module_path.canonicalize().unwrap_or(parent_module_path);
+            let canonical = parent_module_path
+                .canonicalize()
+                .unwrap_or(parent_module_path);
             debug!("找到 aria2c: {} (parent/module)", canonical.display());
             return Ok(canonical);
         }
@@ -1107,7 +1116,9 @@ pub(crate) fn resolve_aria2_download_url(
         return origin_url.to_string();
     }
 
-    let mirror = if github_download_mirror.is_empty() || github_download_mirror == "cloudflare_load_balance" {
+    let mirror = if github_download_mirror.is_empty()
+        || github_download_mirror == "cloudflare_load_balance"
+    {
         DEFAULT_ARIA2_DOWNLOAD_MIRROR
     } else {
         github_download_mirror
@@ -1223,13 +1234,12 @@ async fn download_aria2(asset_url: &str, save_path: &PathBuf) -> AppResult<()> {
 
     // 创建父目录
     if let Some(parent) = save_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| AppError::Aria2(format!("创建目录失败: {}", e)))?;
+        fs::create_dir_all(parent).map_err(|e| AppError::Aria2(format!("创建目录失败: {}", e)))?;
     }
 
     // 写入文件
-    let mut file = fs::File::create(save_path)
-        .map_err(|e| AppError::Aria2(format!("创建文件失败: {}", e)))?;
+    let mut file =
+        fs::File::create(save_path).map_err(|e| AppError::Aria2(format!("创建文件失败: {}", e)))?;
 
     file.write_all(&bytes)
         .map_err(|e| AppError::Aria2(format!("写入文件失败: {}", e)))?;
@@ -1256,13 +1266,13 @@ pub(crate) fn extract_aria2(archive_path: &PathBuf, target_dir: &PathBuf) -> App
     match filename {
         name if name.ends_with(".zip") => extract_zip(archive_path, target_dir),
         name if name.ends_with(".7z") => extract_7z(archive_path, target_dir),
-        name if name.ends_with(".tar.gz") || name.ends_with(".tar.bz2") || name.ends_with(".tar.xz") => {
+        name if name.ends_with(".tar.gz")
+            || name.ends_with(".tar.bz2")
+            || name.ends_with(".tar.xz") =>
+        {
             extract_tar(archive_path, target_dir)
         }
-        _ => Err(AppError::Aria2(format!(
-            "不支持的压缩格式: {}",
-            filename
-        ))),
+        _ => Err(AppError::Aria2(format!("不支持的压缩格式: {}", filename))),
     }
 }
 
@@ -1377,7 +1387,11 @@ fn extract_tar(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBu
 
     // 如果 aria2c 在子目录中，移动到目标目录
     if aria2c_path.parent() != Some(target_dir.as_path()) {
-        let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
+        let aria2_name = if cfg!(windows) {
+            "aria2c.exe"
+        } else {
+            "aria2c"
+        };
         let final_path = target_dir.join(aria2_name);
         fs::copy(&aria2c_path, &final_path)
             .map_err(|e| AppError::Aria2(format!("移动 aria2c 失败: {}", e)))?;
@@ -1412,7 +1426,11 @@ fn extract_tar(archive_path: &PathBuf, target_dir: &PathBuf) -> AppResult<PathBu
 fn find_aria2c_in_dir(dir: &PathBuf) -> AppResult<PathBuf> {
     use walkdir::WalkDir;
 
-    let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
+    let aria2_name = if cfg!(windows) {
+        "aria2c.exe"
+    } else {
+        "aria2c"
+    };
 
     for entry in WalkDir::new(dir) {
         let entry = entry.map_err(|e| AppError::Aria2(format!("遍历目录失败: {}", e)))?;
@@ -1488,7 +1506,9 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
             .iter()
             .find(|a| {
                 let name = a.name.to_lowercase();
-                name.contains("win") && name.contains("64bit") && (name.ends_with(".zip") || name.ends_with(".7z"))
+                name.contains("win")
+                    && name.contains("64bit")
+                    && (name.ends_with(".zip") || name.ends_with(".7z"))
             })
             .ok_or_else(|| AppError::Aria2("未找到适合的 aria2 Windows 版本".to_string()))?;
 
@@ -1519,7 +1539,11 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
 
 /// 尝试查找 aria2 路径（不抛出错误）
 pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
-    let aria2_name = if cfg!(windows) { "aria2c.exe" } else { "aria2c" };
+    let aria2_name = if cfg!(windows) {
+        "aria2c.exe"
+    } else {
+        "aria2c"
+    };
 
     // 获取可执行文件所在目录（打包后的应用程序目录）
     if let Ok(exe_path) = std::env::current_exe() {
@@ -1579,8 +1603,8 @@ pub(crate) fn get_aria2_install_dir() -> AppResult<PathBuf> {
     }
 
     // 回退到当前工作目录
-    let cwd = std::env::current_dir()
-        .map_err(|e| AppError::Aria2(format!("获取当前目录失败: {}", e)))?;
+    let cwd =
+        std::env::current_dir().map_err(|e| AppError::Aria2(format!("获取当前目录失败: {}", e)))?;
     Ok(cwd)
 }
 
@@ -1724,10 +1748,7 @@ mod tests {
         assert!(result.path.exists(), "下载文件不存在");
         assert_eq!(result.filename, "test_download.bin");
         assert!(result.size > 0, "文件大小应大于 0");
-        assert!(
-            progress_count.load(Ordering::SeqCst) > 0,
-            "应该有进度更新"
-        );
+        assert!(progress_count.load(Ordering::SeqCst) > 0, "应该有进度更新");
 
         // 清理
         let _ = std::fs::remove_file(&result.path);
@@ -1769,18 +1790,30 @@ mod tests {
 
         // 暂停
         manager.pause(&gid).await.expect("暂停失败");
-        let progress = manager.get_download_progress(&gid).await.expect("获取进度失败");
+        let progress = manager
+            .get_download_progress(&gid)
+            .await
+            .expect("获取进度失败");
         assert!(
-            matches!(progress.status, Aria2DownloadStatus::Paused | Aria2DownloadStatus::Waiting),
+            matches!(
+                progress.status,
+                Aria2DownloadStatus::Paused | Aria2DownloadStatus::Waiting
+            ),
             "状态应为暂停或等待"
         );
 
         // 恢复
         manager.resume(&gid).await.expect("恢复失败");
         tokio::time::sleep(Duration::from_millis(200)).await;
-        let progress = manager.get_download_progress(&gid).await.expect("获取进度失败");
+        let progress = manager
+            .get_download_progress(&gid)
+            .await
+            .expect("获取进度失败");
         assert!(
-            matches!(progress.status, Aria2DownloadStatus::Active | Aria2DownloadStatus::Complete),
+            matches!(
+                progress.status,
+                Aria2DownloadStatus::Active | Aria2DownloadStatus::Complete
+            ),
             "状态应为活跃或完成"
         );
 
@@ -1821,7 +1854,9 @@ mod tests {
 
         // 验证状态
         let progress = manager.get_download_progress(&gid).await;
-        assert!(progress.is_err() || matches!(progress.unwrap().status, Aria2DownloadStatus::Removed));
+        assert!(
+            progress.is_err() || matches!(progress.unwrap().status, Aria2DownloadStatus::Removed)
+        );
 
         manager.stop().await.expect("停止 aria2 失败");
         let _ = std::fs::remove_dir_all(&temp_dir);

@@ -270,10 +270,7 @@ pub fn update_yuzu_save_backup_folder(folder: &str) -> AppResult<()> {
     storage.yuzu_save_backup_path = new_path_abs.clone();
     storage.save()?;
 
-    info!(
-        "yuzu 存档备份文件夹更改为: {}",
-        new_path_abs.display()
-    );
+    info!("yuzu 存档备份文件夹更改为: {}", new_path_abs.display());
 
     Ok(())
 }
@@ -281,10 +278,7 @@ pub fn update_yuzu_save_backup_folder(folder: &str) -> AppResult<()> {
 /// 获取当前 Yuzu 存档备份文件夹
 pub fn get_yuzu_save_backup_folder() -> AppResult<String> {
     let storage = STORAGE.read();
-    Ok(storage
-        .yuzu_save_backup_path
-        .to_string_lossy()
-        .to_string())
+    Ok(storage.yuzu_save_backup_path.to_string_lossy().to_string())
 }
 
 /// 解析备份文件信息
@@ -347,8 +341,10 @@ pub fn list_all_yuzu_backups() -> AppResult<Vec<BackupInfo>> {
                 if name.starts_with("yuzu_") && name.ends_with(".7z") {
                     debug!("找到备份文件: {}", name);
                     let backup_info = parse_backup_info(&path);
-                    debug!("解析备份信息: title_id={:?}, bak_time={:?}",
-                        backup_info.title_id, backup_info.bak_time);
+                    debug!(
+                        "解析备份信息: title_id={:?}, bak_time={:?}",
+                        backup_info.title_id, backup_info.bak_time
+                    );
                     backups.push(backup_info);
                 }
             }
@@ -368,11 +364,11 @@ pub fn list_all_yuzu_backups() -> AppResult<Vec<BackupInfo>> {
 }
 
 /// 从备份还原 Yuzu 存档
-pub fn restore_yuzu_save_from_backup(
-    user_folder_name: &str,
-    backup_path: &str,
-) -> AppResult<()> {
-    info!("开始还原存档，用户: {}, 备份: {}", user_folder_name, backup_path);
+pub fn restore_yuzu_save_from_backup(user_folder_name: &str, backup_path: &str) -> AppResult<()> {
+    info!(
+        "开始还原存档，用户: {}, 备份: {}",
+        user_folder_name, backup_path
+    );
     let backup_path = PathBuf::from(backup_path);
     debug!("备份文件路径: {}", backup_path.display());
 
@@ -412,10 +408,7 @@ pub fn restore_yuzu_save_from_backup(
         debug!("目标目录不存在，无需删除");
     }
 
-    info!(
-        "正在解压备份至 {}",
-        user_save_path.display()
-    );
+    info!("正在解压备份至 {}", user_save_path.display());
 
     // 解压备份
     debug!("开始解压 7z 文件");

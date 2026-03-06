@@ -10,7 +10,7 @@ REM Store the root directory
 set ROOT_DIR=%~dp0
 
 REM Step 1: Build frontend
-echo [1/2] Building frontend...
+echo [1/3] Building frontend...
 cd /d "%ROOT_DIR%frontend"
 if not exist package.json (
     echo Error: frontend/package.json not found!
@@ -25,14 +25,24 @@ if errorlevel 1 (
 echo Frontend build completed successfully!
 echo.
 
-REM Step 2: Build Tauri backend
-echo [2/2] Building Tauri backend...
+REM Step 2: Format Rust backend
+echo [2/3] Formatting Rust backend...
 cd /d "%ROOT_DIR%src-tauri"
 if not exist Cargo.toml (
     echo Error: src-tauri/Cargo.toml not found!
     exit /b 1
 )
 
+cargo fmt
+if errorlevel 1 (
+    echo Error: Rust formatting failed!
+    exit /b 1
+)
+echo Rust formatting completed successfully!
+echo.
+
+REM Step 3: Build Tauri backend
+echo [3/3] Building Tauri backend...
 cargo build --release
 if errorlevel 1 (
     echo Error: Tauri build failed!

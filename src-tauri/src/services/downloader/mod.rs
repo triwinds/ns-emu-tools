@@ -82,7 +82,9 @@ impl Default for DownloadBackend {
 /// - `Auto`: 优先 aria2；若 aria2 启动失败/不可用则回退 RustDownloader
 /// - `Aria2`: 强制使用 aria2
 /// - `Rust`: 强制使用 RustDownloader
-pub async fn init_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn DownloadManager>> {
+pub async fn init_download_manager(
+    backend: DownloadBackend,
+) -> AppResult<Arc<dyn DownloadManager>> {
     if let Some(manager) = DOWNLOAD_MANAGER.get() {
         return Ok(manager.clone());
     }
@@ -183,7 +185,7 @@ pub fn should_use_aria2() -> bool {
 /// 创建安装初始步骤列表（如果需要 aria2 则自动添加 aria2 检查步骤）
 #[cfg(target_os = "windows")]
 pub fn create_installation_steps() -> Vec<crate::models::ProgressStep> {
-    use crate::models::{ProgressStep, ProgressStatus};
+    use crate::models::{ProgressStatus, ProgressStep};
 
     let mut steps = vec![];
 
@@ -212,7 +214,7 @@ pub fn create_installation_steps() -> Vec<crate::models::ProgressStep> {
 /// Windows 平台下检查并安装 aria2，带 UI 进度反馈
 #[cfg(target_os = "windows")]
 pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult<()> {
-    use crate::models::{ProgressEvent, ProgressStep, ProgressStatus};
+    use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
     use tauri::Emitter;
 
     // 如果不需要 aria2，直接返回

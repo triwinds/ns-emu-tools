@@ -88,20 +88,18 @@ impl CheatsService {
                 .ok()
                 .map(|entries| {
                     let mut count = 0;
-                    let has_file = entries
-                        .filter_map(|e| e.ok())
-                        .any(|e| {
-                            if let Some(name) = e.file_name().to_str() {
-                                let matches = cheat_file_re.is_match(name);
-                                if matches {
-                                    count += 1;
-                                    debug!("找到金手指文件: {}", name);
-                                }
-                                matches
-                            } else {
-                                false
+                    let has_file = entries.filter_map(|e| e.ok()).any(|e| {
+                        if let Some(name) = e.file_name().to_str() {
+                            let matches = cheat_file_re.is_match(name);
+                            if matches {
+                                count += 1;
+                                debug!("找到金手指文件: {}", name);
                             }
-                        });
+                            matches
+                        } else {
+                            false
+                        }
+                    });
                     if has_file {
                         debug!("游戏 {} 有 {} 个金手指文件", game_id, count);
                     }
@@ -115,7 +113,11 @@ impl CheatsService {
             }
         }
 
-        info!("扫描完成: 扫描了 {} 个目录，找到 {} 个游戏的金手指", scanned_dirs, result.len());
+        info!(
+            "扫描完成: 扫描了 {} 个目录，找到 {} 个游戏的金手指",
+            scanned_dirs,
+            result.len()
+        );
         Ok(result)
     }
 
@@ -226,7 +228,10 @@ impl CheatsService {
         // 加载或创建 chunk 文件
         let chunk_cheat_map = if chunk_file.exists() {
             let chunk_map = self.parse_yuzu_cheat_file(&chunk_file)?;
-            debug!("chunk 金手指标题: {:?}", chunk_map.keys().collect::<Vec<_>>());
+            debug!(
+                "chunk 金手指标题: {:?}",
+                chunk_map.keys().collect::<Vec<_>>()
+            );
 
             // 合并当前金手指到 chunk
             let mut merged = chunk_map;
@@ -291,9 +296,7 @@ impl CheatsService {
 
         if !chunk_folder.exists() {
             warn!("仓库目录不存在: {:?}", chunk_folder);
-            return Err(AppError::DirectoryNotFound(
-                "仓库目录不存在".to_string(),
-            ));
+            return Err(AppError::DirectoryNotFound("仓库目录不存在".to_string()));
         }
 
         let filename = cheat_file_path
@@ -454,7 +457,9 @@ mod tests {
         let base_path = temp_dir.path().to_path_buf();
 
         // 创建测试结构
-        let game_path = base_path.join("0100000000000001").join("Cheat Manager Patch");
+        let game_path = base_path
+            .join("0100000000000001")
+            .join("Cheat Manager Patch");
         let cheats_path = game_path.join("cheats");
         fs::create_dir_all(&cheats_path).unwrap();
 

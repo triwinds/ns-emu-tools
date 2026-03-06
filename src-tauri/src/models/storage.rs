@@ -170,9 +170,6 @@ mod tests {
         let storage = Storage::default();
         let json = serde_json::to_string_pretty(&storage).unwrap();
         let parsed: Storage = serde_json::from_str(&json).unwrap();
-        assert_eq!(
-            storage.yuzu_save_backup_path,
-            parsed.yuzu_save_backup_path
-        );
+        assert_eq!(storage.yuzu_save_backup_path, parsed.yuzu_save_backup_path);
     }
 }

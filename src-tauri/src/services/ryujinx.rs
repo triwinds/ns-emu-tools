@@ -47,7 +47,11 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
         )));
     }
 
-    debug!("找到版本: {}, 资源数量: {}", release_info.tag_name, release_info.assets.len());
+    debug!(
+        "找到版本: {}, 资源数量: {}",
+        release_info.tag_name,
+        release_info.assets.len()
+    );
 
     // 根据平台选择资源后缀
     #[cfg(target_os = "windows")]
@@ -126,7 +130,12 @@ pub fn detect_current_branch() -> String {
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
 
     if let Some(exe_path) = get_ryujinx_exe_path_internal(&ryujinx_path) {
-        if exe_path.file_name().unwrap().to_string_lossy().contains("Ava") {
+        if exe_path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .contains("Ava")
+        {
             debug!("通过文件名检测到分支: ava");
             return "ava".to_string();
         } else {
@@ -154,10 +163,7 @@ pub async fn install_ryujinx_by_version<F>(
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
-    info!(
-        "开始安装 Ryujinx {} 版本: {}",
-        branch, target_version
-    );
+    info!("开始安装 Ryujinx {} 版本: {}", branch, target_version);
 
     let (ryujinx_path, auto_delete) = {
         let config = get_config();
@@ -171,9 +177,7 @@ where
     let current_branch = detect_current_branch();
     let config = get_config();
     if let Some(ref current_version) = config.ryujinx.version {
-        if current_version == target_version
-            && (branch == "ldn" || current_branch == branch)
-        {
+        if current_version == target_version && (branch == "ldn" || current_branch == branch) {
             info!("当前已是目标版本，跳过安装");
 
             // 更新步骤状态
@@ -188,7 +192,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
 
             // 标记其他步骤为取消
@@ -204,13 +208,18 @@ where
                             _ => "".to_string(),
                         },
                         status: ProgressStatus::Cancelled,
-                        step_type: if *step_id == "download" { "download" } else { "normal" }.to_string(),
+                        step_type: if *step_id == "download" {
+                            "download"
+                        } else {
+                            "normal"
+                        }
+                        .to_string(),
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
                         error: None,
                         download_source: None,
-                    }
+                    },
                 });
             }
 
@@ -230,7 +239,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     let download_url = match get_ryujinx_download_url(target_version, branch).await {
@@ -247,7 +256,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -264,7 +273,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     info!("下载 URL: {}", download_url);
@@ -285,7 +294,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: Some(download_source.clone()),
-        }
+        },
     });
 
     // 使用统一下载接口
@@ -304,7 +313,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
-                }
+                },
             });
             return Err(e);
         }
@@ -318,21 +327,28 @@ where
     let on_event_clone = on_event.clone();
     let download_source_clone = download_source.clone();
     let branch_clone = branch.to_string();
-    let result = match download_manager.download_and_wait(&download_url, options, Box::new(move |progress| {
-        on_event_clone(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: format!("下载 Ryujinx {}", branch_clone),
-                status: ProgressStatus::Running,
-                step_type: "download".to_string(),
-                progress: progress.percentage,
-                download_speed: progress.speed_string(),
-                eta: progress.eta_string(),
-                error: None,
-                download_source: Some(download_source_clone.clone()),
-            }
-        });
-    })).await {
+    let result = match download_manager
+        .download_and_wait(
+            &download_url,
+            options,
+            Box::new(move |progress| {
+                on_event_clone(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "download".to_string(),
+                        title: format!("下载 Ryujinx {}", branch_clone),
+                        status: ProgressStatus::Running,
+                        step_type: "download".to_string(),
+                        progress: progress.percentage,
+                        download_speed: progress.speed_string(),
+                        eta: progress.eta_string(),
+                        error: None,
+                        download_source: Some(download_source_clone.clone()),
+                    },
+                });
+            }),
+        )
+        .await
+    {
         Ok(res) => res,
         Err(e) => {
             on_event(ProgressEvent::StepUpdate {
@@ -346,7 +362,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
-                }
+                },
             });
             return Err(e);
         }
@@ -366,7 +382,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 解压
@@ -381,7 +397,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 解压到临时目录
@@ -401,7 +417,7 @@ where
                     eta: "".to_string(),
                     error: Some(format!("清理临时目录失败: {}", e)),
                     download_source: None,
-                }
+                },
             });
             return Err(e.into());
         }
@@ -418,15 +434,17 @@ where
                 eta: "".to_string(),
                 error: Some(format!("创建临时目录失败: {}", e)),
                 download_source: None,
-            }
+            },
         });
         return Err(e.into());
     }
 
     info!("解压 Ryujinx 文件到: {}", tmp_dir.display());
-    debug!("解压包路径: {}, 大小: {} bytes",
+    debug!(
+        "解压包路径: {}, 大小: {} bytes",
         package_path.display(),
-        package_path.metadata().map(|m| m.len()).unwrap_or(0));
+        package_path.metadata().map(|m| m.len()).unwrap_or(0)
+    );
     if let Err(e) = uncompress(&package_path, &tmp_dir, false) {
         // 解压失败时，删除可能损坏的下载文件
         warn!("解压失败，删除可能损坏的文件: {}", package_path.display());
@@ -443,9 +461,12 @@ where
                 eta: "".to_string(),
                 error: Some(format!("{}\n\n已自动删除损坏的文件，请重新尝试下载。", e)),
                 download_source: None,
-            }
+            },
         });
-        return Err(AppError::Extract(format!("{}\n\n已自动删除损坏的文件，请重新尝试下载。", e)));
+        return Err(AppError::Extract(format!(
+            "{}\n\n已自动删除损坏的文件，请重新尝试下载。",
+            e
+        )));
     }
 
     on_event(ProgressEvent::StepUpdate {
@@ -459,7 +480,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 安装
@@ -474,7 +495,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 清理旧文件并安装
@@ -491,7 +512,7 @@ where
                 eta: "".to_string(),
                 error: Some(e.to_string()),
                 download_source: None,
-            }
+            },
         });
         return Err(e);
     }
@@ -511,10 +532,15 @@ where
             }
         }
 
-        let source_app = app_path.ok_or_else(|| AppError::Emulator("未找到 Ryujinx.app".to_string()))?;
+        let source_app =
+            app_path.ok_or_else(|| AppError::Emulator("未找到 Ryujinx.app".to_string()))?;
         let dest_app = ryujinx_path.join("Ryujinx.app");
 
-        info!("复制 Ryujinx.app 从: {} 到: {}", source_app.display(), dest_app.display());
+        info!(
+            "复制 Ryujinx.app 从: {} 到: {}",
+            source_app.display(),
+            dest_app.display()
+        );
 
         // 删除旧的 .app（如果存在）
         if dest_app.exists() {
@@ -533,7 +559,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -563,10 +589,7 @@ where
         }
 
         // 2. 设置 .app bundle 权限为 755
-        let chmod_app_result = Command::new("chmod")
-            .args(["755"])
-            .arg(&dest_app)
-            .output();
+        let chmod_app_result = Command::new("chmod").args(["755"]).arg(&dest_app).output();
 
         if let Err(e) = chmod_app_result {
             warn!("设置 .app 权限失败: {}", e);
@@ -578,10 +601,7 @@ where
         // 3. 设置可执行文件权限
         let exe_path = dest_app.join("Contents/MacOS/Ryujinx");
         if exe_path.exists() {
-            let chmod_exe_result = Command::new("chmod")
-                .args(["+x"])
-                .arg(&exe_path)
-                .output();
+            let chmod_exe_result = Command::new("chmod").args(["+x"]).arg(&exe_path).output();
 
             if let Err(e) = chmod_exe_result {
                 warn!("设置可执行文件权限失败: {}", e);
@@ -598,8 +618,11 @@ where
     {
         // Windows/Linux: 从 publish 目录复制
         let ryujinx_tmp_dir = tmp_dir.join("publish");
-        info!("复制 Ryujinx 文件从: {} 到: {}",
-            ryujinx_tmp_dir.display(), ryujinx_path.display());
+        info!(
+            "复制 Ryujinx 文件从: {} 到: {}",
+            ryujinx_tmp_dir.display(),
+            ryujinx_path.display()
+        );
         debug!("检查解压后的 publish 目录: {}", ryujinx_tmp_dir.display());
 
         if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
@@ -614,7 +637,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -628,10 +651,7 @@ where
             for exe_name in RYUJINX_EXE_NAMES {
                 let exe_path = ryujinx_path.join(exe_name);
                 if exe_path.exists() {
-                    let chmod_result = Command::new("chmod")
-                        .args(["+x"])
-                        .arg(&exe_path)
-                        .output();
+                    let chmod_result = Command::new("chmod").args(["+x"]).arg(&exe_path).output();
 
                     match chmod_result {
                         Ok(_) => {
@@ -660,7 +680,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 清理临时目录
@@ -678,7 +698,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     #[cfg(target_os = "windows")]
@@ -696,7 +716,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             // 不阻止安装流程，继续执行
         } else {
@@ -711,7 +731,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
         }
     }
@@ -730,7 +750,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
     }
 
@@ -805,7 +825,8 @@ fn clear_ryujinx_folder(ryujinx_path: &Path) -> AppResult<()> {
                         let name = file_name.to_string_lossy();
                         // 匹配 Ryujinx*.exe 模式（不区分大小写）
                         if name.to_lowercase().starts_with("ryujinx")
-                            && name.to_lowercase().ends_with(".exe") {
+                            && name.to_lowercase().ends_with(".exe")
+                        {
                             debug!("删除可执行文件: {}", path.display());
                             std::fs::remove_file(&path)?;
                         }
@@ -833,9 +854,8 @@ fn copy_dir_all(src: &Path, dst: &Path) -> AppResult<()> {
         if path.is_dir() {
             copy_dir_all(&path, &dst_path)?;
         } else {
-            std::fs::copy(&path, &dst_path).map_err(|e| {
-                AppError::Emulator(format!("Ryujinx 文件复制失败: {}", e))
-            })?;
+            std::fs::copy(&path, &dst_path)
+                .map_err(|e| AppError::Emulator(format!("Ryujinx 文件复制失败: {}", e)))?;
         }
     }
 
@@ -872,10 +892,12 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
     {
         // macOS: 使用 ~/Library/Application Support/Ryujinx
         if let Ok(home) = std::env::var("HOME") {
-            let macos_path = PathBuf::from(home)
-                .join("Library/Application Support/Ryujinx");
+            let macos_path = PathBuf::from(home).join("Library/Application Support/Ryujinx");
             if macos_path.exists() {
-                debug!("使用 macOS Application Support 目录: {}", macos_path.display());
+                debug!(
+                    "使用 macOS Application Support 目录: {}",
+                    macos_path.display()
+                );
                 return macos_path;
             }
         }
@@ -920,20 +942,20 @@ where
                 info!("固件已是版本 {}，跳过安装", version);
 
                 // 发送 Started 事件
-                let steps = vec![
-                    ProgressStep {
-                        id: "check_firmware".to_string(),
-                        title: format!("当前固件已是版本 {}, 跳过安装", version),
-                        status: ProgressStatus::Success,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: None,
-                        download_source: None,
-                    }
-                ];
-                on_event(ProgressEvent::Started { steps: steps.clone() });
+                let steps = vec![ProgressStep {
+                    id: "check_firmware".to_string(),
+                    title: format!("当前固件已是版本 {}, 跳过安装", version),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: None,
+                }];
+                on_event(ProgressEvent::Started {
+                    steps: steps.clone(),
+                });
                 on_event(ProgressEvent::StepUpdate {
                     step: steps[0].clone(),
                 });
@@ -1008,11 +1030,9 @@ where
     });
 
     let on_event_clone = on_event.clone();
-    let new_version = crate::services::firmware::install_firmware(
-        version_to_install,
-        &tmp_dir,
-        on_event_clone,
-    ).await?;
+    let new_version =
+        crate::services::firmware::install_firmware(version_to_install, &tmp_dir, on_event_clone)
+            .await?;
 
     // 步骤5: 重组织固件文件（Ryujinx 的特殊格式）
     on_event(ProgressEvent::StepUpdate {
@@ -1026,10 +1046,12 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
-    if let Err(e) = crate::services::firmware::reorganize_firmware_for_ryujinx(&tmp_dir, &firmware_path).await {
+    if let Err(e) =
+        crate::services::firmware::reorganize_firmware_for_ryujinx(&tmp_dir, &firmware_path).await
+    {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "reorganize_firmware".to_string(),
@@ -1041,7 +1063,7 @@ where
                 eta: "".to_string(),
                 error: Some(e.to_string()),
                 download_source: None,
-            }
+            },
         });
         // 清理临时目录
         let _ = std::fs::remove_dir_all(&tmp_dir);
@@ -1059,7 +1081,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 清理临时目录
@@ -1084,9 +1106,10 @@ pub fn start_ryujinx() -> AppResult<()> {
     let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
         Some(path) => path,
         None => {
-            return Err(AppError::FileNotFound(
-                format!("未找到 Ryujinx 程序: {}", ryujinx_path.display())
-            ));
+            return Err(AppError::FileNotFound(format!(
+                "未找到 Ryujinx 程序: {}",
+                ryujinx_path.display()
+            )));
         }
     };
 
@@ -1256,19 +1279,23 @@ fn detect_version_from_binary(app_path: &Path) -> AppResult<(Option<String>, Str
         .map_err(|e| AppError::Emulator(format!("解析 Info.plist 失败: {}", e)))?;
 
     // 读取版本信息（优先使用 CFBundleLongVersionString，因为它更准确）
-    let version = if let Some(plist::Value::String(version)) = plist.get("CFBundleLongVersionString") {
-        // 提取版本号部分 (例如 "1.3.3-e2143d4" -> "1.3.3")
-        let version_part = version.split('-').next().unwrap_or(version).to_string();
-        // 移除可能的尾部引号
-        let version_clean = version_part.trim_end_matches('"').to_string();
-        debug!("从 CFBundleLongVersionString 读取版本: {} -> {}", version, version_clean);
-        Some(version_clean)
-    } else if let Some(plist::Value::String(version)) = plist.get("CFBundleVersion") {
-        debug!("从 CFBundleVersion 读取版本: {}", version);
-        Some(version.clone())
-    } else {
-        None
-    };
+    let version =
+        if let Some(plist::Value::String(version)) = plist.get("CFBundleLongVersionString") {
+            // 提取版本号部分 (例如 "1.3.3-e2143d4" -> "1.3.3")
+            let version_part = version.split('-').next().unwrap_or(version).to_string();
+            // 移除可能的尾部引号
+            let version_clean = version_part.trim_end_matches('"').to_string();
+            debug!(
+                "从 CFBundleLongVersionString 读取版本: {} -> {}",
+                version, version_clean
+            );
+            Some(version_clean)
+        } else if let Some(plist::Value::String(version)) = plist.get("CFBundleVersion") {
+            debug!("从 CFBundleVersion 读取版本: {}", version);
+            Some(version.clone())
+        } else {
+            None
+        };
 
     if let Some(ref v) = version {
         info!("从 Info.plist 检测到版本: {}", v);
@@ -1326,10 +1353,16 @@ fn detect_branch_from_plist(plist: &plist::Dictionary, version: Option<&str>) ->
         if parts.len() >= 3 {
             if let Ok(patch_version) = parts[2].parse::<u32>() {
                 if patch_version >= 100 {
-                    debug!("通过版本号格式检测到 Canary 分支: {}，补丁号={}", v, patch_version);
+                    debug!(
+                        "通过版本号格式检测到 Canary 分支: {}，补丁号={}",
+                        v, patch_version
+                    );
                     return "canary".to_string();
                 } else {
-                    debug!("通过版本号格式检测到 Mainline 分支: {}，补丁号={}", v, patch_version);
+                    debug!(
+                        "通过版本号格式检测到 Mainline 分支: {}，补丁号={}",
+                        v, patch_version
+                    );
                     // 继续，可能是 mainline
                 }
             }
@@ -1365,8 +1398,8 @@ fn detect_version_from_binary(exe_path: &Path) -> AppResult<(Option<String>, Str
     debug!("解析 PE 文件: {}", exe_path.display());
 
     // 读取 PE 文件
-    let file_data = std::fs::read(exe_path)
-        .map_err(|e| AppError::Emulator(format!("读取文件失败: {}", e)))?;
+    let file_data =
+        std::fs::read(exe_path).map_err(|e| AppError::Emulator(format!("读取文件失败: {}", e)))?;
 
     // 解析 PE 文件
     let pe = PeFile::from_bytes(&file_data)
@@ -1381,10 +1414,12 @@ fn detect_version_from_binary(exe_path: &Path) -> AppResult<(Option<String>, Str
     }
 
     // 获取版本信息资源
-    let resources = pe.resources()
+    let resources = pe
+        .resources()
         .map_err(|e| AppError::Emulator(format!("获取资源失败: {}", e)))?;
 
-    let version_info = resources.version_info()
+    let version_info = resources
+        .version_info()
         .map_err(|e| AppError::Emulator(format!("获取版本信息失败: {}", e)))?;
 
     // 读取 StringFileInfo
@@ -1395,13 +1430,16 @@ fn detect_version_from_binary(exe_path: &Path) -> AppResult<(Option<String>, Str
 
     // 尝试多个语言 ID (优先使用 0x0000 = 中性语言，因为 Ryujinx 使用这个)
     let language_ids = [
-        (0x0000, "Neutral"),    // 中性语言（Ryujinx 使用这个）
-        (0x0409, "en-US"),      // 英语-美国
-        (0x0009, "English"),    // 英语
+        (0x0000, "Neutral"), // 中性语言（Ryujinx 使用这个）
+        (0x0409, "en-US"),   // 英语-美国
+        (0x0009, "English"), // 英语
     ];
 
     for (lang_id, lang_name) in language_ids.iter() {
-        let lang = Language { lang_id: *lang_id, charset_id: 1200 }; // 1200 = Unicode
+        let lang = Language {
+            lang_id: *lang_id,
+            charset_id: 1200,
+        }; // 1200 = Unicode
         debug!("尝试读取语言 ID: 0x{:04X} ({})", lang_id, lang_name);
 
         let mut found_any = false;
@@ -1510,10 +1548,16 @@ fn detect_version_from_binary(exe_path: &Path) -> AppResult<(Option<String>, Str
                 if let Ok(patch_version) = parts[2].parse::<u32>() {
                     // Canary 版本号的第三位通常是三位数（>= 100）
                     if patch_version >= 100 {
-                        debug!("通过版本号格式检测到 Canary 分支: {}，补丁号={}", v, patch_version);
+                        debug!(
+                            "通过版本号格式检测到 Canary 分支: {}，补丁号={}",
+                            v, patch_version
+                        );
                         branch = "canary".to_string();
                     } else {
-                        debug!("通过版本号格式检测到 Mainline 分支: {}，补丁号={}", v, patch_version);
+                        debug!(
+                            "通过版本号格式检测到 Mainline 分支: {}，补丁号={}",
+                            v, patch_version
+                        );
                         // 保持 mainline
                     }
                 }
@@ -1566,9 +1610,10 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
                 }
             }
         } else {
-            return Err(AppError::FileNotFound(
-                format!("未找到 Ryujinx.app: {}", app_path.display())
-            ));
+            return Err(AppError::FileNotFound(format!(
+                "未找到 Ryujinx.app: {}",
+                app_path.display()
+            )));
         }
     }
 
@@ -1666,7 +1711,10 @@ mod tests {
         let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
             Some(path) => path,
             None => {
-                println!("跳过测试: 未找到 Ryujinx 可执行文件在: {}", ryujinx_path.display());
+                println!(
+                    "跳过测试: 未找到 Ryujinx 可执行文件在: {}",
+                    ryujinx_path.display()
+                );
                 return;
             }
         };
@@ -1728,7 +1776,10 @@ mod tests {
         println!("\n尝试读取版本信息（Language ID: 0x0409, Charset: 1200）:");
 
         // 尝试默认语言
-        let lang = Language { lang_id: 0x0409, charset_id: 1200 };
+        let lang = Language {
+            lang_id: 0x0409,
+            charset_id: 1200,
+        };
         let mut found_any = false;
 
         version_info.strings(lang, |key, value| {
@@ -1745,8 +1796,14 @@ mod tests {
             // 这里可以尝试一些常见的语言 ID
             for lang_id in [0x0000, 0x0009, 0x0409, 0x0809] {
                 for charset_id in [0, 1200, 1252] {
-                    let test_lang = Language { lang_id, charset_id };
-                    println!("\n  尝试 Language ID: 0x{:04X}, Charset: {}", lang_id, charset_id);
+                    let test_lang = Language {
+                        lang_id,
+                        charset_id,
+                    };
+                    println!(
+                        "\n  尝试 Language ID: 0x{:04X}, Charset: {}",
+                        lang_id, charset_id
+                    );
                     let mut found_in_lang = false;
                     version_info.strings(test_lang, |key, value| {
                         found_in_lang = true;

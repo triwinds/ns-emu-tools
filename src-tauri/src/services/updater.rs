@@ -5,7 +5,9 @@
 use crate::error::{AppError, AppResult};
 use crate::models::progress::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::app_info;
-use crate::services::network::{create_client, get_github_download_source_name, get_github_download_url};
+use crate::services::network::{
+    create_client, get_github_download_source_name, get_github_download_url,
+};
 use crate::utils::archive;
 use futures_util::StreamExt;
 use std::fs;
@@ -86,7 +88,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -119,7 +121,7 @@ pub async fn download_update(
                         download_speed: String::new(),
                         eta: String::new(),
                         error: Some("当前已是最新版本".to_string()),
-            download_source: None,
+                        download_source: None,
                     },
                 },
             );
@@ -133,12 +135,10 @@ pub async fn download_update(
             return Err(AppError::InvalidArgument("当前已是最新版本".to_string()));
         }
 
-        let url = update_check
-            .download_url
-            .ok_or_else(|| {
-                info!("错误: download_url 为 None，无法下载更新");
-                AppError::InvalidArgument("未找到下载链接".to_string())
-            })?;
+        let url = update_check.download_url.ok_or_else(|| {
+            info!("错误: download_url 为 None，无法下载更新");
+            AppError::InvalidArgument("未找到下载链接".to_string())
+        })?;
 
         info!("从 check_update 获取到下载链接: {}", url);
         url
@@ -156,7 +156,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -182,16 +182,16 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-                            download_source: Some(download_source.clone()),
+                download_source: Some(download_source.clone()),
             },
         },
     );
 
     // 获取当前可执行文件所在目录
     let current_exe = std::env::current_exe()?;
-    let current_dir = current_exe.parent().ok_or_else(|| {
-        AppError::Unknown("无法获取当前程序目录".to_string())
-    })?;
+    let current_dir = current_exe
+        .parent()
+        .ok_or_else(|| AppError::Unknown("无法获取当前程序目录".to_string()))?;
 
     // 创建下载目录（与Python版本保持一致：./download/upgrade_files）
     let download_dir = current_dir.join("download").join("upgrade_files");
@@ -208,9 +208,11 @@ pub async fn download_update(
 
     // 下载文件
     let client = create_client()?;
-    let resp = client.get(&mirror_url).send().await.map_err(|e| {
-        AppError::Unknown(format!("下载更新文件失败: {}", e))
-    })?;
+    let resp = client
+        .get(&mirror_url)
+        .send()
+        .await
+        .map_err(|e| AppError::Unknown(format!("下载更新文件失败: {}", e)))?;
 
     if !resp.status().is_success() {
         return Err(AppError::Unknown(format!(
@@ -259,7 +261,7 @@ pub async fn download_update(
                         download_speed: speed_str,
                         eta: eta_str,
                         error: None,
-                                    download_source: Some(download_source.clone()),
+                        download_source: Some(download_source.clone()),
                     },
                 },
             );
@@ -278,7 +280,7 @@ pub async fn download_update(
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-                            download_source: Some(download_source.clone()),
+                download_source: Some(download_source.clone()),
             },
         },
     );
@@ -311,9 +313,9 @@ pub async fn install_update(update_file: &Path) -> AppResult<()> {
 
     // 获取当前可执行文件路径
     let current_exe = std::env::current_exe()?;
-    let current_dir = current_exe.parent().ok_or_else(|| {
-        AppError::Unknown("无法获取当前程序目录".to_string())
-    })?;
+    let current_dir = current_exe
+        .parent()
+        .ok_or_else(|| AppError::Unknown("无法获取当前程序目录".to_string()))?;
 
     info!("当前程序路径: {}", current_exe.display());
     info!("当前程序目录: {}", current_dir.display());
@@ -349,10 +351,13 @@ pub async fn install_update(update_file: &Path) -> AppResult<()> {
         }
     } else if extension == Some("exe") {
         // 如果是 .exe 文件，直接使用下载目录
-        let download_dir = update_file.parent().ok_or_else(|| {
-            AppError::Unknown("无法获取更新文件父目录".to_string())
-        })?;
-        info!("更新文件是 .exe，直接使用下载目录: {}", download_dir.display());
+        let download_dir = update_file
+            .parent()
+            .ok_or_else(|| AppError::Unknown("无法获取更新文件父目录".to_string()))?;
+        info!(
+            "更新文件是 .exe，直接使用下载目录: {}",
+            download_dir.display()
+        );
         download_dir.to_path_buf()
     } else {
         return Err(AppError::InvalidArgument(format!(
@@ -418,9 +423,9 @@ fn create_windows_update_script(
     let script_path = target_dir.join("update.bat");
 
     // 获取更新脚本路径
-    let extract_folder = new_exe.parent().ok_or_else(|| {
-        AppError::Unknown("无法获取更新文件父目录".to_string())
-    })?;
+    let extract_folder = new_exe
+        .parent()
+        .ok_or_else(|| AppError::Unknown("无法获取更新文件父目录".to_string()))?;
 
     let extract_folder_str = extract_folder.to_string_lossy();
     let target_exe = target_dir.join(current_exe.file_name().unwrap());
@@ -494,8 +499,7 @@ if not exist "{1}" (
 )
 del "%~f0" & exit
 "#,
-        target_exe_str,
-        extract_folder_str,
+        target_exe_str, extract_folder_str,
     );
 
     // 将 LF 换行符替换为 CRLF（Windows 批处理文件需要）
@@ -515,7 +519,7 @@ del "%~f0" & exit
             .spawn()?;
     } else {
         return Err(AppError::InvalidArgument(
-            "脚本路径包含无效的 UTF-8 字符".to_string()
+            "脚本路径包含无效的 UTF-8 字符".to_string(),
         ));
     }
 
@@ -610,7 +614,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -633,7 +637,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                         download_speed: String::new(),
                         eta: String::new(),
                         error: Some(e.to_string()),
-            download_source: None,
+                        download_source: None,
                     },
                 },
             );
@@ -660,7 +664,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -678,7 +682,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -702,7 +706,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                         download_speed: String::new(),
                         eta: String::new(),
                         error: Some(err_msg.clone()),
-            download_source: None,
+                        download_source: None,
                     },
                 },
             );
@@ -732,7 +736,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -755,16 +759,16 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
 
     // 获取当前可执行文件所在目录
     let current_exe = std::env::current_exe()?;
-    let current_dir = current_exe.parent().ok_or_else(|| {
-        AppError::Unknown("无法获取当前程序目录".to_string())
-    })?;
+    let current_dir = current_exe
+        .parent()
+        .ok_or_else(|| AppError::Unknown("无法获取当前程序目录".to_string()))?;
 
     // 创建下载目录（与Python版本保持一致：./download/upgrade_files）
     let download_dir = current_dir.join("download").join("upgrade_files");
@@ -789,7 +793,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(err.to_string()),
-            download_source: None,
+                    download_source: None,
                 },
             },
         );
@@ -817,7 +821,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                     download_speed: String::new(),
                     eta: String::new(),
                     error: Some(err_msg.clone()),
-            download_source: None,
+                    download_source: None,
                 },
             },
         );
@@ -873,7 +877,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                         download_speed: speed_str,
                         eta: eta_str,
                         error: None,
-            download_source: None,
+                        download_source: None,
                     },
                 },
             );
@@ -892,7 +896,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
                 download_speed: String::new(),
                 eta: String::new(),
                 error: None,
-            download_source: None,
+                download_source: None,
             },
         },
     );
@@ -905,6 +909,11 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
         },
     );
 
-    info!("{} 版本 [{}] 已下载至 {}", file_name, tag, download_path.display());
+    info!(
+        "{} 版本 [{}] 已下载至 {}",
+        file_name,
+        tag,
+        download_path.display()
+    );
     Ok(download_path)
 }

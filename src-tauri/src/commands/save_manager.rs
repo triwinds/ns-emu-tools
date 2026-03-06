@@ -30,10 +30,7 @@ pub async fn list_all_games_by_user_folder_cmd(folder: String) -> ApiResponse<Ve
 
 /// 备份 Yuzu 存档文件夹
 #[command]
-pub async fn backup_yuzu_save_folder_cmd(
-    folder: String,
-    window: tauri::Window,
-) -> ApiResponse<()> {
+pub async fn backup_yuzu_save_folder_cmd(folder: String, window: tauri::Window) -> ApiResponse<()> {
     use crate::services::notifier;
     use crate::services::save_manager::sizeof_fmt;
 
@@ -126,10 +123,7 @@ pub async fn restore_yuzu_save_from_backup_cmd(
 
     match restore_yuzu_save_from_backup(&user_folder_name, &backup_path) {
         Ok(_) => {
-            let _ = window.emit(
-                notifier::events::LOG_MESSAGE,
-                "存档还原完成".to_string(),
-            );
+            let _ = window.emit(notifier::events::LOG_MESSAGE, "存档还原完成".to_string());
             let _ = notifier::send_notify(&window, "存档还原完成");
             ApiResponse::success(())
         }

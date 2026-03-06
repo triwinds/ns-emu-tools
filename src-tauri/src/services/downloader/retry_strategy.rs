@@ -99,7 +99,10 @@ impl RetryStrategy {
                 if msg_lower.contains("429") || msg_lower.contains("too many requests") {
                     return ErrorCategory::RateLimited;
                 }
-                if msg_lower.contains("500") || msg_lower.contains("502") || msg_lower.contains("503") {
+                if msg_lower.contains("500")
+                    || msg_lower.contains("502")
+                    || msg_lower.contains("503")
+                {
                     return ErrorCategory::Temporary;
                 }
 
@@ -250,22 +253,18 @@ impl RetryStrategy {
                 None
             }
 
-            ErrorCategory::NetworkUnavailable => {
-                Some(RetryAction::WaitForNetwork {
-                    timeout: Duration::from_secs(60),
-                    retry_num: self.current_retry + 1,
-                    max_retries: self.max_retries,
-                })
-            }
+            ErrorCategory::NetworkUnavailable => Some(RetryAction::WaitForNetwork {
+                timeout: Duration::from_secs(60),
+                retry_num: self.current_retry + 1,
+                max_retries: self.max_retries,
+            }),
 
-            ErrorCategory::DnsError => {
-                Some(RetryAction::Sleep {
-                    duration: Duration::from_secs(10),
-                    retry_num: self.current_retry + 1,
-                    max_retries: self.max_retries,
-                    reason: "DNS 解析失败".to_string(),
-                })
-            }
+            ErrorCategory::DnsError => Some(RetryAction::Sleep {
+                duration: Duration::from_secs(10),
+                retry_num: self.current_retry + 1,
+                max_retries: self.max_retries,
+                reason: "DNS 解析失败".to_string(),
+            }),
 
             ErrorCategory::RateLimited => {
                 let delay = self.backoff_delay();
@@ -294,7 +293,6 @@ impl RetryStrategy {
         self.current_retry += 1;
     }
 
-
     /// 等待网络恢复
     ///
     /// 每 5 秒检测一次网络连接，直到网络恢复或超时
@@ -321,9 +319,9 @@ impl RetryStrategy {
         use tokio::net::TcpStream;
 
         let dns_servers = [
-            "8.8.8.8:53",       // Google DNS
-            "1.1.1.1:53",       // Cloudflare DNS
-            "223.5.5.5:53",     // 阿里 DNS
+            "8.8.8.8:53",         // Google DNS
+            "1.1.1.1:53",         // Cloudflare DNS
+            "223.5.5.5:53",       // 阿里 DNS
             "114.114.114.114:53", // 114 DNS
         ];
 
@@ -713,7 +711,10 @@ mod tests {
         let action = strategy.prepare_retry(&error);
         assert!(action.is_some());
 
-        if let Some(RetryAction::Sleep { duration, reason, .. }) = action {
+        if let Some(RetryAction::Sleep {
+            duration, reason, ..
+        }) = action
+        {
             assert_eq!(duration, Duration::from_secs(10));
             assert_eq!(reason, "DNS 解析失败");
         } else {
@@ -726,11 +727,13 @@ mod tests {
         let strategy = RetryStrategy::new(5);
 
         // GitHub URL 返回 None（建议在上层处理）
-        let result = strategy.try_switch_mirror("https://github.com/user/repo/releases/download/v1.0/file.zip");
+        let result = strategy
+            .try_switch_mirror("https://github.com/user/repo/releases/download/v1.0/file.zip");
         assert!(result.is_none());
 
         // githubusercontent URL 同样
-        let result = strategy.try_switch_mirror("https://raw.githubusercontent.com/user/repo/main/file.txt");
+        let result =
+            strategy.try_switch_mirror("https://raw.githubusercontent.com/user/repo/main/file.txt");
         assert!(result.is_none());
     }
 

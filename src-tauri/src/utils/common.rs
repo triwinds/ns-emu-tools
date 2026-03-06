@@ -71,9 +71,7 @@ pub fn format_duration(seconds: u64) -> String {
 /// Windows 的 `canonicalize()` 会返回带有 `\\?\` 前缀的路径，
 /// 这个函数会去除该前缀以便正常显示
 pub fn normalize_path(path: &Path) -> PathBuf {
-    let normalized = path
-        .canonicalize()
-        .unwrap_or_else(|_| path.to_path_buf());
+    let normalized = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
 
     // 去除 Windows 长路径前缀 \\?\
     let path_str = normalized.to_string_lossy();

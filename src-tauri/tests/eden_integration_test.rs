@@ -249,8 +249,5 @@ async fn test_performance_get_multiple_releases() {
         "获取 {} 个版本详情耗时: {:?}",
         detail_count, detail_duration
     );
-    info!(
-        "平均每个版本: {:?}",
-        detail_duration / detail_count as u32
-    );
+    info!("平均每个版本: {:?}", detail_duration / detail_count as u32);
 }

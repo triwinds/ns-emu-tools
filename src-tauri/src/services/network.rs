@@ -160,23 +160,20 @@ static GITHUB_API_FALLBACK_FLAG: Lazy<RwLock<bool>> = Lazy::new(|| RwLock::new(f
 static CURRENT_GITHUB_MIRROR_DESC: Lazy<RwLock<Option<String>>> = Lazy::new(|| RwLock::new(None));
 
 /// 全局缓存客户端（内存缓存）
-static CACHED_CLIENT: Lazy<ClientWithMiddleware> = Lazy::new(|| {
-    create_cached_client().expect("Failed to create cached client")
-});
+static CACHED_CLIENT: Lazy<ClientWithMiddleware> =
+    Lazy::new(|| create_cached_client().expect("Failed to create cached client"));
 
 /// 全局持久化缓存客户端（磁盘缓存）
-static DURABLE_CACHED_CLIENT: Lazy<ClientWithMiddleware> = Lazy::new(|| {
-    create_durable_cached_client().expect("Failed to create durable cached client")
-});
+static DURABLE_CACHED_CLIENT: Lazy<ClientWithMiddleware> =
+    Lazy::new(|| create_durable_cached_client().expect("Failed to create durable cached client"));
 
 /// Git API JSON 响应缓存（5 分钟 TTL，忽略 cache-control）
-static GIT_API_JSON_CACHE: Lazy<moka::future::Cache<String, serde_json::Value>> =
-    Lazy::new(|| {
-        moka::future::Cache::builder()
-            .max_capacity(100) // 最多缓存 100 个响应
-            .time_to_live(std::time::Duration::from_secs(300)) // 5 分钟过期
-            .build()
-    });
+static GIT_API_JSON_CACHE: Lazy<moka::future::Cache<String, serde_json::Value>> = Lazy::new(|| {
+    moka::future::Cache::builder()
+        .max_capacity(100) // 最多缓存 100 个响应
+        .time_to_live(std::time::Duration::from_secs(300)) // 5 分钟过期
+        .build()
+});
 
 /// GitHub 镜像信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -669,10 +666,14 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
     let cdn_url = get_override_url(url);
     info!("使用 CDN 请求 GitHub API: {}", cdn_url);
     let durable_cached_client = get_durable_cached_client();
-    let resp = durable_cached_client.get(&cdn_url).send().await.map_err(|e| {
-        warn!("CDN 请求失败: {}", e);
-        AppError::Unknown(e.to_string())
-    })?;
+    let resp = durable_cached_client
+        .get(&cdn_url)
+        .send()
+        .await
+        .map_err(|e| {
+            warn!("CDN 请求失败: {}", e);
+            AppError::Unknown(e.to_string())
+        })?;
     debug!("CDN 请求成功，HTTP 状态: {}", resp.status());
     let data = resp.json::<serde_json::Value>().await.map_err(|e| {
         warn!("解析 CDN 响应失败: {}", e);
@@ -701,14 +702,10 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     // 使用普通客户端发送请求（不使用 HTTP 缓存中间件）
     let client = create_client()?;
     debug!("发送 GET 请求到 Git API");
-    let resp = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|e| {
-            warn!("Git API 请求失败: {}", e);
-            AppError::Unknown(e.to_string())
-        })?;
+    let resp = client.get(url).send().await.map_err(|e| {
+        warn!("Git API 请求失败: {}", e);
+        AppError::Unknown(e.to_string())
+    })?;
 
     debug!("Git API 响应状态: {}", resp.status());
 
@@ -754,9 +751,7 @@ pub fn get_available_port() -> u16 {
 
 /// 获取固件下载源列表 (network 模块版本)
 pub fn get_network_firmware_sources() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("由 github.com/THZoria/NX_Firmware 提供的固件", "github"),
-    ]
+    vec![("由 github.com/THZoria/NX_Firmware 提供的固件", "github")]
 }
 
 #[cfg(test)]
@@ -856,11 +851,7 @@ mod tests {
             .build()
             .map_err(|e| e.to_string())?;
 
-        let resp = client
-            .head(url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
+        let resp = client.head(url).send().await.map_err(|e| e.to_string())?;
 
         // 检查 Content-Length
         if let Some(content_length) = resp.headers().get("content-length") {

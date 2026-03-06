@@ -35,13 +35,19 @@ pub fn get_emu_name(branch: &str) -> &'static str {
 }
 
 /// 选择 macOS 下载资源
-fn select_macos_asset(release_info: &crate::models::release::ReleaseInfo, branch: &str) -> Option<String> {
+fn select_macos_asset(
+    release_info: &crate::models::release::ReleaseInfo,
+    branch: &str,
+) -> Option<String> {
     for asset in &release_info.assets {
         let name = &asset.name;
 
         // 排除其他平台的文件
         let name_lower = name.to_lowercase();
-        if name_lower.contains("windows") || name_lower.contains("linux") || name_lower.contains("android") {
+        if name_lower.contains("windows")
+            || name_lower.contains("linux")
+            || name_lower.contains("android")
+        {
             continue;
         }
 
@@ -79,21 +85,24 @@ where
 {
     // 检查分支是否支持
     if !DOWNLOAD_AVAILABLE_BRANCH.contains(&branch) {
-        warn!("不支持的分支: {}, 支持的分支: {:?}", branch, DOWNLOAD_AVAILABLE_BRANCH);
+        warn!(
+            "不支持的分支: {}, 支持的分支: {:?}",
+            branch, DOWNLOAD_AVAILABLE_BRANCH
+        );
         return Err(AppError::Emulator(format!(
             "只支持安装分支: {:?}",
             DOWNLOAD_AVAILABLE_BRANCH
         )));
     }
 
-    info!(
-        "开始下载 {} 版本: {}",
+    info!("开始下载 {} 版本: {}", get_emu_name(branch), target_version);
+
+    // 获取版本信息
+    debug!(
+        "获取 {} 版本 {} 的发布信息",
         get_emu_name(branch),
         target_version
     );
-
-    // 获取版本信息
-    debug!("获取 {} 版本 {} 的发布信息", get_emu_name(branch), target_version);
     let release_info = get_yuzu_release_info_by_version(target_version, branch).await?;
 
     if release_info.tag_name.is_empty() {
@@ -105,7 +114,11 @@ where
         )));
     }
 
-    debug!("找到版本: {}, 资源数量: {}", release_info.tag_name, release_info.assets.len());
+    debug!(
+        "找到版本: {}, 资源数量: {}",
+        release_info.tag_name,
+        release_info.assets.len()
+    );
 
     // 查找下载 URL - 根据平台选择
     let download_url: Option<String> = if cfg!(target_os = "macos") {
@@ -155,7 +168,9 @@ where
     };
 
     // 下载并等待完成
-    let result = download_manager.download_and_wait(&url, options, Box::new(on_progress)).await?;
+    let result = download_manager
+        .download_and_wait(&url, options, Box::new(on_progress))
+        .await?;
 
     info!("下载完成: {}", result.path.display());
     debug!("下载文件大小: {} bytes", result.size);
@@ -173,7 +188,10 @@ where
 /// 解压后的目录路径
 pub fn unzip_yuzu(package_path: &Path, target_dir: Option<&Path>) -> AppResult<PathBuf> {
     info!("解压 Yuzu 文件: {}", package_path.display());
-    debug!("解压包大小: {} bytes", package_path.metadata().map(|m| m.len()).unwrap_or(0));
+    debug!(
+        "解压包大小: {} bytes",
+        package_path.metadata().map(|m| m.len()).unwrap_or(0)
+    );
 
     let extract_dir = target_dir
         .map(|p| p.to_path_buf())
@@ -219,7 +237,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
     let _release_info = match get_yuzu_release_info_by_version(target_version, "eden").await {
         Ok(info) => {
@@ -236,7 +254,7 @@ where
                         eta: "".to_string(),
                         error: Some(err_msg.clone()),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(AppError::Emulator(err_msg));
             }
@@ -254,7 +272,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -270,7 +288,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 下载
@@ -285,13 +303,13 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "eden", move |progress| {
-         // Eden 已切回 Forgejo 发布源，直接显示直连下载
-         let download_source = "直连".to_string();
-         on_event_clone(ProgressEvent::StepUpdate {
+        // Eden 已切回 Forgejo 发布源，直接显示直连下载
+        let download_source = "直连".to_string();
+        on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download".to_string(),
                 title: format!("下载 {}", "Eden"),
@@ -302,9 +320,11 @@ where
                 eta: progress.eta_string(),
                 error: None,
                 download_source: Some(download_source),
-            }
-         });
-    }).await {
+            },
+        });
+    })
+    .await
+    {
         Ok(path) => path,
         Err(e) => {
             on_event(ProgressEvent::StepUpdate {
@@ -318,7 +338,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -334,7 +354,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 解压/安装 - 根据平台区分处理
@@ -352,7 +372,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
 
         let app_name = "Eden.app";
@@ -374,7 +394,7 @@ where
                         eta: "".to_string(),
                         error: None,
                         download_source: None,
-                    }
+                    },
                 });
             }
             Err(e) => {
@@ -389,7 +409,7 @@ where
                         eta: "".to_string(),
                         error: Some(e.to_string()),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(e);
             }
@@ -410,7 +430,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         let tmp_dir = std::env::temp_dir().join("eden-install");
         if tmp_dir.exists() {
@@ -426,7 +446,7 @@ where
                         eta: "".to_string(),
                         error: Some(format!("清理临时目录失败: {}", e)),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(e.into());
             }
@@ -443,7 +463,7 @@ where
                     eta: "".to_string(),
                     error: Some(format!("创建临时目录失败: {}", e)),
                     download_source: None,
-                }
+                },
             });
             return Err(e.into());
         }
@@ -460,7 +480,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -475,7 +495,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
 
         // 安装
@@ -490,7 +510,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         // 复制文件
         if let Err(e) = copy_back_yuzu_files(&tmp_dir, &yuzu_path) {
@@ -505,7 +525,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -520,7 +540,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
     }
 
@@ -538,7 +558,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         // macOS 无需 MSVC，直接成功
     }
@@ -557,7 +577,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         if let Err(e) = check_and_install_msvc().await {
             warn!("MSVC 运行库检查失败: {}", e);
@@ -572,7 +592,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             // 不阻止安装流程，继续执行
         } else {
@@ -587,7 +607,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
         }
     }
@@ -631,7 +651,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
     let _release_info = match get_yuzu_release_info_by_version(target_version, "citron").await {
         Ok(info) => {
@@ -648,7 +668,7 @@ where
                         eta: "".to_string(),
                         error: Some(err_msg.clone()),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(AppError::Emulator(err_msg));
             }
@@ -666,7 +686,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -682,7 +702,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 下载
@@ -697,12 +717,12 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "citron", move |progress| {
-         // Citron 从 git.citron-emu.org 下载，不使用 GitHub 镜像
-         on_event_clone(ProgressEvent::StepUpdate {
+        // Citron 从 git.citron-emu.org 下载，不使用 GitHub 镜像
+        on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download".to_string(),
                 title: format!("下载 {}", "Citron"),
@@ -713,9 +733,11 @@ where
                 eta: progress.eta_string(),
                 error: None,
                 download_source: Some("直连".to_string()),
-            }
-         });
-    }).await {
+            },
+        });
+    })
+    .await
+    {
         Ok(path) => path,
         Err(e) => {
             on_event(ProgressEvent::StepUpdate {
@@ -729,7 +751,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -745,7 +767,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 解压/安装 - 根据平台区分处理
@@ -763,13 +785,10 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
 
-        match crate::utils::archive::extract_dmg(
-            &package_path,
-            &yuzu_path,
-        ) {
+        match crate::utils::archive::extract_dmg(&package_path, &yuzu_path) {
             Ok(installed_app) => {
                 info!("Citron.app 已安装到: {}", installed_app.display());
                 on_event(ProgressEvent::StepUpdate {
@@ -783,7 +802,7 @@ where
                         eta: "".to_string(),
                         error: None,
                         download_source: None,
-                    }
+                    },
                 });
             }
             Err(e) => {
@@ -798,7 +817,7 @@ where
                         eta: "".to_string(),
                         error: Some(e.to_string()),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(e);
             }
@@ -819,7 +838,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         let tmp_dir = std::env::temp_dir().join("citron-install");
         if tmp_dir.exists() {
@@ -835,7 +854,7 @@ where
                         eta: "".to_string(),
                         error: Some(format!("清理临时目录失败: {}", e)),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(e.into());
             }
@@ -852,7 +871,7 @@ where
                     eta: "".to_string(),
                     error: Some(format!("创建临时目录失败: {}", e)),
                     download_source: None,
-                }
+                },
             });
             return Err(e.into());
         }
@@ -869,7 +888,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -884,7 +903,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
 
         // Citron 解压后有一个顶层目录，需要进入
@@ -910,7 +929,7 @@ where
                                     eta: "".to_string(),
                                     error: Some(format!("读取解压目录失败: {}", e)),
                                     download_source: None,
-                                }
+                                },
                             });
                             return Err(e.into());
                         }
@@ -929,7 +948,7 @@ where
                         eta: "".to_string(),
                         error: Some(format!("读取解压目录失败: {}", e)),
                         download_source: None,
-                    }
+                    },
                 });
                 return Err(e.into());
             }
@@ -947,7 +966,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         // 复制文件
         if let Err(e) = copy_back_yuzu_files(&release_dir, &yuzu_path) {
@@ -962,7 +981,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             return Err(e);
         }
@@ -977,7 +996,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
 
         // 清理临时目录
@@ -1001,7 +1020,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         // macOS 无需 MSVC，直接成功
     }
@@ -1020,7 +1039,7 @@ where
                 eta: "".to_string(),
                 error: None,
                 download_source: None,
-            }
+            },
         });
         if let Err(e) = check_and_install_msvc().await {
             warn!("MSVC 运行库检查失败: {}", e);
@@ -1035,7 +1054,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: None,
-                }
+                },
             });
             // 不阻止安装流程，继续执行
         } else {
@@ -1050,7 +1069,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
         }
     }
@@ -1235,7 +1254,11 @@ where
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "fetch_version".to_string(),
-                    title: format!("当前已是目标版本 {} ({}),跳过安装", target_version, get_emu_name(branch)),
+                    title: format!(
+                        "当前已是目标版本 {} ({}),跳过安装",
+                        target_version,
+                        get_emu_name(branch)
+                    ),
                     status: ProgressStatus::Success,
                     step_type: "normal".to_string(),
                     progress: 0.0,
@@ -1243,7 +1266,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
             // 将其他步骤标记为取消
             on_event(ProgressEvent::StepUpdate {
@@ -1257,7 +1280,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
@@ -1270,7 +1293,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
@@ -1283,7 +1306,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
@@ -1296,7 +1319,7 @@ where
                     eta: "".to_string(),
                     error: None,
                     download_source: None,
-                }
+                },
             });
             return Ok(());
         }
@@ -1448,7 +1471,10 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
         let version_data = Arc::new(Mutex::new((None, None)));
         let version_data_clone = version_data.clone();
 
-        unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> windows::Win32::Foundation::BOOL {
+        unsafe extern "system" fn enum_proc(
+            hwnd: HWND,
+            lparam: LPARAM,
+        ) -> windows::Win32::Foundation::BOOL {
             if IsWindowVisible(hwnd).as_bool() {
                 let mut text: [u16; 512] = [0; 512];
                 let len = GetWindowTextW(hwnd, &mut text);
@@ -1514,7 +1540,12 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
             if guard.0.is_some() {
                 version = guard.0.clone();
                 branch = guard.1.clone();
-                debug!("第 {} 次尝试找到窗口标题，检测到版本: {:?}, 分支: {:?}", i + 1, version, branch);
+                debug!(
+                    "第 {} 次尝试找到窗口标题，检测到版本: {:?}, 分支: {:?}",
+                    i + 1,
+                    version,
+                    branch
+                );
                 break;
             }
 
@@ -1704,7 +1735,9 @@ pub fn open_yuzu_keys_folder() -> AppResult<()> {
 }
 
 /// 读取 Yuzu qt-config.ini 中的 Data Storage 配置
-fn get_yuzu_data_storage_config(user_path: &Path) -> Option<std::collections::HashMap<String, String>> {
+fn get_yuzu_data_storage_config(
+    user_path: &Path,
+) -> Option<std::collections::HashMap<String, String>> {
     let config_path = user_path.join("config").join("qt-config.ini");
 
     if !config_path.exists() {
@@ -1949,20 +1982,20 @@ where
                 info!("固件已是版本 {}，跳过安装", version);
 
                 // 发送 Started 事件
-                let steps = vec![
-                    ProgressStep {
-                        id: "check_firmware".to_string(),
-                        title: format!("当前固件已是版本 {}, 跳过安装", version),
-                        status: ProgressStatus::Success,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: None,
-                        download_source: None,
-                    }
-                ];
-                on_event(ProgressEvent::Started { steps: steps.clone() });
+                let steps = vec![ProgressStep {
+                    id: "check_firmware".to_string(),
+                    title: format!("当前固件已是版本 {}, 跳过安装", version),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: None,
+                    download_source: None,
+                }];
+                on_event(ProgressEvent::Started {
+                    steps: steps.clone(),
+                });
                 on_event(ProgressEvent::StepUpdate {
                     step: steps[0].clone(),
                 });
@@ -2026,7 +2059,8 @@ where
         version_to_install,
         &firmware_path,
         on_event.clone(),
-    ).await?;
+    )
+    .await?;
 
     // 更新配置
     {

@@ -37,9 +37,9 @@ impl CheatEntry {
 
     /// 检查操作码是否有效（每个操作码应该是 8 位十六进制）
     pub fn validate_ops(&self) -> bool {
-        self.ops.iter().all(|op| {
-            op.len() == 8 && op.chars().all(|c| c.is_ascii_hexdigit())
-        })
+        self.ops
+            .iter()
+            .all(|op| op.len() == 8 && op.chars().all(|c| c.is_ascii_hexdigit()))
     }
 }
 
@@ -77,7 +77,8 @@ impl CheatFile {
 
     /// 过滤启用的金手指
     pub fn filter_enabled(&self, enabled_titles: &[String]) -> Self {
-        let entries = self.entries
+        let entries = self
+            .entries
             .iter()
             .filter(|e| enabled_titles.contains(&e.title))
             .cloned()

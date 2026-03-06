@@ -86,9 +86,7 @@ impl From<AppError> for ErrorResponse {
             AppError::Io(e) => (1002, "IO 错误".to_string(), Some(e.to_string())),
             AppError::Json(e) => (1003, "JSON 错误".to_string(), Some(e.to_string())),
             AppError::Network(msg) => (1004, "网络错误".to_string(), Some(msg.clone())),
-            AppError::FileNotFound(path) => {
-                (1005, "文件未找到".to_string(), Some(path.clone()))
-            }
+            AppError::FileNotFound(path) => (1005, "文件未找到".to_string(), Some(path.clone())),
             AppError::DirectoryNotFound(path) => {
                 (1006, "目录未找到".to_string(), Some(path.clone()))
             }
@@ -98,12 +96,8 @@ impl From<AppError> for ErrorResponse {
             AppError::Extract(msg) => (2003, "解压错误".to_string(), Some(msg.clone())),
             AppError::Process(msg) => (2004, "进程错误".to_string(), Some(msg.clone())),
             AppError::Permission(msg) => (2005, "权限错误".to_string(), Some(msg.clone())),
-            AppError::InvalidArgument(msg) => {
-                (3001, "无效参数".to_string(), Some(msg.clone()))
-            }
-            AppError::Unsupported(msg) => {
-                (3002, "不支持的操作".to_string(), Some(msg.clone()))
-            }
+            AppError::InvalidArgument(msg) => (3001, "无效参数".to_string(), Some(msg.clone())),
+            AppError::Unsupported(msg) => (3002, "不支持的操作".to_string(), Some(msg.clone())),
             AppError::Unknown(msg) => (9999, "未知错误".to_string(), Some(msg.clone())),
         };
 

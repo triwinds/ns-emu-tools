@@ -11,12 +11,12 @@ use std::path::PathBuf;
 /// Aria2 安装进度信息
 #[derive(Debug, Clone)]
 pub struct Aria2InstallProgress {
-    pub stage: String,    // "checking", "fetching", "downloading", "extracting", "complete"
+    pub stage: String, // "checking", "fetching", "downloading", "extracting", "complete"
     pub percentage: f64,
     pub downloaded: u64,
     pub total: u64,
-    pub speed: u64,  // bytes/s
-    pub eta: u64,    // seconds
+    pub speed: u64, // bytes/s
+    pub eta: u64,   // seconds
     pub message: String,
 }
 
@@ -72,7 +72,9 @@ pub async fn ensure_aria2_installed_with_progress(
 async fn download_and_install_aria2(
     on_progress: Option<Aria2InstallCallback>,
 ) -> AppResult<PathBuf> {
-    use super::aria2::{extract_aria2, get_aria2_download_url, get_aria2_install_dir, get_latest_aria2_release};
+    use super::aria2::{
+        extract_aria2, get_aria2_download_url, get_aria2_install_dir, get_latest_aria2_release,
+    };
     use std::sync::Arc;
     use tracing::info;
 

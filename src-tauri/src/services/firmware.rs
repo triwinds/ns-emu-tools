@@ -43,12 +43,10 @@ pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
 
     let data = request_github_api(GITHUB_FIRMWARE_API).await?;
 
-    let releases = data
-        .as_array()
-        .ok_or_else(|| {
-            debug!("API 响应格式无效，不是数组类型");
-            AppError::InvalidArgument("无效的 API 响应格式".to_string())
-        })?;
+    let releases = data.as_array().ok_or_else(|| {
+        debug!("API 响应格式无效，不是数组类型");
+        AppError::InvalidArgument("无效的 API 响应格式".to_string())
+    })?;
 
     debug!("收到 {} 个发布版本", releases.len());
 
@@ -112,7 +110,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     let firmware_infos = match get_firmware_infos().await {
@@ -128,8 +126,8 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(e.to_string()),
-            download_source: None,
-                }
+                    download_source: None,
+                },
             });
             return Err(e);
         }
@@ -154,8 +152,8 @@ where
                     download_speed: "".to_string(),
                     eta: "".to_string(),
                     error: Some(err_msg.clone()),
-            download_source: None,
-                }
+                    download_source: None,
+                },
             });
             return Err(AppError::InvalidArgument(err_msg));
         }
@@ -172,7 +170,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     // 步骤2: 下载固件
@@ -192,8 +190,8 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
-                        download_source: Some(download_source.clone()),
-        }
+            download_source: Some(download_source.clone()),
+        },
     });
 
     info!("下载固件: {}", url);
@@ -213,7 +211,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
-                }
+                },
             });
             return Err(e);
         }
@@ -226,21 +224,28 @@ where
 
     let on_event_clone = on_event.clone();
     let download_source_clone = download_source.clone();
-    let result = match download_manager.download_and_wait(&url, options, Box::new(move |progress| {
-        on_event_clone(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download_firmware".to_string(),
-                title: "下载固件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "download".to_string(),
-                progress: progress.percentage,
-                download_speed: progress.speed_string(),
-                eta: progress.eta_string(),
-                error: None,
-                            download_source: Some(download_source_clone.clone()),
-            }
-        });
-    })).await {
+    let result = match download_manager
+        .download_and_wait(
+            &url,
+            options,
+            Box::new(move |progress| {
+                on_event_clone(ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "download_firmware".to_string(),
+                        title: "下载固件".to_string(),
+                        status: ProgressStatus::Running,
+                        step_type: "download".to_string(),
+                        progress: progress.percentage,
+                        download_speed: progress.speed_string(),
+                        eta: progress.eta_string(),
+                        error: None,
+                        download_source: Some(download_source_clone.clone()),
+                    },
+                });
+            }),
+        )
+        .await
+    {
         Ok(res) => res,
         Err(e) => {
             on_event(ProgressEvent::StepUpdate {
@@ -254,7 +259,7 @@ where
                     eta: "".to_string(),
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
-                }
+                },
             });
             return Err(e);
         }
@@ -270,8 +275,8 @@ where
             download_speed: "".to_string(),
             eta: "".to_string(),
             error: None,
-                        download_source: Some(download_source.clone()),
-        }
+            download_source: Some(download_source.clone()),
+        },
     });
 
     // 步骤3: 解压固件
@@ -291,7 +296,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     info!("解压固件到: {}", target_firmware_path.display());
@@ -310,7 +315,7 @@ where
                     eta: "".to_string(),
                     error: Some(format!("清理旧固件失败: {}", e)),
                     download_source: None,
-                }
+                },
             });
             return Err(e.into());
         }
@@ -327,7 +332,7 @@ where
                 eta: "".to_string(),
                 error: Some(format!("创建固件目录失败: {}", e)),
                 download_source: None,
-            }
+            },
         });
         return Err(e.into());
     }
@@ -345,7 +350,7 @@ where
                 eta: "".to_string(),
                 error: Some(e.to_string()),
                 download_source: None,
-            }
+            },
         });
         on_event(ProgressEvent::CorruptedFile {
             path: result.path.to_string_lossy().to_string(),
@@ -364,7 +369,7 @@ where
             eta: "".to_string(),
             error: None,
             download_source: None,
-        }
+        },
     });
 
     info!("固件 {} 解压成功", firmware_version);
@@ -428,9 +433,7 @@ pub async fn reorganize_firmware_for_ryujinx(
 
 /// 获取可用的固件下载源
 pub fn get_available_firmware_sources() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("由 github.com/THZoria/NX_Firmware 提供的固件", "github"),
-    ]
+    vec![("由 github.com/THZoria/NX_Firmware 提供的固件", "github")]
 }
 
 /// 获取 Yuzu 固件路径
@@ -500,19 +503,22 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
 
     // Step 1: Load keys
     if let Some(win) = window {
-        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "load_keys".to_string(),
-                title: "加载密钥文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                error: None,
-            download_source: None,
+        let _ = win.emit(
+            "installation-event",
+            ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Running,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: None,
+                    download_source: None,
+                },
             },
-        });
+        );
     }
 
     // 加载 Yuzu 的 key 文件
@@ -521,19 +527,22 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
     if !key_path.exists() {
         let err_msg = format!("未找到 Yuzu keys 文件: {}", key_path.display());
         if let Some(win) = window {
-            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "load_keys".to_string(),
-                    title: "加载密钥文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: Some(err_msg.clone()),
-            download_source: None,
+            let _ = win.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "load_keys".to_string(),
+                        title: "加载密钥文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: Some(err_msg.clone()),
+                        download_source: None,
+                    },
                 },
-            });
+            );
         }
         return Err(AppError::FileNotFound(err_msg));
     }
@@ -541,37 +550,43 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
     info!("加载 Yuzu keys: {}", key_path.display());
     if let Err(e) = crate::services::keys::load_keys(&key_path) {
         if let Some(win) = window {
-            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "load_keys".to_string(),
-                    title: "加载密钥文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: Some(e.to_string()),
-            download_source: None,
+            let _ = win.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "load_keys".to_string(),
+                        title: "加载密钥文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: Some(e.to_string()),
+                        download_source: None,
+                    },
                 },
-            });
+            );
         }
         return Err(e);
     }
 
     if let Some(win) = window {
-        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "load_keys".to_string(),
-                title: "加载密钥文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                error: None,
-            download_source: None,
+        let _ = win.emit(
+            "installation-event",
+            ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: None,
+                    download_source: None,
+                },
             },
-        });
+        );
     }
 
     // 查找系统版本归档 NCA 文件
@@ -595,9 +610,7 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
 
             Ok(version)
         }
-        None => Err(AppError::FileNotFound(
-            "未找到系统版本归档文件".to_string(),
-        )),
+        None => Err(AppError::FileNotFound("未找到系统版本归档文件".to_string())),
     }
 }
 
@@ -618,19 +631,22 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
 
     // Step 1: Load keys
     if let Some(win) = window {
-        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "load_keys".to_string(),
-                title: "加载密钥文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                error: None,
-            download_source: None,
+        let _ = win.emit(
+            "installation-event",
+            ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Running,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: None,
+                    download_source: None,
+                },
             },
-        });
+        );
     }
 
     // 加载 Ryujinx 的 key 文件
@@ -639,19 +655,22 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
     if !key_path.exists() {
         let err_msg = format!("未找到 Ryujinx keys 文件: {}", key_path.display());
         if let Some(win) = window {
-            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "load_keys".to_string(),
-                    title: "加载密钥文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: Some(err_msg.clone()),
-            download_source: None,
+            let _ = win.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "load_keys".to_string(),
+                        title: "加载密钥文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: Some(err_msg.clone()),
+                        download_source: None,
+                    },
                 },
-            });
+            );
         }
         return Err(AppError::FileNotFound(err_msg));
     }
@@ -659,37 +678,43 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
     info!("加载 Ryujinx keys: {}", key_path.display());
     if let Err(e) = crate::services::keys::load_keys(&key_path) {
         if let Some(win) = window {
-            let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "load_keys".to_string(),
-                    title: "加载密钥文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    error: Some(e.to_string()),
-            download_source: None,
+            let _ = win.emit(
+                "installation-event",
+                ProgressEvent::StepUpdate {
+                    step: ProgressStep {
+                        id: "load_keys".to_string(),
+                        title: "加载密钥文件".to_string(),
+                        status: ProgressStatus::Error,
+                        step_type: "normal".to_string(),
+                        progress: 0.0,
+                        download_speed: String::new(),
+                        eta: String::new(),
+                        error: Some(e.to_string()),
+                        download_source: None,
+                    },
                 },
-            });
+            );
         }
         return Err(e);
     }
 
     if let Some(win) = window {
-        let _ = win.emit("installation-event", ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "load_keys".to_string(),
-                title: "加载密钥文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                error: None,
-            download_source: None,
+        let _ = win.emit(
+            "installation-event",
+            ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "load_keys".to_string(),
+                    title: "加载密钥文件".to_string(),
+                    status: ProgressStatus::Success,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: String::new(),
+                    eta: String::new(),
+                    error: None,
+                    download_source: None,
+                },
             },
-        });
+        );
     }
 
     // 查找系统版本归档 NCA 文件（Ryujinx 格式）
@@ -713,9 +738,7 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
 
             Ok(version)
         }
-        None => Err(AppError::FileNotFound(
-            "未找到系统版本归档文件".to_string(),
-        )),
+        None => Err(AppError::FileNotFound("未找到系统版本归档文件".to_string())),
     }
 }
 
@@ -801,10 +824,7 @@ mod tests {
                     Ok(version) => {
                         println!("✓ 成功检测到固件版本: {}", version);
                         assert!(!version.is_empty(), "版本字符串不应为空");
-                        assert!(
-                            version.contains('.'),
-                            "版本应该包含点号 (例如: 15.0.0)"
-                        );
+                        assert!(version.contains('.'), "版本应该包含点号 (例如: 15.0.0)");
                     }
                     Err(e) => {
                         println!("✗ 提取版本失败: {}", e);
@@ -891,10 +911,7 @@ mod tests {
                     Ok(version) => {
                         println!("✓ 成功检测到固件版本: {}", version);
                         assert!(!version.is_empty(), "版本字符串不应为空");
-                        assert!(
-                            version.contains('.'),
-                            "版本应该包含点号 (例如: 15.0.0)"
-                        );
+                        assert!(version.contains('.'), "版本应该包含点号 (例如: 15.0.0)");
                     }
                     Err(e) => {
                         println!("✗ 提取版本失败: {}", e);

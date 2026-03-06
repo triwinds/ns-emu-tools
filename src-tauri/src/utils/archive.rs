@@ -11,11 +11,7 @@ use std::path::PathBuf;
 use tracing::{debug, error, info, warn};
 
 /// 解压文件（自动检测格式）
-pub fn uncompress(
-    filepath: &Path,
-    target_path: &Path,
-    delete_on_error: bool,
-) -> AppResult<()> {
+pub fn uncompress(filepath: &Path, target_path: &Path, delete_on_error: bool) -> AppResult<()> {
     let filename = filepath
         .file_name()
         .and_then(|n| n.to_str())
@@ -31,10 +27,7 @@ pub fn uncompress(
     } else if filename.ends_with(".tar.gz") || filename.ends_with(".tgz") {
         extract_tar_gz(filepath, target_path)
     } else {
-        Err(AppError::Extract(format!(
-            "不支持的压缩格式: {}",
-            filename
-        )))
+        Err(AppError::Extract(format!("不支持的压缩格式: {}", filename)))
     };
 
     if let Err(ref e) = result {
@@ -50,7 +43,11 @@ pub fn uncompress(
 
 /// 解压 ZIP 文件
 pub fn extract_zip(filepath: &Path, target_path: &Path) -> AppResult<()> {
-    info!("解压 ZIP: {} -> {}", filepath.display(), target_path.display());
+    info!(
+        "解压 ZIP: {} -> {}",
+        filepath.display(),
+        target_path.display()
+    );
 
     let file = File::open(filepath)?;
     let mut archive = zip::ZipArchive::new(file)
@@ -100,7 +97,11 @@ pub fn extract_zip(filepath: &Path, target_path: &Path) -> AppResult<()> {
 
 /// 解压 7z 文件
 pub fn extract_7z(filepath: &Path, target_path: &Path) -> AppResult<()> {
-    info!("解压 7z: {} -> {}", filepath.display(), target_path.display());
+    info!(
+        "解压 7z: {} -> {}",
+        filepath.display(),
+        target_path.display()
+    );
 
     // 创建目标目录
     std::fs::create_dir_all(target_path)?;
@@ -114,7 +115,11 @@ pub fn extract_7z(filepath: &Path, target_path: &Path) -> AppResult<()> {
 
 /// 解压 tar.xz 文件
 pub fn extract_tar_xz(filepath: &Path, target_path: &Path) -> AppResult<()> {
-    info!("解压 tar.xz: {} -> {}", filepath.display(), target_path.display());
+    info!(
+        "解压 tar.xz: {} -> {}",
+        filepath.display(),
+        target_path.display()
+    );
 
     let file = File::open(filepath)?;
     let decoder = xz2::read::XzDecoder::new(file);
@@ -133,21 +138,33 @@ pub fn extract_tar_xz(filepath: &Path, target_path: &Path) -> AppResult<()> {
 
 /// 解压 tar.gz 文件
 pub fn extract_tar_gz(filepath: &Path, target_path: &Path) -> AppResult<()> {
-    info!("解压 tar.gz: {} -> {}", filepath.display(), target_path.display());
+    info!(
+        "解压 tar.gz: {} -> {}",
+        filepath.display(),
+        target_path.display()
+    );
 
     // 验证文件存在和大小
-    let file_metadata = filepath.metadata()
+    let file_metadata = filepath
+        .metadata()
         .map_err(|e| AppError::Extract(format!("无法读取文件元数据: {}", e)))?;
 
     let file_size = file_metadata.len();
-    debug!("tar.gz 文件大小: {} bytes ({:.2} MB)", file_size, file_size as f64 / 1024.0 / 1024.0);
+    debug!(
+        "tar.gz 文件大小: {} bytes ({:.2} MB)",
+        file_size,
+        file_size as f64 / 1024.0 / 1024.0
+    );
 
     if file_size == 0 {
         return Err(AppError::Extract("文件大小为0，可能下载不完整".to_string()));
     }
 
     if file_size < 100 {
-        return Err(AppError::Extract(format!("文件过小 ({} bytes)，可能是错误页面或下载失败", file_size)));
+        return Err(AppError::Extract(format!(
+            "文件过小 ({} bytes)，可能是错误页面或下载失败",
+            file_size
+        )));
     }
 
     // 验证 gzip 魔数
@@ -159,7 +176,10 @@ pub fn extract_tar_gz(filepath: &Path, target_path: &Path) -> AppResult<()> {
 
     // gzip 文件签名: 1F 8B
     if magic[0] != 0x1F || magic[1] != 0x8B {
-        warn!("文件头: {:02X} {:02X}, 不是有效的 gzip 文件", magic[0], magic[1]);
+        warn!(
+            "文件头: {:02X} {:02X}, 不是有效的 gzip 文件",
+            magic[0], magic[1]
+        );
 
         // 尝试读取前100字节查看内容
         file.rewind()?;
@@ -168,15 +188,18 @@ pub fn extract_tar_gz(filepath: &Path, target_path: &Path) -> AppResult<()> {
         let preview_str = String::from_utf8_lossy(&preview);
 
         // 检查是否是 HTML 错误页面
-        if preview_str.to_lowercase().contains("<html") || preview_str.to_lowercase().contains("<!doctype") {
-            return Err(AppError::Extract(
-                format!("下载的文件不是 tar.gz，而是 HTML 页面，可能是下载链接错误或需要认证")
-            ));
+        if preview_str.to_lowercase().contains("<html")
+            || preview_str.to_lowercase().contains("<!doctype")
+        {
+            return Err(AppError::Extract(format!(
+                "下载的文件不是 tar.gz，而是 HTML 页面，可能是下载链接错误或需要认证"
+            )));
         }
 
-        return Err(AppError::Extract(
-            format!("不是有效的 gzip 文件 (魔数: {:02X} {:02X})，文件可能已损坏或下载不完整", magic[0], magic[1])
-        ));
+        return Err(AppError::Extract(format!(
+            "不是有效的 gzip 文件 (魔数: {:02X} {:02X})，文件可能已损坏或下载不完整",
+            magic[0], magic[1]
+        )));
     }
 
     debug!("gzip 文件头验证通过");
@@ -190,28 +213,30 @@ pub fn extract_tar_gz(filepath: &Path, target_path: &Path) -> AppResult<()> {
     std::fs::create_dir_all(target_path)?;
 
     // 解压时提供详细的错误信息
-    archive
-        .unpack(target_path)
-        .map_err(|e| {
-            error!("解压 tar.gz 失败，文件: {}, 大小: {} bytes, 错误: {}",
-                   filepath.display(), file_size, e);
+    archive.unpack(target_path).map_err(|e| {
+        error!(
+            "解压 tar.gz 失败，文件: {}, 大小: {} bytes, 错误: {}",
+            filepath.display(),
+            file_size,
+            e
+        );
 
-            // 提供更友好的错误信息
-            let error_msg = e.to_string();
-            if error_msg.contains("failed to iterate") {
-                AppError::Extract(format!(
-                    "无法读取 tar 归档内容 ({}), 可能原因:\n\
+        // 提供更友好的错误信息
+        let error_msg = e.to_string();
+        if error_msg.contains("failed to iterate") {
+            AppError::Extract(format!(
+                "无法读取 tar 归档内容 ({}), 可能原因:\n\
                     1. 文件下载不完整，请重试\n\
                     2. 文件在下载过程中损坏\n\
                     3. 磁盘空间不足或权限问题\n\
                     4. 网络连接在下载时中断\n\
                     建议: 删除下载的文件并重新下载",
-                    error_msg
-                ))
-            } else {
-                AppError::Extract(format!("解压 tar.gz 失败: {}", error_msg))
-            }
-        })?;
+                error_msg
+            ))
+        } else {
+            AppError::Extract(format!("解压 tar.gz 失败: {}", error_msg))
+        }
+    })?;
 
     info!("tar.gz 解压完成");
     Ok(())
@@ -297,7 +322,11 @@ pub fn list_zip_entries(filepath: &Path) -> AppResult<Vec<String>> {
 pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
     use std::process::Command;
 
-    info!("挂载 DMG: {} -> {}", dmg_path.display(), target_path.display());
+    info!(
+        "挂载 DMG: {} -> {}",
+        dmg_path.display(),
+        target_path.display()
+    );
 
     // 创建临时挂载点
     let mount_point = std::env::temp_dir().join(format!("dmg_mount_{}", std::process::id()));
@@ -321,7 +350,8 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
 
     // 查找 .app
     let app_path = find_app_in_dir(&mount_point)?;
-    let app_name = app_path.file_name()
+    let app_name = app_path
+        .file_name()
         .ok_or_else(|| AppError::Extract("无法获取 .app 名称".to_string()))?;
 
     // 确保目标目录存在
@@ -433,7 +463,7 @@ pub fn extract_and_install_app_from_tar_gz(
     let info_plist = target_app.join("Contents/Info.plist");
     if !info_plist.exists() {
         return Err(AppError::Extract(
-            ".app 安装验证失败: Contents/Info.plist 不存在".to_string()
+            ".app 安装验证失败: Contents/Info.plist 不存在".to_string(),
         ));
     }
 
@@ -481,7 +511,8 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.7z");
         let mut file = File::create(&file_path).unwrap();
-        file.write_all(&[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C]).unwrap();
+        file.write_all(&[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C])
+            .unwrap();
 
         assert!(is_7z_file(&file_path));
     }

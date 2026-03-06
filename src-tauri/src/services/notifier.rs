@@ -73,11 +73,7 @@ impl Notifier {
 }
 
 /// 全局通知函数（需要 AppHandle）
-pub fn emit_to_all<S: serde::Serialize + Clone>(
-    app: &AppHandle,
-    event: &str,
-    payload: S,
-) {
+pub fn emit_to_all<S: serde::Serialize + Clone>(app: &AppHandle, event: &str, payload: S) {
     let _ = app.emit(event, payload);
 }
 

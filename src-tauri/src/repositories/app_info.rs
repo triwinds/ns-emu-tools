@@ -71,7 +71,11 @@ pub async fn load_change_log() -> AppResult<String> {
 
     let url = get_final_url(CHANGELOG_URL);
     let client = get_durable_cached_client();
-    let resp = client.get(&url).send().await.map_err(|e| AppError::Unknown(e.to_string()))?;
+    let resp = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| AppError::Unknown(e.to_string()))?;
 
     if !resp.status().is_success() {
         return Err(AppError::Unknown(format!(
@@ -80,7 +84,10 @@ pub async fn load_change_log() -> AppResult<String> {
         )));
     }
 
-    let text = resp.text().await.map_err(|e| AppError::Unknown(e.to_string()))?;
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| AppError::Unknown(e.to_string()))?;
     Ok(text)
 }
 
@@ -206,10 +213,9 @@ mod tests {
     #[ignore] // 需要网络连接
     async fn test_check_update() {
         let result = check_update(false).await.unwrap();
-        println!("Current: {}, Latest: {}, Has update: {}",
-            result.current_version,
-            result.latest_version,
-            result.has_update
+        println!(
+            "Current: {}, Latest: {}, Has update: {}",
+            result.current_version, result.latest_version, result.has_update
         );
     }
 }

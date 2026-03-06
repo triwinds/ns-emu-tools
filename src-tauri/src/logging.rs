@@ -45,7 +45,9 @@ pub fn init() -> WorkerGuard {
 
     // 创建文件 appender
     let log_path = log_file_path();
-    let log_dir = log_path.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let log_dir = log_path
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."));
     let log_file = log_path
         .file_name()
         .and_then(|f| f.to_str())

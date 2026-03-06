@@ -117,7 +117,9 @@ pub fn parse_text(text: &str, max_ops_per_entry: usize) -> AppResult<CheatFile> 
             let name = name.trim();
 
             if name.is_empty() {
-                return Err(AppError::InvalidArgument("'{}' 大括号内的标题为空".to_string()));
+                return Err(AppError::InvalidArgument(
+                    "'{}' 大括号内的标题为空".to_string(),
+                ));
             }
 
             if seen_default {
@@ -161,7 +163,9 @@ pub fn parse_text(text: &str, max_ops_per_entry: usize) -> AppResult<CheatFile> 
             let name = name.trim();
 
             if name.is_empty() {
-                return Err(AppError::InvalidArgument("'[]' 方括号内的标题为空".to_string()));
+                return Err(AppError::InvalidArgument(
+                    "'[]' 方括号内的标题为空".to_string(),
+                ));
             }
 
             current_title = Some(name.to_string());
