@@ -188,6 +188,11 @@ export async function openFolder(path: string) {
   return invokeCommand<void>('open_folder', { path })
 }
 
+/** 打开 config.json 所在文件夹 */
+export async function openConfigFolder() {
+  return invokeCommand<void>('open_config_folder')
+}
+
 /** 打开 URL */
 export async function openUrl(url: string) {
   return invokeCommand<void>('open_url', { url })

@@ -87,6 +87,17 @@ pub async fn open_folder(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// 打开 config.json 所在文件夹
+#[command]
+pub async fn open_config_folder() -> Result<(), String> {
+    let config_path = config::config_path();
+    let config_dir = config_path
+        .parent()
+        .ok_or_else(|| "无法获取 config.json 所在目录".to_string())?;
+
+    open_folder(config_dir.to_string_lossy().to_string()).await
+}
+
 /// 打开 URL
 #[command]
 pub fn open_url(url: String, app: AppHandle) -> Result<(), String> {

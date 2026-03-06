@@ -117,6 +117,12 @@
         <v-switch density="compact" color="primary" :hide-details="true" v-model="setting.other.rename_yuzu_to_cemu"
                   label="安装完成后将 yuzu.exe 重命名为 cemu.exe (For Windows Auto HDR)"></v-switch>
       </v-container>
+      <v-divider></v-divider>
+      <v-card-actions>
+        <v-btn block color="info" variant="outlined" :prepend-icon="mdiFolderOpenOutline" @click="openConfigJsonFolder">
+          打开 config.json 所在文件夹
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </SimplePage>
 </template>
@@ -127,8 +133,9 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import {onBeforeMount, onMounted, ref, watch} from "vue";
 import type {NameValueItem, Setting} from "@/types";
 import {defaultConfig} from "@/types/DefaultConfig";
-import { updateSetting, getAvailableFirmwareSources, getGithubMirrors } from "@/utils/tauri";
+import { updateSetting, getAvailableFirmwareSources, getGithubMirrors, openConfigFolder } from "@/utils/tauri";
 import {
+  mdiFolderOpenOutline,
   mdiHelpCircle
 } from '@mdi/js'
 
@@ -244,6 +251,10 @@ function onProxyModeChange() {
   }
   console.log(`onProxyModeChange, current input: ${proxyInput.value}`)
   setting.network.proxy = proxyInput.value
+}
+
+async function openConfigJsonFolder() {
+  await openConfigFolder()
 }
 
 </script>

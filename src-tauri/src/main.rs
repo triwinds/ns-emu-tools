@@ -115,6 +115,7 @@ fn main() {
             commands::common::get_app_version,
             commands::common::get_platform,
             commands::common::open_folder,
+            commands::common::open_config_folder,
             commands::common::open_url,
             commands::common::update_setting,
             commands::common::update_last_open_emu_page,
