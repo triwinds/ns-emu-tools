@@ -1627,7 +1627,7 @@ mod tests {
         manager.start().await.expect("启动 aria2 失败");
 
         // 下载一个小文件 (约 1KB)
-        let test_url = "https://hub.gitmirror.com/https://github.com/eden-emulator/Releases/releases/download/v0.0.4-rc3/Eden-Windows-v0.0.4-rc3-amd64-msvc-standard.zip";
+        let test_url = "https://git.eden-emu.dev/eden-emu/eden/releases/download/v0.0.4/Eden-Windows-v0.0.4-amd64-msvc-standard.zip";
         let options = Aria2DownloadOptions {
             save_dir: Some(temp_dir.clone()),
             filename: Some("test_download.bin".to_string()),

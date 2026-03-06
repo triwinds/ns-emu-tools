@@ -128,11 +128,11 @@
 
 ## 附录：Release 获取接口说明
 
-### Eden（GitHub Release）
+### Eden（Forgejo Release）
 
-- **API 地址**: `https://api.github.com/repos/eden-emulator/Releases/releases`
-- **获取指定版本**: `https://api.github.com/repos/eden-emulator/Releases/releases/tags/{version}`
-- **解析方式**: 使用 `ReleaseInfo::from_github_api()` 解析
+- **API 地址**: `https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases`
+- **获取指定版本**: `https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases/tags/{version}`
+- **解析方式**: 使用 `ReleaseInfo::from_forgejo_api()` 解析
 
 **macOS 资源命名规则**:
 - 格式: `Eden-macOS-{version}.tar.gz`

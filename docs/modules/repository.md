@@ -173,7 +173,7 @@ for asset in release.assets:
 **功能概述：** 获取 Yuzu 系列模拟器 (Eden, Citron) 的版本发布信息。
 
 **数据来源：**
-- Eden: GitHub API (`eden-emulator/Releases`)
+- Eden: Forgejo API (`git.eden-emu.dev/eden-emu/eden`)
 - Citron: Forgejo API (`git.citron-emu.org/Citron/Emulator`)
 
 #### 主要函数
@@ -205,7 +205,7 @@ for asset in release.assets:
 
 | 分支 | 说明 | API 端点 |
 |------|------|----------|
-| `eden` | Eden 模拟器 | GitHub: `eden-emulator/Releases` |
+| `eden` | Eden 模拟器 | Forgejo: `git.eden-emu.dev` |
 | `citron` | Citron 模拟器 | Forgejo: `git.citron-emu.org` |
 
 #### 使用示例

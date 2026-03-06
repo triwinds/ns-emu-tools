@@ -220,6 +220,29 @@ mod tests {
     }
 
     #[test]
+    fn test_forgejo_api_parsing() {
+        let json = serde_json::json!({
+            "name": "v0.0.4-rc3",
+            "tag_name": "v0.0.4-rc3",
+            "body": "Forgejo release notes",
+            "prerelease": false,
+            "html_url": "https://git.eden-emu.dev/eden-emu/eden/releases/tag/v0.0.4-rc3",
+            "assets": [
+                {
+                    "name": "Eden-Windows-v0.0.4-rc3-amd64-msvc-standard.zip",
+                    "browser_download_url": "https://git.eden-emu.dev/attachments/test.zip",
+                    "size": 2048
+                }
+            ]
+        });
+
+        let release = ReleaseInfo::from_forgejo_api(&json).unwrap();
+        assert_eq!(release.tag_name, "v0.0.4-rc3");
+        assert_eq!(release.assets.len(), 1);
+        assert_eq!(release.assets[0].download_url, "https://git.eden-emu.dev/attachments/test.zip");
+    }
+
+    #[test]
     fn test_find_windows_asset() {
         let release = ReleaseInfo {
             name: "Test".to_string(),

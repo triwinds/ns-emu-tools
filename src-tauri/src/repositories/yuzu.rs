@@ -4,11 +4,11 @@
 
 use crate::error::{AppError, AppResult};
 use crate::models::release::ReleaseInfo;
-use crate::services::network::{request_git_api, request_github_api};
+use crate::services::network::request_git_api;
 use tracing::{debug, info};
 
-/// Eden 仓库 API 地址
-const EDEN_RELEASES_API: &str = "https://api.github.com/repos/eden-emulator/Releases/releases";
+/// Eden 仓库 API 地址（Forgejo/Gitea）
+const EDEN_RELEASES_API: &str = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases";
 
 /// Citron 仓库 API 地址
 const CITRON_RELEASES_API: &str = "https://git.citron-emu.org/api/v1/repos/Citron/Emulator/releases";
@@ -55,13 +55,13 @@ pub async fn get_yuzu_release_info_by_version(
 pub async fn get_eden_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
     info!("获取 Eden 所有 Release 信息");
 
-    let data = request_github_api(EDEN_RELEASES_API).await?;
+    let data = request_git_api(EDEN_RELEASES_API).await?;
 
     let releases: Vec<ReleaseInfo> = data
         .as_array()
         .ok_or_else(|| AppError::InvalidArgument("无效的 API 响应格式".to_string()))?
         .iter()
-        .filter_map(|item| ReleaseInfo::from_github_api(item))
+        .filter_map(|item| ReleaseInfo::from_forgejo_api(item))
         .collect();
 
     debug!("获取到 {} 个 Eden Release", releases.len());
@@ -79,11 +79,10 @@ pub async fn get_eden_all_release_versions() -> AppResult<Vec<String>> {
 pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
     info!("获取 Eden 版本 {} 的 Release 信息", version);
 
-    // GitHub API: /repos/{owner}/{repo}/releases/tags/{tag}
     let url = format!("{}/tags/{}", EDEN_RELEASES_API, version);
-    let data = request_github_api(&url).await?;
+    let data = request_git_api(&url).await?;
 
-    ReleaseInfo::from_github_api(&data).ok_or_else(|| {
+    ReleaseInfo::from_forgejo_api(&data).ok_or_else(|| {
         AppError::InvalidArgument(format!("无法解析 Eden 版本 {} 的信息", version))
     })
 }
