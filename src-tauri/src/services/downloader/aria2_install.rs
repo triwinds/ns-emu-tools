@@ -4,8 +4,8 @@
 //! 使用 RustDownloader 实现下载功能
 
 use crate::error::{AppError, AppResult};
-use crate::services::downloader::{RustDownloader, DownloadOptions};
-use crate::services::downloader::manager::DownloadManager;
+#[cfg(target_os = "windows")]
+use crate::services::downloader::{DownloadManager, DownloadOptions, RustDownloader};
 use std::path::PathBuf;
 
 /// Aria2 安装进度信息
@@ -72,7 +72,7 @@ pub async fn ensure_aria2_installed_with_progress(
 async fn download_and_install_aria2(
     on_progress: Option<Aria2InstallCallback>,
 ) -> AppResult<PathBuf> {
-    use super::aria2::{extract_aria2, get_aria2_install_dir, get_latest_aria2_release};
+    use super::aria2::{extract_aria2, get_aria2_download_url, get_aria2_install_dir, get_latest_aria2_release};
     use std::sync::Arc;
     use tracing::info;
 
@@ -108,6 +108,9 @@ async fn download_and_install_aria2(
 
     info!("选择下载: {} ({}字节)", asset.name, asset.size);
 
+    let download_url = get_aria2_download_url(&asset.browser_download_url);
+    info!("aria2 安装下载地址: {}", download_url);
+
     // 2. 使用 RustDownloader 下载
     let temp_dir = std::env::temp_dir();
     let install_dir = get_aria2_install_dir()?;
@@ -120,7 +123,7 @@ async fn download_and_install_aria2(
         save_dir: Some(temp_dir.clone()),
         filename: Some(asset.name.clone()),
         overwrite: true,
-        use_github_mirror: true, // 使用镜像源
+        use_github_mirror: false,
         ..Default::default()
     };
 
@@ -133,7 +136,7 @@ async fn download_and_install_aria2(
     // 下载（带进度回调）
     let result = downloader
         .download_and_wait(
-            &asset.browser_download_url,
+            &download_url,
             options,
             Box::new(move |download_progress| {
                 if let Some(ref cb) = on_progress_clone {

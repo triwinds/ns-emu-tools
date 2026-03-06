@@ -34,6 +34,9 @@ use tracing::{debug, info, warn};
 /// aria2 RPC 密钥
 const ARIA2_SECRET: &str = "ns-emu-tools-aria2";
 
+/// Aria2 安装下载默认 GitHub 镜像
+const DEFAULT_ARIA2_DOWNLOAD_MIRROR: &str = "https://nsarchive.e6ex.com/gh";
+
 /// 全局 Aria2Manager 实例
 static ARIA2_MANAGER: OnceCell<Arc<Aria2Manager>> = OnceCell::new();
 
@@ -1094,6 +1097,40 @@ fn extract_filename_from_url(url: &str) -> String {
         .to_string()
 }
 
+/// 为 Aria2 安装资源解析最终下载 URL
+pub(crate) fn resolve_aria2_download_url(
+    origin_url: &str,
+    github_download_mirror: &str,
+    using_proxy: bool,
+) -> String {
+    if using_proxy || !origin_url.contains("https://github.com") {
+        return origin_url.to_string();
+    }
+
+    let mirror = if github_download_mirror.is_empty() || github_download_mirror == "cloudflare_load_balance" {
+        DEFAULT_ARIA2_DOWNLOAD_MIRROR
+    } else {
+        github_download_mirror
+    };
+
+    if mirror == "direct" {
+        origin_url.to_string()
+    } else {
+        origin_url.replace("https://github.com", mirror)
+    }
+}
+
+/// 获取 Aria2 安装资源的最终下载 URL
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub(crate) fn get_aria2_download_url(origin_url: &str) -> String {
+    let config = get_config();
+    resolve_aria2_download_url(
+        origin_url,
+        &config.setting.network.github_download_mirror,
+        is_using_proxy(),
+    )
+}
+
 /// Aria2 发布版本信息
 #[cfg(target_os = "windows")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1131,14 +1168,13 @@ pub(crate) async fn get_latest_aria2_release() -> AppResult<Aria2ReleaseInfo> {
 async fn download_aria2(asset_url: &str, save_path: &PathBuf) -> AppResult<()> {
     info!("开始下载 aria2: {}", asset_url);
 
-    // 根据是否使用代理选择最终的下载 URL
-    let final_url = if is_using_proxy() {
-        info!("检测到代理，直连 GitHub");
-        asset_url.to_string()
+    let final_url = get_aria2_download_url(asset_url);
+
+    if final_url == asset_url {
+        info!("aria2 下载使用直连 GitHub");
     } else {
-        info!("未检测到代理，使用镜像源");
-        get_github_download_url(asset_url)
-    };
+        info!("aria2 下载使用镜像源: {}", final_url);
+    }
 
     info!("实际下载 URL: {}", final_url);
 
@@ -1591,6 +1627,33 @@ mod tests {
             extract_filename_from_url("https://example.com/path/to/file.tar.gz?token=abc"),
             "file.tar.gz"
         );
+    }
+
+    #[test]
+    fn test_resolve_aria2_download_url_uses_nsarchive_by_default() {
+        let origin = "https://github.com/aria2/aria2/releases/download/v1.37.0/aria2-1.37.0-win-64bit-build1.zip";
+        let resolved = resolve_aria2_download_url(origin, "cloudflare_load_balance", false);
+
+        assert_eq!(
+            resolved,
+            "https://nsarchive.e6ex.com/gh/aria2/aria2/releases/download/v1.37.0/aria2-1.37.0-win-64bit-build1.zip"
+        );
+    }
+
+    #[test]
+    fn test_resolve_aria2_download_url_respects_explicit_direct() {
+        let origin = "https://github.com/aria2/aria2/releases/download/v1.37.0/aria2.zip";
+        let resolved = resolve_aria2_download_url(origin, "direct", false);
+
+        assert_eq!(resolved, origin);
+    }
+
+    #[test]
+    fn test_resolve_aria2_download_url_respects_proxy() {
+        let origin = "https://github.com/aria2/aria2/releases/download/v1.37.0/aria2.zip";
+        let resolved = resolve_aria2_download_url(origin, "cloudflare_load_balance", true);
+
+        assert_eq!(resolved, origin);
     }
 
     #[test]
