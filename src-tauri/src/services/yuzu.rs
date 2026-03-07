@@ -1414,9 +1414,211 @@ pub fn get_yuzu_exe_path() -> PathBuf {
     }
 }
 
-/// 开始检测 Yuzu 版本（通过启动程序并读取窗口标题）
+fn extract_ascii_strings(bytes: &[u8]) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    for &byte in bytes {
+        if byte.is_ascii_graphic() || byte == b' ' {
+            current.push(byte);
+            continue;
+        }
+
+        if current.len() >= 4 {
+            result.push(String::from_utf8_lossy(&current).into_owned());
+        }
+        current.clear();
+    }
+
+    if current.len() >= 4 {
+        result.push(String::from_utf8_lossy(&current).into_owned());
+    }
+
+    result
+}
+
+fn normalize_version_token(token: &str) -> Option<String> {
+    let normalized = token
+        .trim()
+        .trim_matches(|c: char| !c.is_ascii_alphanumeric() && !matches!(c, '.' | '-' | '_'));
+
+    if normalized.is_empty() || normalized.len() > 64 {
+        return None;
+    }
+
+    if !normalized.chars().any(|c| c.is_ascii_digit()) {
+        return None;
+    }
+
+    if !normalized
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+    {
+        return None;
+    }
+
+    Some(normalized.to_string())
+}
+
+fn is_likely_release_version(token: &str) -> bool {
+    let starts_with_prefixed_semver = token
+        .strip_prefix('v')
+        .and_then(|rest| rest.chars().next())
+        .is_some_and(|c| c.is_ascii_digit());
+
+    if starts_with_prefixed_semver || token.contains('.') {
+        return true;
+    }
+
+    token.contains('-')
+        && token.chars().any(|c| c.is_ascii_alphabetic())
+        && token.chars().any(|c| c.is_ascii_digit())
+}
+
+fn extract_version_after_prefix(text: &str, prefix: &str) -> Option<String> {
+    let rest = text.strip_prefix(prefix)?;
+    let token = rest.split_whitespace().next()?;
+    let version = normalize_version_token(token)?;
+
+    if is_likely_release_version(&version) {
+        Some(version)
+    } else {
+        None
+    }
+}
+
+fn infer_branch_from_marker(text: &str) -> Option<&'static str> {
+    let marker = text.trim();
+
+    if marker.eq_ignore_ascii_case("eden")
+        || marker.starts_with("Eden ")
+        || marker.starts_with("Eden | ")
+    {
+        return Some("eden");
+    }
+
+    if marker.eq_ignore_ascii_case("citron")
+        || marker.starts_with("Citron ")
+        || marker.starts_with("citron ")
+        || marker.starts_with("Citron | ")
+        || marker.starts_with("citron | ")
+    {
+        return Some("citron");
+    }
+
+    if marker.starts_with("yuzu Early Access ") {
+        return Some("ea");
+    }
+
+    if marker.eq_ignore_ascii_case("yuzu") || marker.starts_with("yuzu ") {
+        return Some("mainline");
+    }
+
+    None
+}
+
+fn detect_yuzu_version_from_ascii_strings(strings: &[String]) -> Option<(String, Option<String>)> {
+    for text in strings {
+        for prefix in ["Eden | ", "Eden "] {
+            if let Some(version) = extract_version_after_prefix(text, prefix) {
+                return Some((version, Some("eden".to_string())));
+            }
+        }
+
+        for prefix in ["Citron | ", "citron | ", "Citron ", "citron "] {
+            if let Some(version) = extract_version_after_prefix(text, prefix) {
+                return Some((version, Some("citron".to_string())));
+            }
+        }
+
+        if let Some(rest) = text.strip_prefix("yuzu Early Access ") {
+            let Some(version) = rest.split_whitespace().next() else {
+                continue;
+            };
+            if version.chars().all(|c| c.is_ascii_digit()) {
+                return Some((version.to_string(), Some("ea".to_string())));
+            }
+        }
+
+        if let Some(rest) = text.strip_prefix("yuzu ") {
+            let Some(version) = rest.split_whitespace().next() else {
+                continue;
+            };
+            if version.chars().all(|c| c.is_ascii_digit()) {
+                return Some((version.to_string(), Some("mainline".to_string())));
+            }
+        }
+    }
+
+    for (index, text) in strings.iter().enumerate() {
+        let Some(version) = normalize_version_token(text) else {
+            continue;
+        };
+
+        if !is_likely_release_version(&version) {
+            continue;
+        }
+
+        let start = index.saturating_sub(3);
+        let end = (index + 4).min(strings.len());
+        let branch = strings[start..end]
+            .iter()
+            .find_map(|marker| infer_branch_from_marker(marker))
+            .map(ToString::to_string);
+
+        if branch.is_some() {
+            return Some((version, branch));
+        }
+    }
+
+    None
+}
+
+fn detect_yuzu_version_from_binary(exe_path: &Path) -> Option<(String, Option<String>)> {
+    let binary = match std::fs::read(exe_path) {
+        Ok(binary) => binary,
+        Err(error) => {
+            warn!(
+                "读取模拟器二进制失败，无法直接提取版本: {} ({})",
+                exe_path.display(),
+                error
+            );
+            return None;
+        }
+    };
+
+    let ascii_strings = extract_ascii_strings(&binary);
+    let detected = detect_yuzu_version_from_ascii_strings(&ascii_strings);
+
+    if let Some((version, branch)) = &detected {
+        info!(
+            "通过二进制内嵌字符串检测到版本: {}, 分支: {:?}",
+            version, branch
+        );
+    } else {
+        debug!("未能从二进制中提取版本: {}", exe_path.display());
+    }
+
+    detected
+}
+
+fn save_detected_yuzu_version(version: &str, branch: Option<&str>) -> AppResult<()> {
+    debug!("更新配置文件");
+
+    let mut cfg = CONFIG.write();
+    cfg.yuzu.yuzu_version = Some(version.to_string());
+    if let Some(branch) = branch {
+        cfg.yuzu.branch = branch.to_string();
+    }
+    cfg.save()?;
+
+    debug!("配置文件已保存");
+    Ok(())
+}
+
+/// 开始检测 Yuzu 版本
 ///
-/// 注意：此功能需要窗口枚举功能，在 Windows 上需要使用 Windows API
+/// 优先直接解析二进制内嵌版本串；如果失败，则在 Windows 上回退到窗口标题检测。
 pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
     info!("开始检测 Yuzu 版本");
 
@@ -1428,40 +1630,50 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
         return Ok(None);
     }
 
+    if let Some((version, branch)) = detect_yuzu_version_from_binary(&exe_path) {
+        info!("通过二进制检测到版本: {}, 分支: {:?}", version, branch);
+        save_detected_yuzu_version(&version, branch.as_deref())?;
+        return Ok(Some(version));
+    }
+
+    #[cfg(not(windows))]
+    {
+        warn!("未能从二进制中检测到版本，当前平台不支持窗口标题回退检测");
+        return Ok(None);
+    }
+
     // TODO: 检查是否已经在运行
     // let instances = find_all_instances(&exe_path);
     // if !instances.is_empty() {
     //     return Err(AppError::Process("Yuzu 正在运行，请先关闭".to_string()));
     // }
 
-    // 启动程序
-    info!("启动 Yuzu: {}", exe_path.display());
-    debug!("使用参数启动以检测版本");
-    let mut child = Command::new(&exe_path)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()?;
-
-    debug!("Yuzu 进程 ID: {}", child.id());
-    debug!("等待窗口创建...");
-
-    // 等待窗口创建
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    // TODO: 枚举窗口标题检测版本
-    // Windows 上需要使用 EnumWindows API
-    // 示例窗口标题:
-    // - "yuzu Early Access 1234"
-    // - "Eden | v1.0.0"
-    // - "citron | v1.0.0"
-
-    #[allow(unused_mut)]
-    let mut version: Option<String> = None;
-    #[allow(unused_mut)]
-    let mut branch: Option<String> = None;
-
     #[cfg(windows)]
     {
+        // 启动程序
+        info!("启动 Yuzu: {}", exe_path.display());
+        debug!("使用窗口标题回退检测版本");
+        let mut child = Command::new(&exe_path)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()?;
+
+        debug!("Yuzu 进程 ID: {}", child.id());
+        debug!("等待窗口创建...");
+
+        // 等待窗口创建
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        // TODO: 枚举窗口标题检测版本
+        // Windows 上需要使用 EnumWindows API
+        // 示例窗口标题:
+        // - "yuzu Early Access 1234"
+        // - "Eden | v1.0.0"
+        // - "citron | v1.0.0"
+
+        let mut version: Option<String> = None;
+        let mut branch: Option<String> = None;
+
         use std::sync::{Arc, Mutex};
         use windows::Win32::Foundation::{HWND, LPARAM};
         use windows::Win32::UI::WindowsAndMessaging::{
@@ -1555,31 +1767,22 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
 
             std::thread::sleep(Duration::from_millis(500));
         }
-    }
+        // 结束进程
+        debug!("结束 Yuzu 进程");
+        let _ = child.kill();
+        let _ = child.wait();
 
-    // 结束进程
-    debug!("结束 Yuzu 进程");
-    let _ = child.kill();
-    let _ = child.wait();
-
-    // 更新配置
-    if let Some(ref v) = version {
-        info!("检测到版本: {}, 分支: {:?}", v, branch);
-        debug!("更新配置文件");
-
-        let mut cfg = CONFIG.write();
-        cfg.yuzu.yuzu_version = Some(v.clone());
-        if let Some(b) = branch {
-            cfg.yuzu.branch = b;
+        // 更新配置
+        if let Some(ref v) = version {
+            info!("通过窗口标题检测到版本: {}, 分支: {:?}", v, branch);
+            save_detected_yuzu_version(v, branch.as_deref())?;
+        } else {
+            warn!("未能检测到 Yuzu 版本");
+            debug!("可能原因：窗口标题不匹配，或窗口创建延迟过长");
         }
-        cfg.save()?;
-        debug!("配置文件已保存");
-    } else {
-        warn!("未能检测到 Yuzu 版本");
-        debug!("可能原因：窗口标题不匹配，或窗口创建延迟过长");
-    }
 
-    Ok(version)
+        Ok(version)
+    }
 }
 
 /// 启动 Yuzu
@@ -2090,6 +2293,51 @@ mod tests {
         // 测试需要配置环境
         // 这里只是确保函数不会 panic
         let _path = get_yuzu_exe_path();
+    }
+
+    #[test]
+    fn test_detect_yuzu_version_from_ascii_strings_for_eden() {
+        let strings = vec![
+            "8e373eb714".to_string(),
+            "v0.2.0-rc1".to_string(),
+            "Eden".to_string(),
+            "2026-02-15T03:33:38Z".to_string(),
+            "Eden v0.2.0-rc1 ".to_string(),
+            "MSVC 19.44.35222.0".to_string(),
+        ];
+
+        let detected = detect_yuzu_version_from_ascii_strings(&strings);
+        assert_eq!(
+            detected,
+            Some(("v0.2.0-rc1".to_string(), Some("eden".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_detect_yuzu_version_from_ascii_strings_with_context_fallback() {
+        let strings = vec![
+            "Random text".to_string(),
+            "Citron".to_string(),
+            "stable-01c042048".to_string(),
+            "MSVC 19.44.35222.0".to_string(),
+        ];
+
+        let detected = detect_yuzu_version_from_ascii_strings(&strings);
+        assert_eq!(
+            detected,
+            Some(("stable-01c042048".to_string(), Some("citron".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_detect_yuzu_version_from_ascii_strings_for_yuzu_ea() {
+        let strings = vec![
+            "Something else".to_string(),
+            "yuzu Early Access 4176".to_string(),
+        ];
+
+        let detected = detect_yuzu_version_from_ascii_strings(&strings);
+        assert_eq!(detected, Some(("4176".to_string(), Some("ea".to_string()))));
     }
 
     #[test]

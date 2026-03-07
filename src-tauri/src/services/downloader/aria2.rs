@@ -1097,6 +1097,7 @@ fn get_managed_runtime_dir() -> AppResult<PathBuf> {
     Ok(dir)
 }
 
+#[cfg(test)]
 fn aria2_log_path() -> PathBuf {
     managed_runtime_dir().join("aria2.log")
 }
@@ -1631,7 +1632,7 @@ pub(crate) fn get_aria2_install_dir() -> AppResult<PathBuf> {
     get_managed_runtime_dir()
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(all(test, target_os = "windows"))]
 fn aria2_install_dir_path() -> PathBuf {
     managed_runtime_dir()
 }

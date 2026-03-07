@@ -1661,7 +1661,7 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
     // TODO: 考虑为 Linux 实现类似的 ELF 二进制检测
     #[cfg(target_os = "linux")]
     {
-        let exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
+        let _exe_path = match get_ryujinx_exe_path_internal(&ryujinx_path) {
             Some(path) => path,
             None => {
                 warn!("未找到 Ryujinx 程序: {}", ryujinx_path.display());
