@@ -39,10 +39,10 @@ export interface UiSetting {
 }
 
 export interface NetworkSetting {
-  firmwareDownloadSource: string
   githubApiMode: string
   githubDownloadMirror: string
   ryujinxGitLabDownloadMirror: string
+  edenGitDownloadMirror: string
   useDoh: boolean
   proxy: string
 }

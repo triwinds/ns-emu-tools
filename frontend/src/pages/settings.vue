@@ -12,16 +12,6 @@
           </v-col>
         </v-row>
         <v-select
-            v-model="setting.network.firmwareDownloadSource"
-            :items="availableFirmwareDownloadSource"
-            item-title="name"
-            item-value="value"
-            label="固件下载源配置"
-            hide-details
-            variant="underlined"
-            color="primary"
-        ></v-select>
-        <v-select
             v-model="setting.network.githubApiMode"
             :items="availableNetworkMode"
             item-title="name"
@@ -37,6 +27,16 @@
             item-title="name"
             item-value="value"
             label="Ryujinx GitLab CDN 配置"
+            hide-details
+            variant="underlined"
+            color="primary"
+        ></v-select>
+        <v-select
+            v-model="setting.network.edenGitDownloadMirror"
+            :items="availableNetworkMode"
+            item-title="name"
+            item-value="value"
+            label="Eden 官方源 CDN 配置"
             hide-details
             variant="underlined"
             color="primary"
@@ -133,7 +133,7 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import {onBeforeMount, onMounted, ref, watch} from "vue";
 import type {NameValueItem, Setting} from "@/types";
 import {defaultConfig} from "@/types/DefaultConfig";
-import { updateSetting, getAvailableFirmwareSources, getGithubMirrors, openConfigFolder } from "@/utils/tauri";
+import { updateSetting, getGithubMirrors, openConfigFolder } from "@/utils/tauri";
 import {
   mdiFolderOpenOutline,
   mdiHelpCircle
@@ -157,7 +157,6 @@ let availableDownloadBackend = [
   {name: 'Aria2 - 多线程下载', value: 'aria2'},
   {name: 'Rust - 内置下载器', value: 'rust'},
 ]
-let availableFirmwareDownloadSource = ref<NameValueItem[]>([])
 let availableGithubDownloadSource = ref<NameValueItem[]>([])
 let availableProxyMode = [
     {name: '自动检测系统代理', value: 'system'},
@@ -189,7 +188,6 @@ function isValidHttpUrl(string: string) {
 
 
 onMounted(async () => {
-  await loadAvailableFirmwareDownloadSource()
   await loadAvailableGithubDownloadSource()
   proxyInput.value = setting.network.proxy
   updateProxyMode()
@@ -203,17 +201,6 @@ onMounted(async () => {
     }
   }, {deep: true, immediate: false})
 })
-
-async function loadAvailableFirmwareDownloadSource() {
-  try {
-    const sources = await getAvailableFirmwareSources()
-    for (const source of sources) {
-      availableFirmwareDownloadSource.value.push({name: source[0], value: source[1]})
-    }
-  } catch (e) {
-    console.error('Failed to load firmware sources:', e)
-  }
-}
 
 async function loadAvailableGithubDownloadSource() {
   try {

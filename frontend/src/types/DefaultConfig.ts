@@ -25,10 +25,10 @@ export const defaultConfig: AppConfig = {
       "height": 850
     },
     "network": {
-      "firmwareDownloadSource": "github",
       "githubApiMode": "direct",
       "githubDownloadMirror": "cloudflare_load_balance",
       "ryujinxGitLabDownloadMirror": "direct",
+      "edenGitDownloadMirror": "auto-detect",
       "useDoh": true,
       "proxy": "system"
     },

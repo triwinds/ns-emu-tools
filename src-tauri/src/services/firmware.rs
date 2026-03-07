@@ -431,11 +431,6 @@ pub async fn reorganize_firmware_for_ryujinx(
     Ok(())
 }
 
-/// 获取可用的固件下载源
-pub fn get_available_firmware_sources() -> Vec<(&'static str, &'static str)> {
-    vec![("由 github.com/THZoria/NX_Firmware 提供的固件", "github")]
-}
-
 /// 获取 Yuzu 固件路径
 pub fn get_yuzu_firmware_path() -> PathBuf {
     // 使用 yuzu.rs 中的函数获取 NAND 路径，这样可以从配置文件读取自定义路径
@@ -755,13 +750,6 @@ mod tests {
         if let Some(first) = infos.first() {
             println!("最新版本: {} ({})", first.version, first.size);
         }
-    }
-
-    #[test]
-    fn test_firmware_sources() {
-        let sources = get_available_firmware_sources();
-        assert_eq!(sources.len(), 1);
-        assert_eq!(sources[0].1, "github");
     }
 
     #[tokio::test]

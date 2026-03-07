@@ -194,12 +194,6 @@ pub async fn load_change_log() -> Result<String, String> {
     app_info::load_change_log().await.map_err(|e| e.to_string())
 }
 
-/// 获取可用的固件下载源
-#[command]
-pub fn get_available_firmware_sources() -> Vec<(String, String)> {
-    config_data::get_available_firmware_sources()
-}
-
 /// 获取 GitHub 镜像列表
 #[command]
 pub fn get_github_mirrors() -> Vec<(String, String, String)> {

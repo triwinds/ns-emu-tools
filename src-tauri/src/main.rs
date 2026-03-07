@@ -120,7 +120,6 @@ fn main() {
             commands::common::delete_path,
             commands::common::check_update,
             commands::common::load_change_log,
-            commands::common::get_available_firmware_sources,
             commands::common::get_github_mirrors,
             commands::common::get_game_data,
             commands::common::get_available_firmware_infos,

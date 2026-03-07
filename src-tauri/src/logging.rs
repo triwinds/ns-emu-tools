@@ -302,7 +302,10 @@ mod tests {
         writer.flush().unwrap();
 
         assert_eq!(fs::read(&log_path).unwrap(), b"ok\n");
-        assert_eq!(fs::read(&log_path.with_file_name("ns-emu-tools.log.1")).unwrap(), vec![b'x'; 40]);
+        assert_eq!(
+            fs::read(&log_path.with_file_name("ns-emu-tools.log.1")).unwrap(),
+            vec![b'x'; 40]
+        );
     }
 
     #[test]
@@ -317,6 +320,9 @@ mod tests {
         writer.flush().unwrap();
 
         assert_eq!(fs::read_to_string(&log_path).unwrap(), "33333\n");
-        assert_eq!(fs::read_to_string(log_path.with_file_name("ns-emu-tools.log.1")).unwrap(), "22222\n");
+        assert_eq!(
+            fs::read_to_string(log_path.with_file_name("ns-emu-tools.log.1")).unwrap(),
+            "22222\n"
+        );
     }
 }

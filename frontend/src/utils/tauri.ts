@@ -238,11 +238,6 @@ export async function updateSelfByTag(tag: string) {
   return invokeCommand<void>('update_self_by_tag', { tag })
 }
 
-/** 获取可用的固件下载源 */
-export async function getAvailableFirmwareSources() {
-  return invokeCommand<Array<[string, string]>>('get_available_firmware_sources')
-}
-
 /** 获取 GitHub 镜像列表 */
 export async function getGithubMirrors() {
   return invokeCommand<Array<[string, string, string]>>('get_github_mirrors')
@@ -324,10 +319,10 @@ export interface RyujinxConfig {
 
 /** 网络设置 */
 export interface NetworkSetting {
-  firmwareDownloadSource: string
   githubApiMode: string
   githubDownloadMirror: string
   ryujinxGitLabDownloadMirror: string
+  edenGitDownloadMirror: string
   useDoh: boolean
   proxy: string
 }

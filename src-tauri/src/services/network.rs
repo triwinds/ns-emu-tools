@@ -20,14 +20,18 @@ use url::Url;
 /// URL 覆盖映射表
 static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
     let mut map = HashMap::new();
-    map.insert(
-        "https://archive.org/download/nintendo-switch-global-firmwares/",
-        "https://nsarchive.e6ex.com/nsfrp/",
-    );
     map.insert("https://api.github.com", "https://cfrp.e6ex.com/ghapi");
     map.insert(
         "https://raw.githubusercontent.com",
         "https://ghproxy.net/https://raw.githubusercontent.com",
+    );
+    map.insert(
+        "https://git.ryujinx.app",
+        "https://nsarchive.e6ex.com/ryujinx_official",
+    );
+    map.insert(
+        "https://git.eden-emu.dev",
+        "https://nsarchive.e6ex.com/eden_official",
     );
     map
 });
@@ -527,22 +531,24 @@ pub fn get_github_download_source_name() -> String {
 
 /// 获取最终 URL 的下载源名称（通用）
 pub fn get_download_source_name(origin_url: &str) -> String {
-    let (github_api_mode, ryujinx_mirror, firmware_source) = {
+    let (github_api_mode, ryujinx_mirror, eden_mirror) = {
         let config = CONFIG.read();
         let network = &config.setting.network;
         (
             network.github_api_mode.clone(),
             network.ryujinx_git_lab_download_mirror.clone(),
-            network.firmware_download_source.clone(),
+            network.eden_git_download_mirror.clone(),
         )
     };
 
-    if origin_url.starts_with("https://api.github.com") {
-        get_source_name_by_mode(&github_api_mode, "GitHub API")
+    if origin_url.starts_with("https://api.github.com")
+        || origin_url.starts_with("https://raw.githubusercontent.com")
+    {
+        get_source_name_by_mode(&github_api_mode, "GitHub")
     } else if origin_url.starts_with("https://git.ryujinx.app") {
         get_source_name_by_mode(&ryujinx_mirror, "Ryujinx GitLab")
-    } else if origin_url.contains("archive.org") || origin_url.contains("firmware") {
-        get_source_name_by_mode(&firmware_source, "固件下载")
+    } else if origin_url.starts_with("https://git.eden-emu.dev") {
+        get_source_name_by_mode(&eden_mirror, "Eden 官方源")
     } else if origin_url.starts_with("https://github.com") {
         get_github_download_source_name()
     } else {
@@ -561,22 +567,26 @@ fn get_source_name_by_mode(mode: &str, default_name: &str) -> String {
 
 /// 根据网络设置获取最终 URL
 pub fn get_final_url(origin_url: &str) -> String {
-    let (github_api_mode, ryujinx_mirror, firmware_source) = {
+    let (github_api_mode, ryujinx_mirror, eden_mirror) = {
         let config = CONFIG.read();
         let network = &config.setting.network;
         (
             network.github_api_mode.clone(),
             network.ryujinx_git_lab_download_mirror.clone(),
-            network.firmware_download_source.clone(),
+            network.eden_git_download_mirror.clone(),
         )
     };
 
-    if origin_url.starts_with("https://api.github.com") {
+    if origin_url.starts_with("https://api.github.com")
+        || origin_url.starts_with("https://raw.githubusercontent.com")
+    {
         get_final_url_with_mode(origin_url, &github_api_mode)
     } else if origin_url.starts_with("https://git.ryujinx.app") {
         get_final_url_with_mode(origin_url, &ryujinx_mirror)
+    } else if origin_url.starts_with("https://git.eden-emu.dev") {
+        get_final_url_with_mode(origin_url, &eden_mirror)
     } else {
-        get_final_url_with_mode(origin_url, &firmware_source)
+        origin_url.to_string()
     }
 }
 
@@ -684,7 +694,7 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
 }
 
 /// 请求 Git 托管平台 API（GitLab/Forgejo）
-/// 用于 git.ryujinx.app 和 git.citron-emu.org
+/// 用于 git.ryujinx.app、git.eden-emu.dev 和 git.citron-emu.org
 /// 使用手动缓存（5 分钟 TTL）忽略 cache-control: private
 pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     info!("请求 Git API: {}", url);
@@ -701,8 +711,9 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
 
     // 使用普通客户端发送请求（不使用 HTTP 缓存中间件）
     let client = create_client()?;
-    debug!("发送 GET 请求到 Git API");
-    let resp = client.get(url).send().await.map_err(|e| {
+    let final_url = get_final_url(url);
+    debug!("发送 GET 请求到 Git API: {}", final_url);
+    let resp = client.get(&final_url).send().await.map_err(|e| {
         warn!("Git API 请求失败: {}", e);
         AppError::Unknown(e.to_string())
     })?;
@@ -714,7 +725,7 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
         return Err(AppError::Unknown(format!(
             "Git API 请求失败: {} - {}",
             resp.status(),
-            url
+            final_url
         )));
     }
 
@@ -749,11 +760,6 @@ pub fn get_available_port() -> u16 {
     }
 }
 
-/// 获取固件下载源列表 (network 模块版本)
-pub fn get_network_firmware_sources() -> Vec<(&'static str, &'static str)> {
-    vec![("由 github.com/THZoria/NX_Firmware 提供的固件", "github")]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -771,6 +777,21 @@ mod tests {
         let url = "https://api.github.com/repos/test/test";
         let overridden = get_override_url(url);
         assert!(overridden.contains("cfrp.e6ex.com"));
+    }
+
+    #[test]
+    fn test_get_override_url_for_git_hosts() {
+        let ryujinx_url = "https://git.ryujinx.app/api/v4/projects/1/releases";
+        assert_eq!(
+            get_override_url(ryujinx_url),
+            "https://nsarchive.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
+        );
+
+        let eden_url = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases";
+        assert_eq!(
+            get_override_url(eden_url),
+            "https://nsarchive.e6ex.com/eden_official/api/v1/repos/eden-emu/eden/releases"
+        );
     }
 
     #[test]

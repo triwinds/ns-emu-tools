@@ -12,7 +12,9 @@ use crate::config::get_config;
 use crate::error::{AppError, AppResult};
 #[cfg(target_os = "windows")]
 use crate::services::network::request_github_api;
-use crate::services::network::{get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA};
+use crate::services::network::{
+    get_final_url, get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA,
+};
 use aria2_ws::response::GlobalStat as Aria2GlobalStat;
 use aria2_ws::response::Status as Aria2Status;
 use aria2_ws::{Client, TaskOptions};
@@ -481,7 +483,7 @@ impl Aria2Manager {
         let final_url = if options.use_github_mirror && url.contains("github.com") {
             get_github_download_url(url)
         } else {
-            url.to_string()
+            get_final_url(url)
         };
 
         info!("添加下载任务: {}", final_url);

@@ -9,6 +9,7 @@ use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_
 use crate::services::downloader::{get_download_manager, DownloadOptions, DownloadProgress};
 #[cfg(not(target_os = "macos"))]
 use crate::services::msvc::check_and_install_msvc;
+use crate::services::network::get_download_source_name;
 use crate::utils::archive::uncompress;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -305,10 +306,9 @@ where
             download_source: None,
         },
     });
+    let download_source = get_download_source_name("https://git.eden-emu.dev");
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "eden", move |progress| {
-        // Eden 已切回 Forgejo 发布源，直接显示直连下载
-        let download_source = "直连".to_string();
         on_event_clone(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "download".to_string(),
@@ -319,7 +319,7 @@ where
                 download_speed: progress.speed_string(),
                 eta: progress.eta_string(),
                 error: None,
-                download_source: Some(download_source),
+                download_source: Some(download_source.clone()),
             },
         });
     })

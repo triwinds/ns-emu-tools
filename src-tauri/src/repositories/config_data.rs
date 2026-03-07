@@ -1,6 +1,6 @@
 //! 配置数据访问层
 //!
-//! 提供固件下载源、GitHub 镜像等静态配置数据
+//! 提供 GitHub 镜像等静态配置数据
 
 use crate::error::{AppError, AppResult};
 use crate::services::network::{get_durable_cached_client, get_final_url};
@@ -8,9 +8,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use tracing::{info, warn};
-
-/// 名称-值对类型 (对应前端 [name, value])
-pub type NameValuePair = (String, String);
 
 /// GitHub 镜像信息 (对应前端 [value, region, name])
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,14 +22,6 @@ impl GithubMirror {
     pub fn to_tuple(&self) -> (String, String, String) {
         (self.value.clone(), self.region.clone(), self.name.clone())
     }
-}
-
-/// 获取可用的固件下载源
-pub fn get_available_firmware_sources() -> Vec<NameValuePair> {
-    vec![(
-        "由 github.com/THZoria/NX_Firmware 提供的固件".to_string(),
-        "github".to_string(),
-    )]
 }
 
 /// 获取可用的 GitHub 镜像列表
@@ -173,13 +162,6 @@ pub async fn get_game_data() -> AppResult<HashMap<String, Value>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_get_firmware_sources() {
-        let sources = get_available_firmware_sources();
-        assert_eq!(sources.len(), 1);
-        assert_eq!(sources[0].1, "github");
-    }
 
     #[test]
     fn test_get_github_mirrors() {

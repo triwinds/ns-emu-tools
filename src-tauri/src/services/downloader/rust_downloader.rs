@@ -14,7 +14,7 @@ use crate::services::downloader::state_store::{
 use crate::services::downloader::types::{
     DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus,
 };
-use crate::services::network::get_github_download_url;
+use crate::services::network::{get_final_url, get_github_download_url};
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use reqwest::Client;
@@ -134,7 +134,7 @@ impl DownloadManager for RustDownloader {
         let final_url = if options.use_github_mirror && url.contains("github.com") {
             get_github_download_url(url)
         } else {
-            url.to_string()
+            get_final_url(url)
         };
 
         let task = Arc::new(DownloadTask::new(
@@ -189,7 +189,7 @@ impl DownloadManager for RustDownloader {
         let final_url = if options.use_github_mirror && url.contains("github.com") {
             get_github_download_url(url)
         } else {
-            url.to_string()
+            get_final_url(url)
         };
 
         let task = Arc::new(DownloadTask::new(

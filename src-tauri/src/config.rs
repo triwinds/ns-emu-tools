@@ -177,9 +177,6 @@ impl Default for RyujinxConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkSetting {
-    /// 固件下载源
-    #[serde(default = "default_firmware_source")]
-    pub firmware_download_source: String,
     /// GitHub API 模式
     #[serde(default = "default_github_api_mode")]
     pub github_api_mode: String,
@@ -189,16 +186,15 @@ pub struct NetworkSetting {
     /// Ryujinx GitLab 下载镜像
     #[serde(default = "default_direct")]
     pub ryujinx_git_lab_download_mirror: String,
+    /// Eden 官方源下载镜像
+    #[serde(default = "default_auto_detect")]
+    pub eden_git_download_mirror: String,
     /// 是否使用 DoH
     #[serde(default = "default_true")]
     pub use_doh: bool,
     /// 代理设置
     #[serde(default = "default_proxy")]
     pub proxy: String,
-}
-
-fn default_firmware_source() -> String {
-    "github".to_string()
 }
 
 fn default_github_api_mode() -> String {
@@ -213,6 +209,10 @@ fn default_direct() -> String {
     "direct".to_string()
 }
 
+fn default_auto_detect() -> String {
+    "auto-detect".to_string()
+}
+
 fn default_true() -> bool {
     true
 }
@@ -224,10 +224,10 @@ fn default_proxy() -> String {
 impl Default for NetworkSetting {
     fn default() -> Self {
         Self {
-            firmware_download_source: default_firmware_source(),
             github_api_mode: default_github_api_mode(),
             github_download_mirror: default_github_mirror(),
             ryujinx_git_lab_download_mirror: default_direct(),
+            eden_git_download_mirror: default_auto_detect(),
             use_doh: default_true(),
             proxy: default_proxy(),
         }
@@ -432,6 +432,10 @@ mod tests {
         assert_eq!(config.yuzu.branch, "eden");
         assert_eq!(config.ryujinx.branch, "mainline");
         assert!(config.setting.ui.dark);
+        assert_eq!(
+            config.setting.network.eden_git_download_mirror,
+            "auto-detect"
+        );
     }
 
     #[test]
