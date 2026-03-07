@@ -1187,7 +1187,7 @@ async fn download_aria2(asset_url: &str, save_path: &PathBuf) -> AppResult<()> {
         info!("aria2 下载使用镜像源: {}", final_url);
     }
 
-    info!("实际下载 URL: {}", final_url);
+    info!("实际下载链接：{}", final_url);
 
     // 创建 HTTP 客户端
     let mut client_builder = reqwest::Client::builder()

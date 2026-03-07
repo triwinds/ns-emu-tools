@@ -70,15 +70,15 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
     // 查找对应平台的版本
     for asset in &release_info.assets {
         let name = asset.name.to_lowercase();
-        debug!("检查资源: {} (size: {})", asset.name, asset.size);
+        debug!("检查资源：{}（大小：{}）", asset.name, asset.size);
         if name.starts_with("ryujinx-") && name.ends_with(suffix) {
             let url = get_final_url(&asset.download_url);
-            info!("选择下载资源: {}, URL: {}", asset.name, url);
+            info!("已选择下载资源：{}，链接：{}", asset.name, url);
             return Ok(url);
         }
     }
 
-    warn!("未找到合适的下载资源 for {} [{}]", branch, target_version);
+    warn!("未找到适用于 {} [{}] 的下载资源", branch, target_version);
     Err(AppError::Emulator(format!(
         "未找到 Ryujinx {} [{}] 版本的下载链接",
         branch, target_version
@@ -100,7 +100,7 @@ fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
             debug!("找到 Ryujinx.app: {}", exe_path.display());
             return Some(exe_path);
         }
-        warn!("未找到 Ryujinx.app 在: {}", ryujinx_path.display());
+        warn!("未在 {} 中找到 Ryujinx.app", ryujinx_path.display());
         return None;
     }
 
@@ -114,7 +114,7 @@ fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
                 return Some(exe_path);
             }
         }
-        warn!("未找到 Ryujinx 可执行文件在: {}", ryujinx_path.display());
+        warn!("未在 {} 中找到 Ryujinx 可执行文件", ryujinx_path.display());
         None
     }
 }
@@ -163,7 +163,7 @@ pub async fn install_ryujinx_by_version<F>(
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
-    info!("开始安装 Ryujinx {} 版本: {}", branch, target_version);
+    info!("开始安装 Ryujinx {} 分支的 {} 版本", branch, target_version);
 
     let (ryujinx_path, auto_delete) = {
         let config = get_config();
@@ -276,7 +276,7 @@ where
         },
     });
 
-    info!("下载 URL: {}", download_url);
+    info!("下载链接：{}", download_url);
 
     // 获取下载源名称
     let download_source = get_download_source_name(&download_url);
@@ -439,7 +439,7 @@ where
         return Err(e.into());
     }
 
-    info!("解压 Ryujinx 文件到: {}", tmp_dir.display());
+    info!("正在将 Ryujinx 文件解压到 {}", tmp_dir.display());
     debug!(
         "解压包路径: {}, 大小: {} bytes",
         package_path.display(),
@@ -1132,7 +1132,7 @@ pub fn open_ryujinx_keys_folder() -> AppResult<()> {
     let hint_file = keys_path.join("把prod.keys和title.keys放当前目录.txt");
     std::fs::write(&hint_file, "")?;
 
-    info!("打开 keys 目录: {}", keys_path.display());
+    info!("正在打开密钥目录：{}", keys_path.display());
 
     #[cfg(target_os = "windows")]
     {
@@ -1712,7 +1712,7 @@ mod tests {
             Some(path) => path,
             None => {
                 println!(
-                    "跳过测试: 未找到 Ryujinx 可执行文件在: {}",
+                    "跳过测试: 未在 {} 中找到 Ryujinx 可执行文件",
                     ryujinx_path.display()
                 );
                 return;

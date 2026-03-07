@@ -23,7 +23,7 @@ pub async fn get_all_ryujinx_release_infos(branch: &str) -> AppResult<Vec<Releas
 
 /// 获取所有 Mainline Ryujinx Release 信息
 pub async fn get_all_mainline_ryujinx_release_infos() -> AppResult<Vec<ReleaseInfo>> {
-    info!("获取 Ryujinx Mainline 所有 Release 信息");
+    info!("正在获取 Ryujinx Mainline 的所有发布信息");
 
     let data = request_git_api(RYUJINX_MAINLINE_API).await?;
 
@@ -34,13 +34,13 @@ pub async fn get_all_mainline_ryujinx_release_infos() -> AppResult<Vec<ReleaseIn
         .filter_map(|item| ReleaseInfo::from_gitlab_api(item))
         .collect();
 
-    debug!("获取到 {} 个 Ryujinx Mainline Release", releases.len());
+    debug!("共获取到 {} 个 Ryujinx Mainline 发布", releases.len());
     Ok(releases)
 }
 
 /// 获取所有 Canary Ryujinx Release 信息
 pub async fn get_all_canary_ryujinx_release_infos() -> AppResult<Vec<ReleaseInfo>> {
-    info!("获取 Ryujinx Canary 所有 Release 信息");
+    info!("正在获取 Ryujinx Canary 的所有发布信息");
 
     let data = request_git_api(RYUJINX_CANARY_API).await?;
 
@@ -51,7 +51,7 @@ pub async fn get_all_canary_ryujinx_release_infos() -> AppResult<Vec<ReleaseInfo
         .filter_map(|item| ReleaseInfo::from_gitlab_api(item))
         .collect();
 
-    debug!("获取到 {} 个 Ryujinx Canary Release", releases.len());
+    debug!("共获取到 {} 个 Ryujinx Canary 发布", releases.len());
     Ok(releases)
 }
 
@@ -62,7 +62,7 @@ pub async fn get_latest_ryujinx_release_info(branch: &str) -> AppResult<ReleaseI
     releases
         .into_iter()
         .next()
-        .ok_or_else(|| AppError::Emulator("没有找到任何 Ryujinx Release".to_string()))
+        .ok_or_else(|| AppError::Emulator("未找到任何 Ryujinx 发布版本".to_string()))
 }
 
 /// 获取指定版本的 Ryujinx Release 信息
@@ -78,7 +78,7 @@ pub async fn get_ryujinx_release_info_by_version(
 
 /// 获取指定版本的 Mainline Ryujinx Release 信息
 pub async fn get_mainline_ryujinx_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
-    info!("获取 Ryujinx Mainline 版本 {} 的 Release 信息", version);
+    info!("正在获取 Ryujinx Mainline 版本 {} 的发布信息", version);
 
     let url = format!("{}/{}", RYUJINX_MAINLINE_API, version);
     let data = request_git_api(&url).await?;
@@ -90,7 +90,7 @@ pub async fn get_mainline_ryujinx_release_info_by_version(version: &str) -> AppR
 
 /// 获取指定版本的 Canary Ryujinx Release 信息
 pub async fn get_canary_ryujinx_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
-    info!("获取 Ryujinx Canary 版本 {} 的 Release 信息", version);
+    info!("正在获取 Ryujinx Canary 版本 {} 的发布信息", version);
 
     let url = format!("{}/{}", RYUJINX_CANARY_API, version);
     let data = request_git_api(&url).await?;
@@ -112,7 +112,7 @@ pub async fn load_ryujinx_change_log(branch: &str) -> AppResult<String> {
     let releases = get_all_ryujinx_release_infos(branch).await?;
 
     if releases.is_empty() {
-        return Ok(format!("无法获取 Ryujinx {} 最新版本变更信息", branch));
+        return Ok(format!("无法获取 Ryujinx {} 的最新版本变更信息", branch));
     }
 
     Ok(releases[0].description.clone())

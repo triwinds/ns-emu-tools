@@ -162,9 +162,9 @@ pub async fn download_update(
     );
 
     // 步骤 2: 下载更新文件
-    info!("下载 URL: {}", download_url);
+    info!("下载链接：{}", download_url);
     let mirror_url = get_github_download_url(&download_url);
-    info!("镜像 URL: {}", mirror_url);
+    info!("镜像链接：{}", mirror_url);
 
     // 获取下载源名称
     let download_source = get_github_download_source_name();
@@ -554,7 +554,7 @@ fn format_time(seconds: u64) -> String {
 /// * `window` - Tauri 窗口，用于发送进度事件
 /// * `tag` - 要更新到的版本标签（例如 "v1.2.3"）
 pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf> {
-    info!("开始根据 tag 更新自身: {}", tag);
+    info!("开始根据标签更新程序：{}", tag);
 
     // 定义步骤
     let steps = vec![
@@ -742,10 +742,10 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
     );
 
     // 步骤 3: 下载更新文件
-    info!("开始下载 {}, 版本: [{}]", file_name, tag);
+    info!("开始下载 {}，版本：{}", file_name, tag);
 
     let mirror_url = get_github_download_url(&download_url);
-    info!("镜像 URL: {}", mirror_url);
+    info!("镜像链接：{}", mirror_url);
 
     let _ = window.emit(
         "installation-event",
@@ -841,7 +841,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
     let mut file = fs::File::create(&download_path)?;
     let start_time = std::time::Instant::now();
 
-    info!("开始下载文件，总大小: {} bytes", total_size);
+    info!("开始下载文件，总大小：{} 字节", total_size);
 
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| AppError::Unknown(format!("下载数据失败: {}", e)))?;

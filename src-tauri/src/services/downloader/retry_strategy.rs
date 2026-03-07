@@ -370,7 +370,7 @@ impl RetryStrategy {
         // 复用现有的镜像策略
         // 注意：这里需要调用 services::network::get_github_download_url
         // 但由于循环依赖问题，这个功能应该在 RustDownloader 中实现
-        debug!("检测到 GitHub URL，建议在上层重新计算镜像 URL");
+        debug!("检测到 GitHub 链接，建议在上层重新计算镜像链接");
         None
     }
 }

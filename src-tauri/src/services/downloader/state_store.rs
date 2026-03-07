@@ -152,7 +152,7 @@ impl DownloadState {
             });
 
         if !url_matches {
-            debug!("URL 不匹配: 状态文件 URL={}, 请求 URL={}", self.url, url);
+            debug!("链接不匹配：状态文件链接={}，请求链接={}", self.url, url);
             return false;
         }
 

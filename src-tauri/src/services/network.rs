@@ -332,7 +332,7 @@ pub fn get_proxy_url() -> Option<String> {
         info!("使用自定义代理: {}", proxy);
         Some(proxy.clone())
     } else {
-        warn!("无效的代理 URL: {}", proxy);
+        warn!("无效的代理链接：{}", proxy);
         None
     }
 }
@@ -468,7 +468,7 @@ pub fn get_github_download_url(origin_url: &str) -> String {
         config.setting.network.github_download_mirror.clone()
     };
 
-    debug!("获取 GitHub 下载 URL，原始 URL: {}", origin_url);
+    debug!("获取 GitHub 下载链接，原始链接：{}", origin_url);
     debug!("配置的镜像: {}", mirror);
 
     if mirror.is_empty() || mirror == "direct" {
@@ -484,13 +484,13 @@ pub fn get_github_download_url(origin_url: &str) -> String {
             // 保存当前选择的镜像描述（用于显示）
             *CURRENT_GITHUB_MIRROR_DESC.write() = Some(choice.description.clone());
             let new_url = origin_url.replace("https://github.com", &choice.url);
-            debug!("镜像 URL: {}", new_url);
+            debug!("镜像链接：{}", new_url);
             return new_url;
         }
     }
 
     let new_url = origin_url.replace("https://github.com", &mirror);
-    info!("使用自定义镜像 URL: {}", new_url);
+    info!("使用自定义镜像链接：{}", new_url);
     new_url
 }
 
@@ -584,14 +584,14 @@ pub fn get_final_url(origin_url: &str) -> String {
 fn get_final_url_with_mode(origin_url: &str, mode: &str) -> String {
     match mode {
         "direct" => {
-            debug!("直连模式，使用原始 URL: {}", origin_url);
+            debug!("直连模式下使用原始链接：{}", origin_url);
             origin_url.to_string()
         }
         "cdn" => get_override_url(origin_url),
         _ => {
             // auto-detect 模式
             if is_using_proxy() {
-                debug!("检测到代理，使用原始 URL: {}", origin_url);
+                debug!("检测到代理，使用原始链接：{}", origin_url);
                 origin_url.to_string()
             } else {
                 get_override_url(origin_url)
@@ -605,11 +605,11 @@ fn get_override_url(origin_url: &str) -> String {
     for (key, value) in URL_OVERRIDE_MAP.iter() {
         if origin_url.starts_with(key) {
             let new_url = origin_url.replace(key, value);
-            debug!("使用 CDN URL: {}", new_url);
+            debug!("使用 CDN 链接：{}", new_url);
             return new_url;
         }
     }
-    debug!("无可用 CDN，使用原始 URL: {}", origin_url);
+    debug!("没有可用的 CDN，使用原始链接：{}", origin_url);
     origin_url.to_string()
 }
 

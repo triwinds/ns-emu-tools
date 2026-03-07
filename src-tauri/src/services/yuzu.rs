@@ -157,7 +157,7 @@ where
         AppError::Emulator(format!("无法获取 {} 下载链接", get_emu_name(branch)))
     })?;
 
-    info!("下载 {} 从: {}", get_emu_name(branch), url);
+    info!("开始下载 {}，来源：{}", get_emu_name(branch), url);
 
     // 使用统一下载接口
     debug!("创建下载任务");
@@ -173,7 +173,7 @@ where
         .await?;
 
     info!("下载完成: {}", result.path.display());
-    debug!("下载文件大小: {} bytes", result.size);
+    debug!("下载文件大小：{} 字节", result.size);
 
     Ok(result.path)
 }
@@ -1089,7 +1089,7 @@ where
 /// * `yuzu_path` - Yuzu 安装目录
 #[cfg(not(target_os = "macos"))]
 fn copy_back_yuzu_files(tmp_dir: &Path, yuzu_path: &Path) -> AppResult<()> {
-    info!("复制 Yuzu 文件到: {}", yuzu_path.display());
+    info!("正在将 Yuzu 文件复制到 {}", yuzu_path.display());
 
     // 删除无用的源码包
     for entry in std::fs::read_dir(tmp_dir)? {
@@ -1146,7 +1146,7 @@ fn copy_dir_all(src: &Path, dst: &Path) -> AppResult<()> {
 /// 删除所有旧的模拟器可执行文件
 /// 删除旧的模拟器（仅删除当前分支对应的）
 pub fn remove_target_app(branch: &str) -> AppResult<()> {
-    info!("删除旧的 {} 应用", branch);
+    info!("正在删除旧的 {} 应用", branch);
 
     let config = get_config();
     let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
@@ -1348,7 +1348,7 @@ where
         if exe_path.exists() {
             let cemu_path = yuzu_path.join("cemu.exe");
             std::fs::rename(&exe_path, &cemu_path)?;
-            info!("重命名 {} 为 cemu.exe", exe_path.display());
+            info!("正在将 {} 重命名为 cemu.exe", exe_path.display());
         }
     }
 
@@ -1414,11 +1414,11 @@ pub fn get_yuzu_exe_path() -> PathBuf {
     }
 }
 
-/// 检测 Yuzu 版本（通过启动程序并读取窗口标题）
+/// 开始检测 Yuzu 版本（通过启动程序并读取窗口标题）
 ///
 /// 注意：此功能需要窗口枚举功能，在 Windows 上需要使用 Windows API
 pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
-    info!("检测 Yuzu 版本");
+    info!("开始检测 Yuzu 版本");
 
     let exe_path = get_yuzu_exe_path();
     debug!("Yuzu 可执行文件路径: {}", exe_path.display());
@@ -1576,7 +1576,7 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
         debug!("配置文件已保存");
     } else {
         warn!("未能检测到 Yuzu 版本");
-        debug!("可能的原因: 窗口标题不匹配或窗口创建延迟过长");
+        debug!("可能原因：窗口标题不匹配，或窗口创建延迟过长");
     }
 
     Ok(version)
@@ -1708,7 +1708,7 @@ pub fn open_yuzu_keys_folder() -> AppResult<()> {
     let hint_file = keys_path.join("把prod.keys放当前目录.txt");
     std::fs::write(&hint_file, "")?;
 
-    info!("打开 keys 目录: {}", keys_path.display());
+    info!("正在打开密钥目录：{}", keys_path.display());
 
     #[cfg(target_os = "windows")]
     {
@@ -1849,7 +1849,7 @@ pub fn get_yuzu_nand_path() -> PathBuf {
         if let Some(path_str) = config.get("nand_directory") {
             let decoded_path = decode_yuzu_path(path_str);
             nand_path = PathBuf::from(decoded_path);
-            info!("从配置文件读取 NAND 路径: {}", nand_path.display());
+            info!("从配置文件读取到 NAND 路径：{}", nand_path.display());
         }
     }
 
@@ -1871,7 +1871,7 @@ pub fn get_yuzu_load_path() -> PathBuf {
                 path_str.to_string()
             };
             load_path = PathBuf::from(decoded_path);
-            info!("从配置文件读取 Load 路径: {}", load_path.display());
+            info!("从配置文件读取到 Load 路径：{}", load_path.display());
         }
     }
 
@@ -1948,7 +1948,7 @@ pub fn update_yuzu_path(new_yuzu_path: &str) -> AppResult<()> {
         }
     }
 
-    info!("Yuzu 路径已更新: {}", new_path.display());
+    info!("Yuzu 路径已更新为：{}", new_path.display());
     Ok(())
 }
 
@@ -2007,7 +2007,7 @@ where
     // 获取固件路径
     let firmware_path = crate::services::firmware::get_yuzu_firmware_path();
 
-    info!("开始安装固件到 Yuzu，路径: {}", firmware_path.display());
+    info!("开始向 Yuzu 安装固件，路径：{}", firmware_path.display());
 
     // 发送 Started 事件,包含所有步骤
     let steps = vec![
@@ -2069,7 +2069,7 @@ where
         cfg.save()?;
     }
 
-    info!("固件 {} 安装成功到 Yuzu", new_version);
+    info!("固件 {} 已成功安装到 Yuzu", new_version);
     Ok(())
 }
 

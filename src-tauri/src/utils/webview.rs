@@ -31,7 +31,7 @@ pub fn check_webview2_installed() -> bool {
             unsafe {
                 let _ = RegCloseKey(key);
             }
-            info!("检测到 WebView2 Runtime 已安装");
+            info!("检测到 WebView2 运行时已安装");
             return true;
         }
     }
@@ -45,12 +45,12 @@ pub fn check_webview2_installed() -> bool {
             unsafe {
                 let _ = RegCloseKey(key);
             }
-            info!("检测到 WebView2 Runtime 已安装（用户级别）");
+            info!("检测到 WebView2 运行时已安装（当前用户级别）");
             return true;
         }
     }
 
-    warn!("未检测到 WebView2 Runtime");
+    warn!("未检测到 WebView2 运行时");
     false
 }
 
@@ -67,7 +67,7 @@ pub fn check_webview2_installed() -> bool {
 async fn download_webview2_bootstrapper() -> anyhow::Result<PathBuf> {
     use std::io::Write;
 
-    info!("正在下载 WebView2 Runtime 安装程序...");
+    info!("正在下载 WebView2 运行时安装程序...");
 
     // WebView2 Bootstrapper 官方下载链接
     let url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
@@ -84,7 +84,7 @@ async fn download_webview2_bootstrapper() -> anyhow::Result<PathBuf> {
     let mut file = std::fs::File::create(&installer_path)?;
     file.write_all(&bytes)?;
 
-    info!("WebView2 安装程序下载完成: {:?}", installer_path);
+    info!("WebView2 安装程序已下载完成：{:?}", installer_path);
     Ok(installer_path)
 }
 
@@ -102,10 +102,10 @@ fn install_webview2(installer_path: &PathBuf) -> anyhow::Result<()> {
         .status()?;
 
     if status.success() {
-        info!("WebView2 Runtime 安装成功");
+        info!("WebView2 运行时安装成功");
         Ok(())
     } else {
-        error!("WebView2 Runtime 安装失败");
+        error!("WebView2 运行时安装失败");
         Err(anyhow::anyhow!("安装程序返回错误代码: {:?}", status.code()))
     }
 }
@@ -142,18 +142,18 @@ fn show_message_box(title: &str, message: &str, is_question: bool) -> bool {
 /// 如果未安装，会提示用户并自动下载安装
 #[cfg(target_os = "windows")]
 pub fn check_and_install_on_startup() -> anyhow::Result<()> {
-    info!("正在检查 WebView2 Runtime 状态...");
+    info!("正在检查 WebView2 运行时状态...");
 
     if check_webview2_installed() {
-        info!("✓ WebView2 Runtime 检查通过");
+        info!("WebView2 运行时检查通过");
         return Ok(());
     }
 
-    info!("✗ 未检测到 WebView2 Runtime");
+    info!("未检测到 WebView2 运行时");
 
     // 询问用户是否下载安装
     let user_agreed = show_message_box(
-        "需要安装 WebView2 Runtime",
+        "需要安装 WebView2 运行时",
         "NS Emu Tools 需要 Microsoft Edge WebView2 Runtime 才能运行。\n\n是否现在下载并安装？\n\n安装过程需要网络连接，大约需要几分钟时间。",
         true,
     );
@@ -182,15 +182,15 @@ pub fn check_and_install_on_startup() -> anyhow::Result<()> {
 
     // 验证安装
     if check_webview2_installed() {
-        info!("✓ WebView2 Runtime 安装并验证成功");
+        info!("WebView2 运行时安装并验证成功");
         show_message_box(
             "安装成功",
-            "WebView2 Runtime 安装成功！\n\n应用即将启动...",
+            "WebView2 运行时安装成功！\n\n应用即将启动...",
             false,
         );
         Ok(())
     } else {
-        error!("安装完成但未检测到 WebView2 Runtime");
+        error!("安装完成但未检测到 WebView2 运行时");
         Err(anyhow::anyhow!("安装验证失败"))
     }
 }

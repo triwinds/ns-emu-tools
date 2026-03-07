@@ -20,7 +20,7 @@ pub fn user_agent() -> String {
 /// 全局配置实例
 pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     RwLock::new(Config::load().unwrap_or_else(|e| {
-        warn!("加载配置失败，使用默认配置: {}", e);
+        warn!("加载配置失败，将使用默认配置：{}", e);
         Config::default()
     }))
 });
@@ -35,7 +35,7 @@ pub fn app_data_dir() -> PathBuf {
         proj_dirs.data_dir().to_path_buf()
     } else {
         // 降级方案：使用当前目录
-        warn!("无法获取应用程序数据目录，使用当前目录");
+        warn!("无法获取应用数据目录，将使用当前目录");
         std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
     }
 }
@@ -61,7 +61,7 @@ pub fn config_path() -> PathBuf {
 
     // 确保目录存在
     if let Err(e) = std::fs::create_dir_all(&dir) {
-        warn!("创建应用程序数据目录失败: {}", e);
+        warn!("创建应用数据目录失败：{}", e);
     }
 
     dir.join("config.json")
@@ -351,15 +351,15 @@ impl Config {
     /// 从文件加载配置
     pub fn load() -> AppResult<Self> {
         let path = config_path();
-        info!("配置文件路径: {}", path.display());
+        info!("配置文件路径为：{}", path.display());
         if path.exists() {
-            info!("从 {} 加载配置", path.display());
+            info!("正在从 {} 加载配置", path.display());
             let content = std::fs::read_to_string(&path)?;
             let config: Config = serde_json::from_str(&content)?;
             debug!("配置加载成功");
             Ok(config)
         } else {
-            info!("配置文件不存在，创建默认配置: {}", path.display());
+            info!("配置文件不存在，将创建默认配置文件：{}", path.display());
             let config = Self::default();
             config.save()?;
             Ok(config)
@@ -369,7 +369,7 @@ impl Config {
     /// 保存配置到文件
     pub fn save(&self) -> AppResult<()> {
         let path = config_path();
-        info!("保存配置到 {}", path.display());
+        info!("正在将配置保存到 {}", path.display());
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(&path, content)?;
         debug!("配置保存成功");
@@ -386,7 +386,7 @@ pub fn update_last_open_emu_page(page: &str) -> AppResult<()> {
         "yuzu".to_string()
     };
     info!(
-        "更新 lastOpenEmuPage 为 {}",
+        "已将 lastOpenEmuPage 更新为 {}",
         config.setting.ui.last_open_emu_page
     );
     config.save()
@@ -396,14 +396,14 @@ pub fn update_last_open_emu_page(page: &str) -> AppResult<()> {
 pub fn update_dark_state(dark: bool) -> AppResult<()> {
     let mut config = CONFIG.write();
     config.setting.ui.dark = dark;
-    info!("更新 dark 为 {}", config.setting.ui.dark);
+    info!("已将深色模式更新为 {}", config.setting.ui.dark);
     config.save()
 }
 
 /// 更新设置
 pub fn update_setting(setting: CommonSetting) -> AppResult<()> {
     let mut config = CONFIG.write();
-    info!("更新设置");
+    info!("正在更新设置");
     config.setting = setting;
     config.save()
 }
@@ -413,7 +413,7 @@ pub fn update_window_size(width: u32, height: u32) -> AppResult<()> {
     let mut config = CONFIG.write();
     config.setting.ui.width = width;
     config.setting.ui.height = height;
-    info!("更新窗口大小为 {}x{}", width, height);
+    info!("已将窗口大小更新为 {}x{}", width, height);
     config.save()
 }
 

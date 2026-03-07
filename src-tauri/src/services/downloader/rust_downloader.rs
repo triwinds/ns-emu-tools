@@ -537,11 +537,11 @@ impl DownloadTask {
 
         // 如果新 URL 与当前 URL 不同，则切换
         if new_url != current_url {
-            info!("切换到镜像 URL: {} -> {}", current_url, new_url);
+            info!("切换到镜像链接：{} -> {}", current_url, new_url);
             *self.url.write() = new_url;
             true
         } else {
-            debug!("镜像 URL 未变化，保持当前 URL");
+            debug!("镜像链接未变化，保持当前链接");
             false
         }
     }

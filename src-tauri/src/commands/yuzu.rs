@@ -425,10 +425,10 @@ pub fn get_yuzu_exe_path_command() -> Result<ApiResponse<String>, String> {
     Ok(ApiResponse::success(path.to_string_lossy().to_string()))
 }
 
-/// 打开 Yuzu keys 文件夹
+/// 打开 Yuzu 的密钥目录
 #[tauri::command]
 pub fn open_yuzu_keys_folder_command() -> Result<ApiResponse<()>, String> {
-    info!("打开 Yuzu keys 文件夹");
+    info!("打开 Yuzu 的密钥目录");
 
     match open_yuzu_keys_folder() {
         Ok(_) => Ok(ApiResponse::success(())),

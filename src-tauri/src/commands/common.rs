@@ -101,7 +101,7 @@ pub async fn open_config_folder() -> Result<(), String> {
 /// 打开 URL
 #[command]
 pub fn open_url(url: String, app: AppHandle) -> Result<(), String> {
-    info!("打开 URL: {}", url);
+    info!("正在打开链接：{}", url);
     app.opener()
         .open_url(&url, None::<&str>)
         .map_err(|e| e.to_string())
@@ -235,7 +235,7 @@ pub fn load_history_path(emu_type: String) -> Result<Vec<String>, String> {
 pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result<String, String> {
     use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 
-    info!("检测 {} 固件版本", emu_type);
+    info!("开始检测 {} 的固件版本", emu_type);
 
     // Define steps
     let steps = vec![
@@ -408,7 +408,7 @@ pub async fn download_app_update(
     download_url: Option<String>,
 ) -> Result<String, String> {
     info!(
-        "开始下载应用更新 (包含预发布: {}, download_url: {:?})",
+        "开始下载应用更新（包含预发布版本：{}，指定下载链接：{:?}）",
         include_prerelease, download_url
     );
 
@@ -422,7 +422,7 @@ pub async fn download_app_update(
 /// 安装应用更新并重启
 #[command]
 pub async fn install_app_update(update_file: String) -> Result<(), String> {
-    info!("开始安装应用更新: {}", update_file);
+    info!("开始安装应用更新：{}", update_file);
 
     let update_path = std::path::Path::new(&update_file);
     match crate::services::updater::install_update(update_path).await {
@@ -440,7 +440,7 @@ pub async fn install_app_update(update_file: String) -> Result<(), String> {
 /// 根据 tag 更新自身（一体化更新流程）
 #[command]
 pub async fn update_self_by_tag(tag: String, window: Window) -> Result<(), String> {
-    info!("开始根据 tag 更新自身: {}", tag);
+    info!("开始根据标签更新程序：{}", tag);
 
     // 1. 下载并解压更新文件
     let update_path = match crate::services::updater::update_self_by_tag(&window, &tag).await {
@@ -452,7 +452,7 @@ pub async fn update_self_by_tag(tag: String, window: Window) -> Result<(), Strin
         }
     };
 
-    info!("更新文件已准备完成: {}", update_path.display());
+    info!("更新文件已准备完成：{}", update_path.display());
 
     // 2. 安装更新（生成并执行更新脚本）
     match crate::services::updater::install_update(&update_path).await {
@@ -483,12 +483,12 @@ pub async fn cancel_download_command(
     use crate::services::downloader::get_download_manager;
 
     let should_remove = remove_files.unwrap_or(false);
-    info!("取消下载任务，删除文件: {}", should_remove);
+    info!("开始取消下载任务，是否删除文件：{}", should_remove);
 
     match get_download_manager().await {
         Ok(manager) => match manager.cancel_all(should_remove).await {
             Ok(file_path) => {
-                info!("下载已取消，文件路径: {:?}", file_path);
+                info!("下载任务已取消，文件路径：{:?}", file_path);
                 Ok(ApiResponse::success(file_path))
             }
             Err(e) => {

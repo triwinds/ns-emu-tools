@@ -229,7 +229,7 @@ impl CheatsService {
         let chunk_cheat_map = if chunk_file.exists() {
             let chunk_map = self.parse_yuzu_cheat_file(&chunk_file)?;
             debug!(
-                "chunk 金手指标题: {:?}",
+                "金手指分块中的标题：{:?}",
                 chunk_map.keys().collect::<Vec<_>>()
             );
 
@@ -238,15 +238,15 @@ impl CheatsService {
             for (title, entry) in current_cheat_map.iter() {
                 merged.insert(title.clone(), entry.clone());
             }
-            info!("chunk 金手指已更新");
+            info!("金手指分块已更新");
             merged
         } else {
-            info!("chunk 金手指已初始化");
+            info!("金手指分块已初始化");
             current_cheat_map.clone()
         };
 
         debug!(
-            "chunk 金手指总数: {}, 标题: {:?}",
+            "金手指分块总数：{}，标题：{:?}",
             chunk_cheat_map.len(),
             chunk_cheat_map.keys().collect::<Vec<_>>()
         );
@@ -259,7 +259,7 @@ impl CheatsService {
         }
 
         // 保存 chunk 文件
-        info!("保存 chunk 金手指到 {:?}...", chunk_file);
+        info!("正在将金手指分块保存到 {:?}...", chunk_file);
         self.save_cheat_map_to_file(&chunk_cheat_map, &chunk_file)?;
 
         Ok(result)
@@ -275,7 +275,7 @@ impl CheatsService {
         cheat_file_path: &Path,
         window: Option<&tauri::Window>,
     ) -> AppResult<()> {
-        info!("更新金手指，文件: {:?}", cheat_file_path);
+        info!("开始更新金手指文件：{:?}", cheat_file_path);
         debug!("选中的标题数量: {}", enable_titles.len());
 
         if !cheat_file_path.exists() {
@@ -292,11 +292,11 @@ impl CheatsService {
             .ok_or_else(|| AppError::InvalidArgument("无效的文件路径".to_string()))?
             .join("cheats_chunk");
 
-        debug!("chunk 文件夹: {:?}", chunk_folder);
+        debug!("金手指分块目录：{:?}", chunk_folder);
 
         if !chunk_folder.exists() {
-            warn!("仓库目录不存在: {:?}", chunk_folder);
-            return Err(AppError::DirectoryNotFound("仓库目录不存在".to_string()));
+            warn!("金手指分块目录不存在: {:?}", chunk_folder);
+            return Err(AppError::DirectoryNotFound("金手指分块目录不存在".to_string()));
         }
 
         let filename = cheat_file_path
@@ -307,11 +307,11 @@ impl CheatsService {
         let chunk_filename = format!("{}_chunk.txt", &filename[..16]);
         let chunk_file = chunk_folder.join(chunk_filename);
 
-        debug!("chunk 文件: {:?}", chunk_file);
+        debug!("金手指分块文件：{:?}", chunk_file);
 
         if !chunk_file.exists() {
-            warn!("仓库文件不存在: {:?}", chunk_file);
-            return Err(AppError::FileNotFound("仓库文件不存在".to_string()));
+            warn!("金手指分块文件不存在: {:?}", chunk_file);
+            return Err(AppError::FileNotFound("金手指分块文件不存在".to_string()));
         }
 
         // 备份原文件
@@ -323,7 +323,7 @@ impl CheatsService {
         let backup_file = chunk_folder.join(backup_filename);
 
         fs::copy(cheat_file_path, &backup_file)?;
-        info!("备份 {:?} 到 {:?}", cheat_file_path, backup_file);
+        info!("已将 {:?} 备份到 {:?}", cheat_file_path, backup_file);
 
         // 发送通知
         if let Some(window) = window {
@@ -334,10 +334,10 @@ impl CheatsService {
         }
 
         // 从 chunk 文件中提取启用的金手指
-        debug!("解析 chunk 文件");
+        debug!("开始解析金手指分块文件");
         let chunk_map = self.parse_yuzu_cheat_file(&chunk_file)?;
         debug!(
-            "chunk 金手指数量: {}, 标题: {:?}",
+            "金手指分块中的条目数：{}，标题：{:?}",
             chunk_map.len(),
             chunk_map.keys().collect::<Vec<_>>()
         );
@@ -348,7 +348,7 @@ impl CheatsService {
                 debug!("添加金手指: {}", title);
                 cheat_map.insert(title.clone(), entry.clone());
             } else {
-                warn!("标题 [{}] 在 chunk 中不存在", title);
+                warn!("标题 [{}] 在金手指分块中不存在", title);
             }
         }
 

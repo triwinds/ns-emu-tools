@@ -36,7 +36,7 @@ pub fn resolve_filename(response: &Response, url: &str, user_filename: Option<&s
 
     // 3. 从 URL 路径提取
     if let Some(filename) = extract_filename_from_url(url) {
-        debug!("从 URL 提取文件名: {}", filename);
+        debug!("从链接中提取文件名：{}", filename);
         return sanitize_filename(&filename);
     }
 

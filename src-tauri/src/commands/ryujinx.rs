@@ -161,10 +161,10 @@ pub fn start_ryujinx_command() -> Result<ApiResponse<()>, String> {
     }
 }
 
-/// 打开 Ryujinx keys 文件夹
+/// 打开 Ryujinx 的密钥目录
 #[tauri::command]
 pub fn open_ryujinx_keys_folder_command() -> Result<ApiResponse<()>, String> {
-    info!("打开 Ryujinx keys 文件夹");
+    info!("打开 Ryujinx 的密钥目录");
 
     match open_ryujinx_keys_folder() {
         Ok(_) => Ok(ApiResponse::success(())),

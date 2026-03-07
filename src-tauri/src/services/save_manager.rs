@@ -241,7 +241,7 @@ pub fn backup_folder(folder_path: &str) -> AppResult<(PathBuf, u64)> {
 
     // 获取备份文件大小
     let file_size = fs::metadata(&backup_filepath)?.len();
-    debug!("备份文件大小: {} bytes", file_size);
+    debug!("备份文件大小：{} 字节", file_size);
 
     info!(
         "{} 备份完成, 大小: {}",

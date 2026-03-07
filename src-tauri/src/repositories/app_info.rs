@@ -18,7 +18,7 @@ const CHANGELOG_URL: &str =
 
 /// 获取所有应用版本
 pub async fn get_all_release() -> AppResult<Vec<serde_json::Value>> {
-    info!("获取所有应用版本信息");
+    info!("正在获取所有应用版本信息");
 
     let data = request_github_api(APP_RELEASES_API).await?;
 
@@ -27,13 +27,13 @@ pub async fn get_all_release() -> AppResult<Vec<serde_json::Value>> {
         .ok_or_else(|| AppError::InvalidArgument("无效的 API 响应格式".to_string()))?
         .clone();
 
-    debug!("获取到 {} 个应用版本", releases.len());
+    debug!("共获取到 {} 个应用版本", releases.len());
     Ok(releases)
 }
 
 /// 获取最新版本
 pub async fn get_latest_release(prerelease: bool) -> AppResult<ReleaseInfo> {
-    info!("获取最新应用版本 (prerelease: {})", prerelease);
+    info!("正在获取最新应用版本（包含预发布版本：{}）", prerelease);
 
     let releases = get_all_release().await?;
 
@@ -56,7 +56,7 @@ pub async fn get_latest_release(prerelease: bool) -> AppResult<ReleaseInfo> {
 
 /// 获取指定标签的版本信息
 pub async fn get_release_info_by_tag(tag: &str) -> AppResult<ReleaseInfo> {
-    info!("获取版本 {} 的信息", tag);
+    info!("正在获取版本 {} 的详细信息", tag);
 
     let url = format!("{}/tags/{}", APP_RELEASES_API, tag);
     let data = request_github_api(&url).await?;
@@ -67,7 +67,7 @@ pub async fn get_release_info_by_tag(tag: &str) -> AppResult<ReleaseInfo> {
 
 /// 加载变更日志
 pub async fn load_change_log() -> AppResult<String> {
-    info!("加载变更日志");
+    info!("正在加载变更日志");
 
     let url = get_final_url(CHANGELOG_URL);
     let client = get_durable_cached_client();
@@ -79,7 +79,7 @@ pub async fn load_change_log() -> AppResult<String> {
 
     if !resp.status().is_success() {
         return Err(AppError::Unknown(format!(
-            "获取变更日志失败: {}",
+            "获取变更日志失败：{}",
             resp.status()
         )));
     }
@@ -112,32 +112,32 @@ pub struct UpdateCheckResult {
 /// 检查更新
 pub async fn check_update(include_prerelease: bool) -> AppResult<UpdateCheckResult> {
     info!(
-        "检查更新 (当前版本: {}, 包含预发布: {})",
+        "正在检查更新（当前版本：{}，包含预发布版本：{}）",
         CURRENT_VERSION, include_prerelease
     );
 
     let latest = get_latest_release(include_prerelease).await?;
-    info!("获取到最新版本: {}", latest.tag_name);
-    info!("最新版本的 assets 数量: {}", latest.assets.len());
+    info!("获取到的最新版本为：{}", latest.tag_name);
+    info!("最新版本包含 {} 个发布资源", latest.assets.len());
 
     // 打印所有 assets 的名称
     for (i, asset) in latest.assets.iter().enumerate() {
-        info!("Asset {}: {}", i, asset.name);
+        info!("资源 {}：{}", i, asset.name);
     }
 
     let has_update = is_newer_version(&latest.tag_name, CURRENT_VERSION);
-    info!("是否有更新: {}", has_update);
+    info!("是否检测到可用更新：{}", has_update);
 
     let windows_asset = latest.find_windows_asset();
     let download_url = windows_asset.map(|a| {
-        info!("找到 Windows 资源: {}", a.name);
+        info!("已找到 Windows 安装资源：{}", a.name);
         a.download_url.clone()
     });
 
     if download_url.is_none() {
-        info!("警告: 未找到 Windows 资源！");
+        info!("未找到 Windows 安装资源");
     } else {
-        info!("下载链接: {:?}", download_url);
+        info!("下载链接为：{:?}", download_url);
     }
 
     Ok(UpdateCheckResult {

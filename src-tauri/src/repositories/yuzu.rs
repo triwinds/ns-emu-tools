@@ -54,7 +54,7 @@ pub async fn get_yuzu_release_info_by_version(
 
 /// 获取所有 Eden Release 信息
 pub async fn get_eden_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
-    info!("获取 Eden 所有 Release 信息");
+    info!("正在获取 Eden 的所有发布信息");
 
     let data = request_git_api(EDEN_RELEASES_API).await?;
 
@@ -65,7 +65,7 @@ pub async fn get_eden_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
         .filter_map(|item| ReleaseInfo::from_forgejo_api(item))
         .collect();
 
-    debug!("获取到 {} 个 Eden Release", releases.len());
+    debug!("共获取到 {} 个 Eden 发布", releases.len());
     Ok(releases)
 }
 
@@ -78,7 +78,7 @@ pub async fn get_eden_all_release_versions() -> AppResult<Vec<String>> {
 
 /// 获取指定版本的 Eden Release 信息
 pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
-    info!("获取 Eden 版本 {} 的 Release 信息", version);
+    info!("正在获取 Eden 版本 {} 的发布信息", version);
 
     let url = format!("{}/tags/{}", EDEN_RELEASES_API, version);
     let data = request_git_api(&url).await?;
@@ -91,7 +91,7 @@ pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<Releas
 
 /// 获取所有 Citron Release 信息
 pub async fn get_citron_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
-    info!("获取 Citron 所有 Release 信息");
+    info!("正在获取 Citron 的所有发布信息");
 
     let data = request_git_api(CITRON_RELEASES_API).await?;
 
@@ -102,7 +102,7 @@ pub async fn get_citron_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
         .filter_map(|item| ReleaseInfo::from_forgejo_api(item))
         .collect();
 
-    debug!("获取到 {} 个 Citron Release", releases.len());
+    debug!("共获取到 {} 个 Citron 发布", releases.len());
     Ok(releases)
 }
 
@@ -115,7 +115,7 @@ pub async fn get_citron_all_release_versions() -> AppResult<Vec<String>> {
 
 /// 获取指定版本的 Citron Release 信息
 pub async fn get_citron_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
-    info!("获取 Citron 版本 {} 的 Release 信息", version);
+    info!("正在获取 Citron 版本 {} 的发布信息", version);
 
     let url = format!("{}/tags/{}", CITRON_RELEASES_API, version);
     let data = request_git_api(&url).await?;
@@ -140,7 +140,7 @@ pub async fn get_latest_change_log(branch: &str) -> AppResult<String> {
     let releases = get_yuzu_all_release_info(branch).await?;
 
     if releases.is_empty() {
-        return Ok(format!("无法获取 {} 最新版本变更信息", branch));
+        return Ok(format!("无法获取 {} 的最新版本变更信息", branch));
     }
 
     Ok(releases[0].description.clone())

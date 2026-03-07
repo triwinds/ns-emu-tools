@@ -39,7 +39,7 @@ pub async fn get_firmware_infos() -> AppResult<Vec<FirmwareInfo>> {
 /// 从 GitHub 获取固件信息
 pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
     info!("从 GitHub 获取固件信息");
-    debug!("请求固件 API: {}", GITHUB_FIRMWARE_API);
+    debug!("请求固件 API：{}", GITHUB_FIRMWARE_API);
 
     let data = request_github_api(GITHUB_FIRMWARE_API).await?;
 
@@ -83,7 +83,7 @@ pub async fn get_firmware_infos_from_github() -> AppResult<Vec<FirmwareInfo>> {
         }
     }
 
-    info!("获取到 {} 个固件版本", infos.len());
+    info!("共获取到 {} 个固件版本", infos.len());
     Ok(infos)
 }
 
@@ -96,7 +96,7 @@ pub async fn install_firmware<F>(
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
-    info!("开始安装固件版本: {}", firmware_version);
+    info!("开始安装固件版本：{}", firmware_version);
 
     // 步骤1: 获取固件信息
     on_event(ProgressEvent::StepUpdate {
@@ -194,7 +194,7 @@ where
         },
     });
 
-    info!("下载固件: {}", url);
+    info!("开始下载固件：{}", url);
 
     let download_manager = match get_download_manager().await {
         Ok(manager) => manager,
@@ -299,7 +299,7 @@ where
         },
     });
 
-    info!("解压固件到: {}", target_firmware_path.display());
+    info!("正在将固件解压到 {}", target_firmware_path.display());
 
     // 清理目标目录
     if target_firmware_path.exists() {
@@ -547,7 +547,7 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
         return Err(AppError::FileNotFound(err_msg));
     }
 
-    info!("加载 Yuzu keys: {}", key_path.display());
+    info!("正在加载 Yuzu 密钥文件：{}", key_path.display());
     if let Err(e) = crate::services::keys::load_keys(&key_path) {
         if let Some(win) = window {
             let _ = win.emit(
@@ -594,12 +594,12 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
 
     match nca_path {
         Some(path) => {
-            info!("找到系统版本归档: {}", path.display());
+            info!("已找到系统版本归档：{}", path.display());
 
             // 提取固件版本
             let version = crate::services::nca::extract_firmware_version(&path)?;
 
-            info!("Yuzu 固件版本: {}", version);
+            info!("检测到的 Yuzu 固件版本为：{}", version);
 
             // 更新配置并保存
             {
@@ -675,7 +675,7 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
         return Err(AppError::FileNotFound(err_msg));
     }
 
-    info!("加载 Ryujinx keys: {}", key_path.display());
+    info!("正在加载 Ryujinx 密钥文件：{}", key_path.display());
     if let Err(e) = crate::services::keys::load_keys(&key_path) {
         if let Some(win) = window {
             let _ = win.emit(
@@ -722,12 +722,12 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
 
     match nca_path {
         Some(path) => {
-            info!("找到系统版本归档: {}", path.display());
+            info!("已找到系统版本归档：{}", path.display());
 
             // 提取固件版本
             let version = crate::services::nca::extract_firmware_version(&path)?;
 
-            info!("Ryujinx 固件版本: {}", version);
+            info!("检测到的 Ryujinx 固件版本为：{}", version);
 
             // 更新配置并保存
             {
