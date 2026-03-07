@@ -31,7 +31,10 @@ pub mod types;
 mod tests;
 
 use crate::error::{AppError, AppResult};
-use once_cell::sync::OnceCell;
+use once_cell::sync::{Lazy, OnceCell};
+use parking_lot::RwLock;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tracing::{debug, info, warn};
 
@@ -45,6 +48,30 @@ pub use types::{DownloadOptions, DownloadProgress, DownloadResult, DownloadStatu
 
 /// 全局下载管理器实例
 static DOWNLOAD_MANAGER: OnceCell<Arc<dyn DownloadManager>> = OnceCell::new();
+
+/// 临时下载管理器注册表。
+///
+/// 某些下载流程（如 aria2 安装前置下载）会直接创建临时下载器，
+/// 不经过全局 `DOWNLOAD_MANAGER`。为了让统一取消入口也能中断这些流程，
+/// 需要在下载期间临时注册到这里。
+static TRANSIENT_DOWNLOAD_MANAGERS: Lazy<RwLock<HashMap<u64, Arc<dyn DownloadManager>>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
+
+/// 临时下载管理器 ID 生成器。
+static TRANSIENT_DOWNLOAD_MANAGER_ID: AtomicU64 = AtomicU64::new(1);
+
+/// 临时下载管理器注册句柄。
+///
+/// 句柄被丢弃时会自动从注册表中移除对应下载器。
+pub struct TransientDownloadManagerGuard {
+    id: u64,
+}
+
+impl Drop for TransientDownloadManagerGuard {
+    fn drop(&mut self) {
+        TRANSIENT_DOWNLOAD_MANAGERS.write().remove(&self.id);
+    }
+}
 
 /// 下载后端类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,6 +169,50 @@ pub async fn get_download_manager() -> AppResult<Arc<dyn DownloadManager>> {
     };
 
     init_download_manager(backend).await
+}
+
+/// 注册一个临时下载管理器，使统一取消入口可以中断它。
+pub fn register_transient_download_manager<T>(manager: Arc<T>) -> TransientDownloadManagerGuard
+where
+    T: DownloadManager + 'static,
+{
+    let id = TRANSIENT_DOWNLOAD_MANAGER_ID.fetch_add(1, Ordering::SeqCst);
+    let manager: Arc<dyn DownloadManager> = manager;
+    TRANSIENT_DOWNLOAD_MANAGERS.write().insert(id, manager);
+
+    TransientDownloadManagerGuard { id }
+}
+
+/// 取消所有当前活跃的下载。
+///
+/// 会同时尝试取消：
+/// - 已初始化的全局下载管理器中的任务
+/// - 注册中的临时下载管理器任务（例如 aria2 安装下载）
+pub async fn cancel_active_downloads(remove_files: bool) -> AppResult<Option<String>> {
+    let transient_managers: Vec<Arc<dyn DownloadManager>> = TRANSIENT_DOWNLOAD_MANAGERS
+        .read()
+        .values()
+        .cloned()
+        .collect();
+
+    let global_manager = DOWNLOAD_MANAGER.get().cloned();
+    let mut first_path = None;
+
+    for manager in transient_managers {
+        let file_path = manager.cancel_all(remove_files).await?;
+        if first_path.is_none() {
+            first_path = file_path;
+        }
+    }
+
+    if let Some(manager) = global_manager {
+        let file_path = manager.cancel_all(remove_files).await?;
+        if first_path.is_none() {
+            first_path = file_path;
+        }
+    }
+
+    Ok(first_path)
 }
 
 /// 重置下载管理器(仅用于测试)

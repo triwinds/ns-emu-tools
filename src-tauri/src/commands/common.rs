@@ -474,24 +474,18 @@ pub async fn cancel_download_command(
     remove_files: Option<bool>,
 ) -> Result<crate::models::response::ApiResponse<Option<String>>, String> {
     use crate::models::response::ApiResponse;
-    use crate::services::downloader::get_download_manager;
+    use crate::services::downloader::cancel_active_downloads;
 
     let should_remove = remove_files.unwrap_or(false);
     info!("开始取消下载任务，是否删除文件：{}", should_remove);
 
-    match get_download_manager().await {
-        Ok(manager) => match manager.cancel_all(should_remove).await {
-            Ok(file_path) => {
-                info!("下载任务已取消，文件路径：{:?}", file_path);
-                Ok(ApiResponse::success(file_path))
-            }
-            Err(e) => {
-                error!("取消下载失败: {}", e);
-                Err(e.to_string())
-            }
-        },
+    match cancel_active_downloads(should_remove).await {
+        Ok(file_path) => {
+            info!("下载任务已取消，文件路径：{:?}", file_path);
+            Ok(ApiResponse::success(file_path))
+        }
         Err(e) => {
-            error!("获取下载管理器失败: {}", e);
+            error!("取消下载失败: {}", e);
             Err(e.to_string())
         }
     }

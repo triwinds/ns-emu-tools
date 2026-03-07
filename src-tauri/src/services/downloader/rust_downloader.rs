@@ -597,9 +597,17 @@ impl DownloadTask {
         let result = self.start_impl().await;
 
         if result.is_err() {
-            *self.status.write() = DownloadStatus::Error;
+            let next_status = if self.cancel_token.is_cancelled()
+                || matches!(*self.status.read(), DownloadStatus::Removed)
+            {
+                DownloadStatus::Removed
+            } else {
+                DownloadStatus::Error
+            };
 
-            // 错误时速度和 ETA 归零，避免 UI 继续显示旧数据
+            *self.status.write() = next_status;
+
+            // 失败或取消时速度和 ETA 归零，避免 UI 继续显示旧数据
             let mut progress = self.progress.write();
             progress.speed = 0;
             progress.speed_samples.clear();

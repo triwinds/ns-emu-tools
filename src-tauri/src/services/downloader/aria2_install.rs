@@ -5,7 +5,9 @@
 
 use crate::error::{AppError, AppResult};
 #[cfg(target_os = "windows")]
-use crate::services::downloader::{DownloadManager, DownloadOptions, RustDownloader};
+use crate::services::downloader::{
+    register_transient_download_manager, DownloadManager, DownloadOptions, RustDownloader,
+};
 use std::path::PathBuf;
 
 /// Aria2 安装进度信息
@@ -118,8 +120,9 @@ async fn download_and_install_aria2(
     let install_dir = get_aria2_install_dir()?;
 
     // 创建 RustDownloader 实例
-    let downloader = RustDownloader::new();
+    let downloader = std::sync::Arc::new(RustDownloader::new());
     downloader.start().await?;
+    let _download_registration = register_transient_download_manager(downloader.clone());
 
     let options = DownloadOptions {
         save_dir: Some(temp_dir.clone()),
