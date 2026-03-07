@@ -17,7 +17,7 @@ use tracing_subscriber::{
     EnvFilter,
 };
 
-const MAX_LOG_FILE_BYTES: u64 = 10 * 1_000_000;
+const MAX_LOG_FILE_BYTES: u64 = 5 * 1_000_000;
 
 #[derive(Clone, Copy, Debug, Default)]
 struct LocalTimeFormatter;
@@ -123,10 +123,34 @@ impl LogFileState {
             file.flush()?;
         }
 
+        rotate_log_file(&self.path, self.current_size)?;
+
         self.file = Some(open_truncated_file(&self.path)?);
         self.current_size = 0;
         Ok(())
     }
+}
+
+fn rotate_log_file(path: &Path, current_size: u64) -> io::Result<()> {
+    if current_size == 0 || !path.exists() {
+        return Ok(());
+    }
+
+    let backup_path = backup_log_path(path)?;
+
+    if backup_path.exists() {
+        fs::remove_file(&backup_path)?;
+    }
+
+    fs::rename(path, backup_path)
+}
+
+fn backup_log_path(path: &Path) -> io::Result<PathBuf> {
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| io::Error::other("日志文件路径缺少文件名"))?;
+
+    Ok(path.with_file_name(format!("{}.1", file_name.to_string_lossy())))
 }
 
 fn open_append_file(path: &Path) -> io::Result<File> {
@@ -164,7 +188,7 @@ fn log_file_path() -> PathBuf {
 /// 日志输出：
 /// - 同时输出到控制台和文件 `ns-emu-tools.log`
 /// - 日志时间使用系统当前时区
-/// - 日志文件按大小轮转，当前文件最大 10 MB，超出后直接覆盖旧内容
+/// - 日志文件按大小轮转，当前文件最大 5 MB，并保留最近 1 个备份文件 `ns-emu-tools.log.1`
 ///
 /// 可以通过环境变量 `RUST_LOG` 覆盖默认配置
 ///
@@ -260,9 +284,10 @@ mod tests {
         writer.flush().unwrap();
 
         let current = fs::read_to_string(&log_path).unwrap();
+        let backup = fs::read_to_string(log_path.with_file_name("ns-emu-tools.log.1")).unwrap();
 
         assert_eq!(current, "abcdefghijklmnopqrstuvwxyz\n");
-        assert!(!log_path.with_file_name("ns-emu-tools.log.1").exists());
+        assert_eq!(backup, "1234567890\n");
         assert!(fs::metadata(&log_path).unwrap().len() <= 32);
     }
 
@@ -277,6 +302,21 @@ mod tests {
         writer.flush().unwrap();
 
         assert_eq!(fs::read(&log_path).unwrap(), b"ok\n");
-        assert!(!log_path.with_file_name("ns-emu-tools.log.1").exists());
+        assert_eq!(fs::read(&log_path.with_file_name("ns-emu-tools.log.1")).unwrap(), vec![b'x'; 40]);
+    }
+
+    #[test]
+    fn test_only_keep_latest_backup() {
+        let dir = tempdir().unwrap();
+        let log_path = dir.path().join("ns-emu-tools.log");
+        let mut writer = CappedFileAppender::new(log_path.clone(), 10).unwrap();
+
+        writer.write_all(b"11111\n").unwrap();
+        writer.write_all(b"22222\n").unwrap();
+        writer.write_all(b"33333\n").unwrap();
+        writer.flush().unwrap();
+
+        assert_eq!(fs::read_to_string(&log_path).unwrap(), "33333\n");
+        assert_eq!(fs::read_to_string(log_path.with_file_name("ns-emu-tools.log.1")).unwrap(), "22222\n");
     }
 }
