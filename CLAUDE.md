@@ -1,3 +1,5 @@
-## 核心原则
+# Repository Instructions
 
-- 代码改动完成后必须运行 build_all.bat 或 build_all.sh 打包，如果打包顺利通过就使用 git 提交变更的文件
+- Commit messages must follow Conventional Commits, for example: `fix(eden): switch release source to Forgejo`.
+- Unless the user explicitly requests otherwise, make changes only on the Rust side under `src-tauri`. Do not modify Python or other non-Rust parts by default.
+- After modifying Rust code, run `cargo fmt` and `cargo check` before handing off the work.
