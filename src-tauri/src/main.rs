@@ -67,15 +67,15 @@ fn main() {
                     } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
                         s.clone()
                     } else {
-                        "<non-string panic payload>".to_string()
+                        "非字符串类型的 panic 信息".to_string()
                     };
 
                     let location = panic_info
                         .location()
                         .map(|l| format!("{}:{}", l.file(), l.line()))
-                        .unwrap_or_else(|| "<unknown location>".to_string());
+                        .unwrap_or_else(|| "未知位置".to_string());
 
-                    let msg = format!("panic at {}: {}", location, payload);
+                    let msg = format!("程序发生 panic，位置：{}，详情：{}", location, payload);
 
                     tracing::error!("{}", msg);
 
@@ -83,7 +83,7 @@ fn main() {
                     let _ = app_handle.emit(
                         ns_emu_tools_lib::services::notifier::events::NOTIFY_MESSAGE,
                         ns_emu_tools_lib::models::response::NotifyMessage::error(format!(
-                            "发生严重错误: {}",
+                            "程序发生严重错误：{}",
                             msg
                         )),
                     );
@@ -91,7 +91,7 @@ fn main() {
                     // 同时也发一条 log-message，方便控制台查看
                     let _ = app_handle.emit(
                         ns_emu_tools_lib::services::notifier::events::LOG_MESSAGE,
-                        format!("[PANIC] {}", msg),
+                        format!("[严重错误] {}", msg),
                     );
                 }));
             }

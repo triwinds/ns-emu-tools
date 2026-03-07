@@ -2,9 +2,140 @@
 //!
 //! 提供统一的日志配置和初始化功能
 
-use std::path::PathBuf;
+use chrono::Local;
+use std::{
+    fs::{self, File, OpenOptions},
+    io::{self, Write},
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{
+    fmt::{self, format::Writer as FormatWriter, time::FormatTime},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+    EnvFilter,
+};
+
+const MAX_LOG_FILE_BYTES: u64 = 10 * 1_000_000;
+
+#[derive(Clone, Copy, Debug, Default)]
+struct LocalTimeFormatter;
+
+impl FormatTime for LocalTimeFormatter {
+    fn format_time(&self, writer: &mut FormatWriter<'_>) -> std::fmt::Result {
+        write!(writer, "{}", Local::now().format("%Y-%m-%d %H:%M:%S%.3f %:z"))
+    }
+}
+
+#[derive(Debug)]
+struct CappedFileAppender {
+    state: Mutex<LogFileState>,
+}
+
+#[derive(Debug)]
+struct LogFileState {
+    path: PathBuf,
+    max_bytes: u64,
+    current_size: u64,
+    file: Option<File>,
+}
+
+impl CappedFileAppender {
+    fn new(path: PathBuf, max_bytes: u64) -> io::Result<Self> {
+        Ok(Self {
+            state: Mutex::new(LogFileState::new(path, max_bytes)?),
+        })
+    }
+}
+
+impl Write for CappedFileAppender {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| io::Error::other("日志文件写入锁已损坏"))?;
+        state.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| io::Error::other("日志文件写入锁已损坏"))?;
+        state.flush()
+    }
+}
+
+impl LogFileState {
+    fn new(path: PathBuf, max_bytes: u64) -> io::Result<Self> {
+        let current_size = fs::metadata(&path).map(|meta| meta.len()).unwrap_or(0);
+
+        let mut state = Self {
+            path,
+            max_bytes,
+            current_size,
+            file: None,
+        };
+
+        if current_size >= max_bytes {
+            state.rotate()?;
+        } else {
+            state.file = Some(open_append_file(&state.path)?);
+        }
+
+        Ok(state)
+    }
+
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if self.current_size > 0 && self.current_size + buf.len() as u64 > self.max_bytes {
+            self.rotate()?;
+        }
+
+        let file = self.ensure_file()?;
+        let written = file.write(buf)?;
+        self.current_size += written as u64;
+        Ok(written)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        if let Some(file) = self.file.as_mut() {
+            file.flush()?;
+        }
+        Ok(())
+    }
+
+    fn ensure_file(&mut self) -> io::Result<&mut File> {
+        if self.file.is_none() {
+            self.file = Some(open_append_file(&self.path)?);
+        }
+        self.file
+            .as_mut()
+            .ok_or_else(|| io::Error::other("日志文件尚未初始化"))
+    }
+
+    fn rotate(&mut self) -> io::Result<()> {
+        if let Some(mut file) = self.file.take() {
+            file.flush()?;
+        }
+
+        self.file = Some(open_truncated_file(&self.path)?);
+        self.current_size = 0;
+        Ok(())
+    }
+}
+
+fn open_append_file(path: &Path) -> io::Result<File> {
+    OpenOptions::new().create(true).append(true).open(path)
+}
+
+fn open_truncated_file(path: &Path) -> io::Result<File> {
+    OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(path)
+}
 
 /// 获取日志文件路径
 fn log_file_path() -> PathBuf {
@@ -28,6 +159,8 @@ fn log_file_path() -> PathBuf {
 ///
 /// 日志输出：
 /// - 同时输出到控制台和文件 `ns-emu-tools.log`
+/// - 日志时间使用系统当前时区
+/// - 日志文件按大小轮转，当前文件最大 10 MB，超出后直接覆盖旧内容
 ///
 /// 可以通过环境变量 `RUST_LOG` 覆盖默认配置
 ///
@@ -45,19 +178,14 @@ pub fn init() -> WorkerGuard {
 
     // 创建文件 appender
     let log_path = log_file_path();
-    let log_dir = log_path
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."));
-    let log_file = log_path
-        .file_name()
-        .and_then(|f| f.to_str())
-        .unwrap_or("ns-emu-tools.log");
 
-    let file_appender = tracing_appender::rolling::never(log_dir, log_file);
+    let file_appender = CappedFileAppender::new(log_path.clone(), MAX_LOG_FILE_BYTES)
+        .unwrap_or_else(|e| panic!("初始化日志文件失败（{}）: {}", log_path.display(), e));
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     // 配置文件日志格式
     let file_layer = fmt::layer()
+        .with_timer(LocalTimeFormatter)
         .with_writer(non_blocking)
         .with_target(true) // 显示日志来源模块
         .with_thread_ids(false) // 不显示线程 ID
@@ -67,6 +195,7 @@ pub fn init() -> WorkerGuard {
 
     // 配置控制台日志格式
     let console_layer = fmt::layer()
+        .with_timer(LocalTimeFormatter)
         .with_target(true)
         .with_thread_ids(false)
         .with_file(true)
@@ -106,6 +235,7 @@ pub fn init_test() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
     use tracing::{debug, info};
 
     #[test]
@@ -113,5 +243,36 @@ mod tests {
         init_test();
         info!("测试日志初始化");
         debug!("调试级别日志");
+    }
+
+    #[test]
+    fn test_rotate_when_file_exceeds_limit() {
+        let dir = tempdir().unwrap();
+        let log_path = dir.path().join("ns-emu-tools.log");
+        let mut writer = CappedFileAppender::new(log_path.clone(), 32).unwrap();
+
+        writer.write_all(b"1234567890\n").unwrap();
+        writer.write_all(b"abcdefghijklmnopqrstuvwxyz\n").unwrap();
+        writer.flush().unwrap();
+
+        let current = fs::read_to_string(&log_path).unwrap();
+
+        assert_eq!(current, "abcdefghijklmnopqrstuvwxyz\n");
+        assert!(!log_path.with_file_name("ns-emu-tools.log.1").exists());
+        assert!(fs::metadata(&log_path).unwrap().len() <= 32);
+    }
+
+    #[test]
+    fn test_rotate_oversized_file_on_startup() {
+        let dir = tempdir().unwrap();
+        let log_path = dir.path().join("ns-emu-tools.log");
+        fs::write(&log_path, vec![b'x'; 40]).unwrap();
+
+        let mut writer = CappedFileAppender::new(log_path.clone(), 32).unwrap();
+        writer.write_all(b"ok\n").unwrap();
+        writer.flush().unwrap();
+
+        assert_eq!(fs::read(&log_path).unwrap(), b"ok\n");
+        assert!(!log_path.with_file_name("ns-emu-tools.log.1").exists());
     }
 }
