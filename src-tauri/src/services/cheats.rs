@@ -296,7 +296,9 @@ impl CheatsService {
 
         if !chunk_folder.exists() {
             warn!("金手指分块目录不存在: {:?}", chunk_folder);
-            return Err(AppError::DirectoryNotFound("金手指分块目录不存在".to_string()));
+            return Err(AppError::DirectoryNotFound(
+                "金手指分块目录不存在".to_string(),
+            ));
         }
 
         let filename = cheat_file_path

@@ -24,7 +24,11 @@ struct LocalTimeFormatter;
 
 impl FormatTime for LocalTimeFormatter {
     fn format_time(&self, writer: &mut FormatWriter<'_>) -> std::fmt::Result {
-        write!(writer, "{}", Local::now().format("%Y-%m-%d %H:%M:%S%.3f %:z"))
+        write!(
+            writer,
+            "{}",
+            Local::now().format("%Y-%m-%d %H:%M:%S%.3f %:z")
+        )
     }
 }
 
