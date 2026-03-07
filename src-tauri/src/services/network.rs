@@ -2,7 +2,7 @@
 //!
 //! 提供 HTTP 请求、代理配置、镜像选择等网络相关功能
 
-use crate::config::{user_agent, CONFIG};
+use crate::config::{effective_config_dir, user_agent, CONFIG};
 use crate::error::{AppError, AppResult};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use once_cell::sync::Lazy;
@@ -12,6 +12,7 @@ use reqwest::{Client, Proxy, Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Duration;
 use tauri::http;
 use tracing::{debug, info, warn};
@@ -284,17 +285,28 @@ pub fn create_cached_client() -> AppResult<ClientWithMiddleware> {
     Ok(cached_client)
 }
 
+fn durable_cache_dir_path() -> PathBuf {
+    effective_config_dir().join("http-cacache")
+}
+
+fn durable_cache_dir() -> AppResult<PathBuf> {
+    let dir = durable_cache_dir_path();
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
+}
+
 /// 创建持久化缓存客户端（用于需要长期缓存的请求，如固件信息）
 pub fn create_durable_cached_client() -> AppResult<ClientWithMiddleware> {
     use http_cache_reqwest::CACacheManager;
 
     let client = create_client()?;
+    let cache_dir = durable_cache_dir()?;
 
     let cached_client = ClientBuilder::new(client)
         .with(CacheLoggingMiddleware)
         .with(Cache(HttpCache {
             mode: CacheMode::Default,
-            manager: CACacheManager::default(),
+            manager: CACacheManager { path: cache_dir },
             options: HttpCacheOptions::default(),
         }))
         .build();
@@ -805,6 +817,16 @@ mod tests {
     fn test_get_available_port() {
         let port = get_available_port();
         assert!(port >= 20000 && port < 60000);
+    }
+
+    #[test]
+    fn test_durable_cache_dir_uses_config_directory() {
+        let cache_dir = durable_cache_dir_path();
+
+        assert_eq!(
+            cache_dir,
+            crate::config::effective_config_dir().join("http-cacache")
+        );
     }
 
     #[test]

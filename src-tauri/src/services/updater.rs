@@ -2,6 +2,7 @@
 //!
 //! 提供 portable 模式的自动更新功能
 
+use crate::config::effective_config_dir;
 use crate::error::{AppError, AppResult};
 use crate::models::progress::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::app_info;
@@ -23,6 +24,40 @@ pub struct UpdateResult {
     pub success: bool,
     /// 消息
     pub message: String,
+}
+
+fn update_runtime_dir_path() -> PathBuf {
+    effective_config_dir()
+}
+
+fn update_runtime_dir() -> AppResult<PathBuf> {
+    let dir = update_runtime_dir_path();
+    fs::create_dir_all(&dir)?;
+    Ok(dir)
+}
+
+fn update_download_dir_path() -> PathBuf {
+    update_runtime_dir_path()
+        .join("download")
+        .join("upgrade_files")
+}
+
+fn update_download_dir() -> AppResult<PathBuf> {
+    let _ = update_runtime_dir()?;
+    let dir = update_download_dir_path();
+    fs::create_dir_all(&dir)?;
+    Ok(dir)
+}
+
+fn update_extract_dir_path() -> PathBuf {
+    update_runtime_dir_path()
+        .join("download")
+        .join("upgrade_files_extracted")
+}
+
+fn update_extract_dir() -> AppResult<PathBuf> {
+    let _ = update_runtime_dir()?;
+    Ok(update_extract_dir_path())
 }
 
 /// 下载更新文件
@@ -187,15 +222,8 @@ pub async fn download_update(
         },
     );
 
-    // 获取当前可执行文件所在目录
-    let current_exe = std::env::current_exe()?;
-    let current_dir = current_exe
-        .parent()
-        .ok_or_else(|| AppError::Unknown("无法获取当前程序目录".to_string()))?;
-
-    // 创建下载目录（与Python版本保持一致：./download/upgrade_files）
-    let download_dir = current_dir.join("download").join("upgrade_files");
-    fs::create_dir_all(&download_dir)?;
+    // 创建下载目录（与 config.json 保持一致）
+    let download_dir = update_download_dir()?;
     info!("下载目录: {}", download_dir.display());
 
     // 提取文件名
@@ -324,8 +352,8 @@ pub async fn install_update(update_file: &Path) -> AppResult<()> {
     let extension = update_file.extension().and_then(|s| s.to_str());
 
     let upgrade_files_folder = if extension == Some("7z") || extension == Some("zip") {
-        // 创建解压目录（与Python版本保持一致：在download文件夹中）
-        let extract_dir = current_dir.join("download").join("upgrade_files_extracted");
+        // 创建解压目录（与 config.json 保持一致：在 download 文件夹中）
+        let extract_dir = update_extract_dir()?;
         if extract_dir.exists() {
             fs::remove_dir_all(&extract_dir)?;
         }
@@ -764,15 +792,8 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
         },
     );
 
-    // 获取当前可执行文件所在目录
-    let current_exe = std::env::current_exe()?;
-    let current_dir = current_exe
-        .parent()
-        .ok_or_else(|| AppError::Unknown("无法获取当前程序目录".to_string()))?;
-
-    // 创建下载目录（与Python版本保持一致：./download/upgrade_files）
-    let download_dir = current_dir.join("download").join("upgrade_files");
-    fs::create_dir_all(&download_dir)?;
+    // 创建下载目录（与 config.json 保持一致）
+    let download_dir = update_download_dir()?;
     info!("下载目录: {}", download_dir.display());
 
     let download_path = download_dir.join(&file_name);
@@ -916,4 +937,33 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
         download_path.display()
     );
     Ok(download_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_update_download_dir_uses_config_directory() {
+        let download_dir = update_download_dir_path();
+
+        assert_eq!(
+            download_dir,
+            crate::config::effective_config_dir()
+                .join("download")
+                .join("upgrade_files")
+        );
+    }
+
+    #[test]
+    fn test_update_extract_dir_uses_config_directory() {
+        let extract_dir = update_extract_dir_path();
+
+        assert_eq!(
+            extract_dir,
+            crate::config::effective_config_dir()
+                .join("download")
+                .join("upgrade_files_extracted")
+        );
+    }
 }

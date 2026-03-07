@@ -2,7 +2,7 @@
 //!
 //! 用于持久化存储历史记录等数据
 
-use crate::config::{RyujinxConfig, YuzuConfig};
+use crate::config::{effective_config_dir, RyujinxConfig, YuzuConfig};
 use crate::error::AppResult;
 use crate::utils::common::normalize_path;
 use once_cell::sync::Lazy;
@@ -22,9 +22,13 @@ pub static STORAGE: Lazy<RwLock<Storage>> = Lazy::new(|| {
 
 /// 获取存储文件路径
 pub fn storage_path() -> PathBuf {
-    std::env::current_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("storage.json")
+    let dir = effective_config_dir();
+
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        warn!("创建存储目录失败：{}", e);
+    }
+
+    dir.join("storage.json")
 }
 
 /// 持久化存储
@@ -171,5 +175,14 @@ mod tests {
         let json = serde_json::to_string_pretty(&storage).unwrap();
         let parsed: Storage = serde_json::from_str(&json).unwrap();
         assert_eq!(storage.yuzu_save_backup_path, parsed.yuzu_save_backup_path);
+    }
+
+    #[test]
+    fn test_storage_path_uses_config_directory() {
+        let storage_path = storage_path();
+        let config_path = crate::config::config_path();
+
+        assert_eq!(storage_path.file_name().unwrap(), "storage.json");
+        assert_eq!(storage_path.parent(), config_path.parent());
     }
 }

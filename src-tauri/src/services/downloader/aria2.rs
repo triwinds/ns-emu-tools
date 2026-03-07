@@ -8,7 +8,7 @@
 //! - 暂停/恢复/取消下载
 //! - 实时进度通知
 
-use crate::config::get_config;
+use crate::config::{effective_config_dir, get_config};
 use crate::error::{AppError, AppResult};
 #[cfg(target_os = "windows")]
 use crate::services::network::request_github_api;
@@ -353,18 +353,14 @@ impl Aria2Manager {
 
         // 删除旧日志
         if config.setting.download.remove_old_aria2_log_file {
-            let log_path = std::env::current_dir()
-                .unwrap_or_else(|_| PathBuf::from("."))
-                .join("aria2.log");
+            let log_path = get_aria2_log_path()?;
             if log_path.exists() {
                 let _ = std::fs::remove_file(&log_path);
             }
         }
 
         // 添加日志文件
-        let log_path = std::env::current_dir()
-            .unwrap_or_else(|_| PathBuf::from("."))
-            .join("aria2.log");
+        let log_path = get_aria2_log_path()?;
         args.push(format!("--log={}", log_path.display()));
 
         debug!("aria2 启动参数: {:?}", args);
@@ -1015,10 +1011,11 @@ fn find_available_port() -> AppResult<u16> {
 /// 查找顺序：
 /// 1. 可执行文件同目录下的 module/aria2c.exe（打包后）
 /// 2. 可执行文件同目录下的 aria2c.exe（打包后）
-/// 3. 当前工作目录下的 module/aria2c.exe（开发时）
-/// 4. 当前工作目录下的 aria2c.exe
-/// 5. 项目根目录下的 module/aria2c.exe（开发时，从 src-tauri 运行）
-/// 6. PATH 环境变量
+/// 3. 与 config.json 相同目录下的 aria2c.exe（程序管理的运行文件）
+/// 4. 当前工作目录下的 module/aria2c.exe（开发时）
+/// 5. 当前工作目录下的 aria2c.exe
+/// 6. 项目根目录下的 module/aria2c.exe（开发时，从 src-tauri 运行）
+/// 7. PATH 环境变量
 ///
 /// 注意：此函数已被 `ensure_aria2_installed()` 替代，保留用于兼容性
 #[allow(dead_code)]
@@ -1046,6 +1043,12 @@ fn get_aria2_path() -> AppResult<PathBuf> {
                 return Ok(exe_dir_path);
             }
         }
+    }
+
+    let managed_path = effective_config_dir().join(aria2_name);
+    if managed_path.exists() {
+        debug!("找到 aria2c: {} (config_dir)", managed_path.display());
+        return Ok(managed_path);
     }
 
     // 检查当前工作目录下的 module 文件夹（开发时）
@@ -1083,11 +1086,34 @@ fn get_aria2_path() -> AppResult<PathBuf> {
     Err(AppError::Aria2("找不到 aria2c 可执行文件".to_string()))
 }
 
-/// 获取默认下载目录（work_dir/download）
+fn managed_runtime_dir() -> PathBuf {
+    effective_config_dir()
+}
+
+fn get_managed_runtime_dir() -> AppResult<PathBuf> {
+    let dir = managed_runtime_dir();
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| AppError::Aria2(format!("创建运行目录失败: {}", e)))?;
+    Ok(dir)
+}
+
+fn aria2_log_path() -> PathBuf {
+    managed_runtime_dir().join("aria2.log")
+}
+
+fn get_aria2_log_path() -> AppResult<PathBuf> {
+    let dir = get_managed_runtime_dir()?;
+    Ok(dir.join("aria2.log"))
+}
+
+fn default_download_dir_path() -> PathBuf {
+    managed_runtime_dir().join("download")
+}
+
+/// 获取默认下载目录（与 config.json 同目录下的 download）
 pub fn get_default_download_dir() -> AppResult<PathBuf> {
-    let download_dir = std::env::current_dir()
-        .map_err(|e| AppError::Aria2(format!("获取当前目录失败: {}", e)))?
-        .join("download");
+    let _ = get_managed_runtime_dir()?;
+    let download_dir = default_download_dir_path();
 
     // 确保目录存在
     if !download_dir.exists() {
@@ -1564,6 +1590,11 @@ pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
         }
     }
 
+    let managed_path = effective_config_dir().join(aria2_name);
+    if managed_path.exists() {
+        return Ok(managed_path);
+    }
+
     // 检查当前工作目录下的 module 文件夹（开发时）
     if let Ok(cwd) = std::env::current_dir() {
         let module_path = cwd.join("module").join(aria2_name);
@@ -1594,20 +1625,15 @@ pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
     Err(AppError::Aria2("找不到 aria2c 可执行文件".to_string()))
 }
 
-/// 获取 aria2 安装目录（exe 所在目录）
+/// 获取 aria2 安装目录（与 config.json 同目录）
 #[cfg(target_os = "windows")]
 pub(crate) fn get_aria2_install_dir() -> AppResult<PathBuf> {
-    // 优先使用可执行文件所在目录
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-            return Ok(exe_dir.to_path_buf());
-        }
-    }
+    get_managed_runtime_dir()
+}
 
-    // 回退到当前工作目录
-    let cwd =
-        std::env::current_dir().map_err(|e| AppError::Aria2(format!("获取当前目录失败: {}", e)))?;
-    Ok(cwd)
+#[cfg(target_os = "windows")]
+fn aria2_install_dir_path() -> PathBuf {
+    managed_runtime_dir()
 }
 
 #[cfg(test)]
@@ -1680,6 +1706,34 @@ mod tests {
         let resolved = resolve_aria2_download_url(origin, "cloudflare_load_balance", true);
 
         assert_eq!(resolved, origin);
+    }
+
+    #[test]
+    fn test_default_download_dir_uses_config_directory() {
+        let download_dir = default_download_dir_path();
+
+        assert_eq!(
+            download_dir,
+            crate::config::effective_config_dir().join("download")
+        );
+    }
+
+    #[test]
+    fn test_aria2_log_path_uses_config_directory() {
+        let log_path = aria2_log_path();
+
+        assert_eq!(
+            log_path,
+            crate::config::effective_config_dir().join("aria2.log")
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_aria2_install_dir_uses_config_directory() {
+        let install_dir = aria2_install_dir_path();
+
+        assert_eq!(install_dir, crate::config::effective_config_dir());
     }
 
     #[test]
