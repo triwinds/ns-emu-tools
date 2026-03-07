@@ -1,12 +1,20 @@
 # Ns Emu Tools
 
-一个用于安装/更新 NS 模拟器的工具
+一个用于安装/更新 NS 模拟器的桌面工具。
+
+项目当前使用 **Rust + Tauri 2** 构建桌面端，前端使用 **Vue 3 + Vite + Vuetify**。
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/triwinds/ns-emu-tools?style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/triwinds/ns-emu-tools?style=for-the-badge)
 ![GitHub all releases](https://img.shields.io/github/downloads/triwinds/ns-emu-tools/total?style=for-the-badge)
 ![GitHub Repo stars](https://img.shields.io/github/stars/triwinds/ns-emu-tools?style=for-the-badge)
 ![GitHub](https://img.shields.io/github/license/triwinds/ns-emu-tools?style=for-the-badge)
+
+## 技术栈
+
+- 桌面端后端：Rust + Tauri 2（`src-tauri`）
+- 前端：Vue 3 + Vite + Vuetify（`frontend`）
+- 前端构建产物：`web`
 
 ## Features
 
@@ -23,21 +31,26 @@
  - Yuzu 金手指管理
  - aria2 多线程下载
 
-## 项目状态
-
- - Eden 下载源已切换到官方自建 Git 仓库：[eden-emu/eden](https://git.eden-emu.dev/eden-emu/eden)
- - Citron 项目已关闭，目前不再提供可用更新
-
 ## 使用方法
 
 ### 一、使用预构建的版本运行
 
 从 [GitHub 发布页(稳定版本)](https://github.com/triwinds/ns-emu-tools/releases) 或
-[CI 自动构建](https://github.com/triwinds/ns-emu-tools/actions/workflows/ci-build.yaml) 下载 exe 文件，然后双击运行即可。
+[CI 自动构建](https://github.com/triwinds/ns-emu-tools/actions/workflows/ci-build.yaml) 下载可执行文件后直接运行即可。
+
+Windows 首次运行时，如系统缺少 WebView2 Runtime，程序会提示下载安装。
 
 ### 二、使用源码运行
 
-参见 [开发文档](doc/dev.md)
+```shell
+cd frontend
+bun install
+
+cd ../src-tauri
+cargo tauri dev
+```
+
+更完整的开发说明参见 [开发文档](doc/dev.md)。
 
 ## 讨论组
 
@@ -45,21 +58,7 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
 
 ## License
 
-本项目的发布受 [AGPL-3.0](https://github.com/triwinds/ns-emu-tools/blob/main/LICENSE) 许可认证。
-
-## 启动参数
-
-```
-usage: NsEmuTools.exe [-h] [-m {webview,browser,chrome,edge,user default}]
-                              [--switch-mode {auto,webview,browser,chrome,edge,user default}]
-
-options:
-  -h, --help            show this help message and exit
-  -m {webview,browser,chrome,edge,user default}, --mode {webview,browser,chrome,edge,user default}
-                        指定 ui 启动方式
-  --switch-mode {auto,webview,browser,chrome,edge,user default}
-                        切换 ui 启动方式
-```
+本项目采用 [AGPL-3.0](LICENSE) 许可证。
 
 ## Credits
 
