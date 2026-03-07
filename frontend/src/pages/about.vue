@@ -32,11 +32,10 @@
         <div class="info-block">
           <p class="text-h5 text-accent" style="padding-bottom: 5px">项目地址</p>
           <div class="line-group">
-          <div class="line-item-icon"><v-icon size="24">{{ mdiGithub }}</v-icon></div>
-          <div class="line-item">GitHub：<a class="text-error"
-                    @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')">
-
-          triwinds/ns-emu-tools</a></div>
+            <div class="line-item-icon"><v-icon size="24">{{ mdiGithub }}</v-icon></div>
+            <div class="line-item">GitHub：<a class="text-error"
+                                              @click="openUrlWithDefaultBrowser('https://github.com/triwinds/ns-emu-tools')">
+              triwinds/ns-emu-tools</a></div>
           </div>
           <span>如果您觉得这个软件好用, 可以在 GitHub 上点个 star</span><br>
           <span>这是对我最大的鼓励。</span>
@@ -54,6 +53,14 @@
               <a class="text-secondary"
                  @click="openUrlWithDefaultBrowser('https://t.me/+mxI34BRClLUwZDcx')">Telegram 讨论组</a></div>
           </div>
+        </div>
+        <div class="info-block">
+          <p class="text-h5 text-info">项目状态</p>
+          <span>Eden：下载源已切换到
+            <a class="text-secondary"
+               @click="openUrlWithDefaultBrowser('https://git.eden-emu.dev/eden-emu/eden')">官方自建 Git 仓库</a>
+          </span><br>
+          <span>Citron：项目已关闭</span>
         </div>
         <div class="info-block">
           <p class="text-h5 text-warning">Credits</p>
@@ -83,15 +90,15 @@ import {useTheme} from "vuetify";
 import {ref} from "vue";
 import md from "@/utils/markdown";
 import {useConfigStore} from "@/stores/ConfigStore";
-import { loadChangeLog as loadChangeLogFromTauri } from "@/utils/tauri";
+import {loadChangeLog as loadChangeLogFromTauri} from "@/utils/tauri";
 
 const theme = useTheme()
 const configStore = useConfigStore()
 let credits = [
   {name: 'Yuzu', link: 'https://github.com/yuzu-emu/yuzu', description: 'Yuzu 模拟器'},
   {name: 'Ryujinx', link: 'https://ryujinx.app/', description: 'Ryujinx 模拟器'},
-  {name: 'Eden', link: 'https://eden-emu.dev/', description: 'Eden 模拟器'},
-  {name: 'Citron', link: 'https://citron-emu.org/', description: 'Citron 模拟器'},
+  {name: 'Eden', link: 'https://git.eden-emu.dev/eden-emu/eden', description: 'Eden 模拟器（官方自建 Git 仓库）'},
+  {name: 'Citron', link: 'https://citron-emu.org/', description: 'Citron 模拟器（项目已关闭）'},
   {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
   {name: 'nsz', link: 'https://github.com/nicoboss/nsz', description: 'NS 固件解析'},
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},
@@ -101,6 +108,7 @@ let credits = [
   {name: 'darthsternie.net', link: 'https://darthsternie.net/switch-firmwares/', description: 'NS 固件来源'},
 ]
 let changeLogHtml = ref('<p>加载中...</p>')
+
 async function loadChangeLog() {
   try {
     const changelog = await loadChangeLogFromTauri()
@@ -119,7 +127,6 @@ async function loadChangeLog() {
 
 .line-group {
   width: 100%;
-  /*overflow-x: auto;*/
   overflow: hidden;
   margin-top: 5px;
 }
@@ -135,6 +142,7 @@ async function loadChangeLog() {
   float: left;
   margin-right: 10px;
 }
+
 span {
   line-height: 30px;
 }

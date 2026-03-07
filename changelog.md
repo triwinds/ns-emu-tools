@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.6.0
+- 后端重构为 Rust + Tauri，大幅减小 exe 文件体积，整体启动、安装与更新流程更加稳定
+- 新增内置 Rust 下载器，可在设置中切换 `Auto` / `Aria2` / `Rust`
+- Eden 下载源切换到官方自建的 git repo
+- Citrion 项目已关闭
+
 ## 0.5.9
 - 修复由于 Citron 从 GitLab 迁至 Forgejo 导致无法获取版本信息的问题
 - 修复一些其他的 UI 问题
