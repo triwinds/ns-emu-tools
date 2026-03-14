@@ -111,6 +111,10 @@
                     <div class="progress-fill" :style="{ width: `${step.progress || 0}%` }"></div>
                   </div>
                   <div class="download-stats">
+                    <div v-if="step.downloadedSize" class="stat">
+                      <v-icon size="14" :icon="mdiDownload"></v-icon>
+                      {{ formatDownloadSize(step) }}
+                    </div>
                     <div class="stat">
                       <v-icon size="14" :icon="mdiSpeedometer"></v-icon>
                       {{ step.downloadSpeed }}
@@ -216,12 +220,14 @@
 
 <script setup lang="ts">
 import { useProgressStore } from '@/stores/ProgressStore';
+import type { ProgressStep } from '@/types/progress';
 import { computed, ref } from 'vue';
 import {
   mdiCheck,
   mdiClose,
   mdiCircleOutline,
   mdiMinus,
+  mdiDownload,
   mdiWeb,
   mdiSpeedometer,
   mdiClockOutline
@@ -292,6 +298,12 @@ async function handleCancelOnly() {
 function handleRetry() {
   // For now, just close the dialog. The user can retry from the main UI.
   store.closeDialog();
+}
+
+function formatDownloadSize(step: ProgressStep) {
+  const downloaded = step.downloadedSize ?? '0B';
+  const total = step.totalSize ?? '未知';
+  return `${downloaded} / ${total}`;
 }
 </script>
 
@@ -494,6 +506,7 @@ function handleRetry() {
 
 .download-stats {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   font-size: 0.8125rem;
   color: rgba(var(--v-theme-on-surface), 0.6);
@@ -503,6 +516,7 @@ function handleRetry() {
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 /* Error Message */

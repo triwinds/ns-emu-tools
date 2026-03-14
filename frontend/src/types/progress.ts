@@ -11,6 +11,8 @@ export interface ProgressStep {
     progress?: number; // 0-100
     downloadSpeed?: string;
     eta?: string;
+    downloadedSize?: string;
+    totalSize?: string;
     // Error message when status is 'error'
     error?: string;
     // Download source name (e.g., "直连", "Cloudflare CDN 负载均衡")
