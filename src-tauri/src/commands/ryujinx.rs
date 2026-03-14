@@ -3,6 +3,8 @@
 //! 暴露给前端的 Ryujinx 管理命令
 
 use crate::models::response::ApiResponse;
+#[cfg(target_os = "windows")]
+use crate::models::ProgressEvent;
 use crate::services::notifier::send_notify;
 use crate::services::ryujinx::*;
 use tauri::{Emitter, Window};
