@@ -856,7 +856,7 @@ mod tests {
         // 检查路径是否存在
         if !firmware_path.exists() {
             println!("⚠️  固件目录不存在，跳过测试");
-            println!("提示: 请先在 Yuzu/Eden/Citron 中安装固件");
+            println!("提示: 请先在 Yuzu/Eden 中安装固件");
             return;
         }
 

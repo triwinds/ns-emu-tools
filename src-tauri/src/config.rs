@@ -67,7 +67,7 @@ pub fn config_path() -> PathBuf {
     dir.join("config.json")
 }
 
-/// Yuzu/Eden/Citron 模拟器配置
+/// Yuzu/Eden 模拟器配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct YuzuConfig {
     /// 模拟器安装路径
@@ -79,7 +79,7 @@ pub struct YuzuConfig {
     /// 固件版本
     #[serde(default)]
     pub yuzu_firmware: Option<String>,
-    /// 分支 (eden, citron)
+    /// 分支（默认 eden，历史配置中可能保留 citron）
     #[serde(default = "default_yuzu_branch")]
     pub branch: String,
 }

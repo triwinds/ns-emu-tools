@@ -13,6 +13,8 @@ use crate::services::downloader::{get_download_manager, DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
+#[cfg(target_os = "macos")]
+use crate::utils::{finalize_macos_app_install, get_macos_bundle_executable_path};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tracing::{debug, info, warn};
@@ -96,7 +98,8 @@ fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
         // macOS: 查找 Ryujinx.app 并返回实际可执行文件路径
         let app_path = ryujinx_path.join(RYUJINX_APP_NAME);
         if app_path.exists() {
-            let exe_path = app_path.join("Contents/MacOS/Ryujinx");
+            let exe_path = get_macos_bundle_executable_path(&app_path, Some("Ryujinx"))
+                .unwrap_or_else(|_| app_path.join("Contents/MacOS/Ryujinx"));
             debug!("找到 Ryujinx.app: {}", exe_path.display());
             return Some(exe_path);
         }
@@ -564,54 +567,24 @@ where
             return Err(e);
         }
 
-        // macOS 特定处理：设置权限和移除 quarantine 属性
-        debug!("设置 macOS .app bundle 权限");
-
-        // 1. 移除 quarantine 属性
-        let xattr_result = Command::new("xattr")
-            .args(["-r", "-d", "com.apple.quarantine"])
-            .arg(&dest_app)
-            .output();
-
-        match xattr_result {
-            Ok(output) => {
-                if output.status.success() {
-                    debug!("成功移除 quarantine 属性");
-                } else {
-                    // 如果文件本来就没有 quarantine 属性，xattr 会返回错误，这是正常的
-                    debug!("xattr 命令执行完成（文件可能没有 quarantine 属性）");
-                }
-            }
-            Err(e) => {
-                warn!("移除 quarantine 属性失败: {}", e);
-                // 不中断安装流程
-            }
+        if let Err(e) = finalize_macos_app_install(&dest_app, Some("Ryujinx")) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    error: Some(e.to_string()),
+                    download_source: None,
+                },
+            });
+            return Err(e);
         }
 
-        // 2. 设置 .app bundle 权限为 755
-        let chmod_app_result = Command::new("chmod").args(["755"]).arg(&dest_app).output();
-
-        if let Err(e) = chmod_app_result {
-            warn!("设置 .app 权限失败: {}", e);
-            // 不中断安装流程
-        } else {
-            debug!("成功设置 .app bundle 权限为 755");
-        }
-
-        // 3. 设置可执行文件权限
-        let exe_path = dest_app.join("Contents/MacOS/Ryujinx");
-        if exe_path.exists() {
-            let chmod_exe_result = Command::new("chmod").args(["+x"]).arg(&exe_path).output();
-
-            if let Err(e) = chmod_exe_result {
-                warn!("设置可执行文件权限失败: {}", e);
-                // 不中断安装流程
-            } else {
-                debug!("成功设置可执行文件权限");
-            }
-        }
-
-        info!("macOS .app 权限设置完成");
+        info!("macOS .app 安装后处理完成");
     }
 
     #[cfg(not(target_os = "macos"))]
