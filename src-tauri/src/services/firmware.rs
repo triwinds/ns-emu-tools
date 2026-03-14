@@ -476,29 +476,8 @@ pub fn get_yuzu_keys_path() -> PathBuf {
 
 /// 获取 Ryujinx 固件路径
 pub fn get_ryujinx_firmware_path() -> PathBuf {
-    let ryujinx_path = {
-        let config = CONFIG.read();
-        config.ryujinx.path.clone()
-    };
-
-    // Ryujinx 用户数据路径
-    let user_path = if cfg!(windows) {
-        dirs::data_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("Ryujinx")
-    } else {
-        dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".config/Ryujinx")
-    };
-
-    // portable 模式检测
-    let portable_path = ryujinx_path.join("portable");
-    if portable_path.exists() {
-        portable_path.join("bis/system/Contents/registered")
-    } else {
-        user_path.join("bis/system/Contents/registered")
-    }
+    // 复用 Ryujinx 自身的用户目录解析逻辑，保证检测路径与安装路径一致。
+    crate::services::ryujinx::resolve_ryujinx_user_folder().join("bis/system/Contents/registered")
 }
 
 /// 获取 Ryujinx keys 文件路径
