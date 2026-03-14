@@ -12,16 +12,11 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
     env:
       RUSTC_WRAPPER: sccache
       SCCACHE_GHA_ENABLED: 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['windows-latest']
-
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -32,21 +27,22 @@ jobs:
     - uses: mozilla-actions/sccache-action@v0.0.9
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: rust-${{ matrix.os }}
+        shared-key: rust-${{ runner.os }}-${{ runner.arch }}
         workspaces: |
           src-tauri -> target
         cache-workspace-crates: true
+        cache-all-crates: true
     - uses: actions/cache@v4
       with:
         path: |
           ~/.bun/install/cache
           frontend/node_modules
-        key: bun-${{ matrix.os }}-${{ hashFiles('frontend/bun.lock') }}
+        key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('frontend/bun.lock') }}
         restore-keys: |
-          bun-${{ matrix.os }}-
+          bun-${{ runner.os }}-${{ runner.arch }}-
     - name: Install frontend dependencies
       working-directory: frontend
-      run: bun install
+      run: bun install --frozen-lockfile
     - name: Build frontend
       working-directory: frontend
       run: bun run build
@@ -60,9 +56,78 @@ jobs:
         path: src-tauri/target/release/NsEmuTools.exe
         name: NsEmuTools-windows-exe
         if-no-files-found: error
+
+  build-macos-app:
+    runs-on: macos-latest
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - uses: oven-sh/setup-bun@v2
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: mozilla-actions/sccache-action@v0.0.9
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: rust-${{ runner.os }}-${{ runner.arch }}
+        workspaces: |
+          src-tauri -> target
+        cache-workspace-crates: true
+        cache-all-crates: true
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.bun/install/cache
+          frontend/node_modules
+        key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('frontend/bun.lock') }}
+        restore-keys: |
+          bun-${{ runner.os }}-${{ runner.arch }}-
+    - name: Install frontend dependencies
+      working-directory: frontend
+      run: bun install --frozen-lockfile
+    - name: Install Tauri CLI
+      shell: bash
+      run: |
+        if ! cargo tauri --version >/dev/null 2>&1; then
+          cargo install tauri-cli --locked --version '^2'
+        fi
+    - name: Build macOS app bundle
+      working-directory: src-tauri
+      run: cargo tauri build --bundles app
+    - name: Archive macOS app bundle
+      shell: bash
+      run: |
+        APP_PATH="src-tauri/target/release/bundle/macos/NS Emu Tools.app"
+        ZIP_PATH="src-tauri/target/release/bundle/macos/NS-Emu-Tools-macos-app.zip"
+
+        test -d "$APP_PATH"
+        /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+    - name: Show Rust cache stats
+      if: always()
+      run: sccache --show-stats
+    - uses: actions/upload-artifact@v4
+      with:
+        path: src-tauri/target/release/bundle/macos/NS-Emu-Tools-macos-app.zip
+        name: NsEmuTools-macos-app
+        if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build-windows
+      - build-macos-app
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        path: dist
     - name: Release
       uses: softprops/action-gh-release@v2.2.2
-      if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true
-        files: src-tauri/target/release/NsEmuTools.exe
+        files: |
+          dist/NsEmuTools-windows-exe/NsEmuTools.exe
+          dist/NsEmuTools-macos-app/NS-Emu-Tools-macos-app.zip
