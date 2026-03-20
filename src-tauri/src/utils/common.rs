@@ -1,8 +1,9 @@
 //! 通用工具函数
 
 use crate::error::{AppError, AppResult};
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use tokio::fs::File;
+use tokio::fs::File as AsyncFile;
 use tokio::io::AsyncReadExt;
 use tracing::{debug, info};
 
@@ -82,6 +83,91 @@ pub fn normalize_path(path: &Path) -> PathBuf {
     }
 }
 
+/// 在线程池中执行阻塞 I/O，避免卡住异步运行时。
+pub async fn spawn_blocking_io<T, F>(task_name: &'static str, task: F) -> AppResult<T>
+where
+    T: Send + 'static,
+    F: FnOnce() -> AppResult<T> + Send + 'static,
+{
+    tokio::task::spawn_blocking(task)
+        .await
+        .map_err(|e| AppError::Unknown(format!("{task_name} 任务执行失败: {e}")))?
+}
+
+/// 原子写入文本文件。
+///
+/// 通过临时文件 + 原子替换避免写入过程中生成半成品文件。
+pub fn write_string_atomic(path: &Path, content: &str) -> AppResult<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let temp_path = atomic_temp_path(path);
+    let write_result = (|| -> AppResult<()> {
+        let mut file = std::fs::File::create(&temp_path)?;
+        file.write_all(content.as_bytes())?;
+        file.sync_all()?;
+        atomic_replace(&temp_path, path)?;
+        Ok(())
+    })();
+
+    if write_result.is_err() && temp_path.exists() {
+        let _ = std::fs::remove_file(&temp_path);
+    }
+
+    write_result
+}
+
+fn atomic_temp_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("temp");
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+
+    path.with_file_name(format!("{file_name}.{suffix}.tmp"))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn atomic_replace(source: &Path, target: &Path) -> AppResult<()> {
+    std::fs::rename(source, target)?;
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn atomic_replace(source: &Path, target: &Path) -> AppResult<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::PCWSTR;
+    use windows::Win32::Storage::FileSystem::{
+        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
+    };
+
+    let source_wide: Vec<u16> = source
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let target_wide: Vec<u16> = target
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
+    unsafe {
+        MoveFileExW(
+            PCWSTR::from_raw(source_wide.as_ptr()),
+            PCWSTR::from_raw(target_wide.as_ptr()),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+        .map_err(|e| AppError::Io(std::io::Error::other(e.to_string())))?;
+    }
+
+    Ok(())
+}
+
 /// 检查文件 MD5
 pub async fn check_file_md5(file_path: &Path, target_md5: &str) -> AppResult<bool> {
     if target_md5.is_empty() {
@@ -94,7 +180,7 @@ pub async fn check_file_md5(file_path: &Path, target_md5: &str) -> AppResult<boo
 
     info!("计算文件 MD5: {}", file_path.display());
 
-    let mut file = File::open(file_path).await?;
+    let mut file = AsyncFile::open(file_path).await?;
     let mut hasher = md5::Context::new();
     let mut buffer = vec![0u8; 8192];
 

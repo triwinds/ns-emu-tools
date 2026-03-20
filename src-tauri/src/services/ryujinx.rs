@@ -13,6 +13,7 @@ use crate::services::downloader::{get_download_manager, DownloadOptions};
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
+use crate::utils::spawn_blocking_io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tracing::{debug, info, warn};
@@ -445,7 +446,13 @@ where
         package_path.display(),
         package_path.metadata().map(|m| m.len()).unwrap_or(0)
     );
-    if let Err(e) = uncompress(&package_path, &tmp_dir, false) {
+    let package_path_for_extract = package_path.clone();
+    let tmp_dir_for_extract = tmp_dir.clone();
+    if let Err(e) = spawn_blocking_io("extract_ryujinx_package", move || {
+        uncompress(&package_path_for_extract, &tmp_dir_for_extract, false)
+    })
+    .await
+    {
         // 解压失败时，删除可能损坏的下载文件
         warn!("解压失败，删除可能损坏的文件: {}", package_path.display());
         let _ = std::fs::remove_file(&package_path);
@@ -500,7 +507,12 @@ where
 
     // 清理旧文件并安装
     debug!("清理旧 Ryujinx 文件");
-    if let Err(e) = clear_ryujinx_folder(&ryujinx_path) {
+    let ryujinx_path_for_cleanup = ryujinx_path.clone();
+    if let Err(e) = spawn_blocking_io("clear_ryujinx_folder", move || {
+        clear_ryujinx_folder(&ryujinx_path_for_cleanup)
+    })
+    .await
+    {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "install".to_string(),
@@ -547,7 +559,13 @@ where
             std::fs::remove_dir_all(&dest_app)?;
         }
 
-        if let Err(e) = copy_dir_all(&source_app, &dest_app) {
+        let source_app_for_copy = source_app.clone();
+        let dest_app_for_copy = dest_app.clone();
+        if let Err(e) = spawn_blocking_io("install_ryujinx_app_bundle", move || {
+            copy_dir_all(&source_app_for_copy, &dest_app_for_copy)
+        })
+        .await
+        {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "install".to_string(),
@@ -625,7 +643,13 @@ where
         );
         debug!("检查解压后的 publish 目录: {}", ryujinx_tmp_dir.display());
 
-        if let Err(e) = copy_dir_all(&ryujinx_tmp_dir, &ryujinx_path) {
+        let ryujinx_tmp_dir_for_copy = ryujinx_tmp_dir.clone();
+        let ryujinx_path_for_copy = ryujinx_path.clone();
+        if let Err(e) = spawn_blocking_io("install_ryujinx_files", move || {
+            copy_dir_all(&ryujinx_tmp_dir_for_copy, &ryujinx_path_for_copy)
+        })
+        .await
+        {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "install".to_string(),
@@ -684,7 +708,7 @@ where
     });
 
     // 清理临时目录
-    std::fs::remove_dir_all(&tmp_dir)?;
+    tokio::fs::remove_dir_all(&tmp_dir).await?;
 
     // 检查运行环境
     on_event(ProgressEvent::StepUpdate {
@@ -969,7 +993,7 @@ where
     let tmp_dir = firmware_path.parent().unwrap().join("tmp");
 
     // 确保临时目录存在
-    std::fs::create_dir_all(&tmp_dir)?;
+    tokio::fs::create_dir_all(&tmp_dir).await?;
 
     info!("开始安装固件到 Ryujinx，临时路径: {}", tmp_dir.display());
 
@@ -1066,7 +1090,7 @@ where
             },
         });
         // 清理临时目录
-        let _ = std::fs::remove_dir_all(&tmp_dir);
+        let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
         return Err(e);
     }
 
@@ -1085,7 +1109,7 @@ where
     });
 
     // 清理临时目录
-    std::fs::remove_dir_all(&tmp_dir)?;
+    tokio::fs::remove_dir_all(&tmp_dir).await?;
 
     // 更新配置
     {

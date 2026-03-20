@@ -282,7 +282,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn test_sanitize_filename_windows() {
-        assert_eq!(sanitize_filename("file<>:\"|?*.zip"), "file________.zip");
+        assert_eq!(sanitize_filename("file<>:\"|?*.zip"), "file_______.zip");
         assert_eq!(sanitize_filename("CON"), "_CON");
         assert_eq!(sanitize_filename("CON.txt"), "_CON.txt");
         assert_eq!(sanitize_filename("LPT1"), "_LPT1");

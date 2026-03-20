@@ -11,6 +11,7 @@ use crate::services::downloader::{get_download_manager, DownloadOptions, Downloa
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_download_source_name;
 use crate::utils::archive::uncompress;
+use crate::utils::spawn_blocking_io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -376,11 +377,17 @@ where
         });
 
         let app_name = "Eden.app";
-        match crate::utils::archive::extract_and_install_app_from_tar_gz(
-            &package_path,
-            &yuzu_path,
-            app_name,
-        ) {
+        let package_path_for_extract = package_path.clone();
+        let yuzu_path_for_extract = yuzu_path.clone();
+        match spawn_blocking_io("install_eden_app_bundle", move || {
+            crate::utils::archive::extract_and_install_app_from_tar_gz(
+                &package_path_for_extract,
+                &yuzu_path_for_extract,
+                app_name,
+            )
+        })
+        .await
+        {
             Ok(installed_app) => {
                 info!("Eden.app 已安装到: {}", installed_app.display());
                 on_event(ProgressEvent::StepUpdate {
@@ -468,7 +475,13 @@ where
             return Err(e.into());
         }
 
-        if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
+        let package_path_for_extract = package_path.clone();
+        let tmp_dir_for_extract = tmp_dir.clone();
+        if let Err(e) = spawn_blocking_io("extract_eden_package", move || {
+            unzip_yuzu(&package_path_for_extract, Some(&tmp_dir_for_extract)).map(|_| ())
+        })
+        .await
+        {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "extract".to_string(),
@@ -513,7 +526,13 @@ where
             },
         });
         // 复制文件
-        if let Err(e) = copy_back_yuzu_files(&tmp_dir, &yuzu_path) {
+        let tmp_dir_for_install = tmp_dir.clone();
+        let yuzu_path_for_install = yuzu_path.clone();
+        if let Err(e) = spawn_blocking_io("install_eden_files", move || {
+            copy_back_yuzu_files(&tmp_dir_for_install, &yuzu_path_for_install)
+        })
+        .await
+        {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "install".to_string(),
@@ -876,7 +895,13 @@ where
             return Err(e.into());
         }
 
-        if let Err(e) = unzip_yuzu(&package_path, Some(&tmp_dir)) {
+        let package_path_for_extract = package_path.clone();
+        let tmp_dir_for_extract = tmp_dir.clone();
+        if let Err(e) = spawn_blocking_io("extract_citron_package", move || {
+            unzip_yuzu(&package_path_for_extract, Some(&tmp_dir_for_extract)).map(|_| ())
+        })
+        .await
+        {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "extract".to_string(),
@@ -969,7 +994,13 @@ where
             },
         });
         // 复制文件
-        if let Err(e) = copy_back_yuzu_files(&release_dir, &yuzu_path) {
+        let release_dir_for_install = release_dir.clone();
+        let yuzu_path_for_install = yuzu_path.clone();
+        if let Err(e) = spawn_blocking_io("install_citron_files", move || {
+            copy_back_yuzu_files(&release_dir_for_install, &yuzu_path_for_install)
+        })
+        .await
+        {
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "install".to_string(),
@@ -1109,9 +1140,6 @@ fn copy_back_yuzu_files(tmp_dir: &Path, yuzu_path: &Path) -> AppResult<()> {
 
     // 复制文件
     copy_dir_all(tmp_dir, yuzu_path)?;
-
-    // 等待一下确保文件系统同步
-    std::thread::sleep(Duration::from_millis(500));
 
     // 清理临时目录
     std::fs::remove_dir_all(tmp_dir)?;
@@ -1326,7 +1354,11 @@ where
     }
 
     // 删除旧的可执行文件/应用（只删除当前分支的）
-    remove_target_app(branch)?;
+    spawn_blocking_io("remove_target_yuzu_app", {
+        let branch = branch.to_string();
+        move || remove_target_app(&branch)
+    })
+    .await?;
 
     // 根据分支安装
     match branch {
@@ -1340,15 +1372,25 @@ where
     }
 
     // 确保安装目录存在
-    std::fs::create_dir_all(&yuzu_path)?;
+    let yuzu_path_for_prepare = yuzu_path.clone();
+    spawn_blocking_io("prepare_yuzu_install_dir", move || {
+        std::fs::create_dir_all(&yuzu_path_for_prepare)?;
+        Ok(())
+    })
+    .await?;
 
     // 如果需要重命名为 cemu
     if rename_to_cemu {
         let exe_path = get_yuzu_exe_path();
         if exe_path.exists() {
             let cemu_path = yuzu_path.join("cemu.exe");
-            std::fs::rename(&exe_path, &cemu_path)?;
-            info!("正在将 {} 重命名为 cemu.exe", exe_path.display());
+            let exe_path_for_log = exe_path.display().to_string();
+            spawn_blocking_io("rename_yuzu_to_cemu", move || {
+                std::fs::rename(&exe_path, &cemu_path)?;
+                Ok(())
+            })
+            .await?;
+            info!("正在将 {} 重命名为 cemu.exe", exe_path_for_log);
         }
     }
 
@@ -1748,10 +1790,16 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
                 );
             }
 
-            let guard = version_data.lock().unwrap();
-            if guard.0.is_some() {
-                version = guard.0.clone();
-                branch = guard.1.clone();
+            let detected = {
+                let guard = version_data.lock().unwrap();
+                match (guard.0.clone(), guard.1.clone()) {
+                    (Some(version), branch) => Some((version, branch)),
+                    (None, _) => None,
+                }
+            };
+            if let Some((detected_version, detected_branch)) = detected {
+                version = Some(detected_version);
+                branch = detected_branch;
                 debug!(
                     "第 {} 次尝试找到窗口标题，检测到版本: {:?}, 分支: {:?}",
                     i + 1,
@@ -1765,7 +1813,7 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
                 debug!("第 {} 次尝试，尚未找到窗口标题", i + 1);
             }
 
-            std::thread::sleep(Duration::from_millis(500));
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
         // 结束进程
         debug!("结束 Yuzu 进程");

@@ -30,12 +30,13 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
-use crate::error::{AppError, AppResult};
-use once_cell::sync::{Lazy, OnceCell};
+use crate::error::AppResult;
+use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
 pub use aria2_backend::Aria2Backend;
@@ -47,7 +48,8 @@ pub use rust_downloader::RustDownloader;
 pub use types::{DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus};
 
 /// 全局下载管理器实例
-static DOWNLOAD_MANAGER: OnceCell<Arc<dyn DownloadManager>> = OnceCell::new();
+static DOWNLOAD_MANAGER: Lazy<Mutex<Option<ActiveDownloadManager>>> =
+    Lazy::new(|| Mutex::new(None));
 
 /// 临时下载管理器注册表。
 ///
@@ -100,24 +102,12 @@ impl Default for DownloadBackend {
     }
 }
 
-/// 初始化下载管理器
-///
-/// # 参数
-/// - `backend`: 下载后端类型
-///
-/// # 说明
-/// - `Auto`: 优先 aria2；若 aria2 启动失败/不可用则回退 RustDownloader
-/// - `Aria2`: 强制使用 aria2
-/// - `Rust`: 强制使用 RustDownloader
-pub async fn init_download_manager(
-    backend: DownloadBackend,
-) -> AppResult<Arc<dyn DownloadManager>> {
-    if let Some(manager) = DOWNLOAD_MANAGER.get() {
-        return Ok(manager.clone());
-    }
+struct ActiveDownloadManager {
+    requested_backend: DownloadBackend,
+    manager: Arc<dyn DownloadManager>,
+}
 
-    info!("初始化下载管理器，后端类型: {:?}", backend);
-
+async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn DownloadManager>> {
     let manager: Arc<dyn DownloadManager> = match backend {
         DownloadBackend::Aria2 => {
             debug!("强制使用 aria2 后端");
@@ -131,7 +121,6 @@ pub async fn init_download_manager(
         }
         DownloadBackend::Auto => {
             debug!("自动选择下载后端");
-            // 优先尝试 aria2
             match Aria2Backend::from_global().await {
                 Ok(aria2) => {
                     info!("使用 aria2 后端");
@@ -147,10 +136,46 @@ pub async fn init_download_manager(
         }
     };
 
-    DOWNLOAD_MANAGER
-        .set(manager.clone())
-        .map_err(|_| AppError::Download("下载管理器已经初始化".to_string()))?;
+    Ok(manager)
+}
 
+/// 初始化下载管理器
+///
+/// # 参数
+/// - `backend`: 下载后端类型
+///
+/// # 说明
+/// - `Auto`: 优先 aria2；若 aria2 启动失败/不可用则回退 RustDownloader
+/// - `Aria2`: 强制使用 aria2
+/// - `Rust`: 强制使用 RustDownloader
+pub async fn init_download_manager(
+    backend: DownloadBackend,
+) -> AppResult<Arc<dyn DownloadManager>> {
+    let mut active = DOWNLOAD_MANAGER.lock().await;
+    if let Some(current) = active.as_ref() {
+        if current.requested_backend == backend {
+            return Ok(current.manager.clone());
+        }
+
+        info!(
+            "检测到下载后端变更，重建下载管理器: {:?} -> {:?}",
+            current.requested_backend, backend
+        );
+    } else {
+        info!("初始化下载管理器，后端类型: {:?}", backend);
+    }
+
+    if let Some(previous) = active.take() {
+        if let Err(err) = previous.manager.stop().await {
+            warn!("停止旧下载管理器失败: {}", err);
+        }
+    }
+
+    let manager = create_download_manager(backend).await?;
+    *active = Some(ActiveDownloadManager {
+        requested_backend: backend,
+        manager: manager.clone(),
+    });
     Ok(manager)
 }
 
@@ -158,11 +183,6 @@ pub async fn init_download_manager(
 ///
 /// 如果未初始化，将自动使用 Auto 模式初始化
 pub async fn get_download_manager() -> AppResult<Arc<dyn DownloadManager>> {
-    if let Some(manager) = DOWNLOAD_MANAGER.get() {
-        return Ok(manager.clone());
-    }
-
-    // 从配置读取后端类型
     let backend = {
         let config = crate::config::get_config();
         DownloadBackend::from(config.setting.download.backend.as_str())
@@ -195,7 +215,10 @@ pub async fn cancel_active_downloads(remove_files: bool) -> AppResult<Option<Str
         .cloned()
         .collect();
 
-    let global_manager = DOWNLOAD_MANAGER.get().cloned();
+    let global_manager = {
+        let active = DOWNLOAD_MANAGER.lock().await;
+        active.as_ref().map(|manager| manager.manager.clone())
+    };
     let mut first_path = None;
 
     for manager in transient_managers {
@@ -218,7 +241,16 @@ pub async fn cancel_active_downloads(remove_files: bool) -> AppResult<Option<Str
 /// 重置下载管理器(仅用于测试)
 #[cfg(test)]
 pub fn reset_download_manager() {
-    // OnceCell 不支持重置，测试时需要特殊处理
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("failed to build test runtime");
+    runtime.block_on(async {
+        let mut active = DOWNLOAD_MANAGER.lock().await;
+        if let Some(manager) = active.take() {
+            let _ = manager.manager.stop().await;
+        }
+    });
 }
 
 /// 格式化 ETA 时间

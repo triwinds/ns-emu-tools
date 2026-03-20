@@ -9,6 +9,18 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tracing::{debug, warn};
 
+/// 状态保存选项。
+#[derive(Debug, Clone, Copy)]
+pub struct StateSaveOptions {
+    /// 是否在写入后强制刷新到磁盘。
+    pub durable: bool,
+}
+
+impl StateSaveOptions {
+    pub const DURABLE: Self = Self { durable: true };
+    pub const THROTTLED: Self = Self { durable: false };
+}
+
 /// 下载状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadState {
@@ -247,6 +259,16 @@ impl StateStore {
     ///
     /// 使用临时文件 + rename 确保原子性
     pub async fn save(&self, state: &DownloadState) -> AppResult<()> {
+        self.save_with_options(state, StateSaveOptions::DURABLE)
+            .await
+    }
+
+    /// 按指定选项保存下载状态。
+    pub async fn save_with_options(
+        &self,
+        state: &DownloadState,
+        options: StateSaveOptions,
+    ) -> AppResult<()> {
         let state_path = state.state_file_path();
         let temp_path = state_path.with_extension("download.tmp");
 
@@ -257,7 +279,9 @@ impl StateStore {
         // 写入临时文件
         let mut file = fs::File::create(&temp_path).await?;
         file.write_all(content.as_bytes()).await?;
-        file.sync_all().await?;
+        if options.durable {
+            file.sync_all().await?;
+        }
 
         // 原子重命名
         fs::rename(&temp_path, &state_path).await?;

@@ -9,7 +9,8 @@ use crate::services::downloader::filename::{resolve_filename, resolve_filename_f
 use crate::services::downloader::manager::{DownloadManager, ProgressCallback};
 use crate::services::downloader::retry_strategy::{ErrorCategory, RetryStrategy};
 use crate::services::downloader::state_store::{
-    check_disk_space, get_state_filename, get_temp_filename, ChunkState, DownloadState, StateStore,
+    check_disk_space, get_state_filename, get_temp_filename, ChunkState, DownloadState,
+    StateSaveOptions, StateStore,
 };
 use crate::services::downloader::types::{
     DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus,
@@ -20,7 +21,7 @@ use parking_lot::RwLock;
 use reqwest::Client;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::fs;
@@ -710,7 +711,10 @@ impl DownloadTask {
         );
 
         // 保存初始状态
-        state_store.save(&state).await?;
+        state.touch();
+        state_store
+            .save_with_options(&state, StateSaveOptions::DURABLE)
+            .await?;
 
         debug!(
             "状态初始化完成，准备开始下载: {} (supports_range={}, chunks={})",
@@ -802,12 +806,15 @@ impl DownloadTask {
         debug!("准备启动状态定时保存任务");
         let state_store_clone = StateStore::new(save_dir.clone());
         let state_clone = Arc::new(RwLock::new(state.clone()));
+        let state_revision = Arc::new(AtomicU64::new(0));
         let cancel_token_clone = self.cancel_token.clone();
 
         let state_save_handle = tokio::spawn({
             let state_clone = state_clone.clone();
+            let state_revision = state_revision.clone();
             async move {
                 let mut interval = interval(STATE_SAVE_INTERVAL);
+                let mut last_persisted_revision = state_revision.load(Ordering::SeqCst);
                 debug!("状态定时保存任务启动");
                 loop {
                     tokio::select! {
@@ -822,9 +829,24 @@ impl DownloadTask {
                                 break;
                             }
 
-                            let state = state_clone.read().clone();
-                            if let Err(e) = state_store_clone.save(&state).await {
+                            let current_revision = state_revision.load(Ordering::SeqCst);
+                            if current_revision == last_persisted_revision {
+                                continue;
+                            }
+
+                            let state = {
+                                let mut state = state_clone.write();
+                                state.touch();
+                                state.clone()
+                            };
+
+                            if let Err(e) = state_store_clone
+                                .save_with_options(&state, StateSaveOptions::THROTTLED)
+                                .await
+                            {
                                 warn!("保存状态失败: {}", e);
+                            } else {
+                                last_persisted_revision = current_revision;
                             }
                         }
                     }
@@ -841,7 +863,12 @@ impl DownloadTask {
             state_clone.read().chunks.len()
         );
         let download_result = self
-            .download_with_retry(&state_clone, &temp_path, range_support.supports_range)
+            .download_with_retry(
+                &state_clone,
+                &state_revision,
+                &temp_path,
+                range_support.supports_range,
+            )
             .await;
 
         // 停止状态保存任务
@@ -881,8 +908,14 @@ impl DownloadTask {
             }
             Err(e) => {
                 // 保存当前状态以便恢复
-                let state = state_clone.read().clone();
-                let _ = state_store.save(&state).await;
+                let state = {
+                    let mut state = state_clone.write();
+                    state.touch();
+                    state.clone()
+                };
+                let _ = state_store
+                    .save_with_options(&state, StateSaveOptions::DURABLE)
+                    .await;
 
                 error!("下载失败: {}", e);
                 Err(e)
@@ -938,6 +971,7 @@ impl DownloadTask {
     async fn download_with_retry(
         &self,
         state: &Arc<RwLock<DownloadState>>,
+        state_revision: &Arc<AtomicU64>,
         temp_path: &PathBuf,
         supports_range: bool,
     ) -> AppResult<()> {
@@ -948,6 +982,7 @@ impl DownloadTask {
             // 启动进度聚合任务
             let progress_clone = self.progress.clone();
             let state_for_progress = state.clone();
+            let state_revision_for_progress = state_revision.clone();
 
             let progress_handle = tokio::spawn(async move {
                 while let Some(chunk_progress) = progress_rx.recv().await {
@@ -957,6 +992,7 @@ impl DownloadTask {
                         if let Some(chunk) = state.chunks.get_mut(chunk_progress.index) {
                             chunk.downloaded = chunk_progress.downloaded;
                             chunk.completed = chunk_progress.completed;
+                            state_revision_for_progress.fetch_add(1, Ordering::SeqCst);
                         }
                     }
 

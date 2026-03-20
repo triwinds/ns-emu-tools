@@ -2,15 +2,20 @@
 //!
 //! 管理应用程序的配置文件读写和全局配置状态
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
+use crate::utils::write_string_atomic;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{debug, info, warn};
+use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::time::{Duration, Instant};
+use tracing::{debug, error, info, warn};
 
 /// 应用程序版本（自动从 Cargo.toml 读取）
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const CONFIG_SAVE_DEBOUNCE: Duration = Duration::from_millis(500);
 
 /// User-Agent 字符串
 pub fn user_agent() -> String {
@@ -24,6 +29,149 @@ pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
         Config::default()
     }))
 });
+
+static CONFIG_PERSISTENCE: Lazy<ConfigPersistence> = Lazy::new(ConfigPersistence::new);
+
+struct ConfigPersistence {
+    sender: mpsc::Sender<ConfigPersistenceCommand>,
+}
+
+enum ConfigPersistenceCommand {
+    Schedule(Config),
+    PersistNow(Config, SyncSender<AppResult<()>>),
+    Flush(SyncSender<AppResult<()>>),
+}
+
+impl ConfigPersistence {
+    fn new() -> Self {
+        let (sender, receiver) = mpsc::channel();
+        std::thread::Builder::new()
+            .name("config-persistence".to_string())
+            .spawn(move || config_persistence_worker(receiver))
+            .expect("failed to spawn config persistence worker");
+
+        Self { sender }
+    }
+
+    fn schedule(&self, config: Config) -> AppResult<()> {
+        self.sender
+            .send(ConfigPersistenceCommand::Schedule(config))
+            .map_err(|e| AppError::Config(format!("发送配置持久化任务失败: {}", e)))
+    }
+
+    fn persist_now(&self, config: Config) -> AppResult<()> {
+        let (reply_tx, reply_rx) = mpsc::sync_channel(0);
+        self.sender
+            .send(ConfigPersistenceCommand::PersistNow(config, reply_tx))
+            .map_err(|e| AppError::Config(format!("发送立即保存配置任务失败: {}", e)))?;
+        wait_config_persistence_reply(reply_rx, "等待立即保存配置结果失败")
+    }
+
+    fn flush(&self) -> AppResult<()> {
+        let (reply_tx, reply_rx) = mpsc::sync_channel(0);
+        self.sender
+            .send(ConfigPersistenceCommand::Flush(reply_tx))
+            .map_err(|e| AppError::Config(format!("发送刷新配置任务失败: {}", e)))?;
+        wait_config_persistence_reply(reply_rx, "等待刷新配置结果失败")
+    }
+}
+
+fn wait_config_persistence_reply(
+    receiver: mpsc::Receiver<AppResult<()>>,
+    context: &str,
+) -> AppResult<()> {
+    receiver
+        .recv()
+        .map_err(|e| AppError::Config(format!("{}: {}", context, e)))?
+}
+
+fn config_persistence_worker(receiver: Receiver<ConfigPersistenceCommand>) {
+    let mut last_saved: Option<Config> = None;
+    let mut pending: Option<Config> = None;
+    let mut deadline: Option<Instant> = None;
+
+    loop {
+        let command = match deadline {
+            Some(target) => {
+                let now = Instant::now();
+                let timeout = target.saturating_duration_since(now);
+                match receiver.recv_timeout(timeout) {
+                    Ok(command) => Some(command),
+                    Err(mpsc::RecvTimeoutError::Timeout) => None,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        if let Err(err) = flush_pending_config(&mut pending, &mut last_saved) {
+                            error!("配置持久化线程退出前刷新失败: {}", err);
+                        }
+                        break;
+                    }
+                }
+            }
+            None => match receiver.recv() {
+                Ok(command) => Some(command),
+                Err(_) => {
+                    if let Err(err) = flush_pending_config(&mut pending, &mut last_saved) {
+                        error!("配置持久化线程退出前刷新失败: {}", err);
+                    }
+                    break;
+                }
+            },
+        };
+
+        match command {
+            Some(ConfigPersistenceCommand::Schedule(config)) => {
+                if last_saved.as_ref() == Some(&config) {
+                    pending = None;
+                    deadline = None;
+                    debug!("配置内容未变化，跳过延迟保存");
+                } else {
+                    pending = Some(config);
+                    deadline = Some(Instant::now() + CONFIG_SAVE_DEBOUNCE);
+                }
+            }
+            Some(ConfigPersistenceCommand::PersistNow(config, reply_tx)) => {
+                pending = None;
+                deadline = None;
+
+                let result = persist_config_snapshot(&config);
+                if result.is_ok() {
+                    last_saved = Some(config);
+                }
+
+                let _ = reply_tx.send(result);
+            }
+            Some(ConfigPersistenceCommand::Flush(reply_tx)) => {
+                deadline = None;
+                let result = flush_pending_config(&mut pending, &mut last_saved);
+                let _ = reply_tx.send(result);
+            }
+            None => {
+                deadline = None;
+                if let Err(err) = flush_pending_config(&mut pending, &mut last_saved) {
+                    error!("延迟保存配置失败: {}", err);
+                }
+            }
+        }
+    }
+}
+
+fn flush_pending_config(
+    pending: &mut Option<Config>,
+    last_saved: &mut Option<Config>,
+) -> AppResult<()> {
+    let Some(snapshot) = pending.clone() else {
+        return Ok(());
+    };
+
+    if last_saved.as_ref() == Some(&snapshot) {
+        *pending = None;
+        return Ok(());
+    }
+
+    persist_config_snapshot(&snapshot)?;
+    *last_saved = Some(snapshot);
+    *pending = None;
+    Ok(())
+}
 
 /// 获取应用程序数据目录
 pub fn app_data_dir() -> PathBuf {
@@ -67,8 +215,21 @@ pub fn config_path() -> PathBuf {
     dir.join("config.json")
 }
 
+fn persist_config_snapshot(config: &Config) -> AppResult<()> {
+    let path = config_path();
+    info!("正在将配置保存到 {}", path.display());
+    let content = serde_json::to_string_pretty(config)?;
+    write_string_atomic(&path, &content)?;
+    debug!("配置保存成功");
+    Ok(())
+}
+
+fn schedule_config_save(config: Config) -> AppResult<()> {
+    CONFIG_PERSISTENCE.schedule(config)
+}
+
 /// Yuzu/Eden/Citron 模拟器配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct YuzuConfig {
     /// 模拟器安装路径
     #[serde(default = "default_yuzu_path")]
@@ -121,7 +282,7 @@ impl Default for YuzuConfig {
 }
 
 /// Ryujinx 模拟器配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RyujinxConfig {
     /// 模拟器安装路径
     #[serde(default = "default_ryujinx_path")]
@@ -174,7 +335,7 @@ impl Default for RyujinxConfig {
 }
 
 /// 网络设置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkSetting {
     /// GitHub API 模式
@@ -235,7 +396,7 @@ impl Default for NetworkSetting {
 }
 
 /// 下载设置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadSetting {
     /// 安装后自动删除下载文件
@@ -268,7 +429,7 @@ impl Default for DownloadSetting {
 }
 
 /// UI 设置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct UiSetting {
     /// 上次打开的模拟器页面
@@ -309,7 +470,7 @@ impl Default for UiSetting {
 }
 
 /// 其他设置
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct OtherSetting {
     /// 将 Yuzu 重命名为 Cemu
     #[serde(default)]
@@ -317,7 +478,7 @@ pub struct OtherSetting {
 }
 
 /// 通用设置
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct CommonSetting {
     /// UI 设置
     #[serde(default)]
@@ -334,7 +495,7 @@ pub struct CommonSetting {
 }
 
 /// 应用程序配置
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Config {
     /// Yuzu 配置
     #[serde(default)]
@@ -368,58 +529,99 @@ impl Config {
 
     /// 保存配置到文件
     pub fn save(&self) -> AppResult<()> {
-        let path = config_path();
-        info!("正在将配置保存到 {}", path.display());
-        let content = serde_json::to_string_pretty(self)?;
-        std::fs::write(&path, content)?;
-        debug!("配置保存成功");
-        Ok(())
+        CONFIG_PERSISTENCE.persist_now(self.clone())
     }
 }
 
 /// 更新上次打开的模拟器页面
 pub fn update_last_open_emu_page(page: &str) -> AppResult<()> {
-    let mut config = CONFIG.write();
-    config.setting.ui.last_open_emu_page = if page == "ryujinx" {
-        "ryujinx".to_string()
-    } else {
-        "yuzu".to_string()
+    let page = if page == "ryujinx" { "ryujinx" } else { "yuzu" };
+    let snapshot = {
+        let mut config = CONFIG.write();
+        if config.setting.ui.last_open_emu_page == page {
+            return Ok(());
+        }
+        config.setting.ui.last_open_emu_page = page.to_string();
+        info!(
+            "已将 lastOpenEmuPage 更新为 {}",
+            config.setting.ui.last_open_emu_page
+        );
+        config.clone()
     };
-    info!(
-        "已将 lastOpenEmuPage 更新为 {}",
-        config.setting.ui.last_open_emu_page
-    );
-    config.save()
+
+    schedule_config_save(snapshot)
 }
 
 /// 更新深色模式状态
 pub fn update_dark_state(dark: bool) -> AppResult<()> {
-    let mut config = CONFIG.write();
-    config.setting.ui.dark = dark;
-    info!("已将深色模式更新为 {}", config.setting.ui.dark);
-    config.save()
+    let snapshot = {
+        let mut config = CONFIG.write();
+        if config.setting.ui.dark == dark {
+            return Ok(());
+        }
+        config.setting.ui.dark = dark;
+        info!("已将深色模式更新为 {}", config.setting.ui.dark);
+        config.clone()
+    };
+
+    schedule_config_save(snapshot)
 }
 
 /// 更新设置
 pub fn update_setting(setting: CommonSetting) -> AppResult<()> {
-    let mut config = CONFIG.write();
-    info!("正在更新设置");
-    config.setting = setting;
-    config.save()
+    let snapshot = {
+        let mut config = CONFIG.write();
+        if config.setting == setting {
+            info!("设置未变化，跳过保存");
+            return Ok(());
+        }
+        info!("正在更新设置");
+        config.setting = setting;
+        config.clone()
+    };
+
+    schedule_config_save(snapshot)
 }
 
 /// 更新窗口大小
 pub fn update_window_size(width: u32, height: u32) -> AppResult<()> {
-    let mut config = CONFIG.write();
-    config.setting.ui.width = width;
-    config.setting.ui.height = height;
-    info!("已将窗口大小更新为 {}x{}", width, height);
-    config.save()
+    let snapshot = {
+        let mut config = CONFIG.write();
+        if config.setting.ui.width == width && config.setting.ui.height == height {
+            return Ok(());
+        }
+        config.setting.ui.width = width;
+        config.setting.ui.height = height;
+        info!("已将窗口大小更新为 {}x{}", width, height);
+        config.clone()
+    };
+
+    schedule_config_save(snapshot)
 }
 
 /// 获取当前配置的克隆
 pub fn get_config() -> Config {
     CONFIG.read().clone()
+}
+
+/// 使用新配置替换当前配置并延迟保存。
+pub fn replace_config(config: Config) -> AppResult<()> {
+    let snapshot = {
+        let mut current = CONFIG.write();
+        if *current == config {
+            info!("配置未变化，跳过保存");
+            return Ok(());
+        }
+        *current = config;
+        current.clone()
+    };
+
+    schedule_config_save(snapshot)
+}
+
+/// 立即刷新待保存的配置。
+pub fn flush_pending_config_save() -> AppResult<()> {
+    CONFIG_PERSISTENCE.flush()
 }
 
 #[cfg(test)]

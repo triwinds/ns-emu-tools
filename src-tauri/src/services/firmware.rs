@@ -7,7 +7,7 @@ use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::services::downloader::{get_download_manager, DownloadOptions};
 use crate::services::network::{get_download_source_name, request_github_api};
-use crate::utils::common::format_size;
+use crate::utils::common::{format_size, spawn_blocking_io};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tracing::{debug, info, warn};
@@ -338,7 +338,13 @@ where
     }
 
     // 解压
-    if let Err(e) = crate::utils::archive::extract_zip(&result.path, target_firmware_path) {
+    let archive_path = result.path.clone();
+    let target_dir = target_firmware_path.to_path_buf();
+    if let Err(e) = spawn_blocking_io("extract_firmware_zip", move || {
+        crate::utils::archive::extract_zip(&archive_path, &target_dir)
+    })
+    .await
+    {
         on_event(ProgressEvent::StepUpdate {
             step: ProgressStep {
                 id: "extract_firmware".to_string(),

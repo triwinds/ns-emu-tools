@@ -20,9 +20,7 @@ pub fn get_config() -> Result<Config, String> {
 /// 保存配置
 #[command]
 pub fn save_config(config: Config) -> Result<(), String> {
-    let mut current = crate::config::CONFIG.write();
-    *current = config;
-    current.save().map_err(|e| e.to_string())
+    config::replace_config(config).map_err(|e| e.to_string())
 }
 
 /// 获取存储数据

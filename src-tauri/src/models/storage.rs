@@ -5,6 +5,7 @@
 use crate::config::{effective_config_dir, RyujinxConfig, YuzuConfig};
 use crate::error::AppResult;
 use crate::utils::common::normalize_path;
+use crate::utils::write_string_atomic;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
@@ -20,6 +21,8 @@ pub static STORAGE: Lazy<RwLock<Storage>> = Lazy::new(|| {
     }))
 });
 
+static STORAGE_LAST_SAVED: Lazy<RwLock<Option<Storage>>> = Lazy::new(|| RwLock::new(None));
+
 /// 获取存储文件路径
 pub fn storage_path() -> PathBuf {
     let dir = effective_config_dir();
@@ -32,7 +35,7 @@ pub fn storage_path() -> PathBuf {
 }
 
 /// 持久化存储
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Storage {
     /// Yuzu 历史配置
     #[serde(default)]
@@ -57,6 +60,7 @@ impl Storage {
             info!("从 {} 加载存储", path.display());
             let content = std::fs::read_to_string(&path)?;
             let storage: Storage = serde_json::from_str(&content)?;
+            *STORAGE_LAST_SAVED.write() = Some(storage.clone());
             debug!("存储加载成功");
             Ok(storage)
         } else {
@@ -69,10 +73,16 @@ impl Storage {
 
     /// 保存存储到文件
     pub fn save(&self) -> AppResult<()> {
+        if STORAGE_LAST_SAVED.read().as_ref() == Some(self) {
+            debug!("存储未变化，跳过写盘");
+            return Ok(());
+        }
+
         let path = storage_path();
         info!("保存存储到 {}", path.display());
         let content = serde_json::to_string_pretty(self)?;
-        std::fs::write(&path, content)?;
+        write_string_atomic(&path, &content)?;
+        *STORAGE_LAST_SAVED.write() = Some(self.clone());
         debug!("存储保存成功");
         Ok(())
     }
@@ -83,6 +93,10 @@ pub fn add_yuzu_history(config: YuzuConfig, dump: bool) -> AppResult<()> {
     let mut storage = STORAGE.write();
     let path = normalize_path(&config.yuzu_path);
     let path_str = path.to_string_lossy().to_string();
+    if storage.yuzu_history.get(&path_str) == Some(&config) {
+        debug!("Yuzu 历史记录未变化，跳过更新: {}", path_str);
+        return Ok(());
+    }
     info!("添加 Yuzu 历史记录: {}", path_str);
     storage.yuzu_history.insert(path_str, config);
     if dump {
@@ -96,6 +110,10 @@ pub fn add_ryujinx_history(config: RyujinxConfig, dump: bool) -> AppResult<()> {
     let mut storage = STORAGE.write();
     let path = normalize_path(&config.path);
     let path_str = path.to_string_lossy().to_string();
+    if storage.ryujinx_history.get(&path_str) == Some(&config) {
+        debug!("Ryujinx 历史记录未变化，跳过更新: {}", path_str);
+        return Ok(());
+    }
     info!("添加 Ryujinx 历史记录: {}", path_str);
     storage.ryujinx_history.insert(path_str, config);
     if dump {

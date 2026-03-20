@@ -5,7 +5,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use ns_emu_tools_lib::{commands, logging};
-use tauri::{Emitter, Manager, WebviewWindow};
+use tauri::{Emitter, Manager, WebviewWindow, WindowEvent};
 use tracing::info;
 
 /// 设置窗口大小并监听窗口变化事件
@@ -22,14 +22,22 @@ fn setup_window(window: &WebviewWindow) {
 
     // 监听窗口大小变化事件
     window.on_window_event(move |event| {
-        if let tauri::WindowEvent::Resized(size) = event {
-            let width = size.width;
-            let height = size.height;
+        match event {
+            WindowEvent::Resized(size) => {
+                let width = size.width;
+                let height = size.height;
 
-            // 更新配置中的窗口大小
-            if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
-                tracing::warn!("保存窗口大小失败: {}", e);
+                // 更新配置中的窗口大小
+                if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
+                    tracing::warn!("保存窗口大小失败: {}", e);
+                }
             }
+            WindowEvent::CloseRequested { .. } => {
+                if let Err(e) = ns_emu_tools_lib::config::flush_pending_config_save() {
+                    tracing::warn!("退出前刷新配置失败: {}", e);
+                }
+            }
+            _ => {}
         }
     });
 }

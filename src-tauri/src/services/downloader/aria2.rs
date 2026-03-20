@@ -46,6 +46,10 @@ static ARIA2_MANAGER: OnceCell<Arc<Aria2Manager>> = OnceCell::new();
 pub async fn get_aria2_manager() -> AppResult<Arc<Aria2Manager>> {
     // 如果已经初始化，直接返回
     if let Some(manager) = ARIA2_MANAGER.get() {
+        if !manager.is_started() {
+            info!("Aria2Manager 已存在但未启动，尝试重新启动");
+            manager.start().await?;
+        }
         return Ok(manager.clone());
     }
 
