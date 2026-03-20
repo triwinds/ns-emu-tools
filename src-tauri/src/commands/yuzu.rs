@@ -1,8 +1,9 @@
 //! Yuzu 相关 Tauri 命令
 //!
-//! 暴露给前端的 Yuzu/Eden/Citron 管理命令
+//! 暴露给前端的 Yuzu/Eden 管理命令
 
 use crate::models::response::ApiResponse;
+#[cfg(target_os = "windows")]
 use crate::models::ProgressEvent;
 use crate::repositories::yuzu::get_yuzu_all_release_info;
 use crate::services::notifier::send_notify;
@@ -10,7 +11,7 @@ use crate::services::yuzu::*;
 use tauri::{Emitter, Window};
 use tracing::{error, info};
 
-/// 获取所有 Yuzu/Eden/Citron 版本列表
+/// 获取所有 Yuzu/Eden 版本列表
 #[tauri::command]
 pub async fn get_all_yuzu_versions(branch: String) -> Result<ApiResponse<Vec<String>>, String> {
     info!("获取 {} 所有版本", get_emu_name(&branch));
@@ -27,7 +28,7 @@ pub async fn get_all_yuzu_versions(branch: String) -> Result<ApiResponse<Vec<Str
     }
 }
 
-/// 安装 Yuzu/Eden/Citron
+/// 安装 Eden
 #[tauri::command]
 pub async fn install_yuzu_by_version(
     target_version: String,
@@ -51,6 +52,8 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -62,6 +65,8 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -73,6 +78,8 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -84,6 +91,8 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -95,6 +104,8 @@ pub async fn install_yuzu_by_version(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -168,6 +179,8 @@ pub async fn detect_yuzu_version_command(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -179,6 +192,8 @@ pub async fn detect_yuzu_version_command(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -190,6 +205,8 @@ pub async fn detect_yuzu_version_command(
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -215,6 +232,8 @@ pub async fn detect_yuzu_version_command(
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -235,6 +254,8 @@ pub async fn detect_yuzu_version_command(
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(error_msg.clone()),
                     download_source: None,
                 },
@@ -261,6 +282,8 @@ pub async fn detect_yuzu_version_command(
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -279,6 +302,8 @@ pub async fn detect_yuzu_version_command(
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -298,6 +323,8 @@ pub async fn detect_yuzu_version_command(
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: None,
                         download_source: None,
                     },
@@ -316,6 +343,8 @@ pub async fn detect_yuzu_version_command(
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: None,
                         download_source: None,
                     },
@@ -334,6 +363,8 @@ pub async fn detect_yuzu_version_command(
                             progress: 0.0,
                             download_speed: "".to_string(),
                             eta: "".to_string(),
+                            downloaded_size: None,
+                            total_size: None,
                             error: None,
                             download_source: None,
                         },
@@ -358,6 +389,8 @@ pub async fn detect_yuzu_version_command(
                             progress: 0.0,
                             download_speed: "".to_string(),
                             eta: "".to_string(),
+                            downloaded_size: None,
+                            total_size: None,
                             error: Some("未能检测到版本".to_string()),
                             download_source: None,
                         },
@@ -387,6 +420,8 @@ pub async fn detect_yuzu_version_command(
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(e.to_string()),
                         download_source: None,
                     },

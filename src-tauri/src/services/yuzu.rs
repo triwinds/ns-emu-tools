@@ -1,6 +1,6 @@
-//! Yuzu 系列模拟器（Eden/Citron）管理服务
+//! Yuzu 系列模拟器管理服务
 //!
-//! 提供 Yuzu、Eden、Citron 模拟器的安装、更新、版本检测等功能
+//! 提供 Eden 安装、以及历史 Yuzu/Citron 安装目录的版本检测等功能
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
@@ -12,8 +12,11 @@ use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_download_source_name;
 use crate::utils::archive::uncompress;
 use crate::utils::spawn_blocking_io;
+#[cfg(target_os = "macos")]
+use crate::utils::{finalize_macos_app_install, get_macos_bundle_executable_path};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+#[cfg(not(target_os = "macos"))]
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -25,7 +28,7 @@ const DETECT_EXE_LIST: &[&str] = &["Eden.app", "Citron.app", "yuzu.app"];
 const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.exe", "cemu.exe"];
 
 /// 支持下载的分支
-const DOWNLOAD_AVAILABLE_BRANCH: &[&str] = &["citron", "eden"];
+const DOWNLOAD_AVAILABLE_BRANCH: &[&str] = &["eden"];
 
 /// 获取模拟器名称
 pub fn get_emu_name(branch: &str) -> &'static str {
@@ -36,11 +39,126 @@ pub fn get_emu_name(branch: &str) -> &'static str {
     }
 }
 
+fn unsupported_install_branch_error(branch: &str) -> AppError {
+    if branch == "citron" {
+        AppError::Unsupported("Citron 分支已不再支持在线版本、下载和安装".to_string())
+    } else {
+        AppError::InvalidArgument(format!("不支持的分支: {}，当前仅支持 eden", branch))
+    }
+}
+
+fn normalize_yuzu_branch(branch: &str) -> Option<&'static str> {
+    match branch {
+        "eden" => Some("eden"),
+        "citron" => Some("citron"),
+        "mainline" | "ea" | "yuzu" => Some("yuzu"),
+        _ => None,
+    }
+}
+
+fn preferred_yuzu_user_dir_names(branch: &str) -> Vec<&'static str> {
+    let mut names = Vec::new();
+
+    if let Some(primary) = normalize_yuzu_branch(branch) {
+        names.push(primary);
+    }
+
+    for fallback in ["eden", "yuzu", "citron"] {
+        if !names.contains(&fallback) {
+            names.push(fallback);
+        }
+    }
+
+    names
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_yuzu_user_dir_name(branch: &str) -> &'static str {
+    normalize_yuzu_branch(branch).unwrap_or("eden")
+}
+
+fn find_existing_yuzu_user_dir(base_dir: &Path, branch: &str) -> Option<PathBuf> {
+    preferred_yuzu_user_dir_names(branch)
+        .into_iter()
+        .map(|name| base_dir.join(name))
+        .find(|path| path.exists())
+}
+
+#[cfg(target_os = "macos")]
+fn get_macos_bundle_spec(branch: &str) -> Option<(&'static str, &'static str)> {
+    match normalize_yuzu_branch(branch) {
+        Some("eden") => Some(("Eden.app", "Eden")),
+        Some("citron") => Some(("Citron.app", "Citron")),
+        Some("yuzu") => Some(("yuzu.app", "yuzu")),
+        _ => None,
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_bundle_search_order(preferred_branch: &str) -> Vec<&'static str> {
+    let mut order = Vec::new();
+
+    if let Some(branch) = normalize_yuzu_branch(preferred_branch) {
+        order.push(branch);
+    }
+
+    for fallback in ["eden", "yuzu", "citron"] {
+        if !order.contains(&fallback) {
+            order.push(fallback);
+        }
+    }
+
+    order
+}
+
+#[cfg(target_os = "macos")]
+fn resolve_existing_macos_bundle(yuzu_path: &Path, preferred_branch: &str) -> Option<PathBuf> {
+    for branch in macos_bundle_search_order(preferred_branch) {
+        let Some((app_name, _)) = get_macos_bundle_spec(branch) else {
+            continue;
+        };
+
+        let app_path = yuzu_path.join(app_name);
+        if app_path.exists() {
+            return Some(app_path);
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "macos")]
+fn get_default_macos_bundle_path(yuzu_path: &Path, preferred_branch: &str) -> PathBuf {
+    let (app_name, _) = get_macos_bundle_spec(preferred_branch).unwrap_or(("Eden.app", "Eden"));
+    yuzu_path.join(app_name)
+}
+
+#[cfg(target_os = "macos")]
+fn get_default_macos_executable_name(preferred_branch: &str) -> &'static str {
+    get_macos_bundle_spec(preferred_branch)
+        .map(|(_, executable_name)| executable_name)
+        .unwrap_or("Eden")
+}
+
+#[cfg(target_os = "macos")]
+fn infer_branch_from_macos_app_name(app_name: &str) -> Option<String> {
+    match app_name {
+        "Eden.app" => Some("eden".to_string()),
+        "Citron.app" => Some("citron".to_string()),
+        "yuzu.app" => Some("mainline".to_string()),
+        _ => None,
+    }
+}
+
 /// 选择 macOS 下载资源
 fn select_macos_asset(
     release_info: &crate::models::release::ReleaseInfo,
     branch: &str,
 ) -> Option<String> {
+    if branch != "eden" {
+        return None;
+    }
+
     for asset in &release_info.assets {
         let name = &asset.name;
 
@@ -54,25 +172,19 @@ fn select_macos_asset(
         }
 
         // Eden: 匹配 macOS + .tar.gz
-        if branch == "eden" && name.contains("macOS") && name_lower.ends_with(".tar.gz") {
+        if name.contains("macOS") && name_lower.ends_with(".tar.gz") {
             debug!("选择 Eden macOS 资源: {}", name);
-            return Some(asset.download_url.clone());
-        }
-
-        // Citron: 匹配 macOS + .dmg
-        if branch == "citron" && name.contains("macOS") && name_lower.ends_with(".dmg") {
-            debug!("选择 Citron macOS 资源: {}", name);
             return Some(asset.download_url.clone());
         }
     }
     None
 }
 
-/// 下载 Yuzu/Eden/Citron
+/// 下载 Eden
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `branch` - 分支 (eden, citron)
+/// * `branch` - 分支 (eden)
 /// * `on_progress` - 进度回调
 ///
 /// # 返回
@@ -91,10 +203,7 @@ where
             "不支持的分支: {}, 支持的分支: {:?}",
             branch, DOWNLOAD_AVAILABLE_BRANCH
         );
-        return Err(AppError::Emulator(format!(
-            "只支持安装分支: {:?}",
-            DOWNLOAD_AVAILABLE_BRANCH
-        )));
+        return Err(unsupported_install_branch_error(branch));
     }
 
     info!("开始下载 {} 版本: {}", get_emu_name(branch), target_version);
@@ -143,11 +252,6 @@ where
             } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
                 url = Some(asset.download_url.clone());
                 debug!("选择 Eden .zip 资源: {}", asset.name);
-                break;
-            } else if name.contains("windows") {
-                // for citron
-                url = Some(asset.download_url.clone());
-                debug!("选择 Windows 资源: {}", asset.name);
                 break;
             }
         }
@@ -237,6 +341,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -254,6 +360,8 @@ where
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(err_msg.clone()),
                         download_source: None,
                     },
@@ -272,6 +380,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -288,6 +398,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -303,6 +415,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -319,6 +433,8 @@ where
                 progress: progress.percentage,
                 download_speed: progress.speed_string(),
                 eta: progress.eta_string(),
+                downloaded_size: Some(progress.downloaded_string()),
+                total_size: Some(progress.total_string_or_unknown()),
                 error: None,
                 download_source: Some(download_source.clone()),
             },
@@ -337,6 +453,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -353,6 +471,8 @@ where
             progress: 100.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -371,12 +491,16 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
         });
 
-        let app_name = "Eden.app";
+        let app_name = get_macos_bundle_spec("eden")
+            .map(|(app_name, _)| app_name)
+            .unwrap_or("Eden.app");
         let package_path_for_extract = package_path.clone();
         let yuzu_path_for_extract = yuzu_path.clone();
         match spawn_blocking_io("install_eden_app_bundle", move || {
@@ -389,6 +513,30 @@ where
         .await
         {
             Ok(installed_app) => {
+                let fallback_executable_name = get_macos_bundle_spec("eden")
+                    .map(|(_, executable_name)| executable_name)
+                    .unwrap_or("Eden");
+                if let Err(error) =
+                    finalize_macos_app_install(&installed_app, Some(fallback_executable_name))
+                {
+                    on_event(ProgressEvent::StepUpdate {
+                        step: ProgressStep {
+                            id: "install".to_string(),
+                            title: "安装文件".to_string(),
+                            status: ProgressStatus::Error,
+                            step_type: "normal".to_string(),
+                            progress: 0.0,
+                            download_speed: "".to_string(),
+                            eta: "".to_string(),
+                            downloaded_size: None,
+                            total_size: None,
+                            error: Some(error.to_string()),
+                            download_source: None,
+                        },
+                    });
+                    return Err(error);
+                }
+
                 info!("Eden.app 已安装到: {}", installed_app.display());
                 on_event(ProgressEvent::StepUpdate {
                     step: ProgressStep {
@@ -399,6 +547,8 @@ where
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: None,
                         download_source: None,
                     },
@@ -414,6 +564,8 @@ where
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(e.to_string()),
                         download_source: None,
                     },
@@ -435,6 +587,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -451,6 +605,8 @@ where
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(format!("清理临时目录失败: {}", e)),
                         download_source: None,
                     },
@@ -468,6 +624,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(format!("创建临时目录失败: {}", e)),
                     download_source: None,
                 },
@@ -491,6 +649,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -506,6 +666,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -521,6 +683,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -542,6 +706,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -557,6 +723,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -575,6 +743,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -594,6 +764,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -609,6 +781,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -624,480 +798,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
-                    error: None,
-                    download_source: None,
-                },
-            });
-        }
-    }
-
-    // 如果配置了自动删除，删除下载文件
-    if auto_delete {
-        let _ = std::fs::remove_file(&package_path);
-    }
-
-    Ok(())
-}
-
-/// 安装 Citron 模拟器
-///
-/// # 参数
-/// * `target_version` - 目标版本
-/// * `on_event` - 事件回调
-pub async fn install_citron<F>(target_version: &str, on_event: F) -> AppResult<()>
-where
-    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
-{
-    info!("开始安装 Citron 版本: {}", target_version);
-
-    let (yuzu_path, auto_delete) = {
-        let config = get_config();
-        (
-            PathBuf::from(&config.yuzu.yuzu_path),
-            config.setting.download.auto_delete_after_install,
-        )
-    };
-
-    // 获取版本信息
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "fetch_version".to_string(),
-            title: "获取版本信息".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        },
-    });
-    let _release_info = match get_yuzu_release_info_by_version(target_version, "citron").await {
-        Ok(info) => {
-            if info.tag_name.is_empty() {
-                let err_msg = format!("未找到 Citron 版本: {}", target_version);
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "fetch_version".to_string(),
-                        title: "获取版本信息".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(err_msg.clone()),
-                        download_source: None,
-                    },
-                });
-                return Err(AppError::Emulator(err_msg));
-            }
-            info
-        }
-        Err(e) => {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "fetch_version".to_string(),
-                    title: "获取版本信息".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-    };
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "fetch_version".to_string(),
-            title: "获取版本信息".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        },
-    });
-
-    // 下载
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "download".to_string(),
-            title: format!("下载 {}", "Citron"),
-            status: ProgressStatus::Running,
-            step_type: "download".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        },
-    });
-    let on_event_clone = on_event.clone();
-    let package_path = match download_yuzu(target_version, "citron", move |progress| {
-        // Citron 从 git.citron-emu.org 下载，不使用 GitHub 镜像
-        on_event_clone(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: format!("下载 {}", "Citron"),
-                status: ProgressStatus::Running,
-                step_type: "download".to_string(),
-                progress: progress.percentage,
-                download_speed: progress.speed_string(),
-                eta: progress.eta_string(),
-                error: None,
-                download_source: Some("直连".to_string()),
-            },
-        });
-    })
-    .await
-    {
-        Ok(path) => path,
-        Err(e) => {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "download".to_string(),
-                    title: format!("下载 {}", "Citron"),
-                    status: ProgressStatus::Error,
-                    step_type: "download".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-    };
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "download".to_string(),
-            title: format!("下载 {}", "Citron"),
-            status: ProgressStatus::Success,
-            step_type: "download".to_string(),
-            progress: 100.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            error: None,
-            download_source: None,
-        },
-    });
-
-    // 解压/安装 - 根据平台区分处理
-    #[cfg(target_os = "macos")]
-    {
-        // macOS: DMG -> 挂载 -> 复制 .app
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-
-        match crate::utils::archive::extract_dmg(&package_path, &yuzu_path) {
-            Ok(installed_app) => {
-                info!("Citron.app 已安装到: {}", installed_app.display());
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "install".to_string(),
-                        title: "安装文件".to_string(),
-                        status: ProgressStatus::Success,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: None,
-                        download_source: None,
-                    },
-                });
-            }
-            Err(e) => {
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "install".to_string(),
-                        title: "安装文件".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(e.to_string()),
-                        download_source: None,
-                    },
-                });
-                return Err(e);
-            }
-        }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        // Windows: 现有的解压和复制逻辑
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-        let tmp_dir = std::env::temp_dir().join("citron-install");
-        if tmp_dir.exists() {
-            if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "extract".to_string(),
-                        title: "解压文件".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(format!("清理临时目录失败: {}", e)),
-                        download_source: None,
-                    },
-                });
-                return Err(e.into());
-            }
-        }
-        if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract".to_string(),
-                    title: "解压文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(format!("创建临时目录失败: {}", e)),
-                    download_source: None,
-                },
-            });
-            return Err(e.into());
-        }
-
-        let package_path_for_extract = package_path.clone();
-        let tmp_dir_for_extract = tmp_dir.clone();
-        if let Err(e) = spawn_blocking_io("extract_citron_package", move || {
-            unzip_yuzu(&package_path_for_extract, Some(&tmp_dir_for_extract)).map(|_| ())
-        })
-        .await
-        {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract".to_string(),
-                    title: "解压文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-
-        // Citron 解压后有一个顶层目录，需要进入
-        let mut release_dir = tmp_dir.clone();
-        match std::fs::read_dir(&tmp_dir) {
-            Ok(mut entries) => {
-                if let Some(first_entry) = entries.next() {
-                    match first_entry {
-                        Ok(entry) => {
-                            if entry.path().is_dir() {
-                                release_dir = entry.path();
-                            }
-                        }
-                        Err(e) => {
-                            on_event(ProgressEvent::StepUpdate {
-                                step: ProgressStep {
-                                    id: "extract".to_string(),
-                                    title: "解压文件".to_string(),
-                                    status: ProgressStatus::Error,
-                                    step_type: "normal".to_string(),
-                                    progress: 0.0,
-                                    download_speed: "".to_string(),
-                                    eta: "".to_string(),
-                                    error: Some(format!("读取解压目录失败: {}", e)),
-                                    download_source: None,
-                                },
-                            });
-                            return Err(e.into());
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "extract".to_string(),
-                        title: "解压文件".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        error: Some(format!("读取解压目录失败: {}", e)),
-                        download_source: None,
-                    },
-                });
-                return Err(e.into());
-            }
-        }
-
-        // 安装
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-        // 复制文件
-        let release_dir_for_install = release_dir.clone();
-        let yuzu_path_for_install = yuzu_path.clone();
-        if let Err(e) = spawn_blocking_io("install_citron_files", move || {
-            copy_back_yuzu_files(&release_dir_for_install, &yuzu_path_for_install)
-        })
-        .await
-        {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "install".to_string(),
-                    title: "安装文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-
-        // 清理临时目录
-        if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-            warn!("清理临时目录失败: {}", e);
-            // 不阻止安装流程
-        }
-    }
-
-    // 检查运行环境 - macOS 跳过 MSVC 检查
-    #[cfg(target_os = "macos")]
-    {
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-        // macOS 无需 MSVC，直接成功
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        // Windows: 执行 MSVC 检查
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                error: None,
-                download_source: None,
-            },
-        });
-        if let Err(e) = check_and_install_msvc().await {
-            warn!("MSVC 运行库检查失败: {}", e);
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "check_env".to_string(),
-                    title: "检查运行环境".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            // 不阻止安装流程，继续执行
-        } else {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "check_env".to_string(),
-                    title: "检查运行环境".to_string(),
-                    status: ProgressStatus::Success,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -1181,10 +883,8 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
 
     #[cfg(target_os = "macos")]
     {
-        let app_name = match branch {
-            "eden" => "Eden.app",
-            "citron" => "Citron.app",
-            _ => return Ok(()),
+        let Some((app_name, _)) = get_macos_bundle_spec(branch) else {
+            return Ok(());
         };
         let app_path = yuzu_path.join(app_name);
         if app_path.exists() {
@@ -1243,11 +943,11 @@ pub fn remove_all_executable_file() -> AppResult<()> {
     Ok(())
 }
 
-/// 安装 Yuzu/Eden/Citron
+/// 安装 Eden
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `branch` - 分支 (eden, citron)
+/// * `branch` - 分支 (eden)
 /// * `on_event` - 事件回调
 pub async fn install_yuzu<F>(target_version: &str, branch: &str, on_event: F) -> AppResult<()>
 where
@@ -1261,12 +961,11 @@ where
     );
 
     // 检查当前版本 (在异步调用之前获取所有需要的配置值)
-    let (current_version, yuzu_path, rename_to_cemu, _auto_delete) = {
+    let (current_version, yuzu_path, _auto_delete) = {
         let config = get_config();
         (
             config.yuzu.yuzu_version.clone(),
             PathBuf::from(&config.yuzu.yuzu_path),
-            config.setting.other.rename_yuzu_to_cemu,
             config.setting.download.auto_delete_after_install,
         )
     };
@@ -1292,6 +991,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -1306,6 +1007,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -1319,6 +1022,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -1332,6 +1037,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -1345,6 +1052,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -1363,12 +1072,7 @@ where
     // 根据分支安装
     match branch {
         "eden" => install_eden(target_version, on_event).await?,
-        "citron" => install_citron(target_version, on_event).await?,
-        _ => {
-            return Err(AppError::Emulator(
-                "只支持安装 eden 和 citron 分支".to_string(),
-            ))
-        }
+        _ => return Err(unsupported_install_branch_error(branch)),
     }
 
     // 确保安装目录存在
@@ -1379,18 +1083,23 @@ where
     })
     .await?;
 
-    // 如果需要重命名为 cemu
-    if rename_to_cemu {
-        let exe_path = get_yuzu_exe_path();
-        if exe_path.exists() {
-            let cemu_path = yuzu_path.join("cemu.exe");
-            let exe_path_for_log = exe_path.display().to_string();
-            spawn_blocking_io("rename_yuzu_to_cemu", move || {
-                std::fs::rename(&exe_path, &cemu_path)?;
-                Ok(())
-            })
-            .await?;
-            info!("正在将 {} 重命名为 cemu.exe", exe_path_for_log);
+    #[cfg(not(target_os = "macos"))]
+    {
+        let rename_to_cemu = get_config().setting.other.rename_yuzu_to_cemu;
+
+        // 如果需要重命名为 cemu
+        if rename_to_cemu {
+            let exe_path = get_yuzu_exe_path();
+            if exe_path.exists() {
+                let cemu_path = yuzu_path.join("cemu.exe");
+                let exe_path_for_log = exe_path.display().to_string();
+                spawn_blocking_io("rename_yuzu_to_cemu", move || {
+                    std::fs::rename(&exe_path, &cemu_path)?;
+                    Ok(())
+                })
+                .await?;
+                info!("正在将 {} 重命名为 cemu.exe", exe_path_for_log);
+            }
         }
     }
 
@@ -1413,24 +1122,25 @@ pub fn get_yuzu_exe_path() -> PathBuf {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: 查找 .app 并返回其内部的可执行文件
-        for app_name in &["Eden.app", "Citron.app", "yuzu.app"] {
-            let app_path = yuzu_path.join(app_name);
-            if app_path.exists() {
-                // 读取 Info.plist 获取可执行文件名称，或者使用约定路径
-                let macos_dir = app_path.join("Contents/MacOS");
-                if let Ok(entries) = std::fs::read_dir(&macos_dir) {
-                    for entry in entries.flatten() {
-                        let exe_path = entry.path();
-                        if exe_path.is_file() {
-                            return exe_path;
-                        }
-                    }
-                }
+        let preferred_branch = config.yuzu.branch.clone();
+
+        if let Some(app_path) = resolve_existing_macos_bundle(&yuzu_path, &preferred_branch) {
+            let fallback_name = match app_path.file_name().and_then(|name| name.to_str()) {
+                Some("Eden.app") => "Eden",
+                Some("Citron.app") => "Citron",
+                Some("yuzu.app") => "yuzu",
+                _ => get_default_macos_executable_name(&preferred_branch),
+            };
+
+            if let Ok(exe_path) = get_macos_bundle_executable_path(&app_path, Some(fallback_name)) {
+                return exe_path;
             }
         }
-        // 默认返回 Eden.app 路径
-        yuzu_path.join("Eden.app/Contents/MacOS/Eden")
+
+        let default_app_path = get_default_macos_bundle_path(&yuzu_path, &preferred_branch);
+        default_app_path
+            .join("Contents/MacOS")
+            .join(get_default_macos_executable_name(&preferred_branch))
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -1644,6 +1354,91 @@ fn detect_yuzu_version_from_binary(exe_path: &Path) -> Option<(String, Option<St
     detected
 }
 
+#[cfg(target_os = "macos")]
+fn extract_version_from_plist_text(text: &str) -> Option<String> {
+    if let Some(version) = normalize_version_token(text) {
+        if is_likely_release_version(&version) {
+            return Some(version);
+        }
+    }
+
+    for token in text.split(|c: char| c.is_whitespace() || matches!(c, '|' | '(' | ')' | ',')) {
+        let Some(version) = normalize_version_token(token) else {
+            continue;
+        };
+
+        if is_likely_release_version(&version) {
+            return Some(version);
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "macos")]
+fn detect_yuzu_version_from_bundle_metadata(exe_path: &Path) -> Option<(String, Option<String>)> {
+    let app_path = exe_path.ancestors().find(|ancestor| {
+        ancestor
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("app"))
+    })?;
+
+    let plist_path = app_path.join("Contents/Info.plist");
+    let contents = match std::fs::read(&plist_path) {
+        Ok(contents) => contents,
+        Err(error) => {
+            debug!(
+                "读取 Info.plist 失败，无法作为版本检测回退: {} ({})",
+                plist_path.display(),
+                error
+            );
+            return None;
+        }
+    };
+
+    let plist: plist::Dictionary = match plist::from_bytes(&contents) {
+        Ok(plist) => plist,
+        Err(error) => {
+            warn!("解析 Info.plist 失败: {} ({})", plist_path.display(), error);
+            return None;
+        }
+    };
+
+    let version = [
+        "CFBundleShortVersionString",
+        "CFBundleLongVersionString",
+        "CFBundleVersion",
+    ]
+    .iter()
+    .find_map(|key| match plist.get(*key) {
+        Some(plist::Value::String(value)) => extract_version_from_plist_text(value),
+        _ => None,
+    })?;
+
+    let branch = ["CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"]
+        .iter()
+        .find_map(|key| match plist.get(*key) {
+            Some(plist::Value::String(value)) => {
+                infer_branch_from_marker(value).map(ToString::to_string)
+            }
+            _ => None,
+        })
+        .or_else(|| {
+            app_path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .and_then(infer_branch_from_macos_app_name)
+        });
+
+    info!(
+        "通过 Info.plist 回退检测到版本: {}, 分支: {:?}",
+        version, branch
+    );
+
+    Some((version, branch))
+}
+
 fn save_detected_yuzu_version(version: &str, branch: Option<&str>) -> AppResult<()> {
     debug!("更新配置文件");
 
@@ -1676,6 +1471,14 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
         info!("通过二进制检测到版本: {}, 分支: {:?}", version, branch);
         save_detected_yuzu_version(&version, branch.as_deref())?;
         return Ok(Some(version));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if let Some((version, branch)) = detect_yuzu_version_from_bundle_metadata(&exe_path) {
+            save_detected_yuzu_version(&version, branch.as_deref())?;
+            return Ok(Some(version));
+        }
     }
 
     #[cfg(not(windows))]
@@ -1858,6 +1661,7 @@ pub fn start_yuzu() -> AppResult<()> {
 pub fn get_yuzu_user_path() -> PathBuf {
     let config = get_config();
     let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
+    let preferred_branch = config.yuzu.branch.clone();
 
     #[cfg(target_os = "macos")]
     {
@@ -1870,26 +1674,20 @@ pub fn get_yuzu_user_path() -> PathBuf {
         if let Ok(home) = std::env::var("HOME") {
             let home_path = PathBuf::from(home);
 
-            // 先检查 ~/.local/share (eden 使用这个目录)
-            let local_share = home_path.join(".local/share");
-            for name in &["eden", "citron", "yuzu"] {
-                let path = local_share.join(name);
-                if path.exists() {
-                    return path;
-                }
-            }
-
-            // 再检查 ~/Library/Application Support (citron 和 yuzu 可能使用这个)
+            // 先检查 ~/Library/Application Support（macOS 标准路径）
             let app_support = home_path.join("Library/Application Support");
-            for name in &["eden", "citron", "yuzu"] {
-                let path = app_support.join(name);
-                if path.exists() {
-                    return path;
-                }
+            if let Some(path) = find_existing_yuzu_user_dir(&app_support, &preferred_branch) {
+                return path;
             }
 
-            // 默认返回基于当前分支的路径
-            return local_share.join(&config.yuzu.branch);
+            // 再回退到 ~/.local/share，兼容历史目录布局
+            let local_share = home_path.join(".local/share");
+            if let Some(path) = find_existing_yuzu_user_dir(&local_share, &preferred_branch) {
+                return path;
+            }
+
+            // 默认返回基于当前分支的 macOS 标准路径
+            return app_support.join(default_yuzu_user_dir_name(&preferred_branch));
         }
 
         // Fallback 到本地 user 目录
@@ -1908,12 +1706,8 @@ pub fn get_yuzu_user_path() -> PathBuf {
         if let Ok(appdata) = std::env::var("APPDATA") {
             let appdata_path = PathBuf::from(appdata);
 
-            // 按优先级检查
-            for name in &["yuzu", "eden", "citron"] {
-                let path = appdata_path.join(name);
-                if path.exists() {
-                    return path;
-                }
+            if let Some(path) = find_existing_yuzu_user_dir(&appdata_path, &preferred_branch) {
+                return path;
             }
         }
 
@@ -1933,16 +1727,12 @@ pub fn get_yuzu_user_path() -> PathBuf {
         if let Ok(home) = std::env::var("HOME") {
             let local_share = PathBuf::from(home).join(".local/share");
 
-            // 按优先级检查
-            for name in &["eden", "citron", "yuzu"] {
-                let path = local_share.join(name);
-                if path.exists() {
-                    return path;
-                }
+            if let Some(path) = find_existing_yuzu_user_dir(&local_share, &preferred_branch) {
+                return path;
             }
 
             // 默认返回基于当前分支的路径
-            return local_share.join(&config.yuzu.branch);
+            return local_share.join(default_yuzu_user_dir_name(&preferred_branch));
         }
 
         // 默认返回本地 user 目录
@@ -2207,6 +1997,9 @@ pub fn update_yuzu_path(new_yuzu_path: &str) -> AppResult<()> {
 pub async fn get_yuzu_change_logs() -> AppResult<String> {
     // 直接获取配置的克隆
     let branch = get_config().yuzu.branch.clone();
+    if branch != "eden" {
+        return Err(unsupported_install_branch_error(&branch));
+    }
 
     let changelog = get_latest_change_log(&branch).await?;
     Ok(changelog)
@@ -2241,6 +2034,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 }];
@@ -2270,6 +2065,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -2281,6 +2078,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -2292,6 +2091,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -2328,6 +2129,7 @@ where
 mod tests {
     use super::*;
     use crate::models::release::{ReleaseAsset, ReleaseInfo};
+    use tempfile::tempdir;
 
     #[test]
     fn test_get_emu_name() {
@@ -2424,7 +2226,81 @@ mod tests {
     }
 
     #[test]
-    fn test_select_macos_asset_citron() {
+    fn test_find_existing_yuzu_user_dir_prefers_requested_branch() {
+        let dir = tempdir().unwrap();
+        let base = dir.path();
+        std::fs::create_dir_all(base.join("eden")).unwrap();
+        std::fs::create_dir_all(base.join("citron")).unwrap();
+        std::fs::create_dir_all(base.join("yuzu")).unwrap();
+
+        assert_eq!(
+            find_existing_yuzu_user_dir(base, "eden"),
+            Some(base.join("eden"))
+        );
+        assert_eq!(
+            find_existing_yuzu_user_dir(base, "citron"),
+            Some(base.join("citron"))
+        );
+        assert_eq!(
+            find_existing_yuzu_user_dir(base, "mainline"),
+            Some(base.join("yuzu"))
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_resolve_existing_macos_bundle_prefers_current_branch() {
+        let dir = tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("Eden.app")).unwrap();
+        std::fs::create_dir_all(dir.path().join("yuzu.app")).unwrap();
+
+        let app_path = resolve_existing_macos_bundle(dir.path(), "eden").unwrap();
+        assert_eq!(app_path.file_name().unwrap().to_string_lossy(), "Eden.app");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_detect_yuzu_version_from_bundle_metadata_for_eden() {
+        let dir = tempdir().unwrap();
+        let app_path = dir.path().join("Eden.app");
+        let contents_dir = app_path.join("Contents");
+        let macos_dir = contents_dir.join("MacOS");
+        std::fs::create_dir_all(&macos_dir).unwrap();
+        std::fs::write(
+            contents_dir.join("Info.plist"),
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>Eden</string>
+  <key>CFBundleShortVersionString</key>
+  <string>v0.2.0-rc1</string>
+  <key>CFBundleName</key>
+  <string>Eden</string>
+</dict>
+</plist>"#,
+        )
+        .unwrap();
+        let exe_path = macos_dir.join("Eden");
+        std::fs::write(&exe_path, b"").unwrap();
+
+        let detected = detect_yuzu_version_from_bundle_metadata(&exe_path);
+        assert_eq!(
+            detected,
+            Some(("v0.2.0-rc1".to_string(), Some("eden".to_string())))
+        );
+    }
+
+    #[tokio::test]
+    async fn test_download_yuzu_rejects_citron_branch() {
+        let error = download_yuzu("stable", "citron", |_| {}).await.unwrap_err();
+        assert!(matches!(error, AppError::Unsupported(_)));
+        assert!(error.to_string().contains("Citron"));
+    }
+
+    #[test]
+    fn test_select_macos_asset_rejects_unsupported_branch() {
         let release = ReleaseInfo {
             name: "stable".to_string(),
             tag_name: "stable-01c042048".to_string(),
@@ -2455,7 +2331,7 @@ mod tests {
         };
 
         let url = select_macos_asset(&release, "citron");
-        assert_eq!(url, Some("https://example.com/macos.dmg".to_string()));
+        assert_eq!(url, None);
     }
 
     #[test]
@@ -2469,13 +2345,13 @@ mod tests {
             html_url: None,
             assets: vec![
                 ReleaseAsset {
-                    name: "Citron-windows-stable.zip".to_string(),
+                    name: "Eden-Windows-v0.0.1.zip".to_string(),
                     download_url: "https://example.com/windows.zip".to_string(),
                     size: 0,
                     content_type: None,
                 },
                 ReleaseAsset {
-                    name: "citron-linux-x86_64.AppImage".to_string(),
+                    name: "Eden-Linux-v0.0.1.AppImage".to_string(),
                     download_url: "https://example.com/linux.AppImage".to_string(),
                     size: 0,
                     content_type: None,
@@ -2483,7 +2359,7 @@ mod tests {
             ],
         };
 
-        let url = select_macos_asset(&release, "citron");
+        let url = select_macos_asset(&release, "eden");
         assert_eq!(url, None);
     }
 

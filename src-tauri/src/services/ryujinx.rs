@@ -14,6 +14,8 @@ use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
 use crate::utils::spawn_blocking_io;
+#[cfg(target_os = "macos")]
+use crate::utils::{finalize_macos_app_install, get_macos_bundle_executable_path};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tracing::{debug, info, warn};
@@ -97,7 +99,8 @@ fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
         // macOS: 查找 Ryujinx.app 并返回实际可执行文件路径
         let app_path = ryujinx_path.join(RYUJINX_APP_NAME);
         if app_path.exists() {
-            let exe_path = app_path.join("Contents/MacOS/Ryujinx");
+            let exe_path = get_macos_bundle_executable_path(&app_path, Some("Ryujinx"))
+                .unwrap_or_else(|_| app_path.join("Contents/MacOS/Ryujinx"));
             debug!("找到 Ryujinx.app: {}", exe_path.display());
             return Some(exe_path);
         }
@@ -191,6 +194,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -218,6 +223,8 @@ where
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: None,
                         download_source: None,
                     },
@@ -238,6 +245,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -255,6 +264,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -272,6 +283,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -293,6 +306,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: Some(download_source.clone()),
         },
@@ -312,6 +327,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
                 },
@@ -342,6 +359,8 @@ where
                         progress: progress.percentage,
                         download_speed: progress.speed_string(),
                         eta: progress.eta_string(),
+                        downloaded_size: Some(progress.downloaded_string()),
+                        total_size: Some(progress.total_string_or_unknown()),
                         error: None,
                         download_source: Some(download_source_clone.clone()),
                     },
@@ -361,6 +380,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
                 },
@@ -381,6 +402,8 @@ where
             progress: 100.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -396,6 +419,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -416,6 +441,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(format!("清理临时目录失败: {}", e)),
                     download_source: None,
                 },
@@ -433,6 +460,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: Some(format!("创建临时目录失败: {}", e)),
                 download_source: None,
             },
@@ -466,6 +495,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: Some(format!("{}\n\n已自动删除损坏的文件，请重新尝试下载。", e)),
                 download_source: None,
             },
@@ -485,6 +516,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -500,6 +533,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -522,6 +557,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: Some(e.to_string()),
                 download_source: None,
             },
@@ -575,6 +612,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -582,54 +621,26 @@ where
             return Err(e);
         }
 
-        // macOS 特定处理：设置权限和移除 quarantine 属性
-        debug!("设置 macOS .app bundle 权限");
-
-        // 1. 移除 quarantine 属性
-        let xattr_result = Command::new("xattr")
-            .args(["-r", "-d", "com.apple.quarantine"])
-            .arg(&dest_app)
-            .output();
-
-        match xattr_result {
-            Ok(output) => {
-                if output.status.success() {
-                    debug!("成功移除 quarantine 属性");
-                } else {
-                    // 如果文件本来就没有 quarantine 属性，xattr 会返回错误，这是正常的
-                    debug!("xattr 命令执行完成（文件可能没有 quarantine 属性）");
-                }
-            }
-            Err(e) => {
-                warn!("移除 quarantine 属性失败: {}", e);
-                // 不中断安装流程
-            }
+        if let Err(e) = finalize_macos_app_install(&dest_app, Some("Ryujinx")) {
+            on_event(ProgressEvent::StepUpdate {
+                step: ProgressStep {
+                    id: "install".to_string(),
+                    title: "安装文件".to_string(),
+                    status: ProgressStatus::Error,
+                    step_type: "normal".to_string(),
+                    progress: 0.0,
+                    download_speed: "".to_string(),
+                    eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
+                    error: Some(e.to_string()),
+                    download_source: None,
+                },
+            });
+            return Err(e);
         }
 
-        // 2. 设置 .app bundle 权限为 755
-        let chmod_app_result = Command::new("chmod").args(["755"]).arg(&dest_app).output();
-
-        if let Err(e) = chmod_app_result {
-            warn!("设置 .app 权限失败: {}", e);
-            // 不中断安装流程
-        } else {
-            debug!("成功设置 .app bundle 权限为 755");
-        }
-
-        // 3. 设置可执行文件权限
-        let exe_path = dest_app.join("Contents/MacOS/Ryujinx");
-        if exe_path.exists() {
-            let chmod_exe_result = Command::new("chmod").args(["+x"]).arg(&exe_path).output();
-
-            if let Err(e) = chmod_exe_result {
-                warn!("设置可执行文件权限失败: {}", e);
-                // 不中断安装流程
-            } else {
-                debug!("成功设置可执行文件权限");
-            }
-        }
-
-        info!("macOS .app 权限设置完成");
+        info!("macOS .app 安装后处理完成");
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -659,6 +670,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -702,6 +715,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -720,6 +735,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -738,6 +755,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -753,6 +772,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -772,6 +793,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: None,
             },
@@ -886,17 +909,12 @@ fn copy_dir_all(src: &Path, dst: &Path) -> AppResult<()> {
     Ok(())
 }
 
-/// 获取 Ryujinx 用户文件夹路径
-pub fn get_ryujinx_user_folder() -> PathBuf {
-    debug!("获取 Ryujinx 用户文件夹路径");
-    let config = get_config();
-    let ryujinx_path = PathBuf::from(&config.ryujinx.path);
-
+fn find_existing_ryujinx_user_folder(ryujinx_path: &Path) -> Option<PathBuf> {
     // 检查是否使用 portable 模式
     let portable_path = ryujinx_path.join("portable");
     if portable_path.exists() {
         debug!("使用 portable 模式: {}", portable_path.display());
-        return portable_path;
+        return Some(portable_path);
     }
 
     #[cfg(target_os = "windows")]
@@ -907,7 +925,7 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
             let ryujinx_appdata = appdata_path.join("Ryujinx");
             if ryujinx_appdata.exists() {
                 debug!("使用 AppData 目录: {}", ryujinx_appdata.display());
-                return ryujinx_appdata;
+                return Some(ryujinx_appdata);
             }
         }
     }
@@ -922,7 +940,7 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
                     "使用 macOS Application Support 目录: {}",
                     macos_path.display()
                 );
-                return macos_path;
+                return Some(macos_path);
             }
         }
     }
@@ -934,11 +952,64 @@ pub fn get_ryujinx_user_folder() -> PathBuf {
             let linux_path = PathBuf::from(home).join(".config/Ryujinx");
             if linux_path.exists() {
                 debug!("使用 Linux config 目录: {}", linux_path.display());
-                return linux_path;
+                return Some(linux_path);
             }
         }
     }
 
+    None
+}
+
+fn get_default_ryujinx_user_folder(ryujinx_path: &Path) -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            return PathBuf::from(appdata).join("Ryujinx");
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("Library/Application Support/Ryujinx");
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join(".config/Ryujinx");
+        }
+    }
+
+    ryujinx_path.join("portable")
+}
+
+fn resolve_ryujinx_user_folder_path(ryujinx_path: &Path) -> PathBuf {
+    find_existing_ryujinx_user_folder(ryujinx_path)
+        .unwrap_or_else(|| get_default_ryujinx_user_folder(ryujinx_path))
+}
+
+/// 获取 Ryujinx 用户文件夹路径（仅解析，不创建目录）
+pub fn resolve_ryujinx_user_folder() -> PathBuf {
+    debug!("解析 Ryujinx 用户文件夹路径");
+    let config = get_config();
+    let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+
+    resolve_ryujinx_user_folder_path(&ryujinx_path)
+}
+
+/// 获取 Ryujinx 用户文件夹路径
+pub fn get_ryujinx_user_folder() -> PathBuf {
+    debug!("获取 Ryujinx 用户文件夹路径");
+    let config = get_config();
+    let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+
+    if let Some(path) = find_existing_ryujinx_user_folder(&ryujinx_path) {
+        return path;
+    }
+
+    let portable_path = ryujinx_path.join("portable");
     // 默认创建 portable 目录
     debug!("创建默认 portable 目录: {}", portable_path.display());
     std::fs::create_dir_all(&portable_path).ok();
@@ -974,6 +1045,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 }];
@@ -1007,6 +1080,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -1018,6 +1093,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -1029,6 +1106,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -1040,6 +1119,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -1068,6 +1149,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -1085,6 +1168,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: Some(e.to_string()),
                 download_source: None,
             },
@@ -1103,6 +1188,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -1722,6 +1809,17 @@ mod tests {
     fn test_get_ryujinx_user_folder() {
         // 测试需要配置环境
         let _path = get_ryujinx_user_folder();
+    }
+
+    #[test]
+    fn test_resolve_ryujinx_user_folder_prefers_portable() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let portable_path = temp_dir.path().join("portable");
+        std::fs::create_dir_all(&portable_path).unwrap();
+
+        let resolved = resolve_ryujinx_user_folder_path(temp_dir.path());
+
+        assert_eq!(resolved, portable_path);
     }
 
     #[test]

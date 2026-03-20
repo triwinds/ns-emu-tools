@@ -128,6 +128,15 @@ impl DownloadProgress {
         format_bytes(self.total)
     }
 
+    /// 格式化总大小，未知时返回“未知”
+    pub fn total_string_or_unknown(&self) -> String {
+        if self.total == 0 {
+            "未知".to_string()
+        } else {
+            self.total_string()
+        }
+    }
+
     /// 格式化速度
     pub fn speed_string(&self) -> String {
         format!("{}/s", format_bytes(self.speed))
@@ -257,6 +266,7 @@ mod tests {
         let progress = DownloadProgress::from_unknown_length(1024, 512, "test.bin", "gid123");
         assert_eq!(progress.percentage, -1.0);
         assert_eq!(progress.eta, u64::MAX);
+        assert_eq!(progress.total_string_or_unknown(), "未知");
         assert_eq!(progress.eta_string(), "--:--");
     }
 }

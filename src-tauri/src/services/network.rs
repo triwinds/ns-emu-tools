@@ -706,7 +706,7 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
 }
 
 /// 请求 Git 托管平台 API（GitLab/Forgejo）
-/// 用于 git.ryujinx.app、git.eden-emu.dev 和 git.citron-emu.org
+/// 用于 git.ryujinx.app 和 git.eden-emu.dev
 /// 使用手动缓存（5 分钟 TTL）忽略 cache-control: private
 pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     info!("请求 Git API: {}", url);

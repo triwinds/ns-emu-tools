@@ -108,6 +108,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -125,6 +127,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: None,
                 },
@@ -151,6 +155,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(err_msg.clone()),
                     download_source: None,
                 },
@@ -168,6 +174,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -189,6 +197,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: Some(download_source.clone()),
         },
@@ -209,6 +219,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
                 },
@@ -238,6 +250,8 @@ where
                         progress: progress.percentage,
                         download_speed: progress.speed_string(),
                         eta: progress.eta_string(),
+                        downloaded_size: Some(progress.downloaded_string()),
+                        total_size: Some(progress.total_string_or_unknown()),
                         error: None,
                         download_source: Some(download_source_clone.clone()),
                     },
@@ -257,6 +271,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(e.to_string()),
                     download_source: Some(download_source.clone()),
                 },
@@ -274,6 +290,8 @@ where
             progress: 100.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: Some(download_source.clone()),
         },
@@ -294,6 +312,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -313,6 +333,8 @@ where
                     progress: 0.0,
                     download_speed: "".to_string(),
                     eta: "".to_string(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: Some(format!("清理旧固件失败: {}", e)),
                     download_source: None,
                 },
@@ -330,6 +352,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: Some(format!("创建固件目录失败: {}", e)),
                 download_source: None,
             },
@@ -354,6 +378,8 @@ where
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: Some(e.to_string()),
                 download_source: None,
             },
@@ -373,6 +399,8 @@ where
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         },
@@ -454,29 +482,8 @@ pub fn get_yuzu_keys_path() -> PathBuf {
 
 /// 获取 Ryujinx 固件路径
 pub fn get_ryujinx_firmware_path() -> PathBuf {
-    let ryujinx_path = {
-        let config = CONFIG.read();
-        config.ryujinx.path.clone()
-    };
-
-    // Ryujinx 用户数据路径
-    let user_path = if cfg!(windows) {
-        dirs::data_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("Ryujinx")
-    } else {
-        dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".config/Ryujinx")
-    };
-
-    // portable 模式检测
-    let portable_path = ryujinx_path.join("portable");
-    if portable_path.exists() {
-        portable_path.join("bis/system/Contents/registered")
-    } else {
-        user_path.join("bis/system/Contents/registered")
-    }
+    // 复用 Ryujinx 自身的用户目录解析逻辑，保证检测路径与安装路径一致。
+    crate::services::ryujinx::resolve_ryujinx_user_folder().join("bis/system/Contents/registered")
 }
 
 /// 获取 Ryujinx keys 文件路径
@@ -515,6 +522,8 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                     progress: 0.0,
                     download_speed: String::new(),
                     eta: String::new(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -539,6 +548,8 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                         progress: 0.0,
                         download_speed: String::new(),
                         eta: String::new(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(err_msg.clone()),
                         download_source: None,
                     },
@@ -562,6 +573,8 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                         progress: 0.0,
                         download_speed: String::new(),
                         eta: String::new(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(e.to_string()),
                         download_source: None,
                     },
@@ -583,6 +596,8 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
                     progress: 0.0,
                     download_speed: String::new(),
                     eta: String::new(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -643,6 +658,8 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                     progress: 0.0,
                     download_speed: String::new(),
                     eta: String::new(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -667,6 +684,8 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                         progress: 0.0,
                         download_speed: String::new(),
                         eta: String::new(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(err_msg.clone()),
                         download_source: None,
                     },
@@ -690,6 +709,8 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                         progress: 0.0,
                         download_speed: String::new(),
                         eta: String::new(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(e.to_string()),
                         download_source: None,
                     },
@@ -711,6 +732,8 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
                     progress: 0.0,
                     download_speed: String::new(),
                     eta: String::new(),
+                    downloaded_size: None,
+                    total_size: None,
                     error: None,
                     download_source: None,
                 },
@@ -862,7 +885,7 @@ mod tests {
         // 检查路径是否存在
         if !firmware_path.exists() {
             println!("⚠️  固件目录不存在，跳过测试");
-            println!("提示: 请先在 Yuzu/Eden/Citron 中安装固件");
+            println!("提示: 请先在 Yuzu/Eden 中安装固件");
             return;
         }
 

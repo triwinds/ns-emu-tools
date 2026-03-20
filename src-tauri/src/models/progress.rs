@@ -24,6 +24,10 @@ pub struct ProgressStep {
     pub download_speed: String,
     #[serde(default)]
     pub eta: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub downloaded_size: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_size: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -40,6 +44,8 @@ impl Default for ProgressStep {
             progress: 0.0,
             download_speed: String::new(),
             eta: String::new(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         }
@@ -57,6 +63,8 @@ impl ProgressStep {
             progress: 0.0,
             download_speed: String::new(),
             eta: String::new(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         }
@@ -76,6 +84,8 @@ impl ProgressStep {
             progress: 0.0,
             download_speed: String::new(),
             eta: String::new(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: None,
         }
@@ -103,6 +113,16 @@ impl ProgressStep {
         self.progress = progress;
         self.download_speed = speed.into();
         self.eta = eta.into();
+        self
+    }
+
+    pub fn with_download_sizes(
+        mut self,
+        downloaded_size: impl Into<String>,
+        total_size: impl Into<String>,
+    ) -> Self {
+        self.downloaded_size = Some(downloaded_size.into());
+        self.total_size = Some(total_size.into());
         self
     }
 }

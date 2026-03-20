@@ -267,8 +267,8 @@ pub const COMMON_DOMAINS: &[&str] = &[
     "github.com",
     "nsarchive.e6ex.com",
     "cfrp.e6ex.com",
-    "git.citron-emu.org",
     "git.ryujinx.app",
+    "git.eden-emu.dev",
 ];
 
 #[cfg(test)]

@@ -50,7 +50,7 @@ cd ../src-tauri
 cargo tauri dev
 ```
 
-更完整的开发说明参见 [开发文档](doc/dev.md)。
+更完整的开发说明参见 [开发文档](docs/dev.md)。
 
 ## 讨论组
 

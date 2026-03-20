@@ -301,6 +301,8 @@ pub fn create_installation_steps() -> Vec<crate::models::ProgressStep> {
             progress: 0.0,
             download_speed: "".to_string(),
             eta: "".to_string(),
+            downloaded_size: None,
+            total_size: None,
             error: None,
             download_source: Some("GitHub".to_string()),
         });
@@ -339,6 +341,8 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
                 progress: 0.0,
                 download_speed: "".to_string(),
                 eta: "".to_string(),
+                downloaded_size: None,
+                total_size: None,
                 error: None,
                 download_source: Some("GitHub".to_string()),
             },
@@ -369,6 +373,12 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
             } else {
                 String::new()
             },
+            downloaded_size: Some(format_bytes(progress.downloaded)),
+            total_size: Some(if progress.total > 0 {
+                format_bytes(progress.total)
+            } else {
+                "未知".to_string()
+            }),
             error: None,
             download_source: Some("GitHub".to_string()),
         };
@@ -390,6 +400,8 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
                         progress: 100.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: None,
                         download_source: Some("GitHub".to_string()),
                     },
@@ -410,6 +422,8 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
                         progress: 0.0,
                         download_speed: "".to_string(),
                         eta: "".to_string(),
+                        downloaded_size: None,
+                        total_size: None,
                         error: Some(e.to_string()),
                         download_source: Some("GitHub".to_string()),
                     },
