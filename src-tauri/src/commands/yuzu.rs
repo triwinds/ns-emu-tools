@@ -3,12 +3,13 @@
 //! 暴露给前端的 Yuzu/Eden 管理命令
 
 use crate::models::response::ApiResponse;
-#[cfg(target_os = "windows")]
-use crate::models::ProgressEvent;
 use crate::repositories::yuzu::get_yuzu_all_release_info;
+use crate::services::installer::{
+    error_step, install_steps, pending_step, running_step, success_step, InstallReporter, StepKind,
+};
 use crate::services::notifier::send_notify;
 use crate::services::yuzu::*;
-use tauri::{Emitter, Window};
+use tauri::Window;
 use tracing::{error, info};
 
 /// 获取所有 Yuzu/Eden 版本列表
@@ -35,84 +36,9 @@ pub async fn install_yuzu_by_version(
     branch: String,
     window: Window,
 ) -> Result<ApiResponse<()>, String> {
-    use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
-
     info!("安装 {} 版本: {}", get_emu_name(&branch), target_version);
-
-    // 创建初始步骤（自动包含 aria2 检查步骤，如果需要）
-    let mut steps = crate::services::downloader::create_installation_steps();
-
-    // 其他步骤
-    steps.extend(vec![
-        ProgressStep {
-            id: "fetch_version".to_string(),
-            title: "获取版本信息".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-        ProgressStep {
-            id: "download".to_string(),
-            title: format!("下载 {}", get_emu_name(&branch)),
-            status: ProgressStatus::Pending,
-            step_type: "download".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-        ProgressStep {
-            id: "extract".to_string(),
-            title: "解压文件".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-        ProgressStep {
-            id: "install".to_string(),
-            title: "安装文件".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-        ProgressStep {
-            id: "check_env".to_string(),
-            title: "检查运行环境".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-    ]);
-
-    // Emit initial event to open dialog and show steps
-    let _ = window.emit("installation-event", ProgressEvent::Started { steps });
+    let reporter = InstallReporter::from_window(window.clone());
+    reporter.start(install_steps(format!("下载 {}", get_emu_name(&branch))));
 
     // Windows: 检查并安装 aria2（如果需要）
     #[cfg(target_os = "windows")]
@@ -126,34 +52,21 @@ pub async fn install_yuzu_by_version(
     }
 
     // 安装
-    let window_clone = window.clone();
+    let reporter_clone = reporter.clone();
     let result = install_yuzu(&target_version, &branch, move |event| {
-        // 发送事件到前端
-        let _ = window_clone.emit("installation-event", event);
+        reporter_clone.emit(event)
     })
     .await;
 
     match result {
         Ok(_) => {
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::Finished {
-                    success: true,
-                    message: None,
-                },
-            );
+            reporter.finish_success();
             let _ = send_notify(&window, &format!("{} 安装成功", get_emu_name(&branch)));
             Ok(ApiResponse::success(()))
         }
         Err(e) => {
             error!("安装失败: {}", e);
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::Finished {
-                    success: false,
-                    message: Some(e.to_string()),
-                },
-            );
+            reporter.finish_error(e.to_string());
             let _ = send_notify(&window, &format!("安装失败: {}", e));
             Err(e.to_string())
         }
@@ -165,275 +78,61 @@ pub async fn install_yuzu_by_version(
 pub async fn detect_yuzu_version_command(
     window: Window,
 ) -> Result<ApiResponse<Option<String>>, String> {
-    use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
-
     info!("检测 Yuzu 版本");
-
-    // 定义检测步骤
-    let steps = vec![
-        ProgressStep {
-            id: "check_exe".to_string(),
-            title: "检查模拟器程序".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-        ProgressStep {
-            id: "start_program".to_string(),
-            title: "启动程序检测版本".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-        ProgressStep {
-            id: "detect_version".to_string(),
-            title: "读取版本信息".to_string(),
-            status: ProgressStatus::Pending,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-    ];
-
-    // 发送启动事件
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::Started {
-            steps: steps.clone(),
-        },
-    );
-
-    // 步骤1: 检查程序
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_exe".to_string(),
-                title: "检查模拟器程序".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        },
-    );
+    let reporter = InstallReporter::from_window(window);
+    reporter.start(vec![
+        pending_step("check_exe", "检查模拟器程序"),
+        pending_step("start_program", "启动程序检测版本"),
+        pending_step("detect_version", "读取版本信息"),
+    ]);
+    reporter.step(running_step("check_exe", "检查模拟器程序"));
 
     let exe_path = get_yuzu_exe_path();
     if !exe_path.exists() {
         let error_msg = format!("未找到模拟器程序: {}", exe_path.display());
-        let _ = window.emit(
-            "installation-event",
-            ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "check_exe".to_string(),
-                    title: "检查模拟器程序".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(error_msg.clone()),
-                    download_source: None,
-                },
-            },
-        );
-        let _ = window.emit(
-            "installation-event",
-            ProgressEvent::Finished {
-                success: false,
-                message: Some(error_msg.clone()),
-            },
-        );
+        reporter.step(error_step(
+            "check_exe",
+            "检查模拟器程序",
+            StepKind::Normal,
+            error_msg.clone(),
+        ));
+        reporter.finish_error(error_msg.clone());
         return Err(error_msg);
     }
 
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_exe".to_string(),
-                title: "检查模拟器程序".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        },
-    );
-
-    // 步骤2: 启动程序
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "start_program".to_string(),
-                title: "启动程序检测版本".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        },
-    );
+    reporter.step(success_step("check_exe", "检查模拟器程序"));
+    reporter.step(running_step("start_program", "启动程序检测版本"));
 
     match detect_yuzu_version().await {
         Ok(version) => {
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "start_program".to_string(),
-                        title: "启动程序检测版本".to_string(),
-                        status: ProgressStatus::Success,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: None,
-                        download_source: None,
-                    },
-                },
-            );
-
-            // 步骤3: 读取版本信息
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "detect_version".to_string(),
-                        title: "读取版本信息".to_string(),
-                        status: ProgressStatus::Running,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: None,
-                        download_source: None,
-                    },
-                },
-            );
+            reporter.step(success_step("start_program", "启动程序检测版本"));
+            reporter.step(running_step("detect_version", "读取版本信息"));
 
             if let Some(ref v) = version {
-                let _ = window.emit(
-                    "installation-event",
-                    ProgressEvent::StepUpdate {
-                        step: ProgressStep {
-                            id: "detect_version".to_string(),
-                            title: format!("检测到版本: {}", v),
-                            status: ProgressStatus::Success,
-                            step_type: "normal".to_string(),
-                            progress: 0.0,
-                            download_speed: "".to_string(),
-                            eta: "".to_string(),
-                            downloaded_size: None,
-                            total_size: None,
-                            error: None,
-                            download_source: None,
-                        },
-                    },
-                );
-                let _ = window.emit(
-                    "installation-event",
-                    ProgressEvent::Finished {
-                        success: true,
-                        message: None,
-                    },
-                );
+                reporter.step(success_step("detect_version", format!("检测到版本: {}", v)));
+                reporter.finish_success();
             } else {
-                let _ = window.emit(
-                    "installation-event",
-                    ProgressEvent::StepUpdate {
-                        step: ProgressStep {
-                            id: "detect_version".to_string(),
-                            title: "未能检测到版本".to_string(),
-                            status: ProgressStatus::Error,
-                            step_type: "normal".to_string(),
-                            progress: 0.0,
-                            download_speed: "".to_string(),
-                            eta: "".to_string(),
-                            downloaded_size: None,
-                            total_size: None,
-                            error: Some("未能检测到版本".to_string()),
-                            download_source: None,
-                        },
-                    },
-                );
-                let _ = window.emit(
-                    "installation-event",
-                    ProgressEvent::Finished {
-                        success: false,
-                        message: Some("未能检测到版本".to_string()),
-                    },
-                );
+                let message = "未能检测到版本".to_string();
+                reporter.step(error_step(
+                    "detect_version",
+                    "未能检测到版本",
+                    StepKind::Normal,
+                    message.clone(),
+                ));
+                reporter.finish_error(message);
             }
 
             Ok(ApiResponse::success(version))
         }
         Err(e) => {
             error!("版本检测失败: {}", e);
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "start_program".to_string(),
-                        title: "启动程序检测版本".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: Some(e.to_string()),
-                        download_source: None,
-                    },
-                },
-            );
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::Finished {
-                    success: false,
-                    message: Some(e.to_string()),
-                },
-            );
+            reporter.step(error_step(
+                "start_program",
+                "启动程序检测版本",
+                StepKind::Normal,
+                e.to_string(),
+            ));
+            reporter.finish_error(e.to_string());
             Err(e.to_string())
         }
     }
@@ -532,6 +231,7 @@ pub async fn install_firmware_to_yuzu_command(
     info!("安装固件到 Yuzu");
 
     let _ = send_notify(&window, "开始安装固件...");
+    let reporter = InstallReporter::from_window(window.clone());
 
     // Windows: 检查并安装 aria2（如果需要）
     #[cfg(target_os = "windows")]
@@ -540,38 +240,31 @@ pub async fn install_firmware_to_yuzu_command(
 
         // 如果需要 aria2，显示进度对话框
         if should_use_aria2() {
-            let steps = crate::services::downloader::create_installation_steps();
-            let _ = window.emit("installation-event", ProgressEvent::Started { steps });
+            reporter.start(crate::services::downloader::create_installation_steps());
 
             if let Err(e) = check_and_install_aria2_with_ui(window.clone()).await {
                 error!("aria2 安装失败: {}", e);
                 return Err(format!("aria2 安装失败: {}", e));
             }
 
-            // aria2 检查完成，关闭对话框
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::Finished {
-                    success: true,
-                    message: None,
-                },
-            );
+            reporter.finish_success();
         }
     }
 
-    let window_clone = window.clone();
+    let reporter_clone = reporter.clone();
     match install_firmware_to_yuzu(firmware_version.as_deref(), move |event| {
-        // 发送安装事件到前端
-        let _ = window_clone.emit("installation-event", event);
+        reporter_clone.emit(event);
     })
     .await
     {
         Ok(_) => {
+            reporter.finish_success();
             let _ = send_notify(&window, "固件安装成功");
             Ok(ApiResponse::success(()))
         }
         Err(e) => {
             error!("安装固件失败: {}", e);
+            reporter.finish_error(e.to_string());
             let _ = send_notify(&window, &format!("安装固件失败: {}", e));
             Err(e.to_string())
         }

@@ -8,6 +8,7 @@ pub mod crypto;
 pub mod doh;
 pub mod downloader;
 pub mod firmware;
+pub mod installer;
 pub mod keys;
 pub mod msvc;
 pub mod nca;
@@ -52,6 +53,7 @@ pub use downloader::{
     DownloadStatus, ProgressCallback,
 };
 pub use firmware::*;
+pub use installer::*;
 pub use nca::*;
 pub use network::*;
 pub use ryujinx::*;
