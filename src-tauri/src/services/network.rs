@@ -13,7 +13,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::http;
 use tracing::{debug, info, warn};
 use url::Url;
@@ -116,6 +116,11 @@ pub static GITHUB_OTHER_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
 
 /// Chrome User-Agent
 pub const CHROME_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
+const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
+const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const GITHUB_API_FALLBACK_TTL: Duration = Duration::from_secs(120);
+const GIT_API_JSON_CACHE_TTL: Duration = Duration::from_secs(300);
+const GIT_API_JSON_CACHE_CAPACITY: u64 = 100;
 
 /// 缓存日志中间件
 #[derive(Debug, Clone)]
@@ -159,10 +164,51 @@ impl Middleware for CacheLoggingMiddleware {
 }
 
 /// GitHub API 回退标志
-static GITHUB_API_FALLBACK_FLAG: Lazy<RwLock<bool>> = Lazy::new(|| RwLock::new(false));
+#[derive(Debug, Default)]
+struct GithubApiCircuitBreaker {
+    open_until: Option<Instant>,
+    last_reason: Option<String>,
+}
 
-/// 当前选择的 GitHub 镜像描述（用于显示）
-static CURRENT_GITHUB_MIRROR_DESC: Lazy<RwLock<Option<String>>> = Lazy::new(|| RwLock::new(None));
+impl GithubApiCircuitBreaker {
+    fn allows_direct_request(&mut self, now: Instant) -> bool {
+        match self.open_until {
+            Some(deadline) if deadline > now => false,
+            Some(_) => {
+                if let Some(reason) = self.last_reason.take() {
+                    info!(
+                        "GitHub API direct cooldown expired, retrying direct requests: {}",
+                        reason
+                    );
+                } else {
+                    info!("GitHub API direct cooldown expired, retrying direct requests");
+                }
+                self.open_until = None;
+                true
+            }
+            None => true,
+        }
+    }
+
+    fn record_failure(&mut self, now: Instant, reason: impl Into<String>) {
+        self.open_until = Some(now + GITHUB_API_FALLBACK_TTL);
+        self.last_reason = Some(reason.into());
+    }
+
+    fn record_success(&mut self) -> bool {
+        let was_open = self.open_until.take().is_some();
+        self.last_reason = None;
+        was_open
+    }
+
+    #[cfg(test)]
+    fn is_open_at(&self, now: Instant) -> bool {
+        matches!(self.open_until, Some(deadline) if deadline > now)
+    }
+}
+
+static GITHUB_API_CIRCUIT_BREAKER: Lazy<RwLock<GithubApiCircuitBreaker>> =
+    Lazy::new(|| RwLock::new(GithubApiCircuitBreaker::default()));
 
 /// 全局缓存客户端（内存缓存）
 static CACHED_CLIENT: Lazy<ClientWithMiddleware> =
@@ -175,8 +221,8 @@ static DURABLE_CACHED_CLIENT: Lazy<ClientWithMiddleware> =
 /// Git API JSON 响应缓存（5 分钟 TTL，忽略 cache-control）
 static GIT_API_JSON_CACHE: Lazy<moka::future::Cache<String, serde_json::Value>> = Lazy::new(|| {
     moka::future::Cache::builder()
-        .max_capacity(100) // 最多缓存 100 个响应
-        .time_to_live(std::time::Duration::from_secs(300)) // 5 分钟过期
+        .max_capacity(GIT_API_JSON_CACHE_CAPACITY)
+        .time_to_live(GIT_API_JSON_CACHE_TTL)
         .build()
 });
 
@@ -200,6 +246,26 @@ impl GithubMirror {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GithubDownloadTarget {
+    pub url: String,
+    pub source_name: String,
+}
+
+pub static GITHUB_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
+    let mut mirrors = vec![
+        GithubMirror::new(
+            "cloudflare_load_balance",
+            "美国",
+            "[美国 Cloudflare CDN] 随机选择 Cloudflare 服务器",
+        ),
+        GithubMirror::new("direct", "美国", "直连 GitHub"),
+    ];
+    mirrors.extend(GITHUB_US_MIRRORS.iter().cloned());
+    mirrors.extend(GITHUB_OTHER_MIRRORS.iter().cloned());
+    mirrors
+});
 
 /// 下载选项（用于多线程下载配置）
 #[derive(Debug, Clone)]
@@ -240,7 +306,7 @@ impl NetworkDownloadOptions {
 
 /// 创建 HTTP 客户端
 pub fn create_client() -> AppResult<Client> {
-    create_client_with_timeout(Duration::from_secs(30))
+    create_client_with_timeout(DEFAULT_HTTP_TIMEOUT)
 }
 
 /// 创建带超时的 HTTP 客户端
@@ -249,7 +315,7 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
     let mut builder = Client::builder()
         .user_agent(user_agent())
         .timeout(timeout)
-        .connect_timeout(Duration::from_secs(10));
+        .connect_timeout(DEFAULT_CONNECT_TIMEOUT);
 
     // 配置代理
     if let Some(proxy_url) = get_proxy_url() {
@@ -321,6 +387,49 @@ pub fn get_cached_client() -> &'static ClientWithMiddleware {
 /// 获取全局持久化缓存客户端（磁盘缓存，类似 Python 的 get_durable_cache_session）
 pub fn get_durable_cached_client() -> &'static ClientWithMiddleware {
     &DURABLE_CACHED_CLIENT
+}
+
+fn github_api_direct_request_allowed() -> bool {
+    let now = Instant::now();
+    let mut breaker = GITHUB_API_CIRCUIT_BREAKER.write();
+    let allowed = breaker.allows_direct_request(now);
+
+    if !allowed {
+        let remaining = breaker
+            .open_until
+            .map(|deadline| deadline.saturating_duration_since(now))
+            .unwrap_or_default();
+        if let Some(reason) = breaker.last_reason.as_deref() {
+            debug!(
+                "GitHub API direct requests are temporarily disabled for {:?}: {}",
+                remaining, reason
+            );
+        } else {
+            debug!(
+                "GitHub API direct requests are temporarily disabled for {:?}",
+                remaining
+            );
+        }
+    }
+
+    allowed
+}
+
+fn open_github_api_circuit(reason: impl Into<String>) {
+    let reason = reason.into();
+    GITHUB_API_CIRCUIT_BREAKER
+        .write()
+        .record_failure(Instant::now(), reason.clone());
+    warn!(
+        "GitHub API direct request failed, falling back to CDN for {:?}: {}",
+        GITHUB_API_FALLBACK_TTL, reason
+    );
+}
+
+fn close_github_api_circuit() {
+    if GITHUB_API_CIRCUIT_BREAKER.write().record_success() {
+        info!("GitHub API direct requests recovered, closing fallback circuit");
+    }
 }
 
 /// 获取代理 URL
@@ -464,50 +573,82 @@ pub fn is_using_proxy() -> bool {
 
 /// 获取所有 GitHub 镜像列表
 pub fn get_github_mirrors() -> Vec<GithubMirror> {
-    let mut mirrors = vec![
-        GithubMirror::new(
-            "cloudflare_load_balance",
-            "美国",
-            "[美国 Cloudflare CDN] 随机选择 Cloudflare 服务器",
-        ),
-        GithubMirror::new("direct", "美国", "直连 GitHub"),
-    ];
-    mirrors.extend(GITHUB_US_MIRRORS.clone());
-    mirrors.extend(GITHUB_OTHER_MIRRORS.clone());
-    mirrors
+    GITHUB_MIRRORS.clone()
 }
 
-/// 获取 GitHub 下载 URL（应用镜像）
-pub fn get_github_download_url(origin_url: &str) -> String {
-    let mirror = {
-        let config = CONFIG.read();
-        config.setting.network.github_download_mirror.clone()
-    };
+fn find_github_mirror_description(mirror: &str) -> Option<String> {
+    GITHUB_MIRRORS
+        .iter()
+        .find(|candidate| mirror.starts_with(&candidate.url) || candidate.url.starts_with(mirror))
+        .map(|candidate| candidate.description.clone())
+}
 
+fn github_source_name_from_mirror(mirror: &str) -> String {
+    if mirror.is_empty() || mirror == "direct" {
+        return "直连".to_string();
+    }
+
+    if mirror == "cloudflare_load_balance" {
+        return "Cloudflare CDN 负载均衡".to_string();
+    }
+
+    find_github_mirror_description(mirror).unwrap_or_else(|| format!("自定义镜像: {}", mirror))
+}
+
+fn resolve_github_download_target_with_mirror(
+    origin_url: &str,
+    mirror: &str,
+) -> GithubDownloadTarget {
     debug!("获取 GitHub 下载链接，原始链接：{}", origin_url);
     debug!("配置的镜像: {}", mirror);
 
     if mirror.is_empty() || mirror == "direct" {
         info!("使用直连 GitHub: {}", origin_url);
-        return origin_url.to_string();
+        return GithubDownloadTarget {
+            url: origin_url.to_string(),
+            source_name: "直连".to_string(),
+        };
     }
 
     if mirror == "cloudflare_load_balance" {
-        // 随机选择一个 Cloudflare 镜像
         let mut rng = rand::rng();
         if let Some(choice) = GITHUB_US_MIRRORS.choose(&mut rng) {
             info!("使用 GitHub 镜像: {}", choice.description);
-            // 保存当前选择的镜像描述（用于显示）
-            *CURRENT_GITHUB_MIRROR_DESC.write() = Some(choice.description.clone());
-            let new_url = origin_url.replace("https://github.com", &choice.url);
-            debug!("镜像链接：{}", new_url);
-            return new_url;
+            let url = origin_url.replace("https://github.com", &choice.url);
+            debug!("镜像链接：{}", url);
+            return GithubDownloadTarget {
+                url,
+                source_name: choice.description.clone(),
+            };
         }
+
+        warn!("GitHub mirror pool is empty, falling back to direct download");
+        return GithubDownloadTarget {
+            url: origin_url.to_string(),
+            source_name: "直连".to_string(),
+        };
     }
 
-    let new_url = origin_url.replace("https://github.com", &mirror);
-    info!("使用自定义镜像链接：{}", new_url);
-    new_url
+    let url = origin_url.replace("https://github.com", mirror);
+    info!("使用自定义镜像链接：{}", url);
+    GithubDownloadTarget {
+        url,
+        source_name: github_source_name_from_mirror(mirror),
+    }
+}
+
+pub fn resolve_github_download_target(origin_url: &str) -> GithubDownloadTarget {
+    let mirror = {
+        let config = CONFIG.read();
+        config.setting.network.github_download_mirror.clone()
+    };
+
+    resolve_github_download_target_with_mirror(origin_url, &mirror)
+}
+
+/// 获取 GitHub 下载 URL（应用镜像）
+pub fn get_github_download_url(origin_url: &str) -> String {
+    resolve_github_download_target(origin_url).url
 }
 
 /// 获取 GitHub 下载源名称（用于显示）
@@ -517,28 +658,7 @@ pub fn get_github_download_source_name() -> String {
         config.setting.network.github_download_mirror.clone()
     };
 
-    if mirror.is_empty() || mirror == "direct" {
-        return "直连".to_string();
-    }
-
-    if mirror == "cloudflare_load_balance" {
-        // 如果已经选择了具体的镜像，返回具体的镜像描述
-        if let Some(ref desc) = *CURRENT_GITHUB_MIRROR_DESC.read() {
-            return desc.clone();
-        }
-        return "Cloudflare CDN 负载均衡".to_string();
-    }
-
-    // 尝试从镜像列表中找到描述
-    let all_mirrors = get_github_mirrors();
-    for m in all_mirrors {
-        if mirror.starts_with(&m.url) || m.url.starts_with(&mirror) {
-            return m.description;
-        }
-    }
-
-    // 如果找不到，返回自定义镜像
-    format!("自定义镜像: {}", mirror)
+    github_source_name_from_mirror(&mirror)
 }
 
 /// 获取最终 URL 的下载源名称（通用）
@@ -646,40 +766,52 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
 
     debug!("GitHub API 模式: {}", github_api_mode);
 
-    let fallback = *GITHUB_API_FALLBACK_FLAG.read();
-    debug!("API 回退标志: {}", fallback);
+    let direct_allowed = github_api_direct_request_allowed();
+    debug!("GitHub API direct allowed: {}", direct_allowed);
 
-    // 如果不是 CDN 模式且没有回退标志，尝试直连
-    if github_api_mode != "cdn" && !fallback {
+    if github_api_mode != "cdn" && direct_allowed {
         info!("尝试直连 GitHub API");
-        // 使用缓存客户端进行直连
         let cached_client = get_cached_client();
         match cached_client.get(url).send().await {
             Ok(resp) => {
-                debug!("直连请求成功，HTTP 状态: {}", resp.status());
-                if let Ok(data) = resp.json::<serde_json::Value>().await {
-                    // 检查是否触发 API 限制
-                    if let Some(message) = data.get("message").and_then(|m| m.as_str()) {
-                        if message.contains("API rate limit exceeded") {
-                            warn!("GitHub API 限制: {}", message);
-                            debug!("设置回退标志");
-                            *GITHUB_API_FALLBACK_FLAG.write() = true;
-                        } else {
+                let status = resp.status();
+                debug!("直连请求成功，HTTP 状态: {}", status);
+
+                match resp.json::<serde_json::Value>().await {
+                    Ok(data) => {
+                        let message = data
+                            .get("message")
+                            .and_then(|value| value.as_str())
+                            .map(str::to_string);
+                        let rate_limited = message
+                            .as_deref()
+                            .map(|value| value.contains("API rate limit exceeded"))
+                            .unwrap_or(false);
+
+                        if status.is_success() && !rate_limited {
+                            close_github_api_circuit();
                             debug!("GitHub API 响应成功");
                             return Ok(data);
                         }
-                    } else {
-                        debug!("GitHub API 响应成功");
-                        return Ok(data);
+
+                        let reason = match message {
+                            Some(message) => {
+                                format!("direct GitHub API returned HTTP {}: {}", status, message)
+                            }
+                            None => format!("direct GitHub API returned HTTP {}", status),
+                        };
+                        open_github_api_circuit(reason);
                     }
-                } else {
-                    warn!("解析 JSON 响应失败，回退到 CDN");
+                    Err(e) => {
+                        open_github_api_circuit(format!(
+                            "failed to parse direct GitHub API response: {}",
+                            e
+                        ));
+                    }
                 }
             }
             Err(e) => {
-                warn!("直连 GitHub API 失败: {}", e);
-                debug!("设置回退标志");
-                *GITHUB_API_FALLBACK_FLAG.write() = true;
+                open_github_api_circuit(format!("direct GitHub API request error: {}", e));
             }
         }
     }
@@ -696,7 +828,15 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
             warn!("CDN 请求失败: {}", e);
             AppError::Unknown(e.to_string())
         })?;
-    debug!("CDN 请求成功，HTTP 状态: {}", resp.status());
+    let status = resp.status();
+    debug!("CDN 请求成功，HTTP 状态: {}", status);
+    if !status.is_success() {
+        warn!("GitHub API CDN 请求失败，HTTP 状态: {}", status);
+        return Err(AppError::Network(format!(
+            "GitHub API CDN request failed: {} - {}",
+            status, cdn_url
+        )));
+    }
     let data = resp.json::<serde_json::Value>().await.map_err(|e| {
         warn!("解析 CDN 响应失败: {}", e);
         AppError::Unknown(e.to_string())
@@ -827,6 +967,52 @@ mod tests {
             cache_dir,
             crate::config::effective_config_dir().join("http-cacache")
         );
+    }
+
+    #[test]
+    fn test_circuit_breaker_recovers_after_ttl() {
+        let now = Instant::now();
+        let mut breaker = GithubApiCircuitBreaker::default();
+
+        assert!(breaker.allows_direct_request(now));
+
+        breaker.record_failure(now, "timeout");
+        assert!(breaker.is_open_at(now + Duration::from_secs(1)));
+        assert!(!breaker.allows_direct_request(now + Duration::from_secs(1)));
+        assert!(breaker.allows_direct_request(now + GITHUB_API_FALLBACK_TTL));
+    }
+
+    #[test]
+    fn test_resolve_github_download_target_direct_mode() {
+        let origin = "https://github.com/example/project/releases/download/v1.0.0/app.zip";
+        let target = resolve_github_download_target_with_mirror(origin, "direct");
+
+        assert_eq!(target.url, origin);
+        assert_eq!(target.source_name, "直连");
+    }
+
+    #[test]
+    fn test_resolve_github_download_target_custom_mirror() {
+        let origin = "https://github.com/example/project/releases/download/v1.0.0/app.zip";
+        let target = resolve_github_download_target_with_mirror(
+            origin,
+            "https://gh-proxy.net/https://github.com",
+        );
+
+        assert_eq!(
+            target.url,
+            "https://gh-proxy.net/https://github.com/example/project/releases/download/v1.0.0/app.zip"
+        );
+        assert!(target.source_name.contains("gh-proxy.net"));
+    }
+
+    #[test]
+    fn test_resolve_github_download_target_load_balance_uses_specific_source() {
+        let origin = "https://github.com/example/project/releases/download/v1.0.0/app.zip";
+        let target = resolve_github_download_target_with_mirror(origin, "cloudflare_load_balance");
+
+        assert_ne!(target.url, origin);
+        assert_ne!(target.source_name, "Cloudflare CDN 负载均衡");
     }
 
     #[test]

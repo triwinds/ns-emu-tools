@@ -21,15 +21,14 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 # Tauri 框架
-tauri = { version = "2", features = ["devtools"] }
-tauri-plugin-shell = "2"
+tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
 
 # 异步运行时
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
 
 # HTTP 客户端
 reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls", "gzip", "deflate"], default-features = false }
@@ -110,8 +109,6 @@ aria2-ws = "0.5"
 which = "7.0"
 
 # 目录路径
-dirs = "5.0"
-
 # plist 解析 (macOS)
 plist = "1.7"
 

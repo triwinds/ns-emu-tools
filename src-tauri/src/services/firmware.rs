@@ -958,14 +958,15 @@ mod tests {
     /// 获取 Ryujinx 密钥文件可能的路径
     fn get_ryujinx_key_paths() -> Vec<PathBuf> {
         let mut paths = Vec::new();
+        let base_dirs = directories::BaseDirs::new();
 
         // Windows: %APPDATA%/Ryujinx/system/prod.keys
-        if let Some(data_dir) = dirs::data_dir() {
+        if let Some(data_dir) = base_dirs.as_ref().map(|dirs| dirs.data_dir()) {
             paths.push(data_dir.join("Ryujinx").join("system").join("prod.keys"));
         }
 
         // Linux: ~/.config/Ryujinx/system/prod.keys
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = base_dirs.as_ref().map(|dirs| dirs.home_dir()) {
             paths.push(home.join(".config/Ryujinx/system/prod.keys"));
             // 通用位置
             paths.push(home.join(".switch").join("prod.keys"));
@@ -977,14 +978,15 @@ mod tests {
     /// 获取 Yuzu 密钥文件可能的路径
     fn get_yuzu_key_paths() -> Vec<PathBuf> {
         let mut paths = Vec::new();
+        let base_dirs = directories::BaseDirs::new();
 
         // Windows: %LOCALAPPDATA%/yuzu/keys/prod.keys
-        if let Some(data_local) = dirs::data_local_dir() {
+        if let Some(data_local) = base_dirs.as_ref().map(|dirs| dirs.data_local_dir()) {
             paths.push(data_local.join("yuzu").join("keys").join("prod.keys"));
         }
 
         // Linux: ~/.local/share/yuzu/keys/prod.keys
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = base_dirs.as_ref().map(|dirs| dirs.home_dir()) {
             paths.push(home.join(".local/share/yuzu/keys/prod.keys"));
             // 通用位置
             paths.push(home.join(".switch").join("prod.keys"));

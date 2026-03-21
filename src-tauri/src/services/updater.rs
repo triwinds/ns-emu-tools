@@ -7,9 +7,7 @@ use crate::error::{AppError, AppResult};
 use crate::models::progress::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::app_info;
 use crate::services::downloader::format_bytes;
-use crate::services::network::{
-    create_client, get_github_download_source_name, get_github_download_url,
-};
+use crate::services::network::{create_client, resolve_github_download_target};
 use crate::utils::archive;
 use futures_util::StreamExt;
 use std::fs;
@@ -209,11 +207,12 @@ pub async fn download_update(
 
     // 步骤 2: 下载更新文件
     info!("下载链接：{}", download_url);
-    let mirror_url = get_github_download_url(&download_url);
+    let download_target = resolve_github_download_target(&download_url);
+    let mirror_url = download_target.url;
     info!("镜像链接：{}", mirror_url);
 
     // 获取下载源名称
-    let download_source = get_github_download_source_name();
+    let download_source = download_target.source_name;
     info!("下载源: {}", download_source);
 
     let _ = window.emit(
@@ -807,7 +806,7 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
     // 步骤 3: 下载更新文件
     info!("开始下载 {}，版本：{}", file_name, tag);
 
-    let mirror_url = get_github_download_url(&download_url);
+    let mirror_url = resolve_github_download_target(&download_url).url;
     info!("镜像链接：{}", mirror_url);
 
     let _ = window.emit(

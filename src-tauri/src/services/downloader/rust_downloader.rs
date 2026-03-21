@@ -17,6 +17,7 @@ use crate::services::downloader::types::{
 };
 use crate::services::network::{get_final_url, get_github_download_url};
 use async_trait::async_trait;
+use directories::UserDirs;
 use parking_lot::RwLock;
 use reqwest::Client;
 use std::collections::{HashMap, VecDeque};
@@ -39,6 +40,12 @@ const PROGRESS_UPDATE_INTERVAL: Duration = Duration::from_millis(500);
 
 /// 速度采样窗口大小（用于平滑速度计算）
 const SPEED_WINDOW_SIZE: usize = 10;
+
+fn default_download_dir() -> PathBuf {
+    UserDirs::new()
+        .and_then(|dirs| dirs.download_dir().map(PathBuf::from))
+        .unwrap_or_else(|| PathBuf::from("."))
+}
 
 /// 纯 Rust 下载器
 pub struct RustDownloader {
@@ -307,10 +314,11 @@ impl DownloadManager for RustDownloader {
         for task in tasks {
             if remove_files {
                 let progress = task.get_progress();
-                let save_dir =
-                    task.options.save_dir.clone().unwrap_or_else(|| {
-                        dirs::download_dir().unwrap_or_else(|| PathBuf::from("."))
-                    });
+                let save_dir = task
+                    .options
+                    .save_dir
+                    .clone()
+                    .unwrap_or_else(|| default_download_dir());
 
                 // 删除临时文件
                 let temp_path = save_dir.join(get_temp_filename(&progress.filename));
@@ -633,7 +641,7 @@ impl DownloadTask {
             .options
             .save_dir
             .clone()
-            .unwrap_or_else(|| dirs::download_dir().unwrap_or_else(|| PathBuf::from(".")));
+            .unwrap_or_else(default_download_dir);
 
         // 确保目录存在
         if !save_dir.exists() {
