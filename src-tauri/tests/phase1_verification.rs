@@ -54,6 +54,7 @@ fn test_phase1_download_progress() {
 fn test_phase1_download_backend() {
     // 验证点 5: 后端选择正确
     assert_eq!(DownloadBackend::from("aria2"), DownloadBackend::Aria2);
+    assert_eq!(DownloadBackend::from("bytehaul"), DownloadBackend::Bytehaul);
     assert_eq!(DownloadBackend::from("rust"), DownloadBackend::Rust);
     assert_eq!(DownloadBackend::from("auto"), DownloadBackend::Auto);
     assert_eq!(DownloadBackend::default(), DownloadBackend::Auto);

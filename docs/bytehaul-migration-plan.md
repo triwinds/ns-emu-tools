@@ -127,7 +127,7 @@
 - 已基于上游文档核验输出路径、进度订阅、取消、暂停后恢复、代理、IPv6 开关、自定义 header / User-Agent 等公开 API
 - 已新增 `src-tauri/tests/bytehaul_phase0_verification.rs`，覆盖显式输出路径、自定义请求头、非法配置提前拒绝这组最小验证
 
-### Phase 1：在现有 trait 下接入 bytehaul 适配层
+### Phase 1：在现有 trait 下接入 bytehaul 适配层 [已完成]
 
 目标：不改调用方，先让 `bytehaul` 成为一个可选后端。
 
@@ -150,6 +150,14 @@
 - 不删除 aria2
 - 不修改 `services/updater.rs`
 - 不删除下载相关配置项
+
+本轮已完成：
+
+- 新增 `src-tauri/src/services/downloader/bytehaul_backend.rs`，在现有 `DownloadManager` trait 下接入 bytehaul
+- 在 `DownloadBackend` 中新增 `Bytehaul`
+- 保持 `Auto` 默认策略不变，仍然优先 aria2
+- 保留全局下载管理器和统一取消入口，不改调用方
+- 已新增 / 更新验证用例，覆盖 `DownloadBackend::from("bytehaul")` 与 Phase 1 基础行为
 
 ### Phase 2：迁移直接 aria2 依赖与前置流程
 

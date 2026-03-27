@@ -147,6 +147,7 @@ mod tests {
         use super::super::DownloadBackend;
 
         assert_eq!(DownloadBackend::from("aria2"), DownloadBackend::Aria2);
+        assert_eq!(DownloadBackend::from("bytehaul"), DownloadBackend::Bytehaul);
         assert_eq!(DownloadBackend::from("rust"), DownloadBackend::Rust);
         assert_eq!(DownloadBackend::from("auto"), DownloadBackend::Auto);
         assert_eq!(DownloadBackend::from("unknown"), DownloadBackend::Auto);

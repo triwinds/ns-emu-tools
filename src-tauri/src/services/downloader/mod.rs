@@ -18,6 +18,7 @@
 pub mod aria2;
 pub mod aria2_backend;
 pub mod aria2_install;
+pub mod bytehaul_backend;
 pub mod chunk_manager;
 pub mod client;
 pub mod filename;
@@ -43,6 +44,7 @@ pub use aria2_backend::Aria2Backend;
 pub use aria2_install::{
     ensure_aria2_installed_with_progress, format_bytes, Aria2InstallCallback, Aria2InstallProgress,
 };
+pub use bytehaul_backend::BytehaulBackend;
 pub use manager::{DownloadManager, ProgressCallback};
 pub use rust_downloader::RustDownloader;
 pub use types::{DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus};
@@ -82,6 +84,8 @@ pub enum DownloadBackend {
     Auto,
     /// 强制使用 aria2
     Aria2,
+    /// 强制使用 bytehaul
+    Bytehaul,
     /// 强制使用纯 Rust 实现
     Rust,
 }
@@ -90,6 +94,7 @@ impl From<&str> for DownloadBackend {
     fn from(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "aria2" => Self::Aria2,
+            "bytehaul" => Self::Bytehaul,
             "rust" => Self::Rust,
             _ => Self::Auto,
         }
@@ -112,6 +117,12 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
         DownloadBackend::Aria2 => {
             debug!("强制使用 aria2 后端");
             Arc::new(Aria2Backend::from_global().await?)
+        }
+        DownloadBackend::Bytehaul => {
+            info!("使用 bytehaul 后端");
+            let downloader = BytehaulBackend::from_config()?;
+            downloader.start().await?;
+            Arc::new(downloader)
         }
         DownloadBackend::Rust => {
             info!("使用 RustDownloader 后端");
@@ -147,6 +158,7 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
 /// # 说明
 /// - `Auto`: 优先 aria2；若 aria2 启动失败/不可用则回退 RustDownloader
 /// - `Aria2`: 强制使用 aria2
+/// - `Bytehaul`: 强制使用 bytehaul
 /// - `Rust`: 强制使用 RustDownloader
 pub async fn init_download_manager(
     backend: DownloadBackend,

@@ -408,7 +408,7 @@ pub struct DownloadSetting {
     /// 删除旧的 aria2 日志文件
     #[serde(default = "default_true")]
     pub remove_old_aria2_log_file: bool,
-    /// 下载后端 (auto, aria2, rust)
+    /// 下载后端 (auto, aria2, rust, bytehaul)
     #[serde(default = "default_download_backend")]
     pub backend: String,
 }
