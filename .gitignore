@@ -222,3 +222,4 @@ storage.json
 .DS_Store
 
 .claude/
+.ace-tool/

@@ -110,6 +110,7 @@ fn auto_backend_candidates() -> [DownloadBackend; 2] {
     [DownloadBackend::Bytehaul, DownloadBackend::Aria2]
 }
 
+#[cfg(any(test, target_os = "windows"))]
 fn uses_aria2_preflight(backend: DownloadBackend) -> bool {
     matches!(backend, DownloadBackend::Aria2)
 }
