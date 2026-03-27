@@ -1,6 +1,6 @@
 //! 统一下载模块
 //!
-//! 提供统一的下载接口，支持 aria2 和纯 Rust 实现
+//! 提供统一的下载接口，支持 bytehaul 和 aria2 fallback
 //!
 //! # 使用方式
 //!
@@ -80,7 +80,7 @@ impl Drop for TransientDownloadManagerGuard {
 /// 下载后端类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DownloadBackend {
-    /// 自动选择：优先 aria2，不可用时回退 RustDownloader
+    /// 自动选择：优先 bytehaul，不可用时回退 aria2
     Auto,
     /// 强制使用 aria2
     Aria2,
@@ -112,6 +112,21 @@ struct ActiveDownloadManager {
     manager: Arc<dyn DownloadManager>,
 }
 
+#[cfg(test)]
+fn auto_backend_candidates() -> [DownloadBackend; 2] {
+    [DownloadBackend::Bytehaul, DownloadBackend::Aria2]
+}
+
+fn uses_aria2_preflight(backend: DownloadBackend) -> bool {
+    matches!(backend, DownloadBackend::Aria2)
+}
+
+async fn create_started_bytehaul_manager() -> AppResult<Arc<dyn DownloadManager>> {
+    let downloader = BytehaulBackend::from_config()?;
+    downloader.start().await?;
+    Ok(Arc::new(downloader))
+}
+
 async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn DownloadManager>> {
     let manager: Arc<dyn DownloadManager> = match backend {
         DownloadBackend::Aria2 => {
@@ -120,9 +135,7 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
         }
         DownloadBackend::Bytehaul => {
             info!("使用 bytehaul 后端");
-            let downloader = BytehaulBackend::from_config()?;
-            downloader.start().await?;
-            Arc::new(downloader)
+            create_started_bytehaul_manager().await?
         }
         DownloadBackend::Rust => {
             info!("使用 RustDownloader 后端");
@@ -132,16 +145,25 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
         }
         DownloadBackend::Auto => {
             debug!("自动选择下载后端");
-            match Aria2Backend::from_global().await {
-                Ok(aria2) => {
-                    info!("使用 aria2 后端");
-                    Arc::new(aria2)
+            match create_started_bytehaul_manager().await {
+                Ok(manager) => {
+                    info!("Auto 模式使用 bytehaul 后端");
+                    manager
                 }
-                Err(e) => {
-                    warn!("aria2 不可用: {}，回退到 RustDownloader", e);
-                    let downloader = RustDownloader::new();
-                    downloader.start().await?;
-                    Arc::new(downloader)
+                Err(bytehaul_error) => {
+                    warn!("bytehaul 不可用: {}，回退到 aria2", bytehaul_error);
+                    match Aria2Backend::from_global().await {
+                        Ok(aria2) => {
+                            info!("Auto 模式回退到 aria2 后端");
+                            Arc::new(aria2)
+                        }
+                        Err(aria2_error) => {
+                            return Err(crate::error::AppError::Download(format!(
+                                "bytehaul 与 aria2 均不可用: bytehaul={}, aria2={}",
+                                bytehaul_error, aria2_error
+                            )));
+                        }
+                    }
                 }
             }
         }
@@ -156,7 +178,7 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
 /// - `backend`: 下载后端类型
 ///
 /// # 说明
-/// - `Auto`: 优先 aria2；若 aria2 启动失败/不可用则回退 RustDownloader
+/// - `Auto`: 优先 bytehaul；若 bytehaul 不可用则回退 aria2
 /// - `Aria2`: 强制使用 aria2
 /// - `Bytehaul`: 强制使用 bytehaul
 /// - `Rust`: 强制使用 RustDownloader
@@ -288,8 +310,9 @@ pub fn format_eta(seconds: u64) -> String {
 #[cfg(target_os = "windows")]
 pub fn should_use_aria2() -> bool {
     let config = crate::config::get_config();
-    let backend = config.setting.download.backend.as_str();
-    backend == "auto" || backend == "aria2"
+    uses_aria2_preflight(DownloadBackend::from(
+        config.setting.download.backend.as_str(),
+    ))
 }
 
 #[cfg(not(target_os = "windows"))]

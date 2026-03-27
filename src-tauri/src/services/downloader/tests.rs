@@ -160,4 +160,24 @@ mod tests {
 
         assert_eq!(DownloadBackend::default(), DownloadBackend::Auto);
     }
+
+    #[test]
+    fn test_auto_backend_prefers_bytehaul_then_aria2() {
+        use super::super::{auto_backend_candidates, DownloadBackend};
+
+        assert_eq!(
+            auto_backend_candidates(),
+            [DownloadBackend::Bytehaul, DownloadBackend::Aria2]
+        );
+    }
+
+    #[test]
+    fn test_should_use_aria2_only_for_explicit_aria2() {
+        use super::super::{uses_aria2_preflight, DownloadBackend};
+
+        assert!(uses_aria2_preflight(DownloadBackend::Aria2));
+        assert!(!uses_aria2_preflight(DownloadBackend::Auto));
+        assert!(!uses_aria2_preflight(DownloadBackend::Bytehaul));
+        assert!(!uses_aria2_preflight(DownloadBackend::Rust));
+    }
 }

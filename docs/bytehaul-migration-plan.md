@@ -179,7 +179,7 @@
 - Windows 下 aria2 前置检查仍只在 `download.backend` 为 `auto` / `aria2` 时触发；当切换到 `bytehaul` 时，不会进入 aria2 安装前置流程
 - `services/updater.rs` 继续维持现状，未纳入本轮改动
 
-### Phase 3：切换默认后端并验证主流程
+### Phase 3：切换默认后端并验证主流程 [已完成]
 
 目标：在保留 fallback 的前提下，让 `bytehaul` 成为默认路径。
 
@@ -203,6 +203,13 @@
 
 - `services/updater.rs` 继续维持现状，不纳入这阶段验收。
 - 这阶段的目标是“默认路径可用”，不是“仓库里再也没有 aria2”。
+
+本轮已完成：
+
+- `DownloadBackend::Auto` 已调整为优先 `bytehaul`，仅在 `bytehaul` 初始化失败时回退到 `aria2`
+- Windows 下 aria2 安装前置检查已收敛为仅在显式配置 `download.backend = "aria2"` 时触发，默认 `auto` 路径不会再额外提示安装 aria2
+- `yuzu.rs`、`ryujinx.rs`、`firmware.rs`、`msvc.rs` 在默认 `auto` 配置下都会通过统一下载管理器落到 `bytehaul` 主路径
+- 已补充单元测试，覆盖 `Auto` 的后端优先级与 aria2 前置判断逻辑
 
 ### Phase 4：保留 aria2 fallback 的清理方案
 
