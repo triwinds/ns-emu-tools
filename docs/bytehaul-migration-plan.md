@@ -159,7 +159,7 @@
 - 保留全局下载管理器和统一取消入口，不改调用方
 - 已新增 / 更新验证用例，覆盖 `DownloadBackend::from("bytehaul")` 与 Phase 1 基础行为
 
-### Phase 2：迁移直接 aria2 依赖与前置流程
+### Phase 2：迁移直接 aria2 依赖与前置流程 [已完成]
 
 目标：把“没走统一下载接口”的路径先收敛回来。
 
@@ -172,6 +172,12 @@
    - `src-tauri/src/commands/ryujinx.rs`
    - `src-tauri/src/services/installer.rs`
 3. 保证 Windows 下安装流程在切换到 bytehaul 后，不再无意义地提示“检查下载工具/安装 aria2”。
+
+本轮已完成：
+
+- `src-tauri/src/services/msvc.rs` 已改为走统一下载接口，不再直接依赖 aria2 管理器
+- Windows 下 aria2 前置检查仍只在 `download.backend` 为 `auto` / `aria2` 时触发；当切换到 `bytehaul` 时，不会进入 aria2 安装前置流程
+- `services/updater.rs` 继续维持现状，未纳入本轮改动
 
 ### Phase 3：切换默认后端并验证主流程
 

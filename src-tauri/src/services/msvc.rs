@@ -3,7 +3,7 @@
 //! 提供 Microsoft Visual C++ Redistributable 的检查和安装功能
 
 use crate::error::{AppError, AppResult};
-use crate::services::downloader::aria2::{get_aria2_manager, Aria2DownloadOptions};
+use crate::services::downloader::{get_download_manager, DownloadOptions, DownloadProgress};
 use std::path::PathBuf;
 use std::process::Command;
 use tracing::{info, warn};
@@ -41,16 +41,21 @@ pub fn is_msvc_installed() -> bool {
 async fn download_msvc_installer() -> AppResult<PathBuf> {
     info!("开始下载 MSVC 运行库安装包");
 
-    let aria2 = get_aria2_manager().await?;
-    let options = Aria2DownloadOptions {
+    let download_manager = get_download_manager().await?;
+    let options = DownloadOptions {
+        filename: Some("VC_redist.x64.exe".to_string()),
         use_github_mirror: false,
         ..Default::default()
     };
 
-    let result = aria2
-        .download_and_wait(MSVC_DOWNLOAD_URL, options, |progress| {
-            info!("下载进度: {}%", progress.percentage);
-        })
+    let result = download_manager
+        .download_and_wait(
+            MSVC_DOWNLOAD_URL,
+            options,
+            Box::new(|progress: DownloadProgress| {
+                info!("下载进度: {}%", progress.percentage);
+            }),
+        )
         .await?;
 
     info!("MSVC 安装包下载完成: {}", result.path.display());
