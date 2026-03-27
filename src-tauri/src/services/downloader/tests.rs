@@ -180,4 +180,22 @@ mod tests {
         assert!(!uses_aria2_preflight(DownloadBackend::Bytehaul));
         assert!(!uses_aria2_preflight(DownloadBackend::Rust));
     }
+
+    #[test]
+    fn test_rust_backend_alias_maps_to_bytehaul() {
+        use super::super::{canonical_backend, DownloadBackend};
+
+        assert_eq!(
+            canonical_backend(DownloadBackend::Rust),
+            DownloadBackend::Bytehaul
+        );
+        assert_eq!(
+            canonical_backend(DownloadBackend::Bytehaul),
+            DownloadBackend::Bytehaul
+        );
+        assert_eq!(
+            canonical_backend(DownloadBackend::Aria2),
+            DownloadBackend::Aria2
+        );
+    }
 }

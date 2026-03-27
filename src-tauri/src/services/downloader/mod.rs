@@ -19,13 +19,7 @@ pub mod aria2;
 pub mod aria2_backend;
 pub mod aria2_install;
 pub mod bytehaul_backend;
-pub mod chunk_manager;
-pub mod client;
-pub mod filename;
 pub mod manager;
-pub mod retry_strategy;
-pub mod rust_downloader;
-pub mod state_store;
 pub mod types;
 
 #[cfg(test)]
@@ -46,7 +40,6 @@ pub use aria2_install::{
 };
 pub use bytehaul_backend::BytehaulBackend;
 pub use manager::{DownloadManager, ProgressCallback};
-pub use rust_downloader::RustDownloader;
 pub use types::{DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus};
 
 /// 全局下载管理器实例
@@ -86,7 +79,7 @@ pub enum DownloadBackend {
     Aria2,
     /// 强制使用 bytehaul
     Bytehaul,
-    /// 强制使用纯 Rust 实现
+    /// 兼容旧配置的 Rust 后端别名，内部映射为 bytehaul
     Rust,
 }
 
@@ -121,6 +114,13 @@ fn uses_aria2_preflight(backend: DownloadBackend) -> bool {
     matches!(backend, DownloadBackend::Aria2)
 }
 
+fn canonical_backend(backend: DownloadBackend) -> DownloadBackend {
+    match backend {
+        DownloadBackend::Rust => DownloadBackend::Bytehaul,
+        other => other,
+    }
+}
+
 async fn create_started_bytehaul_manager() -> AppResult<Arc<dyn DownloadManager>> {
     let downloader = BytehaulBackend::from_config()?;
     downloader.start().await?;
@@ -128,7 +128,11 @@ async fn create_started_bytehaul_manager() -> AppResult<Arc<dyn DownloadManager>
 }
 
 async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn DownloadManager>> {
-    let manager: Arc<dyn DownloadManager> = match backend {
+    if backend == DownloadBackend::Rust {
+        warn!("download.backend = rust 已废弃，自动映射为 bytehaul");
+    }
+
+    let manager: Arc<dyn DownloadManager> = match canonical_backend(backend) {
         DownloadBackend::Aria2 => {
             debug!("强制使用 aria2 后端");
             Arc::new(Aria2Backend::from_global().await?)
@@ -136,12 +140,6 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
         DownloadBackend::Bytehaul => {
             info!("使用 bytehaul 后端");
             create_started_bytehaul_manager().await?
-        }
-        DownloadBackend::Rust => {
-            info!("使用 RustDownloader 后端");
-            let downloader = RustDownloader::new();
-            downloader.start().await?;
-            Arc::new(downloader)
         }
         DownloadBackend::Auto => {
             debug!("自动选择下载后端");
@@ -167,6 +165,7 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
                 }
             }
         }
+        DownloadBackend::Rust => unreachable!("rust backend should be canonicalized to bytehaul"),
     };
 
     Ok(manager)
@@ -181,7 +180,7 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
 /// - `Auto`: 优先 bytehaul；若 bytehaul 不可用则回退 aria2
 /// - `Aria2`: 强制使用 aria2
 /// - `Bytehaul`: 强制使用 bytehaul
-/// - `Rust`: 强制使用 RustDownloader
+/// - `Rust`: 兼容旧配置，内部映射为 bytehaul
 pub async fn init_download_manager(
     backend: DownloadBackend,
 ) -> AppResult<Arc<dyn DownloadManager>> {

@@ -211,7 +211,7 @@
 - `yuzu.rs`、`ryujinx.rs`、`firmware.rs`、`msvc.rs` 在默认 `auto` 配置下都会通过统一下载管理器落到 `bytehaul` 主路径
 - 已补充单元测试，覆盖 `Auto` 的后端优先级与 aria2 前置判断逻辑
 
-### Phase 4：保留 aria2 fallback 的清理方案
+### Phase 4：保留 aria2 fallback 的清理方案 [已完成]
 
 本阶段固定采用分支 A，不推进完全移除 aria2。
 
@@ -236,6 +236,13 @@
 
 - `aria2` 相关命令层、日志过滤、安装前置逻辑仍需维护，但应以 fallback 身份存在，而不是默认主路径。
 - “完全移除 aria2”不在当前计划范围内，后续如需推进，应另起文档重新评估。
+
+本轮已完成：
+
+- 已删除纯 Rust 下载器内部实现：`rust_downloader.rs`、`chunk_manager.rs`、`state_store.rs`、`retry_strategy.rs`、`client.rs`、`filename.rs`
+- `aria2_install.rs` 已改为使用 `bytehaul` 下载 aria2 归档文件，统一取消入口仍然可中断该前置下载
+- `download.backend = "rust"` 已降级为兼容旧配置的别名，内部自动映射到 `bytehaul`
+- 已替换旧的集成测试，新增围绕 `bytehaul` 主路径、进度回调与统一取消的测试，并补充文件清理单元测试
 
 ## 5. 不应继续保留的原计划表述
 

@@ -682,4 +682,33 @@ mod tests {
             Some("TestUA/1.0")
         );
     }
+
+    #[tokio::test]
+    async fn test_remove_download_files_cleans_output_and_control_files() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output_path = temp_dir.path().join("artifact.bin");
+        let control_path = control_file_path(&output_path);
+        let control_tmp_path = control_temp_file_path(&output_path);
+
+        std::fs::write(&output_path, b"payload").unwrap();
+        std::fs::write(&control_path, b"state").unwrap();
+        std::fs::write(&control_tmp_path, b"state-tmp").unwrap();
+
+        let downloader = Arc::new(Downloader::builder().enable_ipv6(false).build().unwrap());
+        let spec =
+            DownloadSpec::new("https://example.com/artifact.bin").output_path(output_path.clone());
+        let task = BytehaulTask::new(
+            "bytehaul-test".to_string(),
+            downloader,
+            spec,
+            output_path.clone(),
+            false,
+        );
+
+        task.remove_download_files().await.unwrap();
+
+        assert!(!output_path.exists());
+        assert!(!control_path.exists());
+        assert!(!control_tmp_path.exists());
+    }
 }

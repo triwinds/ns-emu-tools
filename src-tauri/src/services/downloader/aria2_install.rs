@@ -1,12 +1,12 @@
 //! Aria2 安装前置检查和下载
 //!
 //! 将 aria2 安装逻辑从 Aria2Manager 中分离，支持进度回调
-//! 使用 RustDownloader 实现下载功能
+//! 使用 bytehaul 下载归档文件
 
 use crate::error::{AppError, AppResult};
 #[cfg(target_os = "windows")]
 use crate::services::downloader::{
-    register_transient_download_manager, DownloadManager, DownloadOptions, RustDownloader,
+    register_transient_download_manager, BytehaulBackend, DownloadManager, DownloadOptions,
 };
 use std::path::PathBuf;
 
@@ -115,12 +115,12 @@ async fn download_and_install_aria2(
     let download_url = get_aria2_download_url(&asset.browser_download_url);
     info!("aria2 安装下载地址: {}", download_url);
 
-    // 2. 使用 RustDownloader 下载
+    // 2. 使用 bytehaul 下载
     let temp_dir = std::env::temp_dir();
     let install_dir = get_aria2_install_dir()?;
 
-    // 创建 RustDownloader 实例
-    let downloader = std::sync::Arc::new(RustDownloader::new());
+    // 创建 bytehaul 下载器实例
+    let downloader = std::sync::Arc::new(BytehaulBackend::from_config()?);
     downloader.start().await?;
     let _download_registration = register_transient_download_manager(downloader.clone());
 

@@ -1,6 +1,6 @@
 //! 下载管理器 trait 定义
 //!
-//! 定义统一的下载管理器接口，aria2 和 RustDownloader 都实现此 trait
+//! 定义统一的下载管理器接口，aria2 和 bytehaul 都实现此 trait
 
 use crate::error::AppResult;
 use async_trait::async_trait;
@@ -12,7 +12,7 @@ pub type ProgressCallback = Box<dyn Fn(DownloadProgress) + Send + 'static>;
 
 /// 下载管理器 trait
 ///
-/// 统一的下载接口，支持 aria2 和纯 Rust 实现
+/// 统一的下载接口，支持 bytehaul 主路径和 aria2 fallback
 #[async_trait]
 pub trait DownloadManager: Send + Sync {
     /// 启动下载管理器
@@ -60,7 +60,7 @@ pub trait DownloadManager: Send + Sync {
     ///
     /// # 参数
     /// - `remove_files`: 是否删除已下载的文件
-    ///   - `true`: 删除 `.part` 临时文件 + `.download` 状态文件
+    ///   - `true`: 删除后端生成的下载文件与控制文件
     ///   - `false`: 仅停止下载任务，保留文件以便后续恢复
     ///
     /// # 返回

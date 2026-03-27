@@ -1,6 +1,6 @@
 //! 下载模块统一数据类型
 //!
-//! 定义与 Aria2 兼容的数据结构，用于统一下载接口
+//! 定义统一下载接口的数据结构
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
