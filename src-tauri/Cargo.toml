@@ -105,6 +105,9 @@ urlencoding = "2.1"
 # aria2 RPC 客户端
 aria2-ws = "0.5"
 
+# bytehaul 下载库
+bytehaul = "0.1.3"
+
 # 查找可执行文件
 which = "7.0"
 
