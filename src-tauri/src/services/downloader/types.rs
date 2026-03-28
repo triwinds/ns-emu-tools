@@ -109,7 +109,7 @@ pub struct DownloadProgress {
     pub total: u64,
     /// 下载速度（字节/秒）
     pub speed: u64,
-    /// 进度百分比（-1 表示无法计算）
+    /// 进度百分比（未知总大小时显示为 0.0）
     pub percentage: f64,
     /// 预计剩余时间（秒，u64::MAX 表示未知）
     pub eta: u64,
@@ -141,7 +141,7 @@ impl DownloadProgress {
             downloaded,
             total: 0,
             speed,
-            percentage: -1.0,
+            percentage: 0.0,
             eta: u64::MAX,
             filename: filename.to_string(),
             status: DownloadStatus::Active,
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn test_unknown_length_progress() {
         let progress = DownloadProgress::from_unknown_length(1024, 512, "test.bin", "gid123");
-        assert_eq!(progress.percentage, -1.0);
+        assert_eq!(progress.percentage, 0.0);
         assert_eq!(progress.eta, u64::MAX);
         assert_eq!(progress.total_string_or_unknown(), "未知");
         assert_eq!(progress.eta_string(), "--:--");

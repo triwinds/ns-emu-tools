@@ -122,7 +122,7 @@ mod tests {
         assert_eq!(progress.downloaded, 1024);
         assert_eq!(progress.total, 0);
         assert_eq!(progress.speed, 512);
-        assert_eq!(progress.percentage, -1.0);
+        assert_eq!(progress.percentage, 0.0);
         assert_eq!(progress.eta, u64::MAX);
         assert_eq!(progress.status, DownloadStatus::Active);
     }

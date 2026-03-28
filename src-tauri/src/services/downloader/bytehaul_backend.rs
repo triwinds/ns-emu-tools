@@ -208,7 +208,7 @@ fn convert_snapshot(
     let percentage = if total > 0 {
         (snapshot.downloaded as f64 / total as f64) * 100.0
     } else {
-        -1.0
+        0.0
     };
     let eta = snapshot
         .eta_secs
