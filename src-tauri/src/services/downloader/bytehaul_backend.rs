@@ -364,14 +364,17 @@ impl BytehaulTask {
     }
 
     fn request_cancel(&self) {
-        if let Some(handle) = self.handle.lock().as_ref() {
+        if let Some(handle) = self.handle.lock().take() {
             handle.cancel();
-        } else {
-            let mut progress = self.progress.write();
-            progress.status = DownloadStatus::Removed;
-            drop(progress);
-            self.finish_terminal_state(BytehaulState::Cancelled);
         }
+
+        let mut progress = self.progress.write();
+        progress.status = DownloadStatus::Removed;
+        progress.speed = 0;
+        progress.eta = u64::MAX;
+        drop(progress);
+
+        self.finish_terminal_state(BytehaulState::Cancelled);
     }
 
     async fn wait_for_result(&self) -> AppResult<DownloadResult> {
@@ -439,6 +442,7 @@ impl BytehaulBackend {
         url: &str,
         options: DownloadOptions,
     ) -> AppResult<Arc<BytehaulTask>> {
+        let options = options.with_adaptive_parallelism();
         let downloader = self.get_downloader()?;
         let task_id = next_task_id();
         let (spec, output_path) = build_download_spec(url, &options);

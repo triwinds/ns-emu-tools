@@ -6,6 +6,9 @@ use crate::config::CONFIG;
 use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::services::downloader::{get_download_manager, DownloadOptions};
+use crate::services::installer::{
+    cancelled_step, emit_steps, is_cancelled_error_message, StepKind,
+};
 use crate::services::network::{get_download_source_name, request_github_api};
 use crate::utils::common::{format_size, spawn_blocking_io};
 use serde::{Deserialize, Serialize};
@@ -262,6 +265,20 @@ where
     {
         Ok(res) => res,
         Err(e) => {
+            let error_message = e.to_string();
+
+            if is_cancelled_error_message(&error_message) {
+                emit_steps(
+                    &on_event,
+                    [
+                        cancelled_step("download_firmware", "下载固件", StepKind::Download)
+                            .with_download_source(download_source.clone()),
+                        cancelled_step("extract_firmware", "解压固件", StepKind::Normal),
+                    ],
+                );
+                return Err(e);
+            }
+
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "download_firmware".to_string(),
@@ -273,7 +290,7 @@ where
                     eta: "".to_string(),
                     downloaded_size: None,
                     total_size: None,
-                    error: Some(e.to_string()),
+                    error: Some(error_message),
                     download_source: Some(download_source.clone()),
                 },
             });

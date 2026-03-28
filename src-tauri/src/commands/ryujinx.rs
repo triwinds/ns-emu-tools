@@ -44,8 +44,13 @@ pub async fn install_ryujinx_by_version_command(
         use crate::services::downloader::check_and_install_aria2_with_ui;
 
         if let Err(e) = check_and_install_aria2_with_ui(window.clone()).await {
-            error!("aria2 安装失败: {}", e);
-            return Err(format!("aria2 安装失败: {}", e));
+            let error_message = e.to_string();
+            if crate::services::installer::is_cancelled_error_message(&error_message) {
+                info!("aria2 安装已取消");
+                return Err(error_message);
+            }
+            error!("aria2 安装失败: {}", error_message);
+            return Err(format!("aria2 安装失败: {}", error_message));
         }
     }
 
@@ -63,10 +68,17 @@ pub async fn install_ryujinx_by_version_command(
             Ok(ApiResponse::success(()))
         }
         Err(e) => {
-            error!("安装失败: {}", e);
-            reporter.finish_error(e.to_string());
-            let _ = send_notify(&window, &format!("安装失败: {}", e));
-            Err(e.to_string())
+            let error_message = e.to_string();
+            if crate::services::installer::is_cancelled_error_message(&error_message) {
+                info!("安装已取消: {}", error_message);
+                reporter.finish(false, Some("安装已取消".to_string()));
+                return Err(error_message);
+            }
+
+            error!("安装失败: {}", error_message);
+            reporter.finish_error(error_message.clone());
+            let _ = send_notify(&window, &format!("安装失败: {}", error_message));
+            Err(error_message)
         }
     }
 }
@@ -155,8 +167,13 @@ pub async fn install_firmware_to_ryujinx_command(
             reporter.start(crate::services::downloader::create_installation_steps());
 
             if let Err(e) = check_and_install_aria2_with_ui(window.clone()).await {
-                error!("aria2 安装失败: {}", e);
-                return Err(format!("aria2 安装失败: {}", e));
+                let error_message = e.to_string();
+                if crate::services::installer::is_cancelled_error_message(&error_message) {
+                    info!("aria2 安装已取消");
+                    return Err(error_message);
+                }
+                error!("aria2 安装失败: {}", error_message);
+                return Err(format!("aria2 安装失败: {}", error_message));
             }
 
             reporter.finish_success();
@@ -175,10 +192,17 @@ pub async fn install_firmware_to_ryujinx_command(
             Ok(ApiResponse::success(()))
         }
         Err(e) => {
-            error!("安装固件失败: {}", e);
-            reporter.finish_error(e.to_string());
-            let _ = send_notify(&window, &format!("安装固件失败: {}", e));
-            Err(e.to_string())
+            let error_message = e.to_string();
+            if crate::services::installer::is_cancelled_error_message(&error_message) {
+                info!("固件安装已取消: {}", error_message);
+                reporter.finish(false, Some("固件安装已取消".to_string()));
+                return Err(error_message);
+            }
+
+            error!("安装固件失败: {}", error_message);
+            reporter.finish_error(error_message.clone());
+            let _ = send_notify(&window, &format!("安装固件失败: {}", error_message));
+            Err(error_message)
         }
     }
 }

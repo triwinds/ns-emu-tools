@@ -6,6 +6,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+const LEGACY_DEFAULT_SPLIT: u32 = 4;
+const LEGACY_DEFAULT_MAX_CONNECTION_PER_SERVER: u32 = 4;
+const LEGACY_DEFAULT_MIN_SPLIT_SIZE: &str = "4M";
+const DIRECT_DOWNLOAD_SPLIT: u32 = 8;
+const DIRECT_DOWNLOAD_MAX_CONNECTION_PER_SERVER: u32 = 8;
+const DIRECT_DOWNLOAD_MIN_SPLIT_SIZE: &str = "2M";
+
 /// 下载选项
 #[derive(Debug, Clone)]
 pub struct DownloadOptions {
@@ -36,9 +43,9 @@ impl Default for DownloadOptions {
             filename: None,
             overwrite: false,
             use_github_mirror: true,
-            split: 4,
-            max_connection_per_server: 4,
-            min_split_size: "4M".to_string(),
+            split: LEGACY_DEFAULT_SPLIT,
+            max_connection_per_server: LEGACY_DEFAULT_MAX_CONNECTION_PER_SERVER,
+            min_split_size: LEGACY_DEFAULT_MIN_SPLIT_SIZE.to_string(),
             user_agent: None,
             headers: HashMap::new(),
         }
@@ -46,6 +53,29 @@ impl Default for DownloadOptions {
 }
 
 impl DownloadOptions {
+    fn uses_legacy_parallelism_defaults(&self) -> bool {
+        self.split == LEGACY_DEFAULT_SPLIT
+            && self.max_connection_per_server == LEGACY_DEFAULT_MAX_CONNECTION_PER_SERVER
+            && self
+                .min_split_size
+                .eq_ignore_ascii_case(LEGACY_DEFAULT_MIN_SPLIT_SIZE)
+    }
+
+    pub(crate) fn apply_adaptive_parallelism(mut self, has_proxy: bool) -> Self {
+        if has_proxy || !self.uses_legacy_parallelism_defaults() {
+            return self;
+        }
+
+        self.split = DIRECT_DOWNLOAD_SPLIT;
+        self.max_connection_per_server = DIRECT_DOWNLOAD_MAX_CONNECTION_PER_SERVER;
+        self.min_split_size = DIRECT_DOWNLOAD_MIN_SPLIT_SIZE.to_string();
+        self
+    }
+
+    pub fn with_adaptive_parallelism(self) -> Self {
+        self.apply_adaptive_parallelism(crate::services::network::is_using_proxy())
+    }
+
     /// 创建高速下载选项（用于代理环境）
     pub fn high_speed() -> Self {
         Self {

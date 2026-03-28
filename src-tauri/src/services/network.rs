@@ -24,7 +24,7 @@ static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
     map.insert("https://api.github.com", "https://cfrp.e6ex.com/ghapi");
     map.insert(
         "https://raw.githubusercontent.com",
-        "https://ghproxy.net/https://raw.githubusercontent.com",
+        "https://cfrp.e6ex.com/rawgit",
     );
     map.insert(
         "https://git.ryujinx.app",
@@ -37,6 +37,7 @@ static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
     map
 });
 
+// https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js
 /// GitHub 美国 CDN 镜像列表
 pub static GITHUB_US_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
     vec![
@@ -46,29 +47,24 @@ pub static GITHUB_US_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
             "[美国 Cloudflare CDN] - 自建代理服务器",
         ),
         GithubMirror::new(
-            "https://gh.h233.eu.org/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [@X.I.U/XIU2] 提供",
-        ),
-        GithubMirror::new(
-            "https://gh-proxy.com/https://github.com",
+            "https://gh-proxy.org/https://github.com",
             "美国",
             "[美国 Cloudflare CDN] - 该公益加速源由 [gh-proxy.com] 提供",
         ),
         GithubMirror::new(
-            "https://hub.gitmirror.com/https://github.com",
+            "https://cdn.gh-proxy.org/https://github.com",
             "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [GitMirror] 提供",
+            "[Fastly CDN] - 该公益加速源由 [gh-proxy.com] 提供",
+        ),
+        GithubMirror::new(
+            "https://edgeone.gh-proxy.org/https://github.com",
+            "美国",
+            "[edgeone] - 该公益加速源由 [gh-proxy.com] 提供",
         ),
         GithubMirror::new(
             "https://github.boki.moe/https://github.com",
             "美国",
             "[美国 Cloudflare CDN] - 该公益加速源由 [blog.boki.moe] 提供",
-        ),
-        GithubMirror::new(
-            "https://gh-proxy.net/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [gh-proxy.net] 提供",
         ),
         GithubMirror::new(
             "https://gh.jasonzeng.dev/https://github.com",
@@ -86,14 +82,9 @@ pub static GITHUB_US_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
             "[美国 Cloudflare CDN] - 该公益加速源由 [fastgit.cc] 提供",
         ),
         GithubMirror::new(
-            "https://github.tbedu.top/https://github.com",
+            "https://github.ednovas.xyz/https://github.com",
             "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [github.tbedu.top] 提供",
-        ),
-        GithubMirror::new(
-            "https://gh.nxnow.top/https://github.com",
-            "美国",
-            "[美国 洛杉矶] - 该公益加速源由 [gh.nxnow.top] 提供",
+            "[美国 Cloudflare CDN] - 该公益加速源由 [github.ednovas.xyz] 提供",
         ),
     ]
 });
@@ -102,14 +93,24 @@ pub static GITHUB_US_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
 pub static GITHUB_OTHER_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
     vec![
         GithubMirror::new(
-            "https://ghproxy.com/https://github.com",
-            "韩国",
-            "[韩国 首尔] - 该公益加速源由 [ghproxy] 提供",
+            "https://wget.la/https://github.com",
+            "香港",
+            "[中国香港、中国台湾、日本、美国等]（CDN 不固定） - 该公益加速源由 [ucdn.me] 提供",
         ),
         GithubMirror::new(
-            "https://kgithub.com",
-            "新加坡",
-            "[新加坡] - 该公益加速源由 [KGitHub] 提供",
+            "https://hk.gh-proxy.org/https://github.com",
+            "香港",
+            "[中国香港] - 该公益加速源由 [gh-proxy.com] 提供",
+        ),
+        GithubMirror::new(
+            "https://ghfast.top/https://github.com",
+            "韩国",
+            "[日本、韩国、新加坡、美国、德国等]（CDN 不固定） - 该公益加速源由 [ghproxy] 提供",
+        ),
+        GithubMirror::new(
+            "https://githubfast.com",
+            "韩国",
+            "[韩国] - 该公益加速源由 [Github Fast] 提供",
         ),
     ]
 });
@@ -996,14 +997,14 @@ mod tests {
         let origin = "https://github.com/example/project/releases/download/v1.0.0/app.zip";
         let target = resolve_github_download_target_with_mirror(
             origin,
-            "https://gh-proxy.net/https://github.com",
+            "https://gh-proxy.org/https://github.com",
         );
 
         assert_eq!(
             target.url,
-            "https://gh-proxy.net/https://github.com/example/project/releases/download/v1.0.0/app.zip"
+            "https://gh-proxy.org/https://github.com/example/project/releases/download/v1.0.0/app.zip"
         );
-        assert!(target.source_name.contains("gh-proxy.net"));
+        assert!(target.source_name.contains("gh-proxy.com"));
     }
 
     #[test]

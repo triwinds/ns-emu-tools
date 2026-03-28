@@ -355,6 +355,7 @@ pub fn create_installation_steps() -> Vec<crate::models::ProgressStep> {
 #[cfg(target_os = "windows")]
 pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult<()> {
     use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
+    use crate::services::installer::{cancelled_step, is_cancelled_error_message, StepKind};
     use tauri::Emitter;
 
     // 如果不需要 aria2，直接返回
@@ -445,6 +446,30 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
             Ok(())
         }
         Err(e) => {
+            let error_message = e.to_string();
+
+            if is_cancelled_error_message(&error_message) {
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::StepUpdate {
+                        step: cancelled_step(
+                            "install_aria2",
+                            "下载工具安装已取消",
+                            StepKind::Download,
+                        )
+                        .with_download_source("GitHub"),
+                    },
+                );
+                let _ = window.emit(
+                    "installation-event",
+                    ProgressEvent::Finished {
+                        success: false,
+                        message: Some("下载工具安装已取消".to_string()),
+                    },
+                );
+                return Err(e);
+            }
+
             // aria2 安装失败
             let _ = window.emit(
                 "installation-event",
@@ -459,7 +484,7 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
                         eta: "".to_string(),
                         downloaded_size: None,
                         total_size: None,
-                        error: Some(e.to_string()),
+                        error: Some(error_message.clone()),
                         download_source: Some("GitHub".to_string()),
                     },
                 },
@@ -468,7 +493,7 @@ pub async fn check_and_install_aria2_with_ui(window: tauri::Window) -> AppResult
                 "installation-event",
                 ProgressEvent::Finished {
                     success: false,
-                    message: Some(format!("下载工具安装失败: {}", e)),
+                    message: Some(format!("下载工具安装失败: {}", error_message)),
                 },
             );
             Err(e)

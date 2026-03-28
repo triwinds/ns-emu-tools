@@ -44,6 +44,39 @@ mod tests {
     }
 
     #[test]
+    fn test_download_options_adaptive_parallelism_without_proxy() {
+        let options = DownloadOptions::default().apply_adaptive_parallelism(false);
+
+        assert_eq!(options.split, 8);
+        assert_eq!(options.max_connection_per_server, 8);
+        assert_eq!(options.min_split_size, "2M");
+    }
+
+    #[test]
+    fn test_download_options_adaptive_parallelism_with_proxy_keeps_defaults() {
+        let options = DownloadOptions::default().apply_adaptive_parallelism(true);
+
+        assert_eq!(options.split, 4);
+        assert_eq!(options.max_connection_per_server, 4);
+        assert_eq!(options.min_split_size, "4M");
+    }
+
+    #[test]
+    fn test_download_options_adaptive_parallelism_keeps_explicit_values() {
+        let options = DownloadOptions {
+            split: 12,
+            max_connection_per_server: 6,
+            min_split_size: "6M".to_string(),
+            ..DownloadOptions::default()
+        }
+        .apply_adaptive_parallelism(false);
+
+        assert_eq!(options.split, 12);
+        assert_eq!(options.max_connection_per_server, 6);
+        assert_eq!(options.min_split_size, "6M");
+    }
+
+    #[test]
     fn test_download_status_from_str() {
         assert_eq!(DownloadStatus::from("waiting"), DownloadStatus::Waiting);
         assert_eq!(DownloadStatus::from("active"), DownloadStatus::Active);

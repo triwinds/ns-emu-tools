@@ -9,6 +9,9 @@ use crate::repositories::ryujinx::{
     get_all_ryujinx_release_infos, get_ryujinx_release_info_by_version, load_ryujinx_change_log,
 };
 use crate::services::downloader::{get_download_manager, DownloadOptions};
+use crate::services::installer::{
+    cancelled_step, emit_steps, is_cancelled_error_message, StepKind,
+};
 #[cfg(target_os = "windows")]
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
@@ -371,6 +374,26 @@ where
     {
         Ok(res) => res,
         Err(e) => {
+            let error_message = e.to_string();
+
+            if is_cancelled_error_message(&error_message) {
+                emit_steps(
+                    &on_event,
+                    [
+                        cancelled_step(
+                            "download",
+                            format!("下载 Ryujinx {}", branch),
+                            StepKind::Download,
+                        )
+                        .with_download_source(download_source.clone()),
+                        cancelled_step("extract", "解压文件", StepKind::Normal),
+                        cancelled_step("install", "安装文件", StepKind::Normal),
+                        cancelled_step("check_env", "检查运行环境", StepKind::Normal),
+                    ],
+                );
+                return Err(e);
+            }
+
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "download".to_string(),
@@ -382,7 +405,7 @@ where
                     eta: "".to_string(),
                     downloaded_size: None,
                     total_size: None,
-                    error: Some(e.to_string()),
+                    error: Some(error_message),
                     download_source: Some(download_source.clone()),
                 },
             });

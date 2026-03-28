@@ -116,6 +116,8 @@ impl DownloadManager for Aria2Backend {
 
 /// 转换下载选项
 fn convert_options(options: DownloadOptions) -> Aria2DownloadOptions {
+    let options = options.with_adaptive_parallelism();
+
     Aria2DownloadOptions {
         save_dir: options.save_dir,
         filename: options.filename,

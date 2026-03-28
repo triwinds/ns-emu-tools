@@ -7,6 +7,9 @@ use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import models
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::downloader::{get_download_manager, DownloadOptions, DownloadProgress};
+use crate::services::installer::{
+    cancelled_step, emit_steps, is_cancelled_error_message, StepKind,
+};
 #[cfg(not(target_os = "macos"))]
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::get_download_source_name;
@@ -422,6 +425,7 @@ where
         },
     });
     let download_source = get_download_source_name("https://git.eden-emu.dev");
+    let progress_download_source = download_source.clone();
     let on_event_clone = on_event.clone();
     let package_path = match download_yuzu(target_version, "eden", move |progress| {
         on_event_clone(ProgressEvent::StepUpdate {
@@ -436,7 +440,7 @@ where
                 downloaded_size: Some(progress.downloaded_string()),
                 total_size: Some(progress.total_string_or_unknown()),
                 error: None,
-                download_source: Some(download_source.clone()),
+                download_source: Some(progress_download_source.clone()),
             },
         });
     })
@@ -444,6 +448,22 @@ where
     {
         Ok(path) => path,
         Err(e) => {
+            let error_message = e.to_string();
+
+            if is_cancelled_error_message(&error_message) {
+                emit_steps(
+                    &on_event,
+                    [
+                        cancelled_step("download", "下载 Eden", StepKind::Download)
+                            .with_download_source(download_source.clone()),
+                        cancelled_step("extract", "解压文件", StepKind::Normal),
+                        cancelled_step("install", "安装文件", StepKind::Normal),
+                        cancelled_step("check_env", "检查运行环境", StepKind::Normal),
+                    ],
+                );
+                return Err(e);
+            }
+
             on_event(ProgressEvent::StepUpdate {
                 step: ProgressStep {
                     id: "download".to_string(),
@@ -455,7 +475,7 @@ where
                     eta: "".to_string(),
                     downloaded_size: None,
                     total_size: None,
-                    error: Some(e.to_string()),
+                    error: Some(error_message),
                     download_source: None,
                 },
             });

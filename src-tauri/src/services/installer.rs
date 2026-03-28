@@ -132,6 +132,21 @@ pub fn error_step(
     step(id, title, ProgressStatus::Error, kind).with_error(error)
 }
 
+pub fn is_cancelled_error_message(message: &str) -> bool {
+    let normalized = message.to_ascii_lowercase();
+    message.contains("取消") || normalized.contains("cancelled") || normalized.contains("canceled")
+}
+
+pub fn emit_steps<F, I>(emit: &F, steps: I)
+where
+    F: Fn(ProgressEvent),
+    I: IntoIterator<Item = ProgressStep>,
+{
+    for step in steps {
+        emit(ProgressEvent::StepUpdate { step });
+    }
+}
+
 pub fn download_progress_step(
     id: impl Into<String>,
     title: impl Into<String>,
