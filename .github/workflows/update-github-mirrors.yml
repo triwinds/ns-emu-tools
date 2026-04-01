@@ -1,0 +1,30 @@
+name: Update GitHub mirrors
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 0 * * 0,3'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run unit tests
+        run: node --test tests/update_github_mirrors.test.mjs
+      - name: Update github_mirrors.json
+        run: node update_github_mirrors.mjs
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: github-actions
+          author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          message: 'chore(data): auto update github mirrors'
+          add: 'github_mirrors.json'
