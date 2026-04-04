@@ -23,6 +23,9 @@ mod tests {
         assert!(options.filename.is_none());
         assert!(options.user_agent.is_none());
         assert!(options.headers.is_empty());
+        assert_eq!(options.connect_timeout, DEFAULT_DOWNLOAD_CONNECT_TIMEOUT);
+        assert_eq!(options.read_timeout, DEFAULT_DOWNLOAD_READ_TIMEOUT);
+        assert_eq!(options.total_timeout, DEFAULT_DOWNLOAD_TOTAL_TIMEOUT);
     }
 
     #[test]

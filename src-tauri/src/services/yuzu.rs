@@ -8,7 +8,10 @@ use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import mode
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
 use crate::services::downloader::{get_download_manager, DownloadOptions, DownloadProgress};
 use crate::services::installer::{
-    cancelled_step, emit_steps, is_cancelled_error_message, StepKind,
+    cancelled_step, download_progress_step, emit_steps, error_step, is_cancelled_error_message,
+    running_download_step, running_step, success_download_step, success_step, StepKind,
+    STEP_CHECK_ENV, STEP_DOWNLOAD, STEP_EXTRACT, STEP_FETCH_VERSION, STEP_INSTALL, TITLE_CHECK_ENV,
+    TITLE_EXTRACT, TITLE_FETCH_VERSION, TITLE_INSTALL,
 };
 #[cfg(not(target_os = "macos"))]
 use crate::services::msvc::check_and_install_msvc;
@@ -17,11 +20,14 @@ use crate::utils::archive::uncompress;
 use crate::utils::spawn_blocking_io;
 #[cfg(target_os = "macos")]
 use crate::utils::{finalize_macos_app_install, get_macos_bundle_executable_path};
+use once_cell::sync::Lazy;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 #[cfg(not(target_os = "macos"))]
 use std::time::Duration;
 use tracing::{debug, info, warn};
+#[cfg(not(target_os = "macos"))]
+use uuid::Uuid;
 
 /// 支持的模拟器可执行文件/应用列表
 #[cfg(target_os = "macos")]
@@ -32,6 +38,21 @@ const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.e
 
 /// 支持下载的分支
 const DOWNLOAD_AVAILABLE_BRANCH: &[&str] = &["eden"];
+const EDEN_BRANCH: &str = "eden";
+const EDEN_NAME: &str = "Eden";
+
+static INSTALL_FLOW_LOCK: Lazy<tokio::sync::Mutex<()>> = Lazy::new(|| tokio::sync::Mutex::new(()));
+
+fn emit_step<F>(on_event: &F, step: ProgressStep)
+where
+    F: Fn(ProgressEvent),
+{
+    on_event(ProgressEvent::StepUpdate { step });
+}
+
+fn eden_download_title() -> String {
+    format!("下载 {}", EDEN_NAME)
+}
 
 /// 获取模拟器名称
 pub fn get_emu_name(branch: &str) -> &'static str {
@@ -315,6 +336,304 @@ pub fn unzip_yuzu(package_path: &Path, target_dir: Option<&Path>) -> AppResult<P
     Ok(extract_dir)
 }
 
+async fn validate_eden_release_step<F>(target_version: &str, on_event: F) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    emit_step(
+        &on_event,
+        running_step(STEP_FETCH_VERSION, TITLE_FETCH_VERSION),
+    );
+
+    match get_yuzu_release_info_by_version(target_version, EDEN_BRANCH).await {
+        Ok(info) => {
+            if info.tag_name.is_empty() {
+                let error_message = format!("未找到 {} 版本: {}", EDEN_NAME, target_version);
+                emit_step(
+                    &on_event,
+                    error_step(
+                        STEP_FETCH_VERSION,
+                        TITLE_FETCH_VERSION,
+                        StepKind::Normal,
+                        error_message.clone(),
+                    ),
+                );
+                return Err(AppError::Emulator(error_message));
+            }
+
+            emit_step(
+                &on_event,
+                success_step(STEP_FETCH_VERSION, TITLE_FETCH_VERSION),
+            );
+            Ok(())
+        }
+        Err(error) => {
+            emit_step(
+                &on_event,
+                error_step(
+                    STEP_FETCH_VERSION,
+                    TITLE_FETCH_VERSION,
+                    StepKind::Normal,
+                    error.to_string(),
+                ),
+            );
+            Err(error)
+        }
+    }
+}
+
+async fn download_eden_package_step<F>(target_version: &str, on_event: F) -> AppResult<PathBuf>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    let download_title = eden_download_title();
+    let download_source = get_download_source_name("https://git.eden-emu.dev");
+    emit_step(
+        &on_event,
+        running_download_step(STEP_DOWNLOAD, download_title.clone()),
+    );
+
+    let on_event_clone = on_event.clone();
+    let progress_download_source = download_source.clone();
+    let package_path = match download_yuzu(target_version, EDEN_BRANCH, move |progress| {
+        emit_step(
+            &on_event_clone,
+            download_progress_step(
+                STEP_DOWNLOAD,
+                eden_download_title(),
+                &progress,
+                Some(progress_download_source.clone()),
+            ),
+        );
+    })
+    .await
+    {
+        Ok(path) => path,
+        Err(error) => {
+            let error_message = error.to_string();
+
+            if is_cancelled_error_message(&error_message) {
+                emit_steps(
+                    &on_event,
+                    [
+                        cancelled_step(STEP_DOWNLOAD, download_title, StepKind::Download)
+                            .with_download_source(download_source.clone()),
+                        cancelled_step(STEP_EXTRACT, TITLE_EXTRACT, StepKind::Normal),
+                        cancelled_step(STEP_INSTALL, TITLE_INSTALL, StepKind::Normal),
+                        cancelled_step(STEP_CHECK_ENV, TITLE_CHECK_ENV, StepKind::Normal),
+                    ],
+                );
+                return Err(error);
+            }
+
+            emit_step(
+                &on_event,
+                error_step(
+                    STEP_DOWNLOAD,
+                    eden_download_title(),
+                    StepKind::Download,
+                    error_message,
+                )
+                .with_download_source(download_source),
+            );
+            return Err(error);
+        }
+    };
+
+    emit_step(
+        &on_event,
+        success_download_step(STEP_DOWNLOAD, eden_download_title()),
+    );
+    Ok(package_path)
+}
+
+#[cfg(target_os = "macos")]
+async fn install_eden_macos_step<F>(
+    package_path: &Path,
+    yuzu_path: &Path,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    emit_step(&on_event, running_step(STEP_EXTRACT, TITLE_EXTRACT));
+
+    let app_name = get_macos_bundle_spec(EDEN_BRANCH)
+        .map(|(app_name, _)| app_name)
+        .unwrap_or("Eden.app");
+    let package_path_for_extract = package_path.to_path_buf();
+    let yuzu_path_for_extract = yuzu_path.to_path_buf();
+    let installed_app = match spawn_blocking_io("install_eden_app_bundle", move || {
+        crate::utils::archive::extract_and_install_app_from_tar_gz(
+            &package_path_for_extract,
+            &yuzu_path_for_extract,
+            app_name,
+        )
+    })
+    .await
+    {
+        Ok(installed_app) => installed_app,
+        Err(error) => {
+            emit_step(
+                &on_event,
+                error_step(
+                    STEP_EXTRACT,
+                    TITLE_EXTRACT,
+                    StepKind::Normal,
+                    error.to_string(),
+                ),
+            );
+            return Err(error);
+        }
+    };
+
+    emit_step(&on_event, success_step(STEP_EXTRACT, TITLE_EXTRACT));
+    emit_step(&on_event, running_step(STEP_INSTALL, TITLE_INSTALL));
+
+    let fallback_executable_name = get_macos_bundle_spec(EDEN_BRANCH)
+        .map(|(_, executable_name)| executable_name)
+        .unwrap_or(EDEN_NAME);
+    if let Err(error) = finalize_macos_app_install(&installed_app, Some(fallback_executable_name)) {
+        emit_step(
+            &on_event,
+            error_step(
+                STEP_INSTALL,
+                TITLE_INSTALL,
+                StepKind::Normal,
+                error.to_string(),
+            ),
+        );
+        return Err(error);
+    }
+
+    info!("Eden.app 已安装到: {}", installed_app.display());
+    emit_step(&on_event, success_step(STEP_INSTALL, TITLE_INSTALL));
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn create_install_staging_dir(yuzu_path: &Path) -> AppResult<PathBuf> {
+    let base_dir = yuzu_path
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(std::env::temp_dir);
+    let target_name = yuzu_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("eden");
+    let staging_dir = base_dir.join(format!(".{}-install-{}", target_name, Uuid::new_v4()));
+
+    std::fs::create_dir_all(&staging_dir)?;
+    Ok(staging_dir)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn cleanup_install_staging_dir(staging_dir: &Path) {
+    if !staging_dir.exists() {
+        return;
+    }
+
+    if let Err(error) = std::fs::remove_dir_all(staging_dir) {
+        warn!(
+            "清理安装暂存目录失败: {} ({})",
+            staging_dir.display(),
+            error
+        );
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+async fn install_eden_windows_step<F>(
+    package_path: &Path,
+    yuzu_path: &Path,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    emit_step(&on_event, running_step(STEP_EXTRACT, TITLE_EXTRACT));
+
+    let staging_dir = create_install_staging_dir(yuzu_path).map_err(|error| {
+        let message = format!("创建安装暂存目录失败: {}", error);
+        emit_step(
+            &on_event,
+            error_step(STEP_EXTRACT, TITLE_EXTRACT, StepKind::Normal, message),
+        );
+        AppError::from(error)
+    })?;
+
+    let package_path_for_extract = package_path.to_path_buf();
+    let staging_dir_for_extract = staging_dir.clone();
+    if let Err(error) = spawn_blocking_io("extract_eden_package", move || {
+        unzip_yuzu(&package_path_for_extract, Some(&staging_dir_for_extract)).map(|_| ())
+    })
+    .await
+    {
+        cleanup_install_staging_dir(&staging_dir);
+        emit_step(
+            &on_event,
+            error_step(
+                STEP_EXTRACT,
+                TITLE_EXTRACT,
+                StepKind::Normal,
+                error.to_string(),
+            ),
+        );
+        return Err(error);
+    }
+
+    emit_step(&on_event, success_step(STEP_EXTRACT, TITLE_EXTRACT));
+    emit_step(&on_event, running_step(STEP_INSTALL, TITLE_INSTALL));
+
+    let staging_dir_for_install = staging_dir.clone();
+    let yuzu_path_for_install = yuzu_path.to_path_buf();
+    if let Err(error) = spawn_blocking_io("install_eden_files", move || {
+        copy_back_yuzu_files(&staging_dir_for_install, &yuzu_path_for_install)
+    })
+    .await
+    {
+        cleanup_install_staging_dir(&staging_dir);
+        emit_step(
+            &on_event,
+            error_step(
+                STEP_INSTALL,
+                TITLE_INSTALL,
+                StepKind::Normal,
+                error.to_string(),
+            ),
+        );
+        return Err(error);
+    }
+
+    emit_step(&on_event, success_step(STEP_INSTALL, TITLE_INSTALL));
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+async fn run_windows_runtime_check_step<F>(on_event: F) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    emit_step(&on_event, running_step(STEP_CHECK_ENV, TITLE_CHECK_ENV));
+
+    if let Err(error) = check_and_install_msvc().await {
+        warn!("MSVC 运行库检查失败: {}", error);
+        emit_step(
+            &on_event,
+            error_step(
+                STEP_CHECK_ENV,
+                TITLE_CHECK_ENV,
+                StepKind::Normal,
+                error.to_string(),
+            ),
+        );
+        return Ok(());
+    }
+
+    emit_step(&on_event, success_step(STEP_CHECK_ENV, TITLE_CHECK_ENV));
+    Ok(())
+}
+
 /// 安装 Eden 模拟器
 ///
 /// # 参数
@@ -334,498 +653,20 @@ where
         )
     };
 
-    // 获取版本信息
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "fetch_version".to_string(),
-            title: "获取版本信息".to_string(),
-            status: ProgressStatus::Running,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-    });
-    let _release_info = match get_yuzu_release_info_by_version(target_version, "eden").await {
-        Ok(info) => {
-            if info.tag_name.is_empty() {
-                let err_msg = format!("未找到 Eden 版本: {}", target_version);
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "fetch_version".to_string(),
-                        title: "获取版本信息".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: Some(err_msg.clone()),
-                        download_source: None,
-                    },
-                });
-                return Err(AppError::Emulator(err_msg));
-            }
-            info
-        }
-        Err(e) => {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "fetch_version".to_string(),
-                    title: "获取版本信息".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-    };
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "fetch_version".to_string(),
-            title: "获取版本信息".to_string(),
-            status: ProgressStatus::Success,
-            step_type: "normal".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-    });
+    validate_eden_release_step(target_version, on_event.clone()).await?;
+    let package_path = download_eden_package_step(target_version, on_event.clone()).await?;
 
-    // 下载
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "download".to_string(),
-            title: format!("下载 {}", "Eden"),
-            status: ProgressStatus::Running,
-            step_type: "download".to_string(),
-            progress: 0.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-    });
-    let download_source = get_download_source_name("https://git.eden-emu.dev");
-    let progress_download_source = download_source.clone();
-    let on_event_clone = on_event.clone();
-    let package_path = match download_yuzu(target_version, "eden", move |progress| {
-        on_event_clone(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: format!("下载 {}", "Eden"),
-                status: ProgressStatus::Running,
-                step_type: "download".to_string(),
-                progress: progress.percentage,
-                download_speed: progress.speed_string(),
-                eta: progress.eta_string(),
-                downloaded_size: Some(progress.downloaded_string()),
-                total_size: Some(progress.total_string_or_unknown()),
-                error: None,
-                download_source: Some(progress_download_source.clone()),
-            },
-        });
-    })
-    .await
-    {
-        Ok(path) => path,
-        Err(e) => {
-            let error_message = e.to_string();
-
-            if is_cancelled_error_message(&error_message) {
-                emit_steps(
-                    &on_event,
-                    [
-                        cancelled_step("download", "下载 Eden", StepKind::Download)
-                            .with_download_source(download_source.clone()),
-                        cancelled_step("extract", "解压文件", StepKind::Normal),
-                        cancelled_step("install", "安装文件", StepKind::Normal),
-                        cancelled_step("check_env", "检查运行环境", StepKind::Normal),
-                    ],
-                );
-                return Err(e);
-            }
-
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "download".to_string(),
-                    title: format!("下载 {}", "Eden"),
-                    status: ProgressStatus::Error,
-                    step_type: "download".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(error_message),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-    };
-    on_event(ProgressEvent::StepUpdate {
-        step: ProgressStep {
-            id: "download".to_string(),
-            title: format!("下载 {}", "Eden"),
-            status: ProgressStatus::Success,
-            step_type: "download".to_string(),
-            progress: 100.0,
-            download_speed: "".to_string(),
-            eta: "".to_string(),
-            downloaded_size: None,
-            total_size: None,
-            error: None,
-            download_source: None,
-        },
-    });
-
-    // 解压/安装 - 根据平台区分处理
     #[cfg(target_os = "macos")]
-    {
-        // macOS: tar.gz -> 提取 .app
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-
-        let app_name = get_macos_bundle_spec("eden")
-            .map(|(app_name, _)| app_name)
-            .unwrap_or("Eden.app");
-        let package_path_for_extract = package_path.clone();
-        let yuzu_path_for_extract = yuzu_path.clone();
-        match spawn_blocking_io("install_eden_app_bundle", move || {
-            crate::utils::archive::extract_and_install_app_from_tar_gz(
-                &package_path_for_extract,
-                &yuzu_path_for_extract,
-                app_name,
-            )
-        })
-        .await
-        {
-            Ok(installed_app) => {
-                let fallback_executable_name = get_macos_bundle_spec("eden")
-                    .map(|(_, executable_name)| executable_name)
-                    .unwrap_or("Eden");
-                if let Err(error) =
-                    finalize_macos_app_install(&installed_app, Some(fallback_executable_name))
-                {
-                    on_event(ProgressEvent::StepUpdate {
-                        step: ProgressStep {
-                            id: "install".to_string(),
-                            title: "安装文件".to_string(),
-                            status: ProgressStatus::Error,
-                            step_type: "normal".to_string(),
-                            progress: 0.0,
-                            download_speed: "".to_string(),
-                            eta: "".to_string(),
-                            downloaded_size: None,
-                            total_size: None,
-                            error: Some(error.to_string()),
-                            download_source: None,
-                        },
-                    });
-                    return Err(error);
-                }
-
-                info!("Eden.app 已安装到: {}", installed_app.display());
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "install".to_string(),
-                        title: "安装文件".to_string(),
-                        status: ProgressStatus::Success,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: None,
-                        download_source: None,
-                    },
-                });
-            }
-            Err(e) => {
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "install".to_string(),
-                        title: "安装文件".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: Some(e.to_string()),
-                        download_source: None,
-                    },
-                });
-                return Err(e);
-            }
-        }
-    }
+    install_eden_macos_step(&package_path, &yuzu_path, on_event.clone()).await?;
 
     #[cfg(not(target_os = "macos"))]
-    {
-        // Windows: 现有的解压和复制逻辑
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-        let tmp_dir = std::env::temp_dir().join("eden-install");
-        if tmp_dir.exists() {
-            if let Err(e) = std::fs::remove_dir_all(&tmp_dir) {
-                on_event(ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "extract".to_string(),
-                        title: "解压文件".to_string(),
-                        status: ProgressStatus::Error,
-                        step_type: "normal".to_string(),
-                        progress: 0.0,
-                        download_speed: "".to_string(),
-                        eta: "".to_string(),
-                        downloaded_size: None,
-                        total_size: None,
-                        error: Some(format!("清理临时目录失败: {}", e)),
-                        download_source: None,
-                    },
-                });
-                return Err(e.into());
-            }
-        }
-        if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract".to_string(),
-                    title: "解压文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(format!("创建临时目录失败: {}", e)),
-                    download_source: None,
-                },
-            });
-            return Err(e.into());
-        }
+    install_eden_windows_step(&package_path, &yuzu_path, on_event.clone()).await?;
 
-        let package_path_for_extract = package_path.clone();
-        let tmp_dir_for_extract = tmp_dir.clone();
-        if let Err(e) = spawn_blocking_io("extract_eden_package", move || {
-            unzip_yuzu(&package_path_for_extract, Some(&tmp_dir_for_extract)).map(|_| ())
-        })
-        .await
-        {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "extract".to_string(),
-                    title: "解压文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "extract".to_string(),
-                title: "解压文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-
-        // 安装
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-        // 复制文件
-        let tmp_dir_for_install = tmp_dir.clone();
-        let yuzu_path_for_install = yuzu_path.clone();
-        if let Err(e) = spawn_blocking_io("install_eden_files", move || {
-            copy_back_yuzu_files(&tmp_dir_for_install, &yuzu_path_for_install)
-        })
-        .await
-        {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "install".to_string(),
-                    title: "安装文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            return Err(e);
-        }
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "install".to_string(),
-                title: "安装文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-    }
-
-    // 检查运行环境 - macOS 跳过 MSVC 检查
     #[cfg(target_os = "macos")]
-    {
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-        // macOS 无需 MSVC，直接成功
-    }
+    emit_step(&on_event, success_step(STEP_CHECK_ENV, TITLE_CHECK_ENV));
 
     #[cfg(not(target_os = "macos"))]
-    {
-        // Windows: 执行 MSVC 检查
-        on_event(ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "check_env".to_string(),
-                title: "检查运行环境".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "normal".to_string(),
-                progress: 0.0,
-                download_speed: "".to_string(),
-                eta: "".to_string(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        });
-        if let Err(e) = check_and_install_msvc().await {
-            warn!("MSVC 运行库检查失败: {}", e);
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "check_env".to_string(),
-                    title: "检查运行环境".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(e.to_string()),
-                    download_source: None,
-                },
-            });
-            // 不阻止安装流程，继续执行
-        } else {
-            on_event(ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "check_env".to_string(),
-                    title: "检查运行环境".to_string(),
-                    status: ProgressStatus::Success,
-                    step_type: "normal".to_string(),
-                    progress: 0.0,
-                    download_speed: "".to_string(),
-                    eta: "".to_string(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: None,
-                    download_source: None,
-                },
-            });
-        }
-    }
+    run_windows_runtime_check_step(on_event.clone()).await?;
 
     // 如果配置了自动删除，删除下载文件
     if auto_delete {
@@ -1081,6 +922,8 @@ where
             return Ok(());
         }
     }
+
+    let _install_guard = INSTALL_FLOW_LOCK.lock().await;
 
     // 删除旧的可执行文件/应用（只删除当前分支的）
     spawn_blocking_io("remove_target_yuzu_app", {

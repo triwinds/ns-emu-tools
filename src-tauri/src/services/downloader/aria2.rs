@@ -33,6 +33,10 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
+use super::types::{
+    DEFAULT_DOWNLOAD_CONNECT_TIMEOUT, DEFAULT_DOWNLOAD_READ_TIMEOUT, DEFAULT_DOWNLOAD_TOTAL_TIMEOUT,
+};
+
 /// aria2 RPC 密钥
 const ARIA2_SECRET: &str = "ns-emu-tools-aria2";
 
@@ -211,6 +215,12 @@ pub struct Aria2DownloadOptions {
     pub user_agent: Option<String>,
     /// 额外的 HTTP 头
     pub headers: HashMap<String, String>,
+    /// 连接超时
+    pub connect_timeout: Duration,
+    /// 单次读取超时
+    pub read_timeout: Duration,
+    /// 任务总超时
+    pub total_timeout: Duration,
 }
 
 impl Default for Aria2DownloadOptions {
@@ -225,6 +235,9 @@ impl Default for Aria2DownloadOptions {
             min_split_size: "4M".to_string(),
             user_agent: None,
             headers: HashMap::new(),
+            connect_timeout: DEFAULT_DOWNLOAD_CONNECT_TIMEOUT,
+            read_timeout: DEFAULT_DOWNLOAD_READ_TIMEOUT,
+            total_timeout: DEFAULT_DOWNLOAD_TOTAL_TIMEOUT,
         }
     }
 }
@@ -542,6 +555,14 @@ impl Aria2Manager {
             serde_json::json!(options.min_split_size),
         );
         extra.insert(
+            "connect-timeout".to_string(),
+            serde_json::json!(options.connect_timeout.as_secs().max(1)),
+        );
+        extra.insert(
+            "timeout".to_string(),
+            serde_json::json!(options.read_timeout.as_secs().max(1)),
+        );
+        extra.insert(
             "allow-overwrite".to_string(),
             serde_json::json!(options.overwrite.to_string()),
         );
@@ -551,7 +572,12 @@ impl Aria2Manager {
 
         // 打印任务参数到日志（debug 级别）
         debug!(
-            "aria2 下载任务参数: url={}, dir={:?}, out={:?}, split={}, max_connection_per_server={}, user_agent={}, headers={:?}, proxy={:?}, min_split_size={}, allow_overwrite={}, auto_file_renaming=false",
+            concat!(
+                "aria2 下载任务参数: url={}, dir={:?}, out={:?}, split={}, ",
+                "max_connection_per_server={}, user_agent={}, headers={:?}, proxy={:?}, ",
+                "min_split_size={}, connect_timeout={}s, read_timeout={}s, ",
+                "total_timeout={}s, allow_overwrite={}, auto_file_renaming=false"
+            ),
             final_url,
             task_options.dir,
             task_options.out,
@@ -561,6 +587,9 @@ impl Aria2Manager {
             headers,
             proxy_info,
             options.min_split_size,
+            options.connect_timeout.as_secs(),
+            options.read_timeout.as_secs(),
+            options.total_timeout.as_secs(),
             options.overwrite
         );
 
@@ -604,84 +633,99 @@ impl Aria2Manager {
     where
         F: Fn(Aria2DownloadProgress) + Send + 'static,
     {
+        let total_timeout = options.total_timeout;
         let gid = self.download(url, options.clone()).await?;
+        let gid_for_wait = gid.clone();
         debug!("开始等待下载完成，GID: {}", gid);
 
         // 轮询进度
         let poll_interval = Duration::from_millis(500);
         let mut last_status = None;
-        loop {
-            tokio::time::sleep(poll_interval).await;
+        let wait_result = tokio::time::timeout(total_timeout, async {
+            loop {
+                tokio::time::sleep(poll_interval).await;
 
-            let progress = self.get_download_progress(&gid).await?;
+                let progress = self.get_download_progress(&gid).await?;
 
-            // 只在状态变化时打印 debug 日志
-            if last_status.as_ref() != Some(&progress.status) {
-                debug!(
-                    "下载状态变化 [GID: {}]: {:?} -> {:?}, 进度: {:.1}%",
-                    gid, last_status, progress.status, progress.percentage
-                );
-                last_status = Some(progress.status);
-            }
-
-            on_progress(progress.clone());
-
-            match progress.status {
-                Aria2DownloadStatus::Complete => {
-                    info!("下载完成 [GID: {}]", gid);
-                    // 获取下载文件信息
-                    let status = self.get_download_status(&gid).await?;
-                    let path = status
-                        .files
-                        .first()
-                        .map(|f| PathBuf::from(&f.path))
-                        .unwrap_or_default();
-                    let filename = path
-                        .file_name()
-                        .map(|s| s.to_string_lossy().to_string())
-                        .unwrap_or_default();
-
+                // 只在状态变化时打印 debug 日志
+                if last_status.as_ref() != Some(&progress.status) {
                     debug!(
-                        "下载文件路径: {}, 大小: {} bytes",
-                        path.display(),
-                        progress.total
+                        "下载状态变化 [GID: {}]: {:?} -> {:?}, 进度: {:.1}%",
+                        gid, last_status, progress.status, progress.percentage
                     );
-
-                    // 清理记录
-                    self.active_downloads.write().remove(&gid);
-                    let _ = self.purge_download_result().await;
-
-                    return Ok(Aria2DownloadResult {
-                        path,
-                        filename,
-                        size: progress.total,
-                        gid,
-                    });
+                    last_status = Some(progress.status);
                 }
-                Aria2DownloadStatus::Error => {
-                    let status = self.get_download_status(&gid).await?;
-                    let error_code = status.error_code.map(|c| c.to_string()).unwrap_or_default();
-                    let error_msg = status.error_message.clone().unwrap_or_default();
 
-                    warn!(
-                        "下载失败 [GID: {}], 错误码: {}, 错误信息: {}",
-                        gid, error_code, error_msg
-                    );
+                on_progress(progress.clone());
 
-                    // 清理记录
-                    self.active_downloads.write().remove(&gid);
+                match progress.status {
+                    Aria2DownloadStatus::Complete => {
+                        info!("下载完成 [GID: {}]", gid);
+                        let status = self.get_download_status(&gid).await?;
+                        let path = status
+                            .files
+                            .first()
+                            .map(|f| PathBuf::from(&f.path))
+                            .unwrap_or_default();
+                        let filename = path
+                            .file_name()
+                            .map(|s| s.to_string_lossy().to_string())
+                            .unwrap_or_default();
 
-                    return Err(AppError::Aria2(format!(
-                        "下载失败 (错误码: {}): {}",
-                        error_code, error_msg
-                    )));
+                        debug!(
+                            "下载文件路径: {}, 大小: {} bytes",
+                            path.display(),
+                            progress.total
+                        );
+
+                        self.active_downloads.write().remove(&gid);
+                        let _ = self.purge_download_result().await;
+
+                        return Ok(Aria2DownloadResult {
+                            path,
+                            filename,
+                            size: progress.total,
+                            gid,
+                        });
+                    }
+                    Aria2DownloadStatus::Error => {
+                        let status = self.get_download_status(&gid).await?;
+                        let error_code =
+                            status.error_code.map(|c| c.to_string()).unwrap_or_default();
+                        let error_msg = status.error_message.clone().unwrap_or_default();
+
+                        warn!(
+                            "下载失败 [GID: {}], 错误码: {}, 错误信息: {}",
+                            gid, error_code, error_msg
+                        );
+
+                        self.active_downloads.write().remove(&gid);
+
+                        return Err(AppError::Aria2(format!(
+                            "下载失败 (错误码: {}): {}",
+                            error_code, error_msg
+                        )));
+                    }
+                    Aria2DownloadStatus::Removed => {
+                        info!("下载已取消 [GID: {}]", gid);
+                        self.active_downloads.write().remove(&gid);
+                        return Err(AppError::Aria2("下载已取消".to_string()));
+                    }
+                    _ => continue,
                 }
-                Aria2DownloadStatus::Removed => {
-                    info!("下载已取消 [GID: {}]", gid);
-                    self.active_downloads.write().remove(&gid);
-                    return Err(AppError::Aria2("下载已取消".to_string()));
-                }
-                _ => continue,
+            }
+        })
+        .await;
+
+        match wait_result {
+            Ok(result) => result,
+            Err(_) => {
+                let _ = self.cancel(&gid_for_wait).await;
+                self.active_downloads.write().remove(&gid_for_wait);
+                Err(AppError::Download(format!(
+                    "下载超时，已超过 {} 秒",
+                    total_timeout.as_secs()
+                )))
             }
         }
     }
@@ -1644,6 +1688,82 @@ fn aria2_install_dir_path() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sysinfo::{Pid, ProcessesToUpdate, System};
+
+    #[cfg(target_os = "windows")]
+    fn spawn_sleep_process() -> std::process::Child {
+        std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", "Start-Sleep -Seconds 30"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("启动测试睡眠进程失败")
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn spawn_sleep_process() -> std::process::Child {
+        std::process::Command::new("sh")
+            .args(["-c", "sleep 30"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("启动测试睡眠进程失败")
+    }
+
+    fn wait_for_process_exit(pid: Pid) -> bool {
+        let mut system = System::new();
+
+        for _ in 0..20 {
+            system.refresh_processes(ProcessesToUpdate::All, true);
+            if system.process(pid).is_none() {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+
+        false
+    }
+
+    fn force_kill_process(pid: Pid) {
+        #[cfg(target_os = "windows")]
+        let _ = std::process::Command::new("taskkill")
+            .args(["/PID", &pid.as_u32().to_string(), "/F"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
+
+        #[cfg(not(target_os = "windows"))]
+        let _ = std::process::Command::new("kill")
+            .args(["-9", &pid.as_u32().to_string()])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
+    }
+
+    #[test]
+    fn test_drop_kills_child_process() {
+        let child = spawn_sleep_process();
+        let pid = Pid::from_u32(child.id());
+
+        {
+            let manager = Aria2Manager {
+                process: RwLock::new(Some(child)),
+                port: RwLock::new(0),
+                client: Mutex::new(None),
+                started: AtomicBool::new(true),
+                active_downloads: RwLock::new(HashMap::new()),
+            };
+
+            drop(manager);
+        }
+
+        let exited = wait_for_process_exit(pid);
+        if !exited {
+            force_kill_process(pid);
+        }
+
+        assert!(exited, "Aria2Manager drop 未终止子进程: {}", pid.as_u32());
+    }
 
     #[test]
     fn test_format_bytes() {
@@ -1775,7 +1895,10 @@ mod tests {
         manager.start().await.expect("启动 aria2 失败");
 
         // 下载一个小文件 (约 1KB)
-        let test_url = "https://git.eden-emu.dev/eden-emu/eden/releases/download/v0.0.4/Eden-Windows-v0.0.4-amd64-msvc-standard.zip";
+        let test_url = concat!(
+            "https://git.eden-emu.dev/eden-emu/eden/releases/download/v0.0.4/",
+            "Eden-Windows-v0.0.4-amd64-msvc-standard.zip"
+        );
         let options = Aria2DownloadOptions {
             save_dir: Some(temp_dir.clone()),
             filename: Some("test_download.bin".to_string()),

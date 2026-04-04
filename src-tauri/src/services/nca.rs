@@ -195,7 +195,7 @@ impl NcaHeader {
         if keys::is_keys_loaded() {
             keys::with_keys(|key_store| {
                 let header_key = key_store.get_header_key()?;
-                let decrypted = decrypt_nca_header(&header_data, &header_key);
+                let decrypted = decrypt_nca_header(&header_data, &header_key)?;
                 Self::parse(&decrypted, true)
             })
         } else {
@@ -347,7 +347,7 @@ impl NcaHeader {
 }
 
 /// 使用 header_key 解密 NCA 头部
-fn decrypt_nca_header(data: &[u8], header_key: &[u8; 32]) -> Vec<u8> {
+fn decrypt_nca_header(data: &[u8], header_key: &[u8; 32]) -> AppResult<Vec<u8>> {
     let xts = AesXts::new(header_key);
     xts.decrypt_with_sector(data, 0)
 }

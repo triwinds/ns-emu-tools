@@ -49,7 +49,12 @@ pub struct Storage {
 }
 
 fn default_yuzu_save_backup_path() -> PathBuf {
-    PathBuf::from("D:\\yuzu_save_backup")
+    directories::UserDirs::new()
+        .and_then(|dirs| {
+            dirs.document_dir()
+                .map(|path| path.join("yuzu_save_backup"))
+        })
+        .unwrap_or_else(|| PathBuf::from("yuzu_save_backup"))
 }
 
 impl Storage {

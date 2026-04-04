@@ -8,12 +8,14 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rand::prelude::IndexedRandom;
+use reqwest::header::HeaderMap;
 use reqwest::{Client, Proxy, Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::http;
 use tracing::{debug, info, warn};
 use url::Url;
@@ -116,10 +118,15 @@ pub static GITHUB_OTHER_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
 });
 
 /// Chrome User-Agent
-pub const CHROME_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
+pub const CHROME_UA: &str = concat!(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+    "AppleWebKit/537.36 (KHTML, like Gecko) ",
+    "Chrome/136.0.0.0 Safari/537.36"
+);
 const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const GITHUB_API_FALLBACK_TTL: Duration = Duration::from_secs(120);
+const GITHUB_API_RATE_LIMIT_THRESHOLD: u32 = 2;
 const GIT_API_JSON_CACHE_TTL: Duration = Duration::from_secs(300);
 const GIT_API_JSON_CACHE_CAPACITY: u64 = 100;
 
@@ -151,13 +158,13 @@ impl Middleware for CacheLoggingMiddleware {
         if let Some(cache_status) = response.headers().get("x-cache") {
             if let Ok(status_str) = cache_status.to_str() {
                 match status_str {
-                    "HIT" => info!("✓ 缓存命中: {}", url),
-                    "MISS" => info!("✗ 缓存未命中: {}", url),
-                    _ => info!("? 缓存状态 ({}): {}", status_str, url),
+                    "HIT" => debug!("缓存命中: {}", url),
+                    "MISS" => debug!("缓存未命中: {}", url),
+                    _ => debug!("缓存状态 ({}): {}", status_str, url),
                 }
             }
         } else {
-            info!("⚠ 无缓存头部: {}", url);
+            debug!("响应未返回缓存头部: {}", url);
         }
 
         Ok(response)
@@ -191,8 +198,8 @@ impl GithubApiCircuitBreaker {
         }
     }
 
-    fn record_failure(&mut self, now: Instant, reason: impl Into<String>) {
-        self.open_until = Some(now + GITHUB_API_FALLBACK_TTL);
+    fn record_failure(&mut self, now: Instant, cooldown: Duration, reason: impl Into<String>) {
+        self.open_until = Some(now + cooldown);
         self.last_reason = Some(reason.into());
     }
 
@@ -231,19 +238,19 @@ static GIT_API_JSON_CACHE: Lazy<moka::future::Cache<String, serde_json::Value>> 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GithubMirror {
     /// 镜像 URL
-    pub url: String,
+    pub url: Cow<'static, str>,
     /// 地区
-    pub region: String,
+    pub region: Cow<'static, str>,
     /// 描述
-    pub description: String,
+    pub description: Cow<'static, str>,
 }
 
 impl GithubMirror {
-    pub fn new(url: &str, region: &str, description: &str) -> Self {
+    pub fn new(url: &'static str, region: &'static str, description: &'static str) -> Self {
         Self {
-            url: url.to_string(),
-            region: region.to_string(),
-            description: description.to_string(),
+            url: Cow::Borrowed(url),
+            region: Cow::Borrowed(region),
+            description: Cow::Borrowed(description),
         }
     }
 }
@@ -402,14 +409,11 @@ fn github_api_direct_request_allowed() -> bool {
             .unwrap_or_default();
         if let Some(reason) = breaker.last_reason.as_deref() {
             debug!(
-                "GitHub API direct requests are temporarily disabled for {:?}: {}",
+                "GitHub API 直连暂时停用，还需等待 {:?}: {}",
                 remaining, reason
             );
         } else {
-            debug!(
-                "GitHub API direct requests are temporarily disabled for {:?}",
-                remaining
-            );
+            debug!("GitHub API 直连暂时停用，还需等待 {:?}", remaining);
         }
     }
 
@@ -417,20 +421,50 @@ fn github_api_direct_request_allowed() -> bool {
 }
 
 fn open_github_api_circuit(reason: impl Into<String>) {
+    open_github_api_circuit_for(GITHUB_API_FALLBACK_TTL, reason);
+}
+
+fn open_github_api_circuit_for(cooldown: Duration, reason: impl Into<String>) {
     let reason = reason.into();
     GITHUB_API_CIRCUIT_BREAKER
         .write()
-        .record_failure(Instant::now(), reason.clone());
+        .record_failure(Instant::now(), cooldown, reason.clone());
     warn!(
-        "GitHub API direct request failed, falling back to CDN for {:?}: {}",
-        GITHUB_API_FALLBACK_TTL, reason
+        "GitHub API 直连已切换到 CDN，将持续 {:?}: {}",
+        cooldown, reason
     );
 }
 
 fn close_github_api_circuit() {
     if GITHUB_API_CIRCUIT_BREAKER.write().record_success() {
-        info!("GitHub API direct requests recovered, closing fallback circuit");
+        info!("GitHub API 直连已恢复，关闭 CDN 回退熔断");
     }
+}
+
+fn parse_header_u32(headers: &HeaderMap, name: &str) -> Option<u32> {
+    headers.get(name)?.to_str().ok()?.parse().ok()
+}
+
+fn parse_rate_limit_reset_cooldown(headers: &HeaderMap) -> Option<Duration> {
+    let reset_at = headers
+        .get("x-ratelimit-reset")?
+        .to_str()
+        .ok()?
+        .parse::<u64>()
+        .ok()?;
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs();
+    let seconds = reset_at.saturating_sub(now).max(1);
+    Some(Duration::from_secs(seconds))
+}
+
+fn github_rate_limit_cooldown(headers: &HeaderMap) -> Option<(u32, Duration)> {
+    let remaining = parse_header_u32(headers, "x-ratelimit-remaining")?;
+    if remaining > GITHUB_API_RATE_LIMIT_THRESHOLD {
+        return None;
+    }
+
+    let cooldown = parse_rate_limit_reset_cooldown(headers).unwrap_or(GITHUB_API_FALLBACK_TTL);
+    Some((remaining, cooldown))
 }
 
 /// 获取代理 URL
@@ -580,8 +614,10 @@ pub fn get_github_mirrors() -> Vec<GithubMirror> {
 fn find_github_mirror_description(mirror: &str) -> Option<String> {
     GITHUB_MIRRORS
         .iter()
-        .find(|candidate| mirror.starts_with(&candidate.url) || candidate.url.starts_with(mirror))
-        .map(|candidate| candidate.description.clone())
+        .find(|candidate| {
+            mirror.starts_with(candidate.url.as_ref()) || candidate.url.as_ref().starts_with(mirror)
+        })
+        .map(|candidate| candidate.description.to_string())
 }
 
 fn github_source_name_from_mirror(mirror: &str) -> String {
@@ -615,11 +651,11 @@ fn resolve_github_download_target_with_mirror(
         let mut rng = rand::rng();
         if let Some(choice) = GITHUB_US_MIRRORS.choose(&mut rng) {
             info!("使用 GitHub 镜像: {}", choice.description);
-            let url = origin_url.replace("https://github.com", &choice.url);
+            let url = origin_url.replace("https://github.com", choice.url.as_ref());
             debug!("镜像链接：{}", url);
             return GithubDownloadTarget {
                 url,
-                source_name: choice.description.clone(),
+                source_name: choice.description.to_string(),
             };
         }
 
@@ -776,6 +812,7 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
         match cached_client.get(url).send().await {
             Ok(resp) => {
                 let status = resp.status();
+                let headers = resp.headers().clone();
                 debug!("直连请求成功，HTTP 状态: {}", status);
 
                 match resp.json::<serde_json::Value>().await {
@@ -790,29 +827,46 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
                             .unwrap_or(false);
 
                         if status.is_success() && !rate_limited {
-                            close_github_api_circuit();
+                            if let Some((remaining, cooldown)) =
+                                github_rate_limit_cooldown(&headers)
+                            {
+                                open_github_api_circuit_for(
+                                    cooldown,
+                                    format!(
+                                        "GitHub API 剩余额度过低（remaining={}），在 reset 前主动切换到 CDN",
+                                        remaining
+                                    ),
+                                );
+                            } else {
+                                close_github_api_circuit();
+                            }
                             debug!("GitHub API 响应成功");
                             return Ok(data);
                         }
 
                         let reason = match message {
                             Some(message) => {
-                                format!("direct GitHub API returned HTTP {}: {}", status, message)
+                                format!("GitHub API 直连返回 HTTP {}: {}", status, message)
                             }
-                            None => format!("direct GitHub API returned HTTP {}", status),
+                            None => format!("GitHub API 直连返回 HTTP {}", status),
                         };
-                        open_github_api_circuit(reason);
+
+                        if let Some((remaining, cooldown)) = github_rate_limit_cooldown(&headers) {
+                            open_github_api_circuit_for(
+                                cooldown,
+                                format!("{}；剩余额度 {}", reason, remaining),
+                            );
+                        } else {
+                            open_github_api_circuit(reason);
+                        }
                     }
                     Err(e) => {
-                        open_github_api_circuit(format!(
-                            "failed to parse direct GitHub API response: {}",
-                            e
-                        ));
+                        open_github_api_circuit(format!("解析 GitHub API 直连响应失败: {}", e));
                     }
                 }
             }
             Err(e) => {
-                open_github_api_circuit(format!("direct GitHub API request error: {}", e));
+                open_github_api_circuit(format!("GitHub API 直连请求失败: {}", e));
             }
         }
     }
@@ -827,20 +881,20 @@ pub async fn request_github_api(url: &str) -> AppResult<serde_json::Value> {
         .await
         .map_err(|e| {
             warn!("CDN 请求失败: {}", e);
-            AppError::Unknown(e.to_string())
+            AppError::Network(format!("GitHub API CDN 请求失败: {}", e))
         })?;
     let status = resp.status();
     debug!("CDN 请求成功，HTTP 状态: {}", status);
     if !status.is_success() {
         warn!("GitHub API CDN 请求失败，HTTP 状态: {}", status);
         return Err(AppError::Network(format!(
-            "GitHub API CDN request failed: {} - {}",
+            "GitHub API CDN 请求失败: {} - {}",
             status, cdn_url
         )));
     }
     let data = resp.json::<serde_json::Value>().await.map_err(|e| {
         warn!("解析 CDN 响应失败: {}", e);
-        AppError::Unknown(e.to_string())
+        AppError::Network(format!("解析 GitHub API CDN 响应失败: {}", e))
     })?;
     debug!("CDN GitHub API 响应成功");
     Ok(data)
@@ -868,14 +922,14 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     debug!("发送 GET 请求到 Git API: {}", final_url);
     let resp = client.get(&final_url).send().await.map_err(|e| {
         warn!("Git API 请求失败: {}", e);
-        AppError::Unknown(e.to_string())
+        AppError::Network(format!("Git API 请求失败: {}", e))
     })?;
 
     debug!("Git API 响应状态: {}", resp.status());
 
     if !resp.status().is_success() {
         warn!("Git API 请求失败，HTTP 状态: {}", resp.status());
-        return Err(AppError::Unknown(format!(
+        return Err(AppError::Network(format!(
             "Git API 请求失败: {} - {}",
             resp.status(),
             final_url
@@ -885,7 +939,7 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     let data = resp
         .json::<serde_json::Value>()
         .await
-        .map_err(|e| AppError::Unknown(e.to_string()))?;
+        .map_err(|e| AppError::Network(format!("解析 Git API 响应失败: {}", e)))?;
 
     // 将响应存入缓存
     GIT_API_JSON_CACHE
@@ -977,10 +1031,28 @@ mod tests {
 
         assert!(breaker.allows_direct_request(now));
 
-        breaker.record_failure(now, "timeout");
+        breaker.record_failure(now, GITHUB_API_FALLBACK_TTL, "timeout");
         assert!(breaker.is_open_at(now + Duration::from_secs(1)));
         assert!(!breaker.allows_direct_request(now + Duration::from_secs(1)));
         assert!(breaker.allows_direct_request(now + GITHUB_API_FALLBACK_TTL));
+    }
+
+    #[test]
+    fn test_github_rate_limit_cooldown_uses_reset_header() {
+        let reset_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 30;
+        let mut headers = HeaderMap::new();
+        headers.insert("x-ratelimit-remaining", "1".parse().unwrap());
+        headers.insert("x-ratelimit-reset", reset_at.to_string().parse().unwrap());
+
+        let (remaining, cooldown) = github_rate_limit_cooldown(&headers).unwrap();
+
+        assert_eq!(remaining, 1);
+        assert!(cooldown.as_secs() >= 1);
+        assert!(cooldown.as_secs() <= 30);
     }
 
     #[test]

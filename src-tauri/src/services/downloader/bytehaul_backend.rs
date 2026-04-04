@@ -178,6 +178,8 @@ fn build_download_spec(url: &str, options: &DownloadOptions) -> (DownloadSpec, P
         .headers(headers)
         .max_connections(max_connections)
         .min_split_size(min_split_size)
+        .connect_timeout(options.connect_timeout)
+        .read_timeout(options.read_timeout)
         .resume(true)
         .file_allocation(FileAllocation::None);
 
@@ -509,6 +511,7 @@ impl DownloadManager for BytehaulBackend {
             self.start().await?;
         }
 
+        let total_timeout = options.total_timeout;
         let task = self.build_task(url, options).await?;
         let task_id = task.id.clone();
         self.active_tasks
@@ -533,7 +536,16 @@ impl DownloadManager for BytehaulBackend {
             }
         });
 
-        let result = task.wait_for_result().await;
+        let result = match tokio::time::timeout(total_timeout, task.wait_for_result()).await {
+            Ok(result) => result,
+            Err(_) => {
+                task.request_cancel();
+                Err(AppError::Download(format!(
+                    "下载超时，已超过 {} 秒",
+                    total_timeout.as_secs()
+                )))
+            }
+        };
         let _ = progress_loop.await;
         self.active_tasks.write().remove(&task_id);
         result
@@ -672,6 +684,7 @@ mod tests {
             min_split_size: "8M".to_string(),
             user_agent: Some("TestUA/1.0".to_string()),
             headers: HashMap::new(),
+            ..DownloadOptions::default()
         };
 
         let (spec, output_path) = build_download_spec("https://example.com/file.zip", &options);
@@ -681,6 +694,8 @@ mod tests {
         assert_eq!(spec.get_output_path(), Some(Path::new("archive.zip")));
         assert_eq!(spec.get_max_connections(), 8);
         assert_eq!(spec.get_min_split_size(), 8 * 1024 * 1024);
+        assert_eq!(spec.get_connect_timeout(), options.connect_timeout);
+        assert_eq!(spec.get_read_timeout(), options.read_timeout);
         assert_eq!(
             spec.get_headers().get("User-Agent").map(String::as_str),
             Some("TestUA/1.0")

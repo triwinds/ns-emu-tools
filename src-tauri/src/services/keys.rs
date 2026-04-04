@@ -5,9 +5,11 @@
 use crate::error::{AppError, AppResult};
 use aes::cipher::{BlockDecrypt, KeyInit};
 use aes::Aes128;
+use once_cell::sync::Lazy;
+use parking_lot::{Mutex, RwLock};
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::RwLock;
+use std::sync::OnceLock;
 use tracing::info;
 
 /// 密钥长度（16 字节 = 128 位）
@@ -52,7 +54,19 @@ pub enum KeyAreaKeyType {
 }
 
 /// 全局密钥存储
-static KEYS: RwLock<Option<KeyStore>> = RwLock::new(None);
+static KEYS: Lazy<RwLock<Option<KeyStore>>> = Lazy::new(|| RwLock::new(None));
+static KEY_LOAD_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+fn key_load_lock() -> &'static Mutex<()> {
+    KEY_LOAD_LOCK.get_or_init(|| Mutex::new(()))
+}
+
+fn keys_loaded_from(path: &Path) -> bool {
+    KEYS.read()
+        .as_ref()
+        .map(|key_store| Path::new(&key_store.loaded_file) == path)
+        .unwrap_or(false)
+}
 
 /// 密钥存储结构
 #[derive(Debug, Clone)]
@@ -345,11 +359,20 @@ fn generate_kek(
 
 /// 加载密钥文件
 pub fn load_keys<P: AsRef<Path>>(path: P) -> AppResult<()> {
+    let path = path.as_ref();
+    if keys_loaded_from(path) {
+        return Ok(());
+    }
+
+    let _guard = key_load_lock().lock();
+    if keys_loaded_from(path) {
+        return Ok(());
+    }
+
     let mut key_store = KeyStore::new();
     key_store.load_from_file(path)?;
 
-    let mut keys = KEYS.write().unwrap();
-    *keys = Some(key_store);
+    *KEYS.write() = Some(key_store);
 
     Ok(())
 }
@@ -359,7 +382,7 @@ pub fn with_keys<F, R>(f: F) -> AppResult<R>
 where
     F: FnOnce(&KeyStore) -> AppResult<R>,
 {
-    let keys = KEYS.read().unwrap();
+    let keys = KEYS.read();
     let key_store = keys
         .as_ref()
         .ok_or_else(|| AppError::InvalidArgument("密钥未加载".to_string()))?;
@@ -368,14 +391,13 @@ where
 
 /// 检查密钥是否已加载
 pub fn is_keys_loaded() -> bool {
-    let keys = KEYS.read().unwrap();
-    keys.is_some()
+    KEYS.read().is_some()
 }
 
 /// 清除已加载的密钥
 pub fn clear_keys() {
-    let mut keys = KEYS.write().unwrap();
-    *keys = None;
+    let _guard = key_load_lock().lock();
+    *KEYS.write() = None;
 }
 
 #[cfg(test)]

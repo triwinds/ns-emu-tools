@@ -72,6 +72,9 @@ pub fn simple_progress_printer(
                 tracing::warn!("{} 失败: {:?}", prefix, message);
             }
         }
+        ProgressEvent::CorruptedFile { path } => {
+            tracing::warn!("{} 检测到损坏文件: {}", prefix, path);
+        }
     }
 }
 

@@ -2,6 +2,7 @@
 //!
 //! 实现 NCA 文件所需的各种加密模式：AES-XTS、AES-CTR、AES-ECB
 
+use crate::error::{AppError, AppResult};
 use aes::cipher::{BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
 
@@ -11,9 +12,22 @@ const BLOCK_SIZE: usize = 16;
 /// XTS 扇区大小
 const XTS_SECTOR_SIZE: usize = 0x200;
 
-/// XOR 两个字节数组
-fn xor_bytes(a: &[u8], b: &[u8]) -> Vec<u8> {
-    a.iter().zip(b.iter()).map(|(x, y)| x ^ y).collect()
+fn ensure_block_aligned(data_len: usize, context: &str) -> AppResult<()> {
+    if data_len % BLOCK_SIZE == 0 {
+        return Ok(());
+    }
+
+    Err(AppError::InvalidArgument(format!(
+        "{}长度 {} 不是 {} 的倍数",
+        context, data_len, BLOCK_SIZE
+    )))
+}
+
+/// 原地 XOR 两个字节数组
+fn xor_bytes_in_place(buf: &mut [u8], mask: &[u8]) {
+    for (byte, mask_byte) in buf.iter_mut().zip(mask.iter()) {
+        *byte ^= mask_byte;
+    }
 }
 
 /// AES-XTS 解密器
@@ -63,15 +77,13 @@ impl AesXts {
     }
 
     /// 解密数据
-    pub fn decrypt(&mut self, data: &[u8]) -> Vec<u8> {
+    pub fn decrypt(&mut self, data: &[u8]) -> AppResult<Vec<u8>> {
         self.decrypt_with_sector(data, self.sector)
     }
 
     /// 使用指定扇区号解密数据
-    pub fn decrypt_with_sector(&self, data: &[u8], mut sector: u64) -> Vec<u8> {
-        if data.len() % BLOCK_SIZE != 0 {
-            panic!("数据长度必须是 16 的倍数");
-        }
+    pub fn decrypt_with_sector(&self, data: &[u8], mut sector: u64) -> AppResult<Vec<u8>> {
+        ensure_block_aligned(data.len(), "数据")?;
 
         let mut result = Vec::with_capacity(data.len());
         let mut pos = 0;
@@ -79,20 +91,18 @@ impl AesXts {
         while pos < data.len() {
             let sector_end = std::cmp::min(pos + self.sector_size, data.len());
             let sector_data = &data[pos..sector_end];
-            let decrypted_sector = self.decrypt_sector(sector_data, sector);
+            let decrypted_sector = self.decrypt_sector(sector_data, sector)?;
             result.extend_from_slice(&decrypted_sector);
             pos = sector_end;
             sector += 1;
         }
 
-        result
+        Ok(result)
     }
 
     /// 解密单个扇区
-    fn decrypt_sector(&self, data: &[u8], sector: u64) -> Vec<u8> {
-        if data.len() % BLOCK_SIZE != 0 {
-            panic!("扇区数据长度必须是 16 的倍数");
-        }
+    fn decrypt_sector(&self, data: &[u8], sector: u64) -> AppResult<Vec<u8>> {
+        ensure_block_aligned(data.len(), "扇区数据")?;
 
         let mut result = Vec::with_capacity(data.len());
 
@@ -106,25 +116,26 @@ impl AesXts {
         // 加密 tweak（使用 K2/cipher2）
         let mut tweak_block = aes::Block::clone_from_slice(&tweak_bytes);
         self.cipher2.encrypt_block(&mut tweak_block);
-        let mut tweak: Vec<u8> = tweak_block.to_vec();
+        let mut tweak = [0u8; BLOCK_SIZE];
+        tweak.copy_from_slice(&tweak_block);
 
         for chunk in data.chunks(BLOCK_SIZE) {
-            // XOR with tweak
-            let xored: Vec<u8> = xor_bytes(chunk, &tweak);
+            let mut block_bytes = [0u8; BLOCK_SIZE];
+            block_bytes.copy_from_slice(chunk);
+            xor_bytes_in_place(&mut block_bytes, &tweak);
 
-            // Decrypt
-            let mut block = aes::Block::clone_from_slice(&xored);
+            let mut block = aes::Block::clone_from_slice(&block_bytes);
             self.cipher1.decrypt_block(&mut block);
 
-            // XOR with tweak again
-            let decrypted = xor_bytes(&block, &tweak);
-            result.extend_from_slice(&decrypted);
+            block_bytes.copy_from_slice(&block);
+            xor_bytes_in_place(&mut block_bytes, &tweak);
+            result.extend_from_slice(&block_bytes);
 
             // 更新 tweak (GF(2^128) 乘法)
             tweak = gf128_mul_by_2(&tweak);
         }
 
-        result
+        Ok(result)
     }
 }
 
@@ -132,8 +143,8 @@ impl AesXts {
 ///
 /// 按照 XTS 标准实现 GF(2^128) 乘法
 /// tweak 被当作小端序整数处理（byte[0] 是最低有效位）
-fn gf128_mul_by_2(tweak: &[u8]) -> Vec<u8> {
-    let mut result = vec![0u8; BLOCK_SIZE];
+fn gf128_mul_by_2(tweak: &[u8; BLOCK_SIZE]) -> [u8; BLOCK_SIZE] {
+    let mut result = [0u8; BLOCK_SIZE];
     let mut carry = 0u8;
 
     // 从最低有效字节开始处理（小端序中是第一个字节）
@@ -268,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_gf128_mul_by_2() {
-        let tweak = vec![0x01u8; 16];
+        let tweak = [0x01u8; 16];
         let result = gf128_mul_by_2(&tweak);
         assert_eq!(result.len(), 16);
     }
@@ -279,8 +290,17 @@ mod tests {
         let xts = AesXts::new(&keys);
 
         let data = [0u8; 512]; // 一个完整扇区
-        let decrypted = xts.decrypt_with_sector(&data, 0);
+        let decrypted = xts.decrypt_with_sector(&data, 0).unwrap();
         assert_eq!(decrypted.len(), 512);
+    }
+
+    #[test]
+    fn test_aes_xts_rejects_misaligned_input() {
+        let keys = [0u8; 32];
+        let xts = AesXts::new(&keys);
+
+        let error = xts.decrypt_with_sector(&[0u8; 15], 0).unwrap_err();
+        assert!(error.to_string().contains("不是 16 的倍数"));
     }
 
     #[test]
@@ -295,10 +315,22 @@ mod tests {
     }
 
     #[test]
+    fn test_aes_ctr_known_answer_zero_key_zero_nonce() {
+        let key = [0u8; 16];
+        let nonce = [0u8; 8];
+        let ctr = AesCtr::new(&key, &nonce);
+        let ciphertext = hex::decode("66e94bd4ef8a2c3b884cfa59ca342b2e").unwrap();
+
+        let decrypted = ctr.decrypt(&ciphertext, 0);
+
+        assert_eq!(decrypted, vec![0u8; 16]);
+    }
+
+    #[test]
     fn test_aes_ecb_decrypt() {
         let key = [0u8; 16];
-        let data = [0u8; 16];
-        let result = aes_ecb_decrypt(&key, &data);
-        assert_eq!(result.len(), 16);
+        let ciphertext = hex::decode("66e94bd4ef8a2c3b884cfa59ca342b2e").unwrap();
+        let result = aes_ecb_decrypt(&key, &ciphertext);
+        assert_eq!(result, vec![0u8; 16]);
     }
 }

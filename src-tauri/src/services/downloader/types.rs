@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Duration;
 
 const LEGACY_DEFAULT_SPLIT: u32 = 4;
 const LEGACY_DEFAULT_MAX_CONNECTION_PER_SERVER: u32 = 4;
@@ -12,6 +13,9 @@ const LEGACY_DEFAULT_MIN_SPLIT_SIZE: &str = "4M";
 const DIRECT_DOWNLOAD_SPLIT: u32 = 8;
 const DIRECT_DOWNLOAD_MAX_CONNECTION_PER_SERVER: u32 = 8;
 const DIRECT_DOWNLOAD_MIN_SPLIT_SIZE: &str = "2M";
+pub const DEFAULT_DOWNLOAD_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
+pub const DEFAULT_DOWNLOAD_READ_TIMEOUT: Duration = Duration::from_secs(60);
+pub const DEFAULT_DOWNLOAD_TOTAL_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
 /// 下载选项
 #[derive(Debug, Clone)]
@@ -34,6 +38,12 @@ pub struct DownloadOptions {
     pub user_agent: Option<String>,
     /// 额外的 HTTP 头
     pub headers: HashMap<String, String>,
+    /// 连接超时
+    pub connect_timeout: Duration,
+    /// 单次读取超时
+    pub read_timeout: Duration,
+    /// 任务总超时
+    pub total_timeout: Duration,
 }
 
 impl Default for DownloadOptions {
@@ -48,6 +58,9 @@ impl Default for DownloadOptions {
             min_split_size: LEGACY_DEFAULT_MIN_SPLIT_SIZE.to_string(),
             user_agent: None,
             headers: HashMap::new(),
+            connect_timeout: DEFAULT_DOWNLOAD_CONNECT_TIMEOUT,
+            read_timeout: DEFAULT_DOWNLOAD_READ_TIMEOUT,
+            total_timeout: DEFAULT_DOWNLOAD_TOTAL_TIMEOUT,
         }
     }
 }

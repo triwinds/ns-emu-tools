@@ -8,6 +8,7 @@ use crate::services::downloader::aria2::{
     Aria2Manager,
 };
 use async_trait::async_trait;
+use parking_lot::Mutex;
 use std::sync::Arc;
 use tracing::info;
 
@@ -56,13 +57,15 @@ impl DownloadManager for Aria2Backend {
         on_progress: ProgressCallback,
     ) -> AppResult<DownloadResult> {
         let aria2_options = convert_options(options);
+        let on_progress = Arc::new(Mutex::new(on_progress));
 
         // 包装进度回调，转换类型
         let result = self
             .manager
             .download_and_wait(url, aria2_options, move |aria2_progress| {
                 let progress = convert_progress(aria2_progress);
-                on_progress(progress);
+                let callback = on_progress.lock();
+                callback(progress);
             })
             .await?;
 
@@ -128,6 +131,9 @@ fn convert_options(options: DownloadOptions) -> Aria2DownloadOptions {
         min_split_size: options.min_split_size,
         user_agent: options.user_agent,
         headers: options.headers,
+        connect_timeout: options.connect_timeout,
+        read_timeout: options.read_timeout,
+        total_timeout: options.total_timeout,
     }
 }
 

@@ -17,7 +17,13 @@ const LOCAL_GAME_DATA_JSON: &str =
 pub fn get_github_mirrors() -> Vec<(String, String, String)> {
     network::get_github_mirrors()
         .into_iter()
-        .map(|mirror| (mirror.url, mirror.region, mirror.description))
+        .map(|mirror| {
+            (
+                mirror.url.to_string(),
+                mirror.region.to_string(),
+                mirror.description.to_string(),
+            )
+        })
         .collect()
 }
 
