@@ -14,7 +14,6 @@ use bytehaul::{
     DownloadError as BytehaulError, DownloadHandle, DownloadSpec, DownloadState as BytehaulState,
     Downloader, FileAllocation, LogLevel,
 };
-use directories::UserDirs;
 use parking_lot::{Mutex, RwLock};
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -26,10 +25,8 @@ use tracing::{debug, warn};
 use url::Url;
 
 /// 默认下载目录与现有 RustDownloader 保持一致。
-fn default_download_dir() -> PathBuf {
-    UserDirs::new()
-        .and_then(|dirs| dirs.download_dir().map(PathBuf::from))
-        .unwrap_or_else(|| PathBuf::from("."))
+fn default_download_dir() -> AppResult<PathBuf> {
+    crate::services::downloader::aria2::get_default_download_dir()
 }
 
 /// bytehaul 任务 ID 生成器。
@@ -141,12 +138,7 @@ fn resolve_download_url(url: &str, options: &DownloadOptions) -> String {
     }
 }
 
-fn resolve_output_path(download_url: &str, options: &DownloadOptions) -> PathBuf {
-    let save_dir = options
-        .save_dir
-        .clone()
-        .unwrap_or_else(default_download_dir);
-
+fn resolve_output_path(download_url: &str, save_dir: &Path, options: &DownloadOptions) -> PathBuf {
     let filename = options
         .filename
         .clone()
@@ -155,13 +147,13 @@ fn resolve_output_path(download_url: &str, options: &DownloadOptions) -> PathBuf
     save_dir.join(filename)
 }
 
-fn build_download_spec(url: &str, options: &DownloadOptions) -> (DownloadSpec, PathBuf) {
+fn build_download_spec(url: &str, options: &DownloadOptions) -> AppResult<(DownloadSpec, PathBuf)> {
     let download_url = resolve_download_url(url, options);
-    let output_dir = options
-        .save_dir
-        .clone()
-        .unwrap_or_else(default_download_dir);
-    let output_path = resolve_output_path(&download_url, options);
+    let output_dir = match options.save_dir.clone() {
+        Some(save_dir) => save_dir,
+        None => default_download_dir()?,
+    };
+    let output_path = resolve_output_path(&download_url, &output_dir, options);
     let max_connections = options.split.max(options.max_connection_per_server).max(1);
     let min_split_size = parse_size_to_bytes(&options.min_split_size).unwrap_or(4 * 1024 * 1024);
 
@@ -187,7 +179,7 @@ fn build_download_spec(url: &str, options: &DownloadOptions) -> (DownloadSpec, P
         spec = spec.output_path(filename);
     }
 
-    (spec, output_path)
+    Ok((spec, output_path))
 }
 
 fn convert_status(state: BytehaulState) -> DownloadStatus {
@@ -447,7 +439,7 @@ impl BytehaulBackend {
         let options = options.with_adaptive_parallelism();
         let downloader = self.get_downloader()?;
         let task_id = next_task_id();
-        let (spec, output_path) = build_download_spec(url, &options);
+        let (spec, output_path) = build_download_spec(url, &options)?;
         spec.validate().map_err(map_bytehaul_error)?;
 
         Ok(Arc::new(BytehaulTask::new(
@@ -687,7 +679,8 @@ mod tests {
             ..DownloadOptions::default()
         };
 
-        let (spec, output_path) = build_download_spec("https://example.com/file.zip", &options);
+        let (spec, output_path) =
+            build_download_spec("https://example.com/file.zip", &options).unwrap();
 
         assert_eq!(output_path, PathBuf::from("C:/tmp").join("archive.zip"));
         assert_eq!(spec.get_output_dir(), Some(Path::new("C:/tmp")));
@@ -700,6 +693,23 @@ mod tests {
             spec.get_headers().get("User-Agent").map(String::as_str),
             Some("TestUA/1.0")
         );
+    }
+
+    #[test]
+    fn test_build_download_spec_uses_managed_download_dir_by_default() {
+        let options = DownloadOptions {
+            filename: Some("artifact.bin".to_string()),
+            use_github_mirror: false,
+            ..DownloadOptions::default()
+        };
+
+        let (spec, output_path) =
+            build_download_spec("https://example.com/file.zip", &options).unwrap();
+        let expected_dir = crate::services::downloader::aria2::get_default_download_dir().unwrap();
+
+        assert_eq!(output_path, expected_dir.join("artifact.bin"));
+        assert_eq!(spec.get_output_dir(), Some(expected_dir.as_path()));
+        assert_eq!(spec.get_output_path(), Some(Path::new("artifact.bin")));
     }
 
     #[tokio::test]
