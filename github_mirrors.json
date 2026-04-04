@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-04T02:54:49.310Z",
+  "generated_at": "2026-04-04T04:07:52.420Z",
   "source": {
     "url": "https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js",
     "raw_url": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js",
@@ -10,17 +10,10 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 29,
+    "download": 24,
     "raw": 7
   },
   "download": [
-    {
-      "kind": "download",
-      "url": "https://rapidgit.jjda.de5.net/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [热心网友] 提供",
-      "source_array": "download_url_us"
-    },
     {
       "kind": "download",
       "url": "https://gh.ddlc.top/https://github.com",
@@ -61,13 +54,6 @@
       "url": "https://ghproxy.it/https://github.com",
       "region": "美国",
       "description": "[美国 洛杉矶] - 该公益加速源由 [@yionchilau] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://github.boki.moe/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [blog.boki.moe] 提供",
       "source_array": "download_url_us"
     },
     {
@@ -121,13 +107,6 @@
     },
     {
       "kind": "download",
-      "url": "https://gh.chjina.com/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [gh.chjina.com] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
       "url": "https://cdn.crashmc.com/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [cdn.crashmc.com] 提供",
@@ -138,20 +117,6 @@
       "url": "https://git.yylx.win/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [git.yylx.win] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://gitproxy.mrhjx.cn/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [gitproxy.mrhjx.cn] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://ghproxy.cxkpro.top/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [ghproxy.cxkpro.top] 提供",
       "source_array": "download_url_us"
     },
     {
@@ -177,16 +142,16 @@
     },
     {
       "kind": "download",
-      "url": "https://raw.ihtw.moe/github.com",
+      "url": "https://down.npee.cn/?https://github.com",
       "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [raw.ihtw.moe] 提供",
+      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [npee社区] 提供",
       "source_array": "download_url_us"
     },
     {
       "kind": "download",
-      "url": "https://xget.xi-xu.me/gh",
+      "url": "https://raw.ihtw.moe/github.com",
       "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [github.com/xixu-me/Xget] 提供",
+      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [raw.ihtw.moe] 提供",
       "source_array": "download_url_us"
     },
     {
