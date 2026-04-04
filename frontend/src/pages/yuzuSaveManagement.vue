@@ -126,7 +126,7 @@ function concatGameName(item: SaveGameInfo) {
 }
 
 async function doBackup() {
-  cds.cleanAndShowConsoleDialog()
+  cds.cleanMessages()
   await invoke('backup_yuzu_save_folder_cmd', {
     folder: selectedGameFolder.value
   })

@@ -190,7 +190,11 @@ async function saveSelectedCheats() {
   })
   if (resp.code === 0) {
     cds.appendConsoleMessage('保存成功')
-    cds.showConsoleDialog()
+    window.$bus.emit('showNotifyMessage', {
+      type: 'success',
+      content: '保存成功',
+      persistent: false,
+    })
   }
 }
 

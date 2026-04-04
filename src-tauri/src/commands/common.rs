@@ -213,6 +213,13 @@ pub async fn refresh_github_mirrors(
         .map_err(|e| e.to_string())
 }
 
+/// 获取待展示的 GitHub 镜像失效通知
+#[command]
+pub fn take_pending_github_mirror_fallback_notice(
+) -> Option<crate::repositories::config_data::GithubMirrorFallbackInfo> {
+    config_data::take_pending_github_mirror_fallback_notice()
+}
+
 /// 获取游戏数据映射
 #[command]
 pub async fn get_game_data() -> Result<std::collections::HashMap<String, serde_json::Value>, String>

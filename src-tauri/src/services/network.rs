@@ -782,8 +782,12 @@ fn current_github_mirror_state() -> GithubMirrorCacheState {
     GITHUB_DOWNLOAD_MIRROR_STATE.read().clone()
 }
 
-fn take_pending_github_mirror_fallback_notice() -> Option<GithubMirrorFallbackNotice> {
+fn take_pending_github_mirror_fallback_notice_internal() -> Option<GithubMirrorFallbackNotice> {
     PENDING_GITHUB_MIRROR_FALLBACK_NOTICE.write().take()
+}
+
+pub fn take_pending_github_mirror_fallback_notice() -> Option<GithubMirrorFallbackNotice> {
+    take_pending_github_mirror_fallback_notice_internal()
 }
 
 fn store_pending_github_mirror_fallback_notice(notice: GithubMirrorFallbackNotice) {
@@ -929,13 +933,13 @@ pub async fn get_github_mirrors() -> AppResult<GithubMirrorListResult> {
         Ok(_) => {
             let state = current_github_mirror_state();
             validate_and_repair_configured_github_download_mirror(&state)?
-                .or_else(take_pending_github_mirror_fallback_notice)
+                .or_else(take_pending_github_mirror_fallback_notice_internal)
         }
         Err(e) => {
             warn!("刷新 GitHub 镜像列表失败，回退到当前缓存: {}", e);
             let state = current_github_mirror_state();
             validate_and_repair_configured_github_download_mirror(&state)?
-                .or_else(take_pending_github_mirror_fallback_notice)
+                .or_else(take_pending_github_mirror_fallback_notice_internal)
         }
     };
 

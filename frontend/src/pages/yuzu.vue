@@ -197,6 +197,7 @@ import DialogTitle from "@/components/DialogTitle.vue";
 import { open } from '@tauri-apps/plugin-dialog'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import {
+  extractErrorMessage,
   getAllYuzuVersions,
   switchYuzuBranch as switchBranchAPI,
   installYuzu as installYuzuAPI,
@@ -234,6 +235,14 @@ const md = ref(`
 let configStore = useConfigStore()
 let appStore = useAppStore()
 let consoleDialogStore = useConsoleDialogStore()
+function showNotice(type: NotifyMessage['type'], content: string, persistent = type === 'error') {
+  window.$bus.emit('showNotifyMessage', {
+    type,
+    content,
+    persistent,
+  })
+}
+
 let yuzuConfig = computed(() => {
   return configStore.config.yuzu
 })
@@ -335,11 +344,11 @@ async function updateYuzuReleaseVersions() {
       allYuzuReleaseVersions.value = infos
       targetYuzuVersion.value = infos[0] ?? ''
     } else {
-      consoleDialogStore.showConsoleDialog()
-      consoleDialogStore.appendConsoleMessage('yuzu 版本信息加载异常.')
+      const message = 'yuzu 版本信息加载异常.'
+      consoleDialogStore.appendConsoleMessage(message)
+      showNotice('error', message)
     }
   } catch (error) {
-    consoleDialogStore.showConsoleDialog()
     consoleDialogStore.appendConsoleMessage(`加载版本失败: ${error}`)
   }
 }
@@ -378,7 +387,6 @@ async function installFirmware() {
 }
 
 async function installYuzuHandler() {
-  // consoleDialogStore.cleanAndShowConsoleDialog()
   isRunningInstall.value = true
   consoleDialogStore.persistentConsoleDialog = true
 
@@ -449,11 +457,12 @@ async function startYuzuHandler() {
 }
 
 async function modifyYuzuPath() {
-  consoleDialogStore.cleanAndShowConsoleDialog()
+  consoleDialogStore.cleanMessages()
   consoleDialogStore.appendConsoleMessage('=============================================')
   consoleDialogStore.appendConsoleMessage('选择的目录将作为存放模拟器的根目录')
   consoleDialogStore.appendConsoleMessage('建议新建目录单独存放')
   consoleDialogStore.appendConsoleMessage('=============================================')
+  showNotice('info', '选择的目录将作为存放模拟器的根目录，建议新建目录单独存放', false)
 
   const selected = await open({
     directory: true,

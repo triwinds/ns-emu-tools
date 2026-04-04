@@ -1,27 +1,103 @@
 <template>
+  <v-snackbar
+      v-model="appNotice.visible"
+      :color="appNotice.color"
+      :timeout="appNotice.timeout"
+      location="top"
+  >
+    <v-icon :icon="appNotice.prependIcon" class="mr-2" />{{ appNotice.content }}
+    <template #actions>
+      <v-btn text="关闭" @click="appNotice.visible = false"></v-btn>
+    </template>
+  </v-snackbar>
   <router-view />
   <ProgressDialog />
 </template>
 
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { useConsoleDialogStore } from "@/stores/ConsoleDialogStore";
 import { useProgressStore } from "@/stores/ProgressStore"; // Import store
 import ProgressDialog from "@/components/ProgressDialog.vue"; // Import component
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event'; // Import listen
 import { ask } from '@tauri-apps/plugin-dialog';
-import { deletePath } from '@/utils/tauri';
+import { deletePath, takePendingGithubMirrorFallbackNotice, type AppNoticeMessage, type NotifyMessage } from '@/utils/tauri';
 import { openUrlWithDefaultBrowser } from '@/utils/common';
+import { useEmitter } from '@/plugins/mitt';
 
 const cds = useConsoleDialogStore()
 const progressStore = useProgressStore() // Init store
+const emitter = useEmitter()
 let pendingWriteSize = false
 let appWindow: any = null
 let unlistenInstallation: any = null; // Store unlisten function
 let unlistenLogMessage: any = null; // Store unlisten function for log messages
 let unlistenNotifyMessage: any = null; // Store unlisten function for notify messages
+const appNotice = ref({
+  visible: false,
+  content: '',
+  color: 'info',
+  prependIcon: '$info',
+  timeout: 3000,
+})
+
+function notifyColor(type?: string) {
+  switch (type) {
+    case 'success':
+      return 'success'
+    case 'warning':
+      return 'warning'
+    case 'error':
+      return 'error'
+    default:
+      return 'info'
+  }
+}
+
+function notifyIcon(type?: string) {
+  switch (type) {
+    case 'success':
+      return '$success'
+    case 'warning':
+      return '$warning'
+    case 'error':
+      return '$error'
+    default:
+      return '$info'
+  }
+}
+
+function notifyTimeout(type?: string, persistent?: boolean) {
+  if (type === 'error') {
+    return persistent ? 4500 : 3000
+  }
+
+  if (persistent) {
+    return 7000
+  }
+
+  return 3000
+}
+
+function showAppNotice(message: AppNoticeMessage | NotifyMessage | null | undefined) {
+  if (!message?.content) {
+    return
+  }
+
+  appNotice.value = {
+    visible: true,
+    content: message.content,
+    color: notifyColor(message.type),
+    prependIcon: notifyIcon(message.type),
+    timeout: notifyTimeout(message.type, message.persistent),
+  }
+}
+
+function handleAppNotice(message: unknown) {
+  showAppNotice(message as AppNoticeMessage | NotifyMessage | null | undefined)
+}
 
 function handleLinkClick(e: MouseEvent) {
   const target = (e.target as HTMLElement).closest('a')
@@ -42,6 +118,7 @@ try {
 onMounted(async () => {
   window.addEventListener('resize', rememberWindowSize);
   document.addEventListener('click', handleLinkClick);
+  emitter.on('showNotifyMessage', handleAppNotice);
 
   // Listen for installation events
   try {
@@ -95,20 +172,31 @@ onMounted(async () => {
         const message = event.payload as any;
         if (message?.content) {
           cds.appendConsoleMessage(message.content);
-        }
-        // 对 error 类型：自动弹出控制台，确保用户能看到错误信息
-        if (message?.type === 'error') {
-          cds.showConsoleDialog()
+          showAppNotice(message as NotifyMessage)
         }
       });
     } catch (e) {
       console.error('Failed to setup notify message listener', e);
+    }
+
+    try {
+      const pendingNotice = await takePendingGithubMirrorFallbackNotice()
+      if (pendingNotice) {
+        showAppNotice({
+          type: 'warning',
+          content: pendingNotice.message,
+          persistent: true,
+        })
+      }
+    } catch (e) {
+      console.error('Failed to load pending github mirror fallback notice', e)
     }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', rememberWindowSize);
   document.removeEventListener('click', handleLinkClick);
+  emitter.off('showNotifyMessage', handleAppNotice);
   if (unlistenInstallation) {
       unlistenInstallation();
   }

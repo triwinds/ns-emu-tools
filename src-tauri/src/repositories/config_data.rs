@@ -28,6 +28,14 @@ pub struct GithubMirrorListResponse {
     pub fallback_notice: Option<GithubMirrorFallbackInfo>,
 }
 
+pub fn take_pending_github_mirror_fallback_notice() -> Option<GithubMirrorFallbackInfo> {
+    network::take_pending_github_mirror_fallback_notice().map(|notice| GithubMirrorFallbackInfo {
+        previous_mirror: notice.previous_mirror,
+        effective_mirror: notice.effective_mirror,
+        message: notice.message,
+    })
+}
+
 /// 获取可用的 GitHub 镜像列表。
 pub async fn get_github_mirrors() -> AppResult<GithubMirrorListResponse> {
     let result = network::get_github_mirrors().await?;

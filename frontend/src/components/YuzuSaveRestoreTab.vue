@@ -115,8 +115,14 @@ function updateBackupItemBoxHeight() {
 
 function restoreBackup(filepath: string) {
   if (yuzuSaveStore.selectedUser === '') {
-    cds.cleanAndShowConsoleDialog()
-    cds.appendConsoleMessage('请先选择一个模拟器用户')
+    const message = '请先选择一个模拟器用户'
+    cds.cleanMessages()
+    cds.appendConsoleMessage(message)
+    window.$bus.emit('showNotifyMessage', {
+      type: 'error',
+      content: message,
+      persistent: true,
+    })
     return
   }
   restoreBackupFile.value = filepath
@@ -125,7 +131,7 @@ function restoreBackup(filepath: string) {
 
 async function summitRestoreRequest() {
   restoreWaringDialog.value = false
-  cds.cleanAndShowConsoleDialog()
+  cds.cleanMessages()
   await invoke('restore_yuzu_save_from_backup_cmd', {
     userFolderName: yuzuSaveStore.selectedUser,
     backupPath: restoreBackupFile.value

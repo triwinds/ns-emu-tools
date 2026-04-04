@@ -24,7 +24,6 @@ export const useAppStore = defineStore('app', {
           this.targetFirmwareVersion = infos[0]?.version ?? null
         } catch (error) {
           const cds = useConsoleDialogStore()
-          cds.showConsoleDialog()
           cds.appendConsoleMessage('固件信息加载异常: ' + error)
           console.error('获取固件信息失败:', error)
         }

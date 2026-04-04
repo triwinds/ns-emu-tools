@@ -138,6 +138,7 @@ fn main() {
             commands::common::load_change_log,
             commands::common::get_github_mirrors,
             commands::common::refresh_github_mirrors,
+            commands::common::take_pending_github_mirror_fallback_notice,
             commands::common::get_game_data,
             commands::common::get_available_firmware_infos,
             commands::common::load_history_path,

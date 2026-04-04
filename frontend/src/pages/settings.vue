@@ -281,7 +281,11 @@ function handleGithubMirrorFallbackNotice(response: GithubMirrorListResponse) {
   }
 
   setting.network.githubDownloadMirror = notice.effective_mirror
-  showGithubMirrorRefreshNotice(notice.message, 'warning', 10000)
+  window.$bus.emit('showNotifyMessage', {
+    type: 'warning',
+    content: notice.message,
+    persistent: true,
+  })
   return true
 }
 

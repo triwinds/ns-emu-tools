@@ -232,6 +232,15 @@ let selectedBranch = ref('')
 const cds = useConsoleDialogStore()
 const configStore = useConfigStore()
 const appStore = useAppStore()
+
+function showNotice(type: 'info' | 'success' | 'warning' | 'error', content: string, persistent = type === 'error') {
+  window.$bus.emit('showNotifyMessage', {
+    type,
+    content,
+    persistent,
+  })
+}
+
 let latestRyujinxVersion = computed(() => {
   if (allRyujinxReleaseInfos.value.length > 0) {
     return allRyujinxReleaseInfos.value[0]['tag_name']
@@ -355,11 +364,12 @@ async function installFirmware() {
 }
 
 async function askAndUpdateRyujinxPath() {
-  cds.cleanAndShowConsoleDialog()
+  cds.cleanMessages()
   cds.appendConsoleMessage('=============================================')
   cds.appendConsoleMessage('选择的目录将作为存放模拟器的根目录')
   cds.appendConsoleMessage('建议新建目录单独存放')
   cds.appendConsoleMessage('=============================================')
+  showNotice('info', '选择的目录将作为存放模拟器的根目录，建议新建目录单独存放', false)
   try {
     const data = await askAndUpdateRyujinxPathApi()
     if (data.code === 0) {

@@ -55,6 +55,12 @@ export interface GithubMirrorListResponse {
   fallback_notice?: GithubMirrorFallbackNotice
 }
 
+export interface AppNoticeMessage {
+  type: MessageType
+  content: string
+  persistent?: boolean
+}
+
 /** Rust 后端序列化的错误结构（见 src-tauri/src/error.rs 的 ErrorResponse） */
 export interface ErrorResponse {
   code: number
@@ -111,10 +117,14 @@ function showGlobalError(cmd: string, error: unknown) {
   const msg = extractErrorMessage(error)
   const line = `[ERROR] ${cmd}: ${msg}`
 
-  // 统一输出到控制台窗口（复用现有 ConsoleDialog）
+  // 统一记录到控制台，并通过应用级 snackbar 提示用户。
   try {
     ;(window as any)?.$bus?.emit?.('APPEND_CONSOLE_MESSAGE', line)
-    ;(window as any)?.$bus?.emit?.('SHOW_CONSOLE_DIALOG')
+    ;(window as any)?.$bus?.emit?.('showNotifyMessage', {
+      type: 'error',
+      content: msg || '操作失败',
+      persistent: true,
+    })
   } catch {
     // ignore
   }
@@ -257,6 +267,11 @@ export async function getGithubMirrors() {
 /** 强制刷新 GitHub 镜像列表 */
 export async function refreshGithubMirrors() {
   return invokeCommand<GithubMirrorListResponse>('refresh_github_mirrors')
+}
+
+/** 获取待展示的 GitHub 镜像失效通知 */
+export async function takePendingGithubMirrorFallbackNotice() {
+  return invokeCommand<GithubMirrorFallbackNotice | null>('take_pending_github_mirror_fallback_notice')
 }
 
 /** 获取游戏数据映射 */
