@@ -295,8 +295,8 @@ where
 
     info!("下载链接：{}", download_url);
 
-    // 获取下载源名称
-    let download_source = get_download_source_name(&download_url);
+    // 获取下载源名称（使用原始 GitLab 地址，因为 download_url 已经过镜像转换）
+    let download_source = get_download_source_name("https://git.ryujinx.app");
     debug!("下载源: {}", download_source);
 
     // 下载
