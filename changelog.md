@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.6.1
+
+- 更新 GitHub 镜像源
+- GitHub 镜像源支持动态加载
+- 添加对 macOS 的支持
+- Rust 下载器优化
+
 ## 0.6.0
 - 后端重构为 Rust + Tauri，大幅减小 exe 文件体积，整体启动、安装与更新流程更加稳定
 - 新增内置 Rust 下载器，可在设置中切换 `Auto` / `Aria2` / `Rust`
