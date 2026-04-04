@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: Run unit tests
@@ -22,7 +22,7 @@ jobs:
       - name: Update github_mirrors.json
         run: node update_github_mirrors.mjs
       - name: Commit changes
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v10
         with:
           author_name: github-actions
           author_email: 41898282+github-actions[bot]@users.noreply.github.com

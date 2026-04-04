@@ -21,7 +21,7 @@ jobs:
       run: |
         python update_game_data.py
     - name: Commit changes
-      uses: EndBug/add-and-commit@v9
+      uses: EndBug/add-and-commit@v10
       with:
         author_name: github-actions
         author_email: 41898282+github-actions[bot]@users.noreply.github.com

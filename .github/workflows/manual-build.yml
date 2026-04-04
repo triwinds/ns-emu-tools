@@ -16,9 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
-    - uses: actions/setup-node@v5
+    - uses: actions/setup-node@v6
       with:
-        node-version: 22
+        node-version: 20
     - uses: oven-sh/setup-bun@v2
     - uses: dtolnay/rust-toolchain@stable
     - uses: mozilla-actions/sccache-action@v0.0.9
