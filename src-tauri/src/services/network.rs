@@ -2,7 +2,9 @@
 //!
 //! 提供 HTTP 请求、代理配置、镜像选择等网络相关功能
 
-use crate::config::{effective_config_dir, user_agent, CONFIG};
+use crate::config::{
+    effective_config_dir, flush_pending_config_save, replace_config, user_agent, CONFIG,
+};
 use crate::error::{AppError, AppResult};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use once_cell::sync::Lazy;
@@ -13,7 +15,7 @@ use reqwest::{Client, Proxy, Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::http;
@@ -39,84 +41,6 @@ static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
     map
 });
 
-// https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js
-/// GitHub 美国 CDN 镜像列表
-pub static GITHUB_US_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
-    vec![
-        GithubMirror::new(
-            "https://nsarchive.e6ex.com/gh",
-            "美国",
-            "[美国 Cloudflare CDN] - 自建代理服务器",
-        ),
-        GithubMirror::new(
-            "https://gh-proxy.org/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [gh-proxy.com] 提供",
-        ),
-        GithubMirror::new(
-            "https://cdn.gh-proxy.org/https://github.com",
-            "美国",
-            "[Fastly CDN] - 该公益加速源由 [gh-proxy.com] 提供",
-        ),
-        GithubMirror::new(
-            "https://edgeone.gh-proxy.org/https://github.com",
-            "美国",
-            "[edgeone] - 该公益加速源由 [gh-proxy.com] 提供",
-        ),
-        GithubMirror::new(
-            "https://github.boki.moe/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [blog.boki.moe] 提供",
-        ),
-        GithubMirror::new(
-            "https://gh.jasonzeng.dev/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [gh.jasonzeng.dev] 提供",
-        ),
-        GithubMirror::new(
-            "https://gh.monlor.com/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [gh.monlor.com] 提供",
-        ),
-        GithubMirror::new(
-            "https://fastgit.cc/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [fastgit.cc] 提供",
-        ),
-        GithubMirror::new(
-            "https://github.ednovas.xyz/https://github.com",
-            "美国",
-            "[美国 Cloudflare CDN] - 该公益加速源由 [github.ednovas.xyz] 提供",
-        ),
-    ]
-});
-
-/// GitHub 其他地区镜像列表
-pub static GITHUB_OTHER_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
-    vec![
-        GithubMirror::new(
-            "https://wget.la/https://github.com",
-            "香港",
-            "[中国香港、中国台湾、日本、美国等]（CDN 不固定） - 该公益加速源由 [ucdn.me] 提供",
-        ),
-        GithubMirror::new(
-            "https://hk.gh-proxy.org/https://github.com",
-            "香港",
-            "[中国香港] - 该公益加速源由 [gh-proxy.com] 提供",
-        ),
-        GithubMirror::new(
-            "https://ghfast.top/https://github.com",
-            "韩国",
-            "[日本、韩国、新加坡、美国、德国等]（CDN 不固定） - 该公益加速源由 [ghproxy] 提供",
-        ),
-        GithubMirror::new(
-            "https://githubfast.com",
-            "韩国",
-            "[韩国] - 该公益加速源由 [Github Fast] 提供",
-        ),
-    ]
-});
-
 /// Chrome User-Agent
 pub const CHROME_UA: &str = concat!(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
@@ -127,6 +51,10 @@ const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const GITHUB_API_FALLBACK_TTL: Duration = Duration::from_secs(120);
 const GITHUB_API_RATE_LIMIT_THRESHOLD: u32 = 2;
+const GITHUB_MIRRORS_CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+const GITHUB_MIRROR_AUTO_SELECT: &str = "cloudflare_load_balance";
+const REMOTE_GITHUB_MIRRORS_URL: &str =
+    "https://cfrp.e6ex.com/rawgit/triwinds/ns-emu-tools/main/github_mirrors.json";
 const GIT_API_JSON_CACHE_TTL: Duration = Duration::from_secs(300);
 const GIT_API_JSON_CACHE_CAPACITY: u64 = 100;
 
@@ -253,15 +181,89 @@ impl GithubMirror {
             description: Cow::Borrowed(description),
         }
     }
+
+    pub fn from_owned(url: String, region: String, description: String) -> Self {
+        Self {
+            url: Cow::Owned(url),
+            region: Cow::Owned(region),
+            description: Cow::Owned(description),
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GithubDownloadTarget {
-    pub url: String,
-    pub source_name: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct GithubMirrorRecord {
+    url: String,
+    region: String,
+    description: String,
 }
 
-pub static GITHUB_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
+impl From<GithubMirrorRecord> for GithubMirror {
+    fn from(value: GithubMirrorRecord) -> Self {
+        GithubMirror::from_owned(value.url, value.region, value.description)
+    }
+}
+
+impl From<&GithubMirror> for GithubMirrorRecord {
+    fn from(value: &GithubMirror) -> Self {
+        Self {
+            url: value.url.to_string(),
+            region: value.region.to_string(),
+            description: value.description.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct GithubMirrorCacheDocument {
+    fetched_at_unix_secs: u64,
+    download_mirrors: Vec<GithubMirrorRecord>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RemoteGithubMirrorsDocument {
+    #[serde(default)]
+    download: Vec<GithubMirrorRecord>,
+}
+
+#[derive(Debug, Clone)]
+struct GithubMirrorCacheState {
+    download_mirrors: Vec<GithubMirror>,
+    fetched_at_unix_secs: Option<u64>,
+}
+
+impl Default for GithubMirrorCacheState {
+    fn default() -> Self {
+        Self {
+            download_mirrors: builtin_github_download_mirrors(),
+            fetched_at_unix_secs: None,
+        }
+    }
+}
+
+impl GithubMirrorCacheState {
+    fn is_fresh(&self, now_unix_secs: u64) -> bool {
+        self.fetched_at_unix_secs
+            .map(|cached_at| {
+                now_unix_secs.saturating_sub(cached_at) < GITHUB_MIRRORS_CACHE_TTL.as_secs()
+            })
+            .unwrap_or(false)
+    }
+
+    fn option_list(&self) -> Vec<GithubMirror> {
+        build_github_mirror_options(&self.download_mirrors)
+    }
+}
+
+fn builtin_github_download_mirrors() -> Vec<GithubMirror> {
+    vec![GithubMirror::new(
+        "https://nsarchive.e6ex.com/gh",
+        "美国",
+        "[美国 Cloudflare CDN] - 自建代理服务器",
+    )]
+}
+
+fn build_github_mirror_options(download_mirrors: &[GithubMirror]) -> Vec<GithubMirror> {
     let mut mirrors = vec![
         GithubMirror::new(
             "cloudflare_load_balance",
@@ -270,10 +272,172 @@ pub static GITHUB_MIRRORS: Lazy<Vec<GithubMirror>> = Lazy::new(|| {
         ),
         GithubMirror::new("direct", "美国", "直连 GitHub"),
     ];
-    mirrors.extend(GITHUB_US_MIRRORS.iter().cloned());
-    mirrors.extend(GITHUB_OTHER_MIRRORS.iter().cloned());
+    mirrors.extend(download_mirrors.iter().cloned());
     mirrors
-});
+}
+
+fn merge_builtin_github_download_mirrors(mirrors: Vec<GithubMirror>) -> Vec<GithubMirror> {
+    let mut merged = builtin_github_download_mirrors();
+    let mut seen = merged
+        .iter()
+        .map(|mirror| mirror.url.to_string())
+        .collect::<HashSet<_>>();
+
+    for mirror in mirrors {
+        let url = mirror.url.to_string();
+        if url.is_empty() || url == "direct" || url == "cloudflare_load_balance" {
+            continue;
+        }
+
+        if seen.insert(url) {
+            merged.push(mirror);
+        }
+    }
+
+    merged
+}
+
+fn normalize_remote_github_download_mirrors(entries: Vec<GithubMirrorRecord>) -> Vec<GithubMirror> {
+    let mut mirrors = Vec::new();
+    let mut seen = HashSet::new();
+
+    for entry in entries {
+        if entry.url.trim().is_empty() {
+            continue;
+        }
+
+        if !is_valid_url(&entry.url) {
+            warn!("忽略无效的 GitHub 镜像 URL: {}", entry.url);
+            continue;
+        }
+
+        if seen.insert(entry.url.clone()) {
+            mirrors.push(entry.into());
+        }
+    }
+
+    merge_builtin_github_download_mirrors(mirrors)
+}
+
+fn github_mirror_cache_file_path() -> PathBuf {
+    effective_config_dir().join("github_mirrors_cache.json")
+}
+
+fn current_unix_timestamp() -> Option<u64> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|duration| duration.as_secs())
+}
+
+fn load_github_mirror_cache_state() -> GithubMirrorCacheState {
+    let cache_path = github_mirror_cache_file_path();
+    let cache_contents = match std::fs::read_to_string(&cache_path) {
+        Ok(contents) => contents,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return GithubMirrorCacheState::default()
+        }
+        Err(e) => {
+            warn!("读取 GitHub 镜像缓存失败: {}", e);
+            return GithubMirrorCacheState::default();
+        }
+    };
+
+    match serde_json::from_str::<GithubMirrorCacheDocument>(&cache_contents) {
+        Ok(document) => GithubMirrorCacheState {
+            download_mirrors: merge_builtin_github_download_mirrors(
+                document
+                    .download_mirrors
+                    .into_iter()
+                    .map(GithubMirror::from)
+                    .collect(),
+            ),
+            fetched_at_unix_secs: Some(document.fetched_at_unix_secs),
+        },
+        Err(e) => {
+            warn!("解析 GitHub 镜像缓存失败: {}", e);
+            GithubMirrorCacheState::default()
+        }
+    }
+}
+
+fn persist_github_mirror_cache(
+    download_mirrors: &[GithubMirror],
+    fetched_at_unix_secs: u64,
+) -> AppResult<()> {
+    let cache_path = github_mirror_cache_file_path();
+    if let Some(parent) = cache_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let document = GithubMirrorCacheDocument {
+        fetched_at_unix_secs,
+        download_mirrors: download_mirrors
+            .iter()
+            .map(GithubMirrorRecord::from)
+            .collect(),
+    };
+    std::fs::write(cache_path, serde_json::to_vec_pretty(&document)?)?;
+    Ok(())
+}
+
+async fn fetch_remote_github_download_mirrors() -> AppResult<Vec<GithubMirror>> {
+    info!("加载远程 GitHub 镜像列表: {}", REMOTE_GITHUB_MIRRORS_URL);
+
+    let client = create_client()?;
+    let response = client
+        .get(REMOTE_GITHUB_MIRRORS_URL)
+        .send()
+        .await
+        .map_err(|e| AppError::Network(format!("获取远程 GitHub 镜像列表失败: {}", e)))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(AppError::Network(format!(
+            "获取远程 GitHub 镜像列表失败: HTTP {}",
+            status
+        )));
+    }
+
+    let payload = response
+        .json::<RemoteGithubMirrorsDocument>()
+        .await
+        .map_err(|e| AppError::Network(format!("解析远程 GitHub 镜像列表失败: {}", e)))?;
+
+    let mirrors = normalize_remote_github_download_mirrors(payload.download);
+    if mirrors.is_empty() {
+        return Err(AppError::Network("远程 GitHub 镜像列表为空".to_string()));
+    }
+
+    Ok(mirrors)
+}
+
+static GITHUB_DOWNLOAD_MIRROR_STATE: Lazy<RwLock<GithubMirrorCacheState>> =
+    Lazy::new(|| RwLock::new(load_github_mirror_cache_state()));
+static GITHUB_MIRROR_REFRESH_LOCK: Lazy<tokio::sync::Mutex<()>> =
+    Lazy::new(|| tokio::sync::Mutex::new(()));
+static PENDING_GITHUB_MIRROR_FALLBACK_NOTICE: Lazy<RwLock<Option<GithubMirrorFallbackNotice>>> =
+    Lazy::new(|| RwLock::new(None));
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GithubMirrorFallbackNotice {
+    pub previous_mirror: String,
+    pub effective_mirror: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GithubMirrorListResult {
+    pub mirrors: Vec<GithubMirror>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_notice: Option<GithubMirrorFallbackNotice>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GithubDownloadTarget {
+    pub url: String,
+    pub source_name: String,
+}
 
 /// 下载选项（用于多线程下载配置）
 #[derive(Debug, Clone)]
@@ -606,14 +770,205 @@ pub fn is_using_proxy() -> bool {
     get_proxy_url().is_some()
 }
 
+fn current_github_download_mirrors() -> Vec<GithubMirror> {
+    GITHUB_DOWNLOAD_MIRROR_STATE.read().download_mirrors.clone()
+}
+
+fn current_github_mirrors() -> Vec<GithubMirror> {
+    GITHUB_DOWNLOAD_MIRROR_STATE.read().option_list()
+}
+
+fn current_github_mirror_state() -> GithubMirrorCacheState {
+    GITHUB_DOWNLOAD_MIRROR_STATE.read().clone()
+}
+
+fn take_pending_github_mirror_fallback_notice() -> Option<GithubMirrorFallbackNotice> {
+    PENDING_GITHUB_MIRROR_FALLBACK_NOTICE.write().take()
+}
+
+fn store_pending_github_mirror_fallback_notice(notice: GithubMirrorFallbackNotice) {
+    *PENDING_GITHUB_MIRROR_FALLBACK_NOTICE.write() = Some(notice);
+}
+
+fn is_known_github_download_mirror(mirror: &str, state: &GithubMirrorCacheState) -> bool {
+    mirror.is_empty()
+        || mirror == "direct"
+        || mirror == GITHUB_MIRROR_AUTO_SELECT
+        || state
+            .download_mirrors
+            .iter()
+            .any(|candidate| candidate.url == mirror)
+}
+
+fn github_mirror_notice_label(mirror: &str) -> String {
+    if mirror == GITHUB_MIRROR_AUTO_SELECT {
+        return "自动选择".to_string();
+    }
+
+    if mirror.is_empty() || mirror == "direct" {
+        return "直连".to_string();
+    }
+
+    if let Ok(url) = Url::parse(mirror) {
+        if let Some(host) = url.host_str() {
+            return host.to_string();
+        }
+    }
+
+    mirror.to_string()
+}
+
+fn build_github_mirror_fallback_notice(previous_mirror: &str) -> GithubMirrorFallbackNotice {
+    GithubMirrorFallbackNotice {
+        previous_mirror: previous_mirror.to_string(),
+        effective_mirror: GITHUB_MIRROR_AUTO_SELECT.to_string(),
+        message: format!(
+            "之前选择的 GitHub 下载源 {} 已失效，现已自动切换为自动选择，并更新 config.json。",
+            github_mirror_notice_label(previous_mirror)
+        ),
+    }
+}
+
+fn validate_and_repair_configured_github_download_mirror(
+    state: &GithubMirrorCacheState,
+) -> AppResult<Option<GithubMirrorFallbackNotice>> {
+    if state.fetched_at_unix_secs.is_none() {
+        return Ok(None);
+    }
+
+    let configured_mirror = {
+        let config = CONFIG.read();
+        config.setting.network.github_download_mirror.clone()
+    };
+
+    if is_known_github_download_mirror(&configured_mirror, state) {
+        return Ok(None);
+    }
+
+    let mut updated_config = {
+        let config = CONFIG.read();
+        if config.setting.network.github_download_mirror != configured_mirror {
+            return Ok(None);
+        }
+        config.clone()
+    };
+
+    updated_config.setting.network.github_download_mirror = GITHUB_MIRROR_AUTO_SELECT.to_string();
+    replace_config(updated_config)?;
+    flush_pending_config_save()?;
+
+    let notice = build_github_mirror_fallback_notice(&configured_mirror);
+    warn!("{}", notice.message);
+    Ok(Some(notice))
+}
+
+fn effective_github_download_mirror_from_config() -> String {
+    let configured_mirror = {
+        let config = CONFIG.read();
+        config.setting.network.github_download_mirror.clone()
+    };
+    let state = current_github_mirror_state();
+
+    if state.fetched_at_unix_secs.is_some()
+        && !is_known_github_download_mirror(&configured_mirror, &state)
+    {
+        if let Ok(Some(notice)) = validate_and_repair_configured_github_download_mirror(&state) {
+            store_pending_github_mirror_fallback_notice(notice);
+        }
+        return GITHUB_MIRROR_AUTO_SELECT.to_string();
+    }
+
+    configured_mirror
+}
+
+fn build_github_mirror_list_result(
+    mirrors: Vec<GithubMirror>,
+    fallback_notice: Option<GithubMirrorFallbackNotice>,
+) -> GithubMirrorListResult {
+    GithubMirrorListResult {
+        mirrors,
+        fallback_notice,
+    }
+}
+
+async fn load_github_mirrors(force_refresh: bool) -> AppResult<Vec<GithubMirror>> {
+    if !force_refresh {
+        if let Some(now_unix_secs) = current_unix_timestamp() {
+            let state = GITHUB_DOWNLOAD_MIRROR_STATE.read();
+            if state.is_fresh(now_unix_secs) {
+                return Ok(state.option_list());
+            }
+        }
+    }
+
+    let _refresh_guard = GITHUB_MIRROR_REFRESH_LOCK.lock().await;
+
+    if !force_refresh {
+        if let Some(now_unix_secs) = current_unix_timestamp() {
+            let state = GITHUB_DOWNLOAD_MIRROR_STATE.read();
+            if state.is_fresh(now_unix_secs) {
+                return Ok(state.option_list());
+            }
+        }
+    }
+
+    let fetched_at_unix_secs = current_unix_timestamp()
+        .ok_or_else(|| AppError::Unknown("无法获取当前系统时间".to_string()))?;
+    let download_mirrors = fetch_remote_github_download_mirrors().await?;
+    persist_github_mirror_cache(&download_mirrors, fetched_at_unix_secs)?;
+
+    let mut state = GITHUB_DOWNLOAD_MIRROR_STATE.write();
+    state.download_mirrors = download_mirrors;
+    state.fetched_at_unix_secs = Some(fetched_at_unix_secs);
+    Ok(state.option_list())
+}
+
 /// 获取所有 GitHub 镜像列表
-pub fn get_github_mirrors() -> Vec<GithubMirror> {
-    GITHUB_MIRRORS.clone()
+pub async fn get_github_mirrors() -> AppResult<GithubMirrorListResult> {
+    let fallback_notice = match load_github_mirrors(false).await {
+        Ok(_) => {
+            let state = current_github_mirror_state();
+            validate_and_repair_configured_github_download_mirror(&state)?
+                .or_else(take_pending_github_mirror_fallback_notice)
+        }
+        Err(e) => {
+            warn!("刷新 GitHub 镜像列表失败，回退到当前缓存: {}", e);
+            let state = current_github_mirror_state();
+            validate_and_repair_configured_github_download_mirror(&state)?
+                .or_else(take_pending_github_mirror_fallback_notice)
+        }
+    };
+
+    Ok(build_github_mirror_list_result(
+        current_github_mirrors(),
+        fallback_notice,
+    ))
+}
+
+/// 强制刷新 GitHub 镜像列表
+pub async fn refresh_github_mirrors() -> AppResult<GithubMirrorListResult> {
+    let _ = load_github_mirrors(true).await?;
+    let state = current_github_mirror_state();
+    let fallback_notice = validate_and_repair_configured_github_download_mirror(&state)?;
+    Ok(build_github_mirror_list_result(
+        current_github_mirrors(),
+        fallback_notice,
+    ))
+}
+
+/// 应用启动时异步预热 GitHub 镜像缓存
+pub async fn warmup_github_mirror_cache() -> AppResult<()> {
+    let _ = load_github_mirrors(false).await?;
+    let state = current_github_mirror_state();
+    if let Some(notice) = validate_and_repair_configured_github_download_mirror(&state)? {
+        store_pending_github_mirror_fallback_notice(notice);
+    }
+    Ok(())
 }
 
 fn find_github_mirror_description(mirror: &str) -> Option<String> {
-    GITHUB_MIRRORS
-        .iter()
+    current_github_mirrors()
+        .into_iter()
         .find(|candidate| {
             mirror.starts_with(candidate.url.as_ref()) || candidate.url.as_ref().starts_with(mirror)
         })
@@ -649,7 +1004,8 @@ fn resolve_github_download_target_with_mirror(
 
     if mirror == "cloudflare_load_balance" {
         let mut rng = rand::rng();
-        if let Some(choice) = GITHUB_US_MIRRORS.choose(&mut rng) {
+        let download_mirrors = current_github_download_mirrors();
+        if let Some(choice) = download_mirrors.choose(&mut rng) {
             info!("使用 GitHub 镜像: {}", choice.description);
             let url = origin_url.replace("https://github.com", choice.url.as_ref());
             debug!("镜像链接：{}", url);
@@ -675,10 +1031,7 @@ fn resolve_github_download_target_with_mirror(
 }
 
 pub fn resolve_github_download_target(origin_url: &str) -> GithubDownloadTarget {
-    let mirror = {
-        let config = CONFIG.read();
-        config.setting.network.github_download_mirror.clone()
-    };
+    let mirror = effective_github_download_mirror_from_config();
 
     resolve_github_download_target_with_mirror(origin_url, &mirror)
 }
@@ -690,10 +1043,7 @@ pub fn get_github_download_url(origin_url: &str) -> String {
 
 /// 获取 GitHub 下载源名称（用于显示）
 pub fn get_github_download_source_name() -> String {
-    let mirror = {
-        let config = CONFIG.read();
-        config.setting.network.github_download_mirror.clone()
-    };
+    let mirror = effective_github_download_mirror_from_config();
 
     github_source_name_from_mirror(&mirror)
 }
@@ -973,10 +1323,40 @@ mod tests {
 
     #[test]
     fn test_github_mirror_list() {
-        let mirrors = get_github_mirrors();
+        let mirrors = current_github_mirrors();
         assert!(mirrors.len() > 2);
         assert_eq!(mirrors[0].url, "cloudflare_load_balance");
         assert_eq!(mirrors[1].url, "direct");
+    }
+
+    #[test]
+    fn test_normalize_remote_github_download_mirrors_keeps_builtin_and_deduplicates() {
+        let mirrors = normalize_remote_github_download_mirrors(vec![
+            GithubMirrorRecord {
+                url: "https://nsarchive.e6ex.com/gh".to_string(),
+                region: "美国".to_string(),
+                description: "duplicate".to_string(),
+            },
+            GithubMirrorRecord {
+                url: "https://gh-proxy.org/https://github.com".to_string(),
+                region: "美国".to_string(),
+                description: "remote".to_string(),
+            },
+            GithubMirrorRecord {
+                url: "https://gh-proxy.org/https://github.com".to_string(),
+                region: "美国".to_string(),
+                description: "remote duplicate".to_string(),
+            },
+        ]);
+
+        assert_eq!(mirrors[0].url, "https://nsarchive.e6ex.com/gh");
+        assert_eq!(
+            mirrors
+                .iter()
+                .filter(|mirror| mirror.url == "https://gh-proxy.org/https://github.com")
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -1101,10 +1481,11 @@ mod tests {
     async fn test_github_us_mirrors() {
         let mut invalid_mirrors = Vec::new();
 
-        // 跳过第一个镜像（与 Python 版本一致）
-        let test_mirrors = &GITHUB_US_MIRRORS[1..];
+        let test_mirrors = fetch_remote_github_download_mirrors()
+            .await
+            .expect("expected remote mirrors");
 
-        for mirror in test_mirrors {
+        for mirror in test_mirrors.iter().skip(1) {
             print!("testing {}... ", mirror.description);
 
             // 构建测试 URL

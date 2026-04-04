@@ -4,6 +4,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::services::network::{self, get_durable_cached_client, get_final_url};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use tracing::{info, warn};
@@ -13,18 +14,70 @@ const REMOTE_GAME_DATA_URL: &str =
 const LOCAL_GAME_DATA_JSON: &str =
     include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../game_data.json"));
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GithubMirrorFallbackInfo {
+    pub previous_mirror: String,
+    pub effective_mirror: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GithubMirrorListResponse {
+    pub mirrors: Vec<(String, String, String)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_notice: Option<GithubMirrorFallbackInfo>,
+}
+
 /// 获取可用的 GitHub 镜像列表。
-pub fn get_github_mirrors() -> Vec<(String, String, String)> {
-    network::get_github_mirrors()
-        .into_iter()
-        .map(|mirror| {
-            (
-                mirror.url.to_string(),
-                mirror.region.to_string(),
-                mirror.description.to_string(),
-            )
-        })
-        .collect()
+pub async fn get_github_mirrors() -> AppResult<GithubMirrorListResponse> {
+    let result = network::get_github_mirrors().await?;
+
+    Ok(GithubMirrorListResponse {
+        mirrors: result
+            .mirrors
+            .into_iter()
+            .map(|mirror| {
+                (
+                    mirror.url.to_string(),
+                    mirror.region.to_string(),
+                    mirror.description.to_string(),
+                )
+            })
+            .collect(),
+        fallback_notice: result
+            .fallback_notice
+            .map(|notice| GithubMirrorFallbackInfo {
+                previous_mirror: notice.previous_mirror,
+                effective_mirror: notice.effective_mirror,
+                message: notice.message,
+            }),
+    })
+}
+
+/// 强制刷新 GitHub 镜像列表。
+pub async fn refresh_github_mirrors() -> AppResult<GithubMirrorListResponse> {
+    let result = network::refresh_github_mirrors().await?;
+
+    Ok(GithubMirrorListResponse {
+        mirrors: result
+            .mirrors
+            .into_iter()
+            .map(|mirror| {
+                (
+                    mirror.url.to_string(),
+                    mirror.region.to_string(),
+                    mirror.description.to_string(),
+                )
+            })
+            .collect(),
+        fallback_notice: result
+            .fallback_notice
+            .map(|notice| GithubMirrorFallbackInfo {
+                previous_mirror: notice.previous_mirror,
+                effective_mirror: notice.effective_mirror,
+                message: notice.message,
+            }),
+    })
 }
 
 fn parse_game_data(contents: &str) -> AppResult<HashMap<String, Value>> {
@@ -72,11 +125,11 @@ pub async fn get_game_data() -> AppResult<HashMap<String, Value>> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_get_github_mirrors() {
-        let mirrors = get_github_mirrors();
-        assert!(mirrors.len() > 2);
-        assert_eq!(mirrors[0].0, "cloudflare_load_balance");
+    #[tokio::test]
+    async fn test_get_github_mirrors() {
+        let response = get_github_mirrors().await.expect("expected mirror list");
+        assert!(response.mirrors.len() > 2);
+        assert_eq!(response.mirrors[0].0, "cloudflare_load_balance");
     }
 
     #[test]

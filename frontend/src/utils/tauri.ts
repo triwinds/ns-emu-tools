@@ -44,6 +44,17 @@ export interface NotifyMessage {
   persistent: boolean
 }
 
+export interface GithubMirrorFallbackNotice {
+  previous_mirror: string
+  effective_mirror: string
+  message: string
+}
+
+export interface GithubMirrorListResponse {
+  mirrors: Array<[string, string, string]>
+  fallback_notice?: GithubMirrorFallbackNotice
+}
+
 /** Rust 后端序列化的错误结构（见 src-tauri/src/error.rs 的 ErrorResponse） */
 export interface ErrorResponse {
   code: number
@@ -63,7 +74,7 @@ function tryParseJson(text: string): unknown {
   }
 }
 
-function extractErrorMessage(error: unknown): string {
+export function extractErrorMessage(error: unknown): string {
   // 1) 直接字符串
   if (typeof error === 'string') return error
 
@@ -240,7 +251,12 @@ export async function updateSelfByTag(tag: string) {
 
 /** 获取 GitHub 镜像列表 */
 export async function getGithubMirrors() {
-  return invokeCommand<Array<[string, string, string]>>('get_github_mirrors')
+  return invokeCommand<GithubMirrorListResponse>('get_github_mirrors')
+}
+
+/** 强制刷新 GitHub 镜像列表 */
+export async function refreshGithubMirrors() {
+  return invokeCommand<GithubMirrorListResponse>('refresh_github_mirrors')
 }
 
 /** 获取游戏数据映射 */

@@ -107,6 +107,15 @@ fn main() {
             if let Some(window) = app.get_webview_window("main") {
                 setup_window(&window);
             }
+
+            tauri::async_runtime::spawn(async {
+                if let Err(e) =
+                    ns_emu_tools_lib::services::network::warmup_github_mirror_cache().await
+                {
+                    tracing::warn!("预热 GitHub 镜像缓存失败: {}", e);
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -128,6 +137,7 @@ fn main() {
             commands::common::check_update,
             commands::common::load_change_log,
             commands::common::get_github_mirrors,
+            commands::common::refresh_github_mirrors,
             commands::common::get_game_data,
             commands::common::get_available_firmware_infos,
             commands::common::load_history_path,

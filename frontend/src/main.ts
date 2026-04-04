@@ -40,6 +40,11 @@ window.$bus.on('SHOW_CONSOLE_DIALOG', () => {
     cds.showConsoleDialog()
 })
 
+function isIgnorableWindowError(message: string): boolean {
+    return message === 'ResizeObserver loop completed with undelivered notifications.'
+        || message === 'ResizeObserver loop limit exceeded'
+}
+
 // Global JS error handlers: best-effort surface unexpected errors
 window.addEventListener('unhandledrejection', (event) => {
     const reason: any = (event as any).reason
@@ -52,6 +57,10 @@ window.addEventListener('unhandledrejection', (event) => {
 window.addEventListener('error', (event) => {
     const anyEvent: any = event as any
     const message = anyEvent?.message ? String(anyEvent.message) : 'Unknown error'
+    if (isIgnorableWindowError(message)) {
+        event.preventDefault()
+        return
+    }
     cds.appendConsoleMessage(`[WINDOW_ERROR] ${message}`)
     cds.showConsoleDialog()
     console.error('Window error:', event)

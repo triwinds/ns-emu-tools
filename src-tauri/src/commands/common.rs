@@ -197,8 +197,20 @@ pub async fn load_change_log() -> Result<String, String> {
 
 /// 获取 GitHub 镜像列表
 #[command]
-pub fn get_github_mirrors() -> Vec<(String, String, String)> {
+pub async fn get_github_mirrors(
+) -> Result<crate::repositories::config_data::GithubMirrorListResponse, String> {
     config_data::get_github_mirrors()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 强制刷新 GitHub 镜像列表
+#[command]
+pub async fn refresh_github_mirrors(
+) -> Result<crate::repositories::config_data::GithubMirrorListResponse, String> {
+    config_data::refresh_github_mirrors()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// 获取游戏数据映射

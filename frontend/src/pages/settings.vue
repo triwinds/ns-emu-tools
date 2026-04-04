@@ -1,5 +1,13 @@
 <template>
   <SimplePage>
+    <v-snackbar
+        v-model="githubMirrorRefreshNotice.visible"
+        :color="githubMirrorRefreshNotice.color"
+        :timeout="githubMirrorRefreshNotice.timeout"
+        location="top"
+    >
+      {{ githubMirrorRefreshNotice.text }}
+    </v-snackbar>
     <v-card>
       <v-card-title class="text-h4 text-primary">
         设置
@@ -41,17 +49,33 @@
             variant="underlined"
             color="primary"
         ></v-select>
-        <v-select
-            v-model="setting.network.githubDownloadMirror"
-            :items="availableGithubDownloadSource"
-            item-title="name"
-            item-value="value"
-            label="GitHub 下载源配置"
-            persistent-hint
-            hint="如果速度可以接受，希望大家尽量多使用前面的美国节点，避免流量都集中到亚洲公益节点，减少成本压力运营才能更持久~"
-            variant="underlined"
-            color="primary"
-        ></v-select>
+        <v-row align="center">
+          <v-col>
+            <v-select
+                v-model="setting.network.githubDownloadMirror"
+                :items="availableGithubDownloadSource"
+                item-title="name"
+                item-value="value"
+                label="GitHub 下载源配置"
+                persistent-hint
+                hint="如果速度可以接受，希望大家尽量多使用前面的美国节点，避免流量都集中到亚洲公益节点，减少成本压力运营才能更持久~"
+                variant="underlined"
+                color="primary"
+            ></v-select>
+          </v-col>
+          <v-col cols="auto">
+            <v-btn
+                color="primary"
+                variant="text"
+                :prepend-icon="mdiRefresh"
+                :loading="isRefreshingGithubMirrors"
+                :disabled="isRefreshingGithubMirrors"
+                @click="onRefreshGithubMirrors"
+            >
+              刷新列表
+            </v-btn>
+          </v-col>
+        </v-row>
         <v-divider style="margin-bottom: 10px; margin-top: 10px"></v-divider>
         <v-select
             v-model="proxyMode"
@@ -133,10 +157,18 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import {onBeforeMount, onMounted, ref, watch} from "vue";
 import type {NameValueItem, Setting} from "@/types";
 import {defaultConfig} from "@/types/DefaultConfig";
-import { updateSetting, getGithubMirrors, openConfigFolder } from "@/utils/tauri";
+import {
+  extractErrorMessage,
+  updateSetting,
+  getGithubMirrors,
+  openConfigFolder,
+  refreshGithubMirrors,
+  type GithubMirrorListResponse,
+} from "@/utils/tauri";
 import {
   mdiFolderOpenOutline,
-  mdiHelpCircle
+  mdiHelpCircle,
+  mdiRefresh
 } from '@mdi/js'
 
 let configStore = useConfigStore()
@@ -158,6 +190,13 @@ let availableDownloadBackend = [
   {name: 'Rust - 内置下载器', value: 'rust'},
 ]
 let availableGithubDownloadSource = ref<NameValueItem[]>([])
+let isRefreshingGithubMirrors = ref(false)
+let githubMirrorRefreshNotice = ref({
+  visible: false,
+  text: '',
+  color: 'success',
+  timeout: 3000,
+})
 let availableProxyMode = [
     {name: '自动检测系统代理', value: 'system'},
     {name: '手动配置 HTTP 代理', value: 'http'},
@@ -202,14 +241,74 @@ onMounted(async () => {
   }, {deep: true, immediate: false})
 })
 
+function applyGithubMirrorOptions(mirrors: Array<[string, string, string]>) {
+  const options = mirrors.map((mirror) => ({name: formatGithubMirrorOptionName(mirror[2]), value: mirror[0]}))
+
+  const currentMirror = setting.network.githubDownloadMirror
+  if (currentMirror && !options.some((option) => option.value === currentMirror)) {
+    options.push({name: `当前配置: ${currentMirror}`, value: currentMirror})
+  }
+
+  availableGithubDownloadSource.value = options
+}
+
+function formatGithubMirrorOptionName(name: string) {
+  const trimmedName = name
+    .replace(/\s*提示[:：][\s\S]*$/u, '')
+    .replace(/\s+/gu, ' ')
+    .trim()
+
+  return trimmedName || name.trim()
+}
+
+function showGithubMirrorRefreshNotice(
+  text: string,
+  color: 'success' | 'error' | 'warning',
+  timeout: number = 3000,
+) {
+  githubMirrorRefreshNotice.value = {
+    visible: true,
+    text,
+    color,
+    timeout,
+  }
+}
+
+function handleGithubMirrorFallbackNotice(response: GithubMirrorListResponse) {
+  const notice = response.fallback_notice
+  if (!notice) {
+    return false
+  }
+
+  setting.network.githubDownloadMirror = notice.effective_mirror
+  showGithubMirrorRefreshNotice(notice.message, 'warning', 10000)
+  return true
+}
+
 async function loadAvailableGithubDownloadSource() {
   try {
-    const mirrors = await getGithubMirrors()
-    for (const mirror of mirrors) {
-      availableGithubDownloadSource.value.push({name: mirror[2], value: mirror[0]})
-    }
+    const response = await getGithubMirrors()
+    applyGithubMirrorOptions(response.mirrors)
+    handleGithubMirrorFallbackNotice(response)
   } catch (e) {
     console.error('Failed to load github mirrors:', e)
+  }
+}
+
+async function onRefreshGithubMirrors() {
+  isRefreshingGithubMirrors.value = true
+  try {
+    const response = await refreshGithubMirrors()
+    applyGithubMirrorOptions(response.mirrors)
+    if (!handleGithubMirrorFallbackNotice(response)) {
+      showGithubMirrorRefreshNotice(`GitHub 镜像列表已刷新，共 ${response.mirrors.length} 个选项`, 'success')
+    }
+  } catch (e) {
+    console.error('Failed to refresh github mirrors:', e)
+    showGithubMirrorRefreshNotice(`刷新 GitHub 镜像列表失败: ${extractErrorMessage(e)}`, 'error')
+    await loadAvailableGithubDownloadSource()
+  } finally {
+    isRefreshingGithubMirrors.value = false
   }
 }
 
