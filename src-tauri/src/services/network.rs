@@ -6,6 +6,7 @@ use crate::config::{
     effective_config_dir, flush_pending_config_save, replace_config, user_agent, CONFIG,
 };
 use crate::error::{AppError, AppResult};
+use crate::services::doh::configure_reqwest_client_builder;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
@@ -32,11 +33,15 @@ static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
     );
     map.insert(
         "https://git.ryujinx.app",
-        "https://nsarchive.e6ex.com/ryujinx_official",
+        "https://nsa2.e6ex.com/ryujinx_official",
+    );
+    map.insert(
+        "https://legacy.git.ryujinx.app",
+        "https://nsa2.e6ex.com/ryujinx_official_legacy",
     );
     map.insert(
         "https://git.eden-emu.dev",
-        "https://nsarchive.e6ex.com/eden_official",
+        "https://nsa2.e6ex.com/eden_official",
     );
     map
 });
@@ -257,7 +262,7 @@ impl GithubMirrorCacheState {
 
 fn builtin_github_download_mirrors() -> Vec<GithubMirror> {
     vec![GithubMirror::new(
-        "https://nsarchive.e6ex.com/gh",
+        "https://nsa2.e6ex.com/gh",
         "美国",
         "[美国 Cloudflare CDN] - 自建代理服务器",
     )]
@@ -502,6 +507,8 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
     } else {
         debug!("不使用代理创建客户端");
     }
+
+    builder = configure_reqwest_client_builder(builder)?;
 
     builder.build().map_err(|e| {
         warn!("创建 HTTP 客户端失败: {}", e);
@@ -1337,7 +1344,7 @@ mod tests {
     fn test_normalize_remote_github_download_mirrors_keeps_builtin_and_deduplicates() {
         let mirrors = normalize_remote_github_download_mirrors(vec![
             GithubMirrorRecord {
-                url: "https://nsarchive.e6ex.com/gh".to_string(),
+                url: "https://nsa2.e6ex.com/gh".to_string(),
                 region: "美国".to_string(),
                 description: "duplicate".to_string(),
             },
@@ -1353,7 +1360,7 @@ mod tests {
             },
         ]);
 
-        assert_eq!(mirrors[0].url, "https://nsarchive.e6ex.com/gh");
+        assert_eq!(mirrors[0].url, "https://nsa2.e6ex.com/gh");
         assert_eq!(
             mirrors
                 .iter()
@@ -1375,13 +1382,13 @@ mod tests {
         let ryujinx_url = "https://git.ryujinx.app/api/v4/projects/1/releases";
         assert_eq!(
             get_override_url(ryujinx_url),
-            "https://nsarchive.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
+            "https://nsa2.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
         );
 
         let eden_url = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases";
         assert_eq!(
             get_override_url(eden_url),
-            "https://nsarchive.e6ex.com/eden_official/api/v1/repos/eden-emu/eden/releases"
+            "https://nsa2.e6ex.com/eden_official/api/v1/repos/eden-emu/eden/releases"
         );
     }
 
