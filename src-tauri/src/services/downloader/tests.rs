@@ -198,12 +198,12 @@ mod tests {
     }
 
     #[test]
-    fn test_auto_backend_prefers_bytehaul_then_aria2() {
+    fn test_auto_backend_prefers_rust_then_aria2() {
         use super::super::{auto_backend_candidates, DownloadBackend};
 
         assert_eq!(
             auto_backend_candidates(),
-            [DownloadBackend::Bytehaul, DownloadBackend::Aria2]
+            [DownloadBackend::Rust, DownloadBackend::Aria2]
         );
     }
 
@@ -218,16 +218,16 @@ mod tests {
     }
 
     #[test]
-    fn test_rust_backend_alias_maps_to_bytehaul() {
+    fn test_bytehaul_backend_alias_maps_to_rust() {
         use super::super::{canonical_backend, DownloadBackend};
 
         assert_eq!(
-            canonical_backend(DownloadBackend::Rust),
-            DownloadBackend::Bytehaul
+            canonical_backend(DownloadBackend::Bytehaul),
+            DownloadBackend::Rust
         );
         assert_eq!(
-            canonical_backend(DownloadBackend::Bytehaul),
-            DownloadBackend::Bytehaul
+            canonical_backend(DownloadBackend::Rust),
+            DownloadBackend::Rust
         );
         assert_eq!(
             canonical_backend(DownloadBackend::Aria2),

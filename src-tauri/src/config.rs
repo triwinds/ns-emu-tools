@@ -408,7 +408,7 @@ pub struct DownloadSetting {
     /// 删除旧的 aria2 日志文件
     #[serde(default = "default_true")]
     pub remove_old_aria2_log_file: bool,
-    /// 下载后端 (auto, aria2, rust, bytehaul)。其中 auto 默认优先 bytehaul，rust 为兼容旧配置的别名。
+    /// 下载后端 (auto, aria2, rust, bytehaul)。其中 auto 默认优先 rust，bytehaul 为兼容旧配置的别名。
     #[serde(default = "default_download_backend")]
     pub backend: String,
 }
@@ -509,6 +509,10 @@ pub struct Config {
 }
 
 impl Config {
+    fn normalize_download_backend_alias(&mut self) -> bool {
+        normalize_download_backend_alias_value(&mut self.setting.download.backend)
+    }
+
     /// 从文件加载配置
     pub fn load() -> AppResult<Self> {
         let path = config_path();
@@ -516,7 +520,11 @@ impl Config {
         if path.exists() {
             info!("正在从 {} 加载配置", path.display());
             let content = std::fs::read_to_string(&path)?;
-            let config: Config = serde_json::from_str(&content)?;
+            let mut config: Config = serde_json::from_str(&content)?;
+            if config.normalize_download_backend_alias() {
+                info!("download.backend = bytehaul 已废弃，自动映射为 rust");
+                persist_config_snapshot(&config)?;
+            }
             debug!("配置加载成功");
             Ok(config)
         } else {
@@ -529,8 +537,21 @@ impl Config {
 
     /// 保存配置到文件
     pub fn save(&self) -> AppResult<()> {
-        CONFIG_PERSISTENCE.persist_now(self.clone())
+        let mut snapshot = self.clone();
+        if snapshot.normalize_download_backend_alias() {
+            info!("download.backend = bytehaul 已废弃，保存时自动映射为 rust");
+        }
+        CONFIG_PERSISTENCE.persist_now(snapshot)
     }
+}
+
+fn normalize_download_backend_alias_value(backend: &mut String) -> bool {
+    if backend.trim().eq_ignore_ascii_case("bytehaul") {
+        *backend = "rust".to_string();
+        return true;
+    }
+
+    false
 }
 
 /// 更新上次打开的模拟器页面
@@ -568,7 +589,11 @@ pub fn update_dark_state(dark: bool) -> AppResult<()> {
 }
 
 /// 更新设置
-pub fn update_setting(setting: CommonSetting) -> AppResult<()> {
+pub fn update_setting(mut setting: CommonSetting) -> AppResult<()> {
+    if normalize_download_backend_alias_value(&mut setting.download.backend) {
+        info!("download.backend = bytehaul 已废弃，更新设置时自动映射为 rust");
+    }
+
     let snapshot = {
         let mut config = CONFIG.write();
         if config.setting == setting {
@@ -605,7 +630,11 @@ pub fn get_config() -> Config {
 }
 
 /// 使用新配置替换当前配置并延迟保存。
-pub fn replace_config(config: Config) -> AppResult<()> {
+pub fn replace_config(mut config: Config) -> AppResult<()> {
+    if config.normalize_download_backend_alias() {
+        info!("download.backend = bytehaul 已废弃，替换配置时自动映射为 rust");
+    }
+
     let snapshot = {
         let mut current = CONFIG.write();
         if *current == config {
@@ -646,5 +675,27 @@ mod tests {
         let json = serde_json::to_string_pretty(&config).unwrap();
         let parsed: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(config.yuzu.branch, parsed.yuzu.branch);
+    }
+
+    #[test]
+    fn test_normalize_download_backend_rewrites_bytehaul_alias_to_rust() {
+        let mut config = Config::default();
+        config.setting.download.backend = "bytehaul".to_string();
+
+        let changed = config.normalize_download_backend_alias();
+
+        assert!(changed);
+        assert_eq!(config.setting.download.backend, "rust");
+    }
+
+    #[test]
+    fn test_normalize_download_backend_keeps_rust_value() {
+        let mut config = Config::default();
+        config.setting.download.backend = "rust".to_string();
+
+        let changed = config.normalize_download_backend_alias();
+
+        assert!(!changed);
+        assert_eq!(config.setting.download.backend, "rust");
     }
 }

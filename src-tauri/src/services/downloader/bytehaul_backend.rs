@@ -336,7 +336,7 @@ impl BytehaulTask {
                 })
             }
             BytehaulState::Failed => Err(AppError::Download(format!(
-                "bytehaul 下载失败: {}",
+                "rust 下载失败: {}",
                 self.output_path.display()
             ))),
             BytehaulState::Cancelled => Err(AppError::Download("下载已取消".to_string())),
@@ -394,10 +394,10 @@ impl BytehaulTask {
             control_temp_file_path(&self.output_path),
         ] {
             match tokio::fs::remove_file(&path).await {
-                Ok(()) => debug!("已删除 bytehaul 下载文件: {}", path.display()),
+                Ok(()) => debug!("已删除 rust 下载文件: {}", path.display()),
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
                 Err(error) => {
-                    warn!("删除 bytehaul 下载文件失败: {} ({})", path.display(), error);
+                    warn!("删除 rust 下载文件失败: {} ({})", path.display(), error);
                 }
             }
         }
@@ -717,6 +717,29 @@ mod tests {
         assert_eq!(output_path, expected_dir.join("artifact.bin"));
         assert_eq!(spec.get_output_dir(), Some(expected_dir.as_path()));
         assert_eq!(spec.get_output_path(), Some(Path::new("artifact.bin")));
+    }
+
+    #[test]
+    fn test_failed_task_uses_rust_backend_name_in_error() {
+        let downloader = Arc::new(Downloader::builder().enable_ipv6(false).build().unwrap());
+        let output_path = PathBuf::from("artifact.bin");
+        let spec =
+            DownloadSpec::new("https://example.com/artifact.bin").output_path(output_path.clone());
+        let task = BytehaulTask::new(
+            "bytehaul-test".to_string(),
+            downloader,
+            spec,
+            output_path.clone(),
+            false,
+        );
+
+        task.finish_terminal_state(BytehaulState::Failed);
+
+        let error = task.final_result.lock().take().unwrap().unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!("下载错误: rust 下载失败: {}", output_path.display())
+        );
     }
 
     #[tokio::test]

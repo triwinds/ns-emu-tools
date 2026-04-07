@@ -1,6 +1,6 @@
 //! 统一下载模块
 //!
-//! 提供统一的下载接口，支持 bytehaul 和 aria2 fallback
+//! 提供统一的下载接口，支持 rust 和 aria2 fallback
 //!
 //! # 使用方式
 //!
@@ -73,13 +73,13 @@ impl Drop for TransientDownloadManagerGuard {
 /// 下载后端类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DownloadBackend {
-    /// 自动选择：优先 bytehaul，不可用时回退 aria2
+    /// 自动选择：优先 rust，不可用时回退 aria2
     Auto,
     /// 强制使用 aria2
     Aria2,
-    /// 强制使用 bytehaul
+    /// 兼容旧配置的 bytehaul 后端别名，内部映射为 rust
     Bytehaul,
-    /// 兼容旧配置的 Rust 后端别名，内部映射为 bytehaul
+    /// 强制使用 rust
     Rust,
 }
 
@@ -107,7 +107,7 @@ struct ActiveDownloadManager {
 
 #[cfg(test)]
 fn auto_backend_candidates() -> [DownloadBackend; 2] {
-    [DownloadBackend::Bytehaul, DownloadBackend::Aria2]
+    [DownloadBackend::Rust, DownloadBackend::Aria2]
 }
 
 #[cfg(any(test, target_os = "windows"))]
@@ -117,7 +117,7 @@ fn uses_aria2_preflight(backend: DownloadBackend) -> bool {
 
 fn canonical_backend(backend: DownloadBackend) -> DownloadBackend {
     match backend {
-        DownloadBackend::Rust => DownloadBackend::Bytehaul,
+        DownloadBackend::Bytehaul => DownloadBackend::Rust,
         other => other,
     }
 }
@@ -129,8 +129,8 @@ async fn create_started_bytehaul_manager() -> AppResult<Arc<dyn DownloadManager>
 }
 
 async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn DownloadManager>> {
-    if backend == DownloadBackend::Rust {
-        warn!("download.backend = rust 已废弃，自动映射为 bytehaul");
+    if backend == DownloadBackend::Bytehaul {
+        warn!("download.backend = bytehaul 已废弃，自动映射为 rust");
     }
 
     let manager: Arc<dyn DownloadManager> = match canonical_backend(backend) {
@@ -138,19 +138,19 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
             debug!("强制使用 aria2 后端");
             Arc::new(Aria2Backend::from_global().await?)
         }
-        DownloadBackend::Bytehaul => {
-            info!("使用 bytehaul 后端");
+        DownloadBackend::Rust => {
+            info!("使用 rust 后端");
             create_started_bytehaul_manager().await?
         }
         DownloadBackend::Auto => {
             debug!("自动选择下载后端");
             match create_started_bytehaul_manager().await {
                 Ok(manager) => {
-                    info!("Auto 模式使用 bytehaul 后端");
+                    info!("Auto 模式使用 rust 后端");
                     manager
                 }
                 Err(bytehaul_error) => {
-                    warn!("bytehaul 不可用: {}，回退到 aria2", bytehaul_error);
+                    warn!("rust 后端不可用: {}，回退到 aria2", bytehaul_error);
                     match Aria2Backend::from_global().await {
                         Ok(aria2) => {
                             info!("Auto 模式回退到 aria2 后端");
@@ -158,7 +158,7 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
                         }
                         Err(aria2_error) => {
                             return Err(crate::error::AppError::Download(format!(
-                                "bytehaul 与 aria2 均不可用: bytehaul={}, aria2={}",
+                                "rust 与 aria2 均不可用: rust={}, aria2={}",
                                 bytehaul_error, aria2_error
                             )));
                         }
@@ -166,7 +166,9 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
                 }
             }
         }
-        DownloadBackend::Rust => unreachable!("rust backend should be canonicalized to bytehaul"),
+        DownloadBackend::Bytehaul => {
+            unreachable!("bytehaul backend should be canonicalized to rust")
+        }
     };
 
     Ok(manager)
@@ -178,25 +180,26 @@ async fn create_download_manager(backend: DownloadBackend) -> AppResult<Arc<dyn 
 /// - `backend`: 下载后端类型
 ///
 /// # 说明
-/// - `Auto`: 优先 bytehaul；若 bytehaul 不可用则回退 aria2
+/// - `Auto`: 优先 rust；若 rust 不可用则回退 aria2
 /// - `Aria2`: 强制使用 aria2
-/// - `Bytehaul`: 强制使用 bytehaul
-/// - `Rust`: 兼容旧配置，内部映射为 bytehaul
+/// - `Bytehaul`: 兼容旧配置，内部映射为 rust
+/// - `Rust`: 强制使用 rust
 pub async fn init_download_manager(
     backend: DownloadBackend,
 ) -> AppResult<Arc<dyn DownloadManager>> {
+    let effective_backend = canonical_backend(backend);
     let mut active = DOWNLOAD_MANAGER.lock().await;
     if let Some(current) = active.as_ref() {
-        if current.requested_backend == backend {
+        if current.requested_backend == effective_backend {
             return Ok(current.manager.clone());
         }
 
         info!(
             "检测到下载后端变更，重建下载管理器: {:?} -> {:?}",
-            current.requested_backend, backend
+            current.requested_backend, effective_backend
         );
     } else {
-        info!("初始化下载管理器，后端类型: {:?}", backend);
+        info!("初始化下载管理器，后端类型: {:?}", effective_backend);
     }
 
     if let Some(previous) = active.take() {
@@ -207,7 +210,7 @@ pub async fn init_download_manager(
 
     let manager = create_download_manager(backend).await?;
     *active = Some(ActiveDownloadManager {
-        requested_backend: backend,
+        requested_backend: effective_backend,
         manager: manager.clone(),
     });
     Ok(manager)
