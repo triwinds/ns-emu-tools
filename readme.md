@@ -69,6 +69,7 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
  - ~~[hactool](https://github.com/SciresM/hactool) - NS 固件解析~~
  - [nsz](https://github.com/nicoboss/nsz) - NS 固件解析
  - [aria2](https://github.com/aria2/aria2) - aria2 下载器
+ - [bytehaul](https://github.com/triwinds/bytehaul) - Rust 异步 HTTP 下载库
  - [Github 镜像源](https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js) - 来自 X.I.U 大佬的 Github 增强脚本
  - [pineappleEA](https://github.com/pineappleEA/pineapple-src) - Yuzu EA 版本来源
  - [THZoria/NX_Firmware](https://github.com/THZoria/NX_Firmware) - NS 固件来源
