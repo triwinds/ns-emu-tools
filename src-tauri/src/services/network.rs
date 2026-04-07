@@ -36,6 +36,10 @@ static URL_OVERRIDE_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
         "https://nsa2.e6ex.com/ryujinx_official",
     );
     map.insert(
+        "https://legacy.git.ryujinx.app",
+        "https://nsa2.e6ex.com/ryujinx_official_legacy",
+    );
+    map.insert(
         "https://git.eden-emu.dev",
         "https://nsa2.e6ex.com/eden_official",
     );
