@@ -280,6 +280,81 @@ fn format_bytes(bytes: u64) -> String {
     format!("{:.1}{}", size, UNITS[unit_index])
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct Aria2CliCapabilities {
+    supports_async_dns: bool,
+    supports_async_dns_server: bool,
+}
+
+fn parse_aria2_help_capabilities(help_text: &str) -> Aria2CliCapabilities {
+    Aria2CliCapabilities {
+        supports_async_dns: help_text.contains("--async-dns[="),
+        supports_async_dns_server: help_text.contains("--async-dns-server="),
+    }
+}
+
+fn detect_aria2_cli_capabilities(aria2_path: &Path) -> Aria2CliCapabilities {
+    match Command::new(aria2_path)
+        .arg("--help=#all")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+    {
+        Ok(output) if output.status.success() => {
+            let capabilities =
+                parse_aria2_help_capabilities(String::from_utf8_lossy(&output.stdout).as_ref());
+            debug!("aria2 能力探测: {:?}", capabilities);
+            capabilities
+        }
+        Ok(output) => {
+            warn!(
+                "aria2 能力探测失败，退出码: {:?}，跳过 async DNS 参数",
+                output.status.code()
+            );
+            Aria2CliCapabilities::default()
+        }
+        Err(error) => {
+            warn!("执行 aria2 能力探测失败，跳过 async DNS 参数: {}", error);
+            Aria2CliCapabilities::default()
+        }
+    }
+}
+
+fn append_async_dns_args(
+    args: &mut Vec<String>,
+    disable_ipv6: bool,
+    use_doh: bool,
+    capabilities: Aria2CliCapabilities,
+) {
+    if capabilities.supports_async_dns {
+        args.push("--async-dns=true".to_string());
+    } else {
+        debug!("aria2 当前构建不支持 --async-dns，跳过该参数");
+    }
+
+    if disable_ipv6 {
+        args.push("--disable-ipv6=true".to_string());
+        debug!("禁用 IPv6");
+    }
+
+    if !use_doh {
+        return;
+    }
+
+    if !capabilities.supports_async_dns_server {
+        warn!("aria2 当前构建不支持 --async-dns-server，无法为 DoH 回退配置自定义 DNS 服务器");
+        return;
+    }
+
+    if disable_ipv6 {
+        args.push("--async-dns-server=223.5.5.5,119.29.29.29".to_string());
+        warn!("aria2 后端不支持原生 DoH，回退为自定义 DNS 服务器 (IPv4)");
+    } else {
+        args.push("--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29".to_string());
+        warn!("aria2 后端不支持原生 DoH，回退为自定义 DNS 服务器 (IPv4+IPv6)");
+    }
+}
+
 /// Aria2 进程管理器
 pub struct Aria2Manager {
     /// aria2 子进程
@@ -333,6 +408,7 @@ impl Aria2Manager {
         // 获取默认下载目录
         let download_dir = get_default_download_dir()?;
         info!("aria2 默认下载目录: {}", download_dir.display());
+        let capabilities = detect_aria2_cli_capabilities(&aria2_path);
 
         // 构建命令行参数
         let mut args = vec![
@@ -341,7 +417,6 @@ impl Aria2Manager {
             "--rpc-listen-all=false".to_string(),
             format!("--rpc-secret={}", ARIA2_SECRET),
             format!("--dir={}", download_dir.to_string_lossy()),
-            "--async-dns=true".to_string(),
             format!("--stop-with-process={}", std::process::id()),
             "--log-level=info".to_string(),
             "--console-log-level=warn".to_string(),
@@ -356,19 +431,12 @@ impl Aria2Manager {
             "aria2 配置: disable_ipv6={}, use_doh={}",
             config.setting.download.disable_aria2_ipv6, config.setting.network.use_doh
         );
-        if config.setting.download.disable_aria2_ipv6 {
-            args.push("--disable-ipv6=true".to_string());
-            debug!("禁用 IPv6");
-            if config.setting.network.use_doh {
-                args.push("--async-dns-server=223.5.5.5,119.29.29.29".to_string());
-                warn!("aria2 后端不支持原生 DoH，回退为自定义 DNS 服务器 (IPv4)");
-            }
-        } else if config.setting.network.use_doh {
-            args.push(
-                "--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29".to_string(),
-            );
-            warn!("aria2 后端不支持原生 DoH，回退为自定义 DNS 服务器 (IPv4+IPv6)");
-        }
+        append_async_dns_args(
+            &mut args,
+            config.setting.download.disable_aria2_ipv6,
+            config.setting.network.use_doh,
+            capabilities,
+        );
 
         // 删除旧日志
         if config.setting.download.remove_old_aria2_log_file {
@@ -1947,6 +2015,66 @@ mod tests {
         let found = try_find_aria2_path_from_context(Some(&exe_path), Some(dir.path()));
 
         assert_eq!(found.unwrap(), homebrew_path);
+    }
+
+    #[test]
+    fn test_parse_aria2_help_capabilities_detects_async_dns_options() {
+        let capabilities = parse_aria2_help_capabilities(
+            "\
+            --async-dns[=true|false]\n\
+            --async-dns-server=IPADDR\n\
+            --disable-ipv6[=true|false]\n\
+            ",
+        );
+
+        assert_eq!(
+            capabilities,
+            Aria2CliCapabilities {
+                supports_async_dns: true,
+                supports_async_dns_server: true,
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_aria2_help_capabilities_handles_missing_async_dns_options() {
+        let capabilities =
+            parse_aria2_help_capabilities("--disable-ipv6[=true|false]\n--enable-rpc[=true|false]");
+
+        assert_eq!(capabilities, Aria2CliCapabilities::default());
+    }
+
+    #[test]
+    fn test_append_async_dns_args_skips_unsupported_options() {
+        let mut args = Vec::new();
+
+        append_async_dns_args(&mut args, true, true, Aria2CliCapabilities::default());
+
+        assert_eq!(args, vec!["--disable-ipv6=true"]);
+    }
+
+    #[test]
+    fn test_append_async_dns_args_adds_supported_ipv4_doh_fallback() {
+        let mut args = Vec::new();
+
+        append_async_dns_args(
+            &mut args,
+            true,
+            true,
+            Aria2CliCapabilities {
+                supports_async_dns: true,
+                supports_async_dns_server: true,
+            },
+        );
+
+        assert_eq!(
+            args,
+            vec![
+                "--async-dns=true",
+                "--disable-ipv6=true",
+                "--async-dns-server=223.5.5.5,119.29.29.29",
+            ]
+        );
     }
 
     /// 真实下载测试 - 下载一个小文件验证完整流程
