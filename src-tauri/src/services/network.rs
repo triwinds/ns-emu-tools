@@ -6,6 +6,7 @@ use crate::config::{
     effective_config_dir, flush_pending_config_save, replace_config, user_agent, CONFIG,
 };
 use crate::error::{AppError, AppResult};
+use crate::services::doh::configure_reqwest_client_builder;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
@@ -502,6 +503,8 @@ pub fn create_client_with_timeout(timeout: Duration) -> AppResult<Client> {
     } else {
         debug!("不使用代理创建客户端");
     }
+
+    builder = configure_reqwest_client_builder(builder)?;
 
     builder.build().map_err(|e| {
         warn!("创建 HTTP 客户端失败: {}", e);

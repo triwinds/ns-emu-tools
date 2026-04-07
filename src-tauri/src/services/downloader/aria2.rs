@@ -11,6 +11,8 @@
 use crate::config::{effective_config_dir, get_config};
 use crate::error::{AppError, AppResult};
 #[cfg(target_os = "windows")]
+use crate::services::doh::configure_reqwest_client_builder;
+#[cfg(target_os = "windows")]
 use crate::services::network::request_github_api;
 use crate::services::network::{
     get_final_url, get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA,
@@ -359,13 +361,13 @@ impl Aria2Manager {
             debug!("禁用 IPv6");
             if config.setting.network.use_doh {
                 args.push("--async-dns-server=223.5.5.5,119.29.29.29".to_string());
-                debug!("使用 DNS over HTTPS (IPv4)");
+                warn!("aria2 后端不支持原生 DoH，回退为自定义 DNS 服务器 (IPv4)");
             }
         } else if config.setting.network.use_doh {
             args.push(
                 "--async-dns-server=2400:3200::1,2402:4e00::,223.5.5.5,119.29.29.29".to_string(),
             );
-            debug!("使用 DNS over HTTPS (IPv4+IPv6)");
+            warn!("aria2 后端不支持原生 DoH，回退为自定义 DNS 服务器 (IPv4+IPv6)");
         }
 
         // 删除旧日志
@@ -1281,6 +1283,9 @@ async fn download_aria2(asset_url: &str, save_path: &PathBuf) -> AppResult<()> {
             client_builder = client_builder.proxy(proxy);
         }
     }
+
+    client_builder = configure_reqwest_client_builder(client_builder)
+        .map_err(|e| AppError::Aria2(format!("配置 DoH 失败: {}", e)))?;
 
     let client = client_builder
         .build()

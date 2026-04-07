@@ -4,6 +4,7 @@
 
 use crate::config::user_agent;
 use crate::error::{AppError, AppResult};
+use crate::services::doh::default_doh_urls;
 use crate::services::downloader::manager::{DownloadManager, ProgressCallback};
 use crate::services::downloader::types::{
     DownloadOptions, DownloadProgress, DownloadResult, DownloadStatus,
@@ -52,12 +53,18 @@ fn build_downloader_from_config() -> AppResult<Downloader> {
         }
     }
 
+    if config.setting.network.use_doh {
+        for server in default_doh_urls() {
+            builder = builder.doh_server(server);
+        }
+    }
+
     builder.build().map_err(map_bytehaul_error)
 }
 
 fn map_bytehaul_error(error: BytehaulError) -> AppError {
     match error {
-        BytehaulError::Http(http_error) => AppError::from(http_error),
+        BytehaulError::Transport(transport_error) => AppError::Network(transport_error.to_string()),
         BytehaulError::Io(io_error) => AppError::Io(io_error),
         BytehaulError::Cancelled => AppError::Download("下载已取消".to_string()),
         BytehaulError::Paused => AppError::Download("下载已暂停".to_string()),
