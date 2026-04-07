@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use std::fs;
 #[cfg(target_os = "windows")]
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -1057,81 +1057,20 @@ fn find_available_port() -> AppResult<u16> {
 /// 获取 aria2c 可执行文件路径
 ///
 /// 查找顺序：
-/// 1. 可执行文件同目录下的 module/aria2c.exe（打包后）
-/// 2. 可执行文件同目录下的 aria2c.exe（打包后）
-/// 3. 与 config.json 相同目录下的 aria2c.exe（程序管理的运行文件）
-/// 4. 当前工作目录下的 module/aria2c.exe（开发时）
-/// 5. 当前工作目录下的 aria2c.exe
-/// 6. 项目根目录下的 module/aria2c.exe（开发时，从 src-tauri 运行）
-/// 7. PATH 环境变量
+/// 1. 可执行文件同目录下的 `module/aria2c`（打包后）
+/// 2. 可执行文件同目录下的 `aria2c`（打包后）
+/// 3. macOS `.app/Contents/Resources[/module]/aria2c`
+/// 4. 与 config.json 相同目录下的 `aria2c`（程序管理的运行文件）
+/// 5. 当前工作目录下的 `module/aria2c`（开发时）
+/// 6. 当前工作目录下的 `aria2c`
+/// 7. 项目根目录下的 `module/aria2c`（开发时，从 `src-tauri` 运行）
+/// 8. macOS 常见 Homebrew 路径
+/// 9. `PATH` 环境变量
 ///
 /// 注意：此函数已被 `ensure_aria2_installed()` 替代，保留用于兼容性
 #[allow(dead_code)]
 fn get_aria2_path() -> AppResult<PathBuf> {
-    let aria2_name = if cfg!(windows) {
-        "aria2c.exe"
-    } else {
-        "aria2c"
-    };
-
-    // 获取可执行文件所在目录（打包后的应用程序目录）
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-            // 检查可执行文件同目录下的 module 文件夹
-            let module_path = exe_dir.join("module").join(aria2_name);
-            if module_path.exists() {
-                debug!("找到 aria2c: {} (exe/module)", module_path.display());
-                return Ok(module_path);
-            }
-
-            // 检查可执行文件同目录
-            let exe_dir_path = exe_dir.join(aria2_name);
-            if exe_dir_path.exists() {
-                debug!("找到 aria2c: {} (exe dir)", exe_dir_path.display());
-                return Ok(exe_dir_path);
-            }
-        }
-    }
-
-    let managed_path = effective_config_dir().join(aria2_name);
-    if managed_path.exists() {
-        debug!("找到 aria2c: {} (config_dir)", managed_path.display());
-        return Ok(managed_path);
-    }
-
-    // 检查当前工作目录下的 module 文件夹（开发时）
-    if let Ok(cwd) = std::env::current_dir() {
-        let module_path = cwd.join("module").join(aria2_name);
-        if module_path.exists() {
-            debug!("找到 aria2c: {} (cwd/module)", module_path.display());
-            return Ok(module_path);
-        }
-
-        // 检查当前工作目录
-        let cwd_path = cwd.join(aria2_name);
-        if cwd_path.exists() {
-            debug!("找到 aria2c: {} (cwd)", cwd_path.display());
-            return Ok(cwd_path);
-        }
-
-        // 开发时可能从 src-tauri 目录运行，检查上级目录的 module
-        let parent_module_path = cwd.join("..").join("module").join(aria2_name);
-        if parent_module_path.exists() {
-            let canonical = parent_module_path
-                .canonicalize()
-                .unwrap_or(parent_module_path);
-            debug!("找到 aria2c: {} (parent/module)", canonical.display());
-            return Ok(canonical);
-        }
-    }
-
-    // 检查 PATH 环境变量
-    if let Ok(path) = which::which("aria2c") {
-        debug!("找到 aria2c: {} (PATH)", path.display());
-        return Ok(path);
-    }
-
-    Err(AppError::Aria2("找不到 aria2c 可执行文件".to_string()))
+    try_find_aria2_path()
 }
 
 fn managed_runtime_dir() -> PathBuf {
@@ -1615,26 +1554,39 @@ pub async fn ensure_aria2_installed() -> AppResult<PathBuf> {
 }
 
 /// 尝试查找 aria2 路径（不抛出错误）
-pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
+fn try_find_aria2_path_from_context(
+    exe_path: Option<&Path>,
+    cwd: Option<&Path>,
+) -> AppResult<PathBuf> {
     let aria2_name = if cfg!(windows) {
         "aria2c.exe"
     } else {
         "aria2c"
     };
 
-    // 获取可执行文件所在目录（打包后的应用程序目录）
-    if let Ok(exe_path) = std::env::current_exe() {
+    if let Some(exe_path) = exe_path {
         if let Some(exe_dir) = exe_path.parent() {
-            // 检查可执行文件同目录下的 module 文件夹
             let module_path = exe_dir.join("module").join(aria2_name);
             if module_path.exists() {
                 return Ok(module_path);
             }
 
-            // 检查可执行文件同目录
             let exe_dir_path = exe_dir.join(aria2_name);
             if exe_dir_path.exists() {
                 return Ok(exe_dir_path);
+            }
+
+            #[cfg(target_os = "macos")]
+            if let Some(resources_dir) = macos_app_resources_dir(exe_path) {
+                let resource_module_path = resources_dir.join("module").join(aria2_name);
+                if resource_module_path.exists() {
+                    return Ok(resource_module_path);
+                }
+
+                let resource_path = resources_dir.join(aria2_name);
+                if resource_path.exists() {
+                    return Ok(resource_path);
+                }
             }
         }
     }
@@ -1644,20 +1596,17 @@ pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
         return Ok(managed_path);
     }
 
-    // 检查当前工作目录下的 module 文件夹（开发时）
-    if let Ok(cwd) = std::env::current_dir() {
+    if let Some(cwd) = cwd {
         let module_path = cwd.join("module").join(aria2_name);
         if module_path.exists() {
             return Ok(module_path);
         }
 
-        // 检查当前工作目录
         let cwd_path = cwd.join(aria2_name);
         if cwd_path.exists() {
             return Ok(cwd_path);
         }
 
-        // 开发时可能从 src-tauri 目录运行，检查上级目录的 module
         let parent_module_path = cwd.join("..").join("module").join(aria2_name);
         if parent_module_path.exists() {
             if let Ok(canonical) = parent_module_path.canonicalize() {
@@ -1666,12 +1615,47 @@ pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
         }
     }
 
-    // 检查 PATH 环境变量
+    #[cfg(target_os = "macos")]
+    for homebrew_path in macos_homebrew_aria2_paths() {
+        if homebrew_path.exists() {
+            return Ok(homebrew_path);
+        }
+    }
+
     if let Ok(path) = which::which("aria2c") {
         return Ok(path);
     }
 
     Err(AppError::Aria2("找不到 aria2c 可执行文件".to_string()))
+}
+
+pub(crate) fn try_find_aria2_path() -> AppResult<PathBuf> {
+    let exe_path = std::env::current_exe().ok();
+    let cwd = std::env::current_dir().ok();
+    try_find_aria2_path_from_context(exe_path.as_deref(), cwd.as_deref())
+}
+
+#[cfg(target_os = "macos")]
+fn macos_app_resources_dir(exe_path: &Path) -> Option<PathBuf> {
+    let exe_dir = exe_path.parent()?;
+    if exe_dir.file_name()? != "MacOS" {
+        return None;
+    }
+
+    let contents_dir = exe_dir.parent()?;
+    if contents_dir.file_name()? != "Contents" {
+        return None;
+    }
+
+    Some(contents_dir.join("Resources"))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_homebrew_aria2_paths() -> [PathBuf; 2] {
+    [
+        PathBuf::from("/opt/homebrew/bin/aria2c"),
+        PathBuf::from("/usr/local/bin/aria2c"),
+    ]
 }
 
 /// 获取 aria2 安装目录（与 config.json 同目录）
@@ -1688,7 +1672,40 @@ fn aria2_install_dir_path() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use once_cell::sync::Lazy;
+    use std::sync::Mutex as StdMutex;
     use sysinfo::{Pid, ProcessesToUpdate, System};
+    use tempfile::tempdir;
+
+    static ENV_LOCK: Lazy<StdMutex<()>> = Lazy::new(|| StdMutex::new(()));
+
+    struct EnvVarGuard {
+        key: &'static str,
+        original: Option<String>,
+    }
+
+    impl EnvVarGuard {
+        fn set(key: &'static str, value: &str) -> Self {
+            let original = std::env::var(key).ok();
+            unsafe {
+                std::env::set_var(key, value);
+            }
+            Self { key, original }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            match self.original.as_deref() {
+                Some(value) => unsafe {
+                    std::env::set_var(self.key, value);
+                },
+                None => unsafe {
+                    std::env::remove_var(self.key);
+                },
+            }
+        }
+    }
 
     #[cfg(target_os = "windows")]
     fn spawn_sleep_process() -> std::process::Child {
@@ -1874,6 +1891,57 @@ mod tests {
         assert_eq!(progress.total_string(), "1.0MiB");
         assert_eq!(progress.speed_string(), "100.0KiB/s");
         assert_eq!(progress.eta_string(), "5s");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_try_find_aria2_path_finds_app_bundle_resources_binary() {
+        let _env_lock = ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _path_guard = EnvVarGuard::set("PATH", "");
+
+        let dir = tempdir().unwrap();
+        let exe_path = dir
+            .path()
+            .join("NS Emu Tools.app")
+            .join("Contents")
+            .join("MacOS")
+            .join("NsEmuTools");
+        let resources_binary = dir
+            .path()
+            .join("NS Emu Tools.app")
+            .join("Contents")
+            .join("Resources")
+            .join("aria2c");
+
+        std::fs::create_dir_all(resources_binary.parent().unwrap()).unwrap();
+        std::fs::write(&resources_binary, b"").unwrap();
+
+        let found = try_find_aria2_path_from_context(Some(&exe_path), Some(dir.path()));
+
+        assert_eq!(found.unwrap(), resources_binary);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_try_find_aria2_path_finds_homebrew_binary_without_path() {
+        let _env_lock = ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _path_guard = EnvVarGuard::set("PATH", "");
+
+        let homebrew_path = PathBuf::from("/opt/homebrew/bin/aria2c");
+        if !homebrew_path.exists() {
+            return;
+        }
+
+        let dir = tempdir().unwrap();
+        let exe_path = dir.path().join("NsEmuTools");
+
+        let found = try_find_aria2_path_from_context(Some(&exe_path), Some(dir.path()));
+
+        assert_eq!(found.unwrap(), homebrew_path);
     }
 
     /// 真实下载测试 - 下载一个小文件验证完整流程
