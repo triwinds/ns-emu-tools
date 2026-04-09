@@ -1745,18 +1745,24 @@ fn aria2_install_dir_path() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "macos")]
     use once_cell::sync::Lazy;
+    #[cfg(target_os = "macos")]
     use std::sync::Mutex as StdMutex;
     use sysinfo::{Pid, ProcessesToUpdate, System};
+    #[cfg(target_os = "macos")]
     use tempfile::tempdir;
 
+    #[cfg(target_os = "macos")]
     static ENV_LOCK: Lazy<StdMutex<()>> = Lazy::new(|| StdMutex::new(()));
 
+    #[cfg(target_os = "macos")]
     struct EnvVarGuard {
         key: &'static str,
         original: Option<String>,
     }
 
+    #[cfg(target_os = "macos")]
     impl EnvVarGuard {
         fn set(key: &'static str, value: &str) -> Self {
             let original = std::env::var(key).ok();
@@ -1767,6 +1773,7 @@ mod tests {
         }
     }
 
+    #[cfg(target_os = "macos")]
     impl Drop for EnvVarGuard {
         fn drop(&mut self) {
             match self.original.as_deref() {

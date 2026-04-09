@@ -437,9 +437,9 @@ checksum = "5dd9dc738b7a8311c7ade152424974d8115f2cdad61e8dab8dac9f2362298510"
 
 [[package]]
 name = "bytehaul"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75dd64a6a05200d4c7274a7a915b6b5822604f1dbaba14bd220aee77a6cbbcc8"
+checksum = "2576a678fea4bf29e81c545f3a22a356e1f2ea41f1335a583ad2775cabf9f811"
 dependencies = [
  "bincode",
  "bitvec",

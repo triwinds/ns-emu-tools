@@ -47,12 +47,6 @@ fn build_downloader_from_config() -> AppResult<Downloader> {
         .enable_ipv6(!config.setting.download.disable_aria2_ipv6)
         .log_level(LogLevel::Warn);
 
-    if let Some(proxy_url) = get_proxy_url() {
-        if !proxy_url.is_empty() {
-            builder = builder.all_proxy(proxy_url);
-        }
-    }
-
     if config.setting.network.use_doh {
         for server in default_doh_urls() {
             builder = builder.doh_server(server);
@@ -154,6 +148,13 @@ fn resolve_output_path(download_url: &str, save_dir: &Path, options: &DownloadOp
     save_dir.join(filename)
 }
 
+fn apply_task_proxy(spec: DownloadSpec, proxy_url: Option<String>) -> DownloadSpec {
+    match proxy_url.filter(|value| !value.trim().is_empty()) {
+        Some(proxy_url) => spec.all_proxy(proxy_url),
+        None => spec,
+    }
+}
+
 fn build_download_spec(url: &str, options: &DownloadOptions) -> AppResult<(DownloadSpec, PathBuf)> {
     let download_url = resolve_download_url(url, options);
     let output_dir = match options.save_dir.clone() {
@@ -185,6 +186,8 @@ fn build_download_spec(url: &str, options: &DownloadOptions) -> AppResult<(Downl
     if let Some(filename) = options.filename.clone() {
         spec = spec.output_path(filename);
     }
+
+    spec = apply_task_proxy(spec, get_proxy_url());
 
     Ok((spec, output_path))
 }
@@ -717,6 +720,24 @@ mod tests {
         assert_eq!(output_path, expected_dir.join("artifact.bin"));
         assert_eq!(spec.get_output_dir(), Some(expected_dir.as_path()));
         assert_eq!(spec.get_output_path(), Some(Path::new("artifact.bin")));
+    }
+
+    #[test]
+    fn test_apply_task_proxy_sets_task_level_proxy() {
+        let spec = DownloadSpec::new("https://example.com/file.zip");
+
+        let spec = apply_task_proxy(spec, Some("http://127.0.0.1:7890".to_string()));
+
+        assert_eq!(spec.get_all_proxy(), Some("http://127.0.0.1:7890"));
+    }
+
+    #[test]
+    fn test_apply_task_proxy_ignores_blank_proxy() {
+        let spec = DownloadSpec::new("https://example.com/file.zip");
+
+        let spec = apply_task_proxy(spec, Some("   ".to_string()));
+
+        assert!(spec.get_all_proxy().is_none());
     }
 
     #[test]
