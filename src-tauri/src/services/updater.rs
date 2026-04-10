@@ -355,6 +355,23 @@ pub async fn install_update(update_file: &Path) -> AppResult<()> {
         )));
     }
 
+    #[cfg(windows)]
+    {
+        install_update_windows(update_file).await
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        install_update_macos(update_file).await
+    }
+
+    #[cfg(not(any(windows, target_os = "macos")))]
+    Err(AppError::Unsupported("当前平台不支持自动更新".to_string()))
+}
+
+/// Windows 安装更新
+#[cfg(windows)]
+async fn install_update_windows(update_file: &Path) -> AppResult<()> {
     // 获取当前可执行文件路径
     let current_exe = std::env::current_exe()?;
     let current_dir = current_exe
@@ -415,41 +432,101 @@ pub async fn install_update(update_file: &Path) -> AppResult<()> {
     info!("找到新的可执行文件: {}", new_exe.display());
 
     // 创建更新脚本
-    #[cfg(windows)]
-    {
-        create_windows_update_script(&current_exe, &new_exe, current_dir)?;
-        info!("更新脚本已创建，程序将退出并自动更新");
-        Ok(())
+    create_windows_update_script(&current_exe, &new_exe, current_dir)?;
+    info!("更新脚本已创建，程序将退出并自动更新");
+    Ok(())
+}
+
+/// macOS 安装更新
+#[cfg(target_os = "macos")]
+async fn install_update_macos(update_file: &Path) -> AppResult<()> {
+    use crate::utils::platform::{find_app_bundle_in_dir, find_current_macos_app_bundle};
+
+    // 1. 识别当前 .app bundle 路径
+    let current_app = find_current_macos_app_bundle()?;
+    let target_dir = current_app
+        .parent()
+        .ok_or_else(|| AppError::Unknown("无法获取当前 .app 所在目录".to_string()))?;
+
+    info!("当前 .app bundle: {}", current_app.display());
+    info!("目标安装目录: {}", target_dir.display());
+
+    // 检查目标目录写权限
+    let test_file = target_dir.join(".ns-emu-tools-write-test");
+    match fs::write(&test_file, b"test") {
+        Ok(_) => {
+            let _ = fs::remove_file(&test_file);
+        }
+        Err(_) => {
+            return Err(AppError::Permission(format!(
+                "目标目录无写权限: {}，请将应用移动到有权限的目录后重试",
+                target_dir.display()
+            )));
+        }
     }
 
-    #[cfg(not(windows))]
-    Err(AppError::Unsupported("当前仅支持 Windows 平台".to_string()))
+    // 2. 解压更新文件到 staging 目录
+    let extract_dir = update_extract_dir()?;
+    if extract_dir.exists() {
+        fs::remove_dir_all(&extract_dir)?;
+    }
+    fs::create_dir_all(&extract_dir)?;
+
+    let filename = update_file
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    if filename.ends_with(".zip") {
+        info!("解压 macOS zip 到: {}", extract_dir.display());
+        archive::extract_zip(update_file, &extract_dir)?;
+    } else if filename.ends_with(".tar.gz") || filename.ends_with(".tgz") {
+        info!("解压 macOS tar.gz 到: {}", extract_dir.display());
+        archive::extract_tar_gz(update_file, &extract_dir)?;
+    } else {
+        return Err(AppError::InvalidArgument(format!(
+            "不支持的 macOS 更新文件格式: {}，仅支持 .zip, .tar.gz",
+            update_file.display()
+        )));
+    }
+
+    // 3. 在 staging 中查找新的 .app bundle
+    let new_app = find_app_bundle_in_dir(&extract_dir)?;
+    info!("找到新版本 .app bundle: {}", new_app.display());
+
+    // 4. 生成更新 shell 脚本
+    let new_app_name = current_app
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("NS Emu Tools.app");
+    let target_app = target_dir.join(new_app_name);
+
+    let script_dir = update_runtime_dir()?;
+    let script_path = script_dir.join("update.sh");
+    create_macos_update_script(&script_path, &current_app, &new_app, &target_app)?;
+
+    // 5. 启动脚本并退出
+    std::process::Command::new("bash")
+        .arg(&script_path)
+        .spawn()
+        .map_err(|e| AppError::Process(format!("启动更新脚本失败: {}", e)))?;
+
+    info!("macOS 更新脚本已启动，程序将退出");
+    Ok(())
 }
 
 /// 查找可执行文件
+#[cfg(windows)]
 fn find_executable(dir: &Path) -> AppResult<PathBuf> {
     for entry in walkdir::WalkDir::new(dir).max_depth(3) {
         let entry = entry.map_err(|e| AppError::Unknown(format!("遍历目录失败: {}", e)))?;
         let path = entry.path();
 
-        #[cfg(windows)]
-        {
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("exe") {
-                let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-                // 匹配 NsEmuTools.exe 等 Windows 可执行文件
-                if file_name.to_lowercase().contains("nsemutools") {
-                    return Ok(path.to_path_buf());
-                }
-            }
-        }
-
-        #[cfg(not(windows))]
-        {
-            if path.is_file() {
-                let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-                if file_name.to_lowercase().contains("nsemutools") {
-                    return Ok(path.to_path_buf());
-                }
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("exe") {
+            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            if file_name.to_lowercase().contains("nsemutools") {
+                return Ok(path.to_path_buf());
             }
         }
     }
@@ -567,6 +644,116 @@ del "%~f0" & exit
         ));
     }
 
+    Ok(())
+}
+
+/// 创建 macOS 更新 shell 脚本
+///
+/// 脚本在主进程退出后执行：备份旧 .app → 复制新 .app → 权限处理 → 清理 → 重启
+#[cfg(target_os = "macos")]
+fn create_macos_update_script(
+    script_path: &Path,
+    current_app: &Path,
+    new_app: &Path,
+    target_app: &Path,
+) -> AppResult<()> {
+    let current_app_str = current_app.to_string_lossy();
+    let new_app_str = new_app.to_string_lossy();
+    let target_app_str = target_app.to_string_lossy();
+    let pid = std::process::id();
+
+    let download_dir = update_download_dir_path();
+    let extract_dir = update_extract_dir_path();
+    let download_dir_str = download_dir.to_string_lossy();
+    let extract_dir_str = extract_dir.to_string_lossy();
+
+    let script_content = format!(
+        r#"#!/bin/bash
+set -euo pipefail
+
+echo "NS Emu Tools macOS 更新脚本"
+echo "等待主进程 (PID {pid}) 退出..."
+
+# 等待主进程退出（最多 30 秒）
+for i in $(seq 1 30); do
+    if ! kill -0 {pid} 2>/dev/null; then
+        echo "主进程已退出"
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo "错误: 主进程未在 30 秒内退出，放弃更新"
+        exit 1
+    fi
+    sleep 1
+done
+
+# 备份旧版本
+BACKUP_PATH="{current_app_str}.bak"
+if [ -d "$BACKUP_PATH" ]; then
+    echo "清理旧备份..."
+    rm -rf "$BACKUP_PATH"
+fi
+
+if [ -d "{current_app_str}" ]; then
+    echo "备份当前版本至 $BACKUP_PATH"
+    mv "{current_app_str}" "$BACKUP_PATH"
+fi
+
+# 复制新版本（ditto 默认保留资源分支和扩展属性）
+echo "安装新版本..."
+if ! ditto "{new_app_str}" "{target_app_str}"; then
+    echo "错误: 复制新版本失败，尝试恢复旧版本..."
+    if [ -d "$BACKUP_PATH" ]; then
+        mv "$BACKUP_PATH" "{current_app_str}"
+    fi
+    exit 1
+fi
+
+# 移除 quarantine 属性
+echo "移除隔离属性..."
+xattr -r -d com.apple.quarantine "{target_app_str}" 2>/dev/null || true
+
+# 设置权限
+echo "设置权限..."
+chmod 755 "{target_app_str}"
+# 查找并设置 Contents/MacOS 下的可执行文件
+find "{target_app_str}/Contents/MacOS" -type f -exec chmod +x {{}} \;
+
+# 清理 staging 和下载目录
+echo "清理临时文件..."
+rm -rf "{extract_dir_str}" 2>/dev/null || true
+rm -rf "{download_dir_str}" 2>/dev/null || true
+
+# 清理旧备份
+echo "清理备份..."
+rm -rf "$BACKUP_PATH" 2>/dev/null || true
+
+# 重启应用
+echo "启动新版本..."
+open "{target_app_str}"
+
+# 自删除
+rm -f "$0"
+echo "更新完成"
+"#,
+        pid = pid,
+        current_app_str = current_app_str,
+        new_app_str = new_app_str,
+        target_app_str = target_app_str,
+        extract_dir_str = extract_dir_str,
+        download_dir_str = download_dir_str,
+    );
+
+    fs::write(script_path, script_content.as_bytes())?;
+
+    // 设置执行权限
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(script_path, fs::Permissions::from_mode(0o755))?;
+    }
+
+    info!("macOS 更新脚本已创建: {}", script_path.display());
     Ok(())
 }
 

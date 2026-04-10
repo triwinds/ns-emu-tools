@@ -213,6 +213,58 @@ pub fn finalize_macos_app_install(
     Ok(executable_path)
 }
 
+/// 从当前可执行文件路径向上查找 `.app` bundle 根目录
+///
+/// macOS 应用内二进制位于 `Foo.app/Contents/MacOS/binary`，
+/// 此函数从 `current_exe()` 向上遍历祖先目录，返回第一个以 `.app` 结尾的目录。
+#[cfg(target_os = "macos")]
+pub fn find_current_macos_app_bundle() -> AppResult<PathBuf> {
+    use tracing::info;
+
+    let exe = std::env::current_exe()?;
+    info!("当前可执行文件路径: {}", exe.display());
+
+    let mut current = exe.as_path();
+    while let Some(parent) = current.parent() {
+        if let Some(name) = parent.file_name().and_then(|n| n.to_str()) {
+            if name.ends_with(".app") {
+                info!("找到当前应用 bundle: {}", parent.display());
+                return Ok(parent.to_path_buf());
+            }
+        }
+        current = parent;
+    }
+
+    Err(AppError::Unknown(format!(
+        "无法从当前可执行文件路径识别 .app bundle: {}",
+        exe.display()
+    )))
+}
+
+/// 在目录中递归查找 `.app` bundle
+#[cfg(target_os = "macos")]
+pub fn find_app_bundle_in_dir(dir: &Path) -> AppResult<PathBuf> {
+    use tracing::info;
+
+    for entry in walkdir::WalkDir::new(dir).max_depth(3) {
+        let entry = entry.map_err(|e| AppError::Unknown(format!("遍历目录失败: {}", e)))?;
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if name.ends_with(".app") {
+                    info!("在目录中找到 .app bundle: {}", path.display());
+                    return Ok(path.to_path_buf());
+                }
+            }
+        }
+    }
+
+    Err(AppError::FileNotFound(format!(
+        "在 {} 中未找到 .app bundle",
+        dir.display()
+    )))
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_os = "macos")]
