@@ -50,6 +50,12 @@ jobs:
       run: bun run build
     - name: Build Rust executable
       run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
+    - name: Package Windows portable zip
+      shell: pwsh
+      run: |
+        $exePath = "src-tauri/target/release/NsEmuTools.exe"
+        if (-not (Test-Path $exePath)) { throw "NsEmuTools.exe not found" }
+        Compress-Archive -Path $exePath -DestinationPath "src-tauri/target/release/NsEmuTools-windows-portable.zip"
     - name: Show Rust cache stats
       if: always()
       run: sccache --show-stats
@@ -57,6 +63,11 @@ jobs:
       with:
         path: src-tauri/target/release/NsEmuTools.exe
         name: NsEmuTools-windows-exe
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v6
+      with:
+        path: src-tauri/target/release/NsEmuTools-windows-portable.zip
+        name: NsEmuTools-windows-zip
         if-no-files-found: error
 
   build-macos-app:
@@ -101,7 +112,7 @@ jobs:
     - name: Build macOS app bundle
       working-directory: src-tauri
       run: cargo tauri build --bundles app
-    - name: Archive macOS app bundle
+    - name: Archive macOS app bundle (zip)
       shell: bash
       run: |
         APP_PATH="src-tauri/target/release/bundle/macos/NS Emu Tools.app"
@@ -109,13 +120,26 @@ jobs:
 
         test -d "$APP_PATH"
         /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+    - name: Archive macOS app bundle (tar.gz fallback)
+      shell: bash
+      run: |
+        APP_PATH="src-tauri/target/release/bundle/macos/NS Emu Tools.app"
+        TAR_PATH="src-tauri/target/release/bundle/macos/NS-Emu-Tools-macos-app.tar.gz"
+
+        test -d "$APP_PATH"
+        tar -czf "$TAR_PATH" -C "src-tauri/target/release/bundle/macos" "NS Emu Tools.app"
     - name: Show Rust cache stats
       if: always()
       run: sccache --show-stats
     - uses: actions/upload-artifact@v6
       with:
         path: src-tauri/target/release/bundle/macos/NS-Emu-Tools-macos-app.zip
-        name: NsEmuTools-macos-app
+        name: NsEmuTools-macos-zip
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v6
+      with:
+        path: src-tauri/target/release/bundle/macos/NS-Emu-Tools-macos-app.tar.gz
+        name: NsEmuTools-macos-app-archive
         if-no-files-found: error
 
   release:
@@ -133,5 +157,7 @@ jobs:
       with:
         draft: true
         files: |
+          dist/NsEmuTools-windows-zip/NsEmuTools-windows-portable.zip
           dist/NsEmuTools-windows-exe/NsEmuTools.exe
-          dist/NsEmuTools-macos-app/NS-Emu-Tools-macos-app.zip
+          dist/NsEmuTools-macos-zip/NS-Emu-Tools-macos-app.zip
+          dist/NsEmuTools-macos-app-archive/NS-Emu-Tools-macos-app.tar.gz

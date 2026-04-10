@@ -46,6 +46,12 @@ jobs:
       run: bun run build
     - name: Build Rust executable
       run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
+    - name: Package Windows portable zip
+      shell: pwsh
+      run: |
+        $exePath = "src-tauri/target/release/NsEmuTools.exe"
+        if (-not (Test-Path $exePath)) { throw "NsEmuTools.exe not found" }
+        Compress-Archive -Path $exePath -DestinationPath "src-tauri/target/release/NsEmuTools-windows-portable.zip"
     - name: Show Rust cache stats
       if: always()
       run: sccache --show-stats
@@ -53,4 +59,9 @@ jobs:
       with:
         path: src-tauri/target/release/NsEmuTools.exe
         name: NsEmuTools-windows-exe
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v6
+      with:
+        path: src-tauri/target/release/NsEmuTools-windows-portable.zip
+        name: NsEmuTools-windows-zip
         if-no-files-found: error
