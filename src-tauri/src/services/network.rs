@@ -18,6 +18,8 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
+#[cfg(target_os = "macos")]
+use std::process::Command;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::http;
 use tracing::{debug, info, warn};
@@ -668,21 +670,136 @@ pub fn get_proxy_url() -> Option<String> {
     }
 }
 
+fn get_system_proxy_from_env() -> Option<String> {
+    [
+        "HTTPS_PROXY",
+        "https_proxy",
+        "HTTP_PROXY",
+        "http_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+    ]
+    .into_iter()
+    .find_map(|name| std::env::var(name).ok())
+    .map(|proxy| proxy.trim().to_string())
+    .filter(|proxy| !proxy.is_empty())
+}
+
+#[cfg(target_os = "macos")]
+fn normalize_proxy_url(scheme: &str, host: &str, port: Option<&str>) -> Option<String> {
+    let host = host.trim();
+    if host.is_empty() {
+        return None;
+    }
+
+    if host.contains("://") {
+        return Url::parse(host).ok().map(|_| host.to_string());
+    }
+
+    let host = if host.contains(':') && !host.starts_with('[') && !host.ends_with(']') {
+        format!("[{host}]")
+    } else {
+        host.to_string()
+    };
+
+    let proxy_url = match port.map(str::trim).filter(|value| !value.is_empty()) {
+        Some(port) => format!("{scheme}://{host}:{port}"),
+        None => format!("{scheme}://{host}"),
+    };
+
+    Url::parse(&proxy_url).ok().map(|_| proxy_url)
+}
+
+#[cfg(target_os = "macos")]
+fn macos_proxy_flag_enabled(entries: &HashMap<String, String>, key: &str) -> bool {
+    matches!(
+        entries.get(key).map(|value| value.as_str()),
+        Some("1" | "true" | "TRUE" | "yes" | "YES")
+    )
+}
+
+#[cfg(target_os = "macos")]
+fn macos_scutil_proxy_url(
+    entries: &HashMap<String, String>,
+    prefix: &str,
+    scheme: &str,
+) -> Option<String> {
+    let enable_key = format!("{prefix}Enable");
+    if !macos_proxy_flag_enabled(entries, &enable_key) {
+        return None;
+    }
+
+    let host_key = format!("{prefix}Proxy");
+    let port_key = format!("{prefix}Port");
+
+    normalize_proxy_url(
+        scheme,
+        entries.get(&host_key)?.as_str(),
+        entries.get(&port_key).map(String::as_str),
+    )
+}
+
+#[cfg(target_os = "macos")]
+fn parse_scutil_proxy_output(output: &str) -> Option<String> {
+    let mut entries = HashMap::new();
+
+    for line in output.lines() {
+        let Some((key, value)) = line.split_once(':') else {
+            continue;
+        };
+
+        let key = key.trim();
+        let value = value.trim();
+        if key.is_empty() || value.is_empty() {
+            continue;
+        }
+
+        entries.insert(key.to_string(), value.to_string());
+    }
+
+    macos_scutil_proxy_url(&entries, "HTTPS", "http")
+        .or_else(|| macos_scutil_proxy_url(&entries, "HTTP", "http"))
+        .or_else(|| macos_scutil_proxy_url(&entries, "SOCKS", "socks5h"))
+}
+
+#[cfg(target_os = "macos")]
+fn get_macos_system_proxy() -> Option<String> {
+    let output = match Command::new("scutil").arg("--proxy").output() {
+        Ok(output) => output,
+        Err(error) => {
+            warn!("调用 scutil 读取 macOS 系统代理失败: {}", error);
+            return None;
+        }
+    };
+
+    if !output.status.success() {
+        warn!("scutil --proxy 执行失败: {}", output.status);
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let proxy = parse_scutil_proxy_output(stdout.as_ref());
+
+    if proxy.is_none() {
+        if stdout.contains("ProxyAutoConfigEnable : 1")
+            || stdout.contains("ProxyAutoDiscoveryEnable : 1")
+        {
+            info!(
+                "macOS 当前启用了自动代理配置（PAC/WPAD）；当前仅支持直接读取显式 HTTP/HTTPS/SOCKS 代理"
+            );
+        } else {
+            debug!("scutil --proxy 未发现显式启用的 HTTP/HTTPS/SOCKS 代理");
+        }
+    }
+
+    proxy
+}
+
 /// 获取系统代理
 #[cfg(windows)]
 pub fn get_system_proxy() -> Option<String> {
-    use std::env;
-
-    // 首先尝试环境变量
-    if let Ok(proxy) = env::var("HTTPS_PROXY").or_else(|_| env::var("https_proxy")) {
-        if !proxy.is_empty() {
-            return Some(proxy);
-        }
-    }
-    if let Ok(proxy) = env::var("HTTP_PROXY").or_else(|_| env::var("http_proxy")) {
-        if !proxy.is_empty() {
-            return Some(proxy);
-        }
+    if let Some(proxy) = get_system_proxy_from_env() {
+        return Some(proxy);
     }
 
     // Windows 注册表读取
@@ -755,16 +872,14 @@ pub fn get_system_proxy() -> Option<String> {
     None
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
 pub fn get_system_proxy() -> Option<String> {
-    use std::env;
+    get_system_proxy_from_env().or_else(get_macos_system_proxy)
+}
 
-    env::var("HTTPS_PROXY")
-        .or_else(|_| env::var("https_proxy"))
-        .or_else(|_| env::var("HTTP_PROXY"))
-        .or_else(|_| env::var("http_proxy"))
-        .ok()
-        .filter(|s| !s.is_empty())
+#[cfg(not(any(windows, target_os = "macos")))]
+pub fn get_system_proxy() -> Option<String> {
+    get_system_proxy_from_env()
 }
 
 /// 验证 URL 是否有效
@@ -1508,6 +1623,63 @@ mod tests {
 
         assert_ne!(target.url, origin);
         assert_ne!(target.source_name, "Cloudflare CDN 负载均衡");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_parse_scutil_proxy_output_prefers_https_proxy() {
+        let output = r#"
+<dictionary> {
+  HTTPEnable : 1
+  HTTPPort : 7890
+  HTTPProxy : 127.0.0.1
+  HTTPSEnable : 1
+  HTTPSPort : 7891
+  HTTPSProxy : 127.0.0.2
+}
+"#;
+
+        assert_eq!(
+            parse_scutil_proxy_output(output),
+            Some("http://127.0.0.2:7891".to_string())
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_parse_scutil_proxy_output_falls_back_to_http_proxy() {
+        let output = r#"
+<dictionary> {
+  HTTPEnable : 1
+  HTTPPort : 7890
+  HTTPProxy : 127.0.0.1
+  HTTPSEnable : 0
+}
+"#;
+
+        assert_eq!(
+            parse_scutil_proxy_output(output),
+            Some("http://127.0.0.1:7890".to_string())
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_parse_scutil_proxy_output_supports_socks_proxy() {
+        let output = r#"
+<dictionary> {
+  HTTPEnable : 0
+  HTTPSEnable : 0
+  SOCKSEnable : 1
+  SOCKSPort : 1080
+  SOCKSProxy : 127.0.0.1
+}
+"#;
+
+        assert_eq!(
+            parse_scutil_proxy_output(output),
+            Some("socks5h://127.0.0.1:1080".to_string())
+        );
     }
 
     #[test]

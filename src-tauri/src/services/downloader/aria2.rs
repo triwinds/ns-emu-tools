@@ -14,8 +14,10 @@ use crate::error::{AppError, AppResult};
 use crate::services::doh::configure_reqwest_client_builder;
 #[cfg(target_os = "windows")]
 use crate::services::network::request_github_api;
+#[cfg(target_os = "windows")]
+use crate::services::network::CHROME_UA;
 use crate::services::network::{
-    get_final_url, get_github_download_url, get_proxy_url, is_using_proxy, CHROME_UA,
+    get_final_url, get_github_download_url, get_proxy_url, is_using_proxy,
 };
 use aria2_ws::response::GlobalStat as Aria2GlobalStat;
 use aria2_ws::response::Status as Aria2Status;
