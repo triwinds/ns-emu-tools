@@ -745,13 +745,13 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
         },
     );
 
-    let asset = match release_info.find_windows_asset() {
+    let asset = match release_info.best_self_update_asset() {
         Some(asset) => {
-            info!("找到 Windows 资源: {}", asset.name);
+            info!("找到当前平台更新资源: {}", asset.name);
             asset
         }
         None => {
-            let err_msg = format!("版本 {} 没有找到 Windows 安装包", tag);
+            let err_msg = format!("版本 {} 没有找到当前平台的安装包", tag);
             let _ = window.emit(
                 "installation-event",
                 ProgressEvent::StepUpdate {

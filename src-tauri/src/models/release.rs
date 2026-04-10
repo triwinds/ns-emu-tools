@@ -3,6 +3,31 @@
 //! 用于表示 GitHub/GitLab/Forgejo 等平台的 Release 信息
 
 use serde::{Deserialize, Serialize};
+use tracing::info;
+
+/// 自更新资产分类
+#[derive(Debug, Clone, PartialEq)]
+pub enum ReleaseAssetKind {
+    /// Windows portable zip（自更新主资产）
+    WindowsPortableZip,
+    /// Windows 裸 exe（自更新兜底资产）
+    WindowsExe,
+    /// macOS app zip（自更新主资产）
+    MacosZip,
+    /// macOS app bundle 归档 tar.gz（自更新兜底资产）
+    MacosAppArchive,
+    /// 未分类
+    Unknown,
+}
+
+/// 自更新资产选择结果
+#[derive(Debug, Clone)]
+pub struct SelfUpdateAssetSelection {
+    /// 首选资产
+    pub primary: Option<ReleaseAsset>,
+    /// 兜底资产
+    pub fallback: Option<ReleaseAsset>,
+}
 
 /// Release 资源信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -142,8 +167,6 @@ impl ReleaseInfo {
     /// 2. 其次兼容查找 `ns-emu-tools.exe`
     /// 3. 最后模糊匹配任意包含 `emu-tools` 的 `.exe` 文件
     pub fn find_windows_asset(&self) -> Option<&ReleaseAsset> {
-        use tracing::info;
-
         info!(
             "开始查找 Windows 资源，总共有 {} 个 assets",
             self.assets.len()
@@ -184,6 +207,129 @@ impl ReleaseInfo {
 
         info!("警告: 未找到任何合适的 Windows 可执行文件！");
         None
+    }
+
+    /// 对单个资产进行自更新分类
+    pub fn classify_asset(name: &str) -> ReleaseAssetKind {
+        let lower = name.to_lowercase();
+
+        // Windows portable zip: 包含 "windows" 且以 .zip 结尾
+        if lower.contains("windows") && lower.ends_with(".zip") {
+            return ReleaseAssetKind::WindowsPortableZip;
+        }
+
+        // Windows exe: NsEmuTools.exe 或类似名称
+        if lower.ends_with(".exe") && (lower.contains("nsemutools") || lower.contains("emu-tools"))
+        {
+            return ReleaseAssetKind::WindowsExe;
+        }
+
+        // macOS app archive (tar.gz): 包含 "macos" 且以 .tar.gz 结尾
+        // 注意: 先匹配 .tar.gz 再匹配 .zip，避免误判
+        if lower.contains("macos") && lower.ends_with(".tar.gz") {
+            return ReleaseAssetKind::MacosAppArchive;
+        }
+
+        // macOS zip: 包含 "macos" 且以 .zip 结尾
+        if lower.contains("macos") && lower.ends_with(".zip") {
+            return ReleaseAssetKind::MacosZip;
+        }
+
+        ReleaseAssetKind::Unknown
+    }
+
+    /// 为当前平台查找自更新资产（primary + fallback）
+    pub fn find_self_update_assets(&self) -> SelfUpdateAssetSelection {
+        info!(
+            "开始为当前平台查找自更新资产，总共有 {} 个 assets",
+            self.assets.len()
+        );
+        for asset in &self.assets {
+            let kind = Self::classify_asset(&asset.name);
+            info!("  资产: {} -> {:?}", asset.name, kind);
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            let primary = self
+                .assets
+                .iter()
+                .find(|a| {
+                    matches!(
+                        Self::classify_asset(&a.name),
+                        ReleaseAssetKind::WindowsPortableZip
+                    )
+                })
+                .cloned();
+
+            let fallback = if primary.is_none() {
+                // zip 不存在时，fallback 到 exe（复用已有的精确匹配逻辑）
+                self.find_windows_asset().cloned()
+            } else {
+                // zip 存在时，exe 作为 fallback
+                self.assets
+                    .iter()
+                    .find(|a| matches!(Self::classify_asset(&a.name), ReleaseAssetKind::WindowsExe))
+                    .cloned()
+            };
+
+            if let Some(ref p) = primary {
+                info!("Windows 主资产: {}", p.name);
+            } else {
+                info!("未找到 Windows portable zip 主资产");
+            }
+            if let Some(ref f) = fallback {
+                info!("Windows 兜底资产: {}", f.name);
+            }
+
+            SelfUpdateAssetSelection { primary, fallback }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            let primary = self
+                .assets
+                .iter()
+                .find(|a| matches!(Self::classify_asset(&a.name), ReleaseAssetKind::MacosZip))
+                .cloned();
+
+            let fallback = self
+                .assets
+                .iter()
+                .find(|a| {
+                    matches!(
+                        Self::classify_asset(&a.name),
+                        ReleaseAssetKind::MacosAppArchive
+                    )
+                })
+                .cloned();
+
+            if let Some(ref p) = primary {
+                info!("macOS 主资产: {}", p.name);
+            } else {
+                info!("未找到 macOS zip 主资产");
+            }
+            if let Some(ref f) = fallback {
+                info!("macOS 兜底资产: {}", f.name);
+            }
+
+            SelfUpdateAssetSelection { primary, fallback }
+        }
+
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        {
+            info!("当前平台不支持自更新");
+            SelfUpdateAssetSelection {
+                primary: None,
+                fallback: None,
+            }
+        }
+    }
+
+    /// 获取当前平台的最佳自更新资产（primary 优先，fallback 兜底）
+    pub fn best_self_update_asset(&self) -> Option<ReleaseAsset> {
+        let selection = self.find_self_update_assets();
+        selection.primary.or(selection.fallback)
     }
 }
 
@@ -268,5 +414,149 @@ mod tests {
 
         let asset = release.find_windows_asset().unwrap();
         assert_eq!(asset.name, "NsEmuTools.exe");
+    }
+
+    #[test]
+    fn test_classify_asset_windows_portable_zip() {
+        assert_eq!(
+            ReleaseInfo::classify_asset("NsEmuTools-windows-portable.zip"),
+            ReleaseAssetKind::WindowsPortableZip
+        );
+    }
+
+    #[test]
+    fn test_classify_asset_windows_exe() {
+        assert_eq!(
+            ReleaseInfo::classify_asset("NsEmuTools.exe"),
+            ReleaseAssetKind::WindowsExe
+        );
+        assert_eq!(
+            ReleaseInfo::classify_asset("ns-emu-tools.exe"),
+            ReleaseAssetKind::WindowsExe
+        );
+    }
+
+    #[test]
+    fn test_classify_asset_macos_zip() {
+        assert_eq!(
+            ReleaseInfo::classify_asset("NS-Emu-Tools-macos-app.zip"),
+            ReleaseAssetKind::MacosZip
+        );
+    }
+
+    #[test]
+    fn test_classify_asset_macos_app_archive() {
+        assert_eq!(
+            ReleaseInfo::classify_asset("NS-Emu-Tools-macos-app.tar.gz"),
+            ReleaseAssetKind::MacosAppArchive
+        );
+    }
+
+    #[test]
+    fn test_classify_asset_unknown() {
+        assert_eq!(
+            ReleaseInfo::classify_asset("readme.md"),
+            ReleaseAssetKind::Unknown
+        );
+        assert_eq!(
+            ReleaseInfo::classify_asset("test-linux.tar.gz"),
+            ReleaseAssetKind::Unknown
+        );
+    }
+
+    #[test]
+    fn test_find_self_update_assets_with_full_matrix() {
+        let release = ReleaseInfo {
+            name: "Test".to_string(),
+            tag_name: "v1.0.0".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "NsEmuTools-windows-portable.zip".to_string(),
+                    download_url: "https://example.com/win.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "NsEmuTools.exe".to_string(),
+                    download_url: "https://example.com/NsEmuTools.exe".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "NS-Emu-Tools-macos-app.zip".to_string(),
+                    download_url: "https://example.com/macos.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "NS-Emu-Tools-macos-app.tar.gz".to_string(),
+                    download_url: "https://example.com/macos.tar.gz".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let selection = release.find_self_update_assets();
+
+        #[cfg(target_os = "windows")]
+        {
+            assert!(selection.primary.is_some());
+            assert_eq!(
+                selection.primary.unwrap().name,
+                "NsEmuTools-windows-portable.zip"
+            );
+            assert!(selection.fallback.is_some());
+            assert_eq!(selection.fallback.unwrap().name, "NsEmuTools.exe");
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            assert!(selection.primary.is_some());
+            assert_eq!(
+                selection.primary.unwrap().name,
+                "NS-Emu-Tools-macos-app.zip"
+            );
+            assert!(selection.fallback.is_some());
+            assert_eq!(
+                selection.fallback.unwrap().name,
+                "NS-Emu-Tools-macos-app.tar.gz"
+            );
+        }
+    }
+
+    #[test]
+    fn test_find_self_update_assets_fallback_when_no_zip() {
+        let release = ReleaseInfo {
+            name: "Test".to_string(),
+            tag_name: "v1.0.0".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![ReleaseAsset {
+                name: "NsEmuTools.exe".to_string(),
+                download_url: "https://example.com/NsEmuTools.exe".to_string(),
+                size: 0,
+                content_type: None,
+            }],
+        };
+
+        let best = release.best_self_update_asset();
+
+        #[cfg(target_os = "windows")]
+        {
+            assert!(best.is_some());
+            assert_eq!(best.unwrap().name, "NsEmuTools.exe");
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            assert!(best.is_none());
+        }
     }
 }

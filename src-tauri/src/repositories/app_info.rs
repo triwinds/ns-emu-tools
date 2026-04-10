@@ -128,14 +128,14 @@ pub async fn check_update(include_prerelease: bool) -> AppResult<UpdateCheckResu
     let has_update = is_newer_version(&latest.tag_name, CURRENT_VERSION);
     info!("是否检测到可用更新：{}", has_update);
 
-    let windows_asset = latest.find_windows_asset();
-    let download_url = windows_asset.map(|a| {
-        info!("已找到 Windows 安装资源：{}", a.name);
+    let best_asset = latest.best_self_update_asset();
+    let download_url = best_asset.as_ref().map(|a| {
+        info!("已找到当前平台安装资源：{}", a.name);
         a.download_url.clone()
     });
 
     if download_url.is_none() {
-        info!("未找到 Windows 安装资源");
+        info!("未找到当前平台安装资源");
     } else {
         info!("下载链接为：{:?}", download_url);
     }
