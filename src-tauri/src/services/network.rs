@@ -1059,6 +1059,11 @@ pub fn get_github_download_source_name() -> String {
     github_source_name_from_mirror(&mirror)
 }
 
+fn is_ryujinx_git_url(origin_url: &str) -> bool {
+    origin_url.starts_with("https://git.ryujinx.app")
+        || origin_url.starts_with("https://legacy.git.ryujinx.app")
+}
+
 /// 获取最终 URL 的下载源名称（通用）
 pub fn get_download_source_name(origin_url: &str) -> String {
     let (github_api_mode, ryujinx_mirror, eden_mirror) = {
@@ -1075,7 +1080,7 @@ pub fn get_download_source_name(origin_url: &str) -> String {
         || origin_url.starts_with("https://raw.githubusercontent.com")
     {
         get_source_name_by_mode(&github_api_mode, "GitHub")
-    } else if origin_url.starts_with("https://git.ryujinx.app") {
+    } else if is_ryujinx_git_url(origin_url) {
         get_source_name_by_mode(&ryujinx_mirror, "Ryujinx GitLab")
     } else if origin_url.starts_with("https://git.eden-emu.dev") {
         get_source_name_by_mode(&eden_mirror, "Eden 官方源")
@@ -1111,7 +1116,7 @@ pub fn get_final_url(origin_url: &str) -> String {
         || origin_url.starts_with("https://raw.githubusercontent.com")
     {
         get_final_url_with_mode(origin_url, &github_api_mode)
-    } else if origin_url.starts_with("https://git.ryujinx.app") {
+    } else if is_ryujinx_git_url(origin_url) {
         get_final_url_with_mode(origin_url, &ryujinx_mirror)
     } else if origin_url.starts_with("https://git.eden-emu.dev") {
         get_final_url_with_mode(origin_url, &eden_mirror)
@@ -1385,11 +1390,37 @@ mod tests {
             "https://nsa2.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
         );
 
+        let legacy_ryujinx_url = concat!(
+            "https://legacy.git.ryujinx.app/api/v4/projects/68/packages/generic/",
+            "Ryubing-Canary/1.3.266/ryujinx-canary-1.3.266-win_x64.zip"
+        );
+        assert_eq!(
+            get_override_url(legacy_ryujinx_url),
+            concat!(
+                "https://nsa2.e6ex.com/ryujinx_official_legacy/api/v4/projects/68/",
+                "packages/generic/Ryubing-Canary/1.3.266/",
+                "ryujinx-canary-1.3.266-win_x64.zip"
+            )
+        );
+
         let eden_url = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases";
         assert_eq!(
             get_override_url(eden_url),
             "https://nsa2.e6ex.com/eden_official/api/v1/repos/eden-emu/eden/releases"
         );
+    }
+
+    #[test]
+    fn test_is_ryujinx_git_url_supports_legacy_host() {
+        assert!(is_ryujinx_git_url(
+            "https://git.ryujinx.app/api/v4/projects/1/releases"
+        ));
+        assert!(is_ryujinx_git_url(
+            "https://legacy.git.ryujinx.app/api/v4/projects/68/releases/1.3.266"
+        ));
+        assert!(!is_ryujinx_git_url(
+            "https://nsa2.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
+        ));
     }
 
     #[test]

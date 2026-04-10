@@ -571,15 +571,6 @@ impl Aria2Manager {
 
         info!("添加下载任务: {}", final_url);
 
-        // 选择 User-Agent
-        let user_agent = options.user_agent.clone().unwrap_or_else(|| {
-            if final_url.contains("e6ex.com") {
-                crate::config::user_agent()
-            } else {
-                CHROME_UA.to_string()
-            }
-        });
-
         // 构建 aria2 选项
         let mut task_options = TaskOptions::default();
 
@@ -597,13 +588,20 @@ impl Aria2Manager {
         task_options.split = Some(options.split as i32);
         task_options.max_connection_per_server = Some(options.max_connection_per_server as i32);
 
-        // 设置 User-Agent（通过 header）
-        let mut headers = vec![format!("User-Agent: {}", user_agent)];
-
-        // 添加自定义头
-        for (k, v) in &options.headers {
-            headers.push(format!("{}: {}", k, v));
-        }
+        let mut request_headers = options.headers.clone();
+        let user_agent = request_headers
+            .entry("User-Agent".to_string())
+            .or_insert_with(|| {
+                options
+                    .user_agent
+                    .clone()
+                    .unwrap_or_else(crate::config::user_agent)
+            })
+            .clone();
+        let headers = request_headers
+            .into_iter()
+            .map(|(key, value)| format!("{}: {}", key, value))
+            .collect::<Vec<_>>();
         task_options.header = Some(headers.clone());
 
         // 设置代理
