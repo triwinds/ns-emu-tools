@@ -361,6 +361,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore] // 需要网络连接
     async fn test_doh_resolve_google() {
         let resolver = DohResolver::with_google().unwrap();
         let result = resolver.resolve("github.com").await;

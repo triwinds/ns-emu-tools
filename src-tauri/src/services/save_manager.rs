@@ -433,7 +433,10 @@ mod tests {
 
     #[test]
     fn test_parse_backup_info() {
-        let path = PathBuf::from("D:\\yuzu_save_backup\\yuzu_0100F2C0115B6000_1685114415.7z");
+        // Use platform-native path separators so file_name() works correctly
+        let path: PathBuf = ["yuzu_save_backup", "yuzu_0100F2C0115B6000_1685114415.7z"]
+            .iter()
+            .collect();
         let info = parse_backup_info(&path);
 
         assert_eq!(info.filename, "yuzu_0100F2C0115B6000_1685114415.7z");

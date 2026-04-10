@@ -293,6 +293,8 @@ mod tests {
 </plist>"#,
         )
         .unwrap();
+        // Create the actual executable file so the function finds it
+        std::fs::write(macos_dir.join("EdenLauncher"), b"").unwrap();
 
         let executable_path = get_macos_bundle_executable_path(&app_path, Some("Eden")).unwrap();
         assert_eq!(

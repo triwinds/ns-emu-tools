@@ -52,7 +52,7 @@ mod tests {
 
         assert_eq!(options.split, 8);
         assert_eq!(options.max_connection_per_server, 8);
-        assert_eq!(options.min_split_size, "2M");
+        assert_eq!(options.min_split_size, "4M");
     }
 
     #[test]
