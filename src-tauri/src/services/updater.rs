@@ -2,6 +2,9 @@
 //!
 //! 提供 portable 模式的自动更新功能
 
+#[cfg(target_os = "macos")]
+use crate::config::app_data_dir;
+#[cfg(not(target_os = "macos"))]
 use crate::config::effective_config_dir;
 use crate::error::{AppError, AppResult};
 use crate::models::progress::{ProgressEvent, ProgressStatus, ProgressStep};
@@ -26,7 +29,15 @@ pub struct UpdateResult {
 }
 
 fn update_runtime_dir_path() -> PathBuf {
-    effective_config_dir()
+    #[cfg(target_os = "macos")]
+    {
+        app_data_dir().join("self-update")
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        effective_config_dir()
+    }
 }
 
 fn update_runtime_dir() -> AppResult<PathBuf> {
@@ -1175,24 +1186,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_update_download_dir_uses_config_directory() {
+    fn test_update_download_dir_uses_platform_runtime_directory() {
         let download_dir = update_download_dir_path();
+
+        #[cfg(target_os = "macos")]
+        let expected_base = crate::config::app_data_dir().join("self-update");
+
+        #[cfg(not(target_os = "macos"))]
+        let expected_base = crate::config::effective_config_dir();
 
         assert_eq!(
             download_dir,
-            crate::config::effective_config_dir()
-                .join("download")
-                .join("upgrade_files")
+            expected_base.join("download").join("upgrade_files")
         );
     }
 
     #[test]
-    fn test_update_extract_dir_uses_config_directory() {
+    fn test_update_extract_dir_uses_platform_runtime_directory() {
         let extract_dir = update_extract_dir_path();
+
+        #[cfg(target_os = "macos")]
+        let expected_base = crate::config::app_data_dir().join("self-update");
+
+        #[cfg(not(target_os = "macos"))]
+        let expected_base = crate::config::effective_config_dir();
 
         assert_eq!(
             extract_dir,
-            crate::config::effective_config_dir()
+            expected_base
                 .join("download")
                 .join("upgrade_files_extracted")
         );
