@@ -1,6 +1,6 @@
 [package]
 name = "ns-emu-tools"
-version = "0.6.1"
+version = "0.6.2"
 description = "NS Emu Tools - Nintendo Switch Emulator Management Tool"
 authors = ["NS Emu Tools Contributors"]
 license = "GPL-3.0"

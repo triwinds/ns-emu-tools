@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.6.2
+
+- 修复 Ryujinx 从 GitLab 切换至 Forgejo 导致 API 调用错误的问题 (#134)
+
 ## 0.6.1
 
 - 更新 GitHub 镜像源
