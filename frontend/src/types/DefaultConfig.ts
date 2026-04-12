@@ -27,7 +27,7 @@ export const defaultConfig: AppConfig = {
     "network": {
       "githubApiMode": "direct",
       "githubDownloadMirror": "cloudflare_load_balance",
-      "ryujinxGitLabDownloadMirror": "direct",
+      "ryujinxOfficialDownloadMirror": "direct",
       "edenGitDownloadMirror": "auto-detect",
       "useDoh": true,
       "proxy": "system"

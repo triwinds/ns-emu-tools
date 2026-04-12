@@ -352,7 +352,7 @@ export interface RyujinxConfig {
 export interface NetworkSetting {
   githubApiMode: string
   githubDownloadMirror: string
-  ryujinxGitLabDownloadMirror: string
+  ryujinxOfficialDownloadMirror: string
   edenGitDownloadMirror: string
   useDoh: boolean
   proxy: string

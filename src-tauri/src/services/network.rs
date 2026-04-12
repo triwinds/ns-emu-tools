@@ -11,7 +11,7 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rand::prelude::IndexedRandom;
-use reqwest::header::HeaderMap;
+use reqwest::header::{HeaderMap, CONTENT_TYPE};
 use reqwest::{Client, Proxy, Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next};
 use serde::{Deserialize, Serialize};
@@ -1186,7 +1186,7 @@ pub fn get_download_source_name(origin_url: &str) -> String {
         let network = &config.setting.network;
         (
             network.github_api_mode.clone(),
-            network.ryujinx_git_lab_download_mirror.clone(),
+            network.ryujinx_official_download_mirror.clone(),
             network.eden_git_download_mirror.clone(),
         )
     };
@@ -1196,7 +1196,7 @@ pub fn get_download_source_name(origin_url: &str) -> String {
     {
         get_source_name_by_mode(&github_api_mode, "GitHub")
     } else if is_ryujinx_git_url(origin_url) {
-        get_source_name_by_mode(&ryujinx_mirror, "Ryujinx GitLab")
+        get_source_name_by_mode(&ryujinx_mirror, "Ryujinx 官方源")
     } else if origin_url.starts_with("https://git.eden-emu.dev") {
         get_source_name_by_mode(&eden_mirror, "Eden 官方源")
     } else if origin_url.starts_with("https://github.com") {
@@ -1222,7 +1222,7 @@ pub fn get_final_url(origin_url: &str) -> String {
         let network = &config.setting.network;
         (
             network.github_api_mode.clone(),
-            network.ryujinx_git_lab_download_mirror.clone(),
+            network.ryujinx_official_download_mirror.clone(),
             network.eden_git_download_mirror.clone(),
         )
     };
@@ -1400,27 +1400,27 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
     // 使用普通客户端发送请求（不使用 HTTP 缓存中间件）
     let client = create_client()?;
     let final_url = get_final_url(url);
-    debug!("发送 GET 请求到 Git API: {}", final_url);
-    let resp = client.get(&final_url).send().await.map_err(|e| {
-        warn!("Git API 请求失败: {}", e);
-        AppError::Network(format!("Git API 请求失败: {}", e))
-    })?;
-
-    debug!("Git API 响应状态: {}", resp.status());
-
-    if !resp.status().is_success() {
-        warn!("Git API 请求失败，HTTP 状态: {}", resp.status());
-        return Err(AppError::Network(format!(
-            "Git API 请求失败: {} - {}",
-            resp.status(),
-            final_url
-        )));
-    }
-
-    let data = resp
-        .json::<serde_json::Value>()
-        .await
-        .map_err(|e| AppError::Network(format!("解析 Git API 响应失败: {}", e)))?;
+    let cdn_url = get_override_url(url);
+    let data = match fetch_git_api_json(&client, &final_url).await? {
+        Some(data) => data,
+        None if cdn_url != final_url => {
+            warn!(
+                "Git API 直连返回了网页验证，回退到 CDN: {} -> {}",
+                final_url, cdn_url
+            );
+            fetch_git_api_json(&client, &cdn_url)
+                .await?
+                .ok_or_else(|| {
+                    AppError::Network(format!("Git API CDN 仍返回网页验证: {}", cdn_url))
+                })?
+        }
+        None => {
+            return Err(AppError::Network(format!(
+                "Git API 返回了网页验证而非 JSON: {}",
+                final_url
+            )));
+        }
+    };
 
     // 将响应存入缓存
     GIT_API_JSON_CACHE
@@ -1428,6 +1428,57 @@ pub async fn request_git_api(url: &str) -> AppResult<serde_json::Value> {
         .await;
 
     Ok(data)
+}
+
+async fn fetch_git_api_json(
+    client: &Client,
+    request_url: &str,
+) -> AppResult<Option<serde_json::Value>> {
+    debug!("发送 GET 请求到 Git API: {}", request_url);
+    let resp = client.get(request_url).send().await.map_err(|e| {
+        warn!("Git API 请求失败: {}", e);
+        AppError::Network(format!("Git API 请求失败: {}", e))
+    })?;
+
+    let status = resp.status();
+    debug!("Git API 响应状态: {}", status);
+
+    if !status.is_success() {
+        warn!("Git API 请求失败，HTTP 状态: {}", status);
+        return Err(AppError::Network(format!(
+            "Git API 请求失败: {} - {}",
+            status, request_url
+        )));
+    }
+
+    let content_type = resp
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.to_string());
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| AppError::Network(format!("读取 Git API 响应失败: {}", e)))?;
+
+    if git_api_response_looks_like_html_challenge(content_type.as_deref(), &body) {
+        return Ok(None);
+    }
+
+    let data = serde_json::from_str::<serde_json::Value>(&body)
+        .map_err(|e| AppError::Network(format!("解析 Git API 响应失败: {}", e)))?;
+    Ok(Some(data))
+}
+
+fn git_api_response_looks_like_html_challenge(content_type: Option<&str>, body: &str) -> bool {
+    let is_html = content_type
+        .map(|value| value.to_ascii_lowercase().contains("text/html"))
+        .unwrap_or(false);
+
+    is_html
+        && (body.contains("Making sure you're not a bot!")
+            || body.contains("Protected by Anubis")
+            || body.contains("This website is running Anubis version"))
 }
 
 /// 检查端口是否被占用
@@ -1499,10 +1550,10 @@ mod tests {
 
     #[test]
     fn test_get_override_url_for_git_hosts() {
-        let ryujinx_url = "https://git.ryujinx.app/api/v4/projects/1/releases";
+        let ryujinx_url = "https://git.ryujinx.app/api/v1/repos/ryubing/ryujinx/releases";
         assert_eq!(
             get_override_url(ryujinx_url),
-            "https://nsa2.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
+            "https://nsa2.e6ex.com/ryujinx_official/api/v1/repos/ryubing/ryujinx/releases"
         );
 
         let legacy_ryujinx_url = concat!(
@@ -1528,13 +1579,31 @@ mod tests {
     #[test]
     fn test_is_ryujinx_git_url_supports_legacy_host() {
         assert!(is_ryujinx_git_url(
-            "https://git.ryujinx.app/api/v4/projects/1/releases"
+            "https://git.ryujinx.app/api/v1/repos/ryubing/ryujinx/releases"
         ));
         assert!(is_ryujinx_git_url(
             "https://legacy.git.ryujinx.app/api/v4/projects/68/releases/1.3.266"
         ));
         assert!(!is_ryujinx_git_url(
-            "https://nsa2.e6ex.com/ryujinx_official/api/v4/projects/1/releases"
+            "https://nsa2.e6ex.com/ryujinx_official/api/v1/repos/ryubing/ryujinx/releases"
+        ));
+    }
+
+    #[test]
+    fn test_git_api_response_looks_like_html_challenge_detects_anubis() {
+        let html = "<!doctype html><title>Making sure you're not a bot!</title>Protected by Anubis";
+        assert!(git_api_response_looks_like_html_challenge(
+            Some("text/html; charset=utf-8"),
+            html
+        ));
+    }
+
+    #[test]
+    fn test_git_api_response_looks_like_html_challenge_ignores_json() {
+        let json = r#"[{"tag_name":"1.0.0"}]"#;
+        assert!(!git_api_response_looks_like_html_challenge(
+            Some("application/json"),
+            json
         ));
     }
 

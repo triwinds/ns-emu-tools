@@ -344,9 +344,13 @@ pub struct NetworkSetting {
     /// GitHub 下载镜像
     #[serde(default = "default_github_mirror")]
     pub github_download_mirror: String,
-    /// Ryujinx GitLab 下载镜像
-    #[serde(default = "default_direct")]
-    pub ryujinx_git_lab_download_mirror: String,
+    /// Ryujinx 官方源下载镜像
+    #[serde(
+        rename = "ryujinxOfficialDownloadMirror",
+        alias = "ryujinxGitLabDownloadMirror",
+        default = "default_direct"
+    )]
+    pub ryujinx_official_download_mirror: String,
     /// Eden 官方源下载镜像
     #[serde(default = "default_auto_detect")]
     pub eden_git_download_mirror: String,
@@ -387,7 +391,7 @@ impl Default for NetworkSetting {
         Self {
             github_api_mode: default_github_api_mode(),
             github_download_mirror: default_github_mirror(),
-            ryujinx_git_lab_download_mirror: default_direct(),
+            ryujinx_official_download_mirror: default_direct(),
             eden_git_download_mirror: default_auto_detect(),
             use_doh: default_true(),
             proxy: default_proxy(),
@@ -675,6 +679,26 @@ mod tests {
         let json = serde_json::to_string_pretty(&config).unwrap();
         let parsed: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(config.yuzu.branch, parsed.yuzu.branch);
+        assert!(json.contains("ryujinxOfficialDownloadMirror"));
+        assert!(!json.contains("ryujinxGitLabDownloadMirror"));
+    }
+
+    #[test]
+    fn test_config_deserialization_accepts_legacy_ryujinx_gitlab_key() {
+        let json = serde_json::json!({
+            "setting": {
+                "network": {
+                    "ryujinxGitLabDownloadMirror": "cdn"
+                }
+            }
+        });
+
+        let parsed: Config = serde_json::from_value(json).unwrap();
+
+        assert_eq!(
+            parsed.setting.network.ryujinx_official_download_mirror,
+            "cdn"
+        );
     }
 
     #[test]
