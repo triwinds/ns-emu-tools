@@ -9,10 +9,13 @@ use crate::config::effective_config_dir;
 use crate::error::{AppError, AppResult};
 use crate::models::progress::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::repositories::app_info;
-use crate::services::downloader::format_bytes;
-use crate::services::network::{create_client, resolve_github_download_target};
+use crate::services::downloader::{get_download_manager, DownloadOptions};
+use crate::services::installer::{
+    cancelled_step, download_progress_step, error_step, is_cancelled_error_message,
+    running_download_step, success_download_step, StepKind, INSTALLATION_EVENT,
+};
+use crate::services::network::resolve_github_download_target;
 use crate::utils::archive;
-use futures_util::StreamExt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::{Emitter, Window};
@@ -68,6 +71,116 @@ fn update_extract_dir_path() -> PathBuf {
 fn update_extract_dir() -> AppResult<PathBuf> {
     let _ = update_runtime_dir()?;
     Ok(update_extract_dir_path())
+}
+
+fn emit_installation_event(window: &Window, event: ProgressEvent) {
+    let _ = window.emit(INSTALLATION_EVENT, event);
+}
+
+fn emit_installation_step(window: &Window, step: ProgressStep) {
+    emit_installation_event(window, ProgressEvent::StepUpdate { step });
+}
+
+fn emit_installation_finished(window: &Window, success: bool, message: impl Into<Option<String>>) {
+    emit_installation_event(
+        window,
+        ProgressEvent::Finished {
+            success,
+            message: message.into(),
+        },
+    );
+}
+
+fn with_download_source(mut step: ProgressStep, download_source: &Option<String>) -> ProgressStep {
+    if let Some(download_source) = download_source {
+        step = step.with_download_source(download_source.clone());
+    }
+
+    step
+}
+
+async fn download_update_package(
+    window: &Window,
+    download_url: &str,
+    file_name: &str,
+    download_source: Option<String>,
+) -> AppResult<PathBuf> {
+    const STEP_ID: &str = "download";
+    const STEP_TITLE: &str = "下载更新文件";
+
+    emit_installation_step(
+        window,
+        with_download_source(running_download_step(STEP_ID, STEP_TITLE), &download_source),
+    );
+
+    let download_dir = update_download_dir()?;
+    info!("下载目录: {}", download_dir.display());
+
+    let download_manager = match get_download_manager().await {
+        Ok(manager) => manager,
+        Err(error) => {
+            let message = error.to_string();
+            emit_installation_step(
+                window,
+                with_download_source(
+                    error_step(STEP_ID, STEP_TITLE, StepKind::Download, message.clone()),
+                    &download_source,
+                ),
+            );
+            emit_installation_finished(window, false, Some(message));
+            return Err(error);
+        }
+    };
+
+    let options = DownloadOptions {
+        save_dir: Some(download_dir),
+        filename: Some(file_name.to_string()),
+        overwrite: true,
+        use_github_mirror: false,
+        ..Default::default()
+    };
+
+    let progress_window = window.clone();
+    let progress_download_source = download_source.clone();
+    let result = download_manager
+        .download_and_wait(
+            download_url,
+            options,
+            Box::new(move |progress| {
+                emit_installation_step(
+                    &progress_window,
+                    download_progress_step(
+                        STEP_ID,
+                        STEP_TITLE,
+                        &progress,
+                        progress_download_source.clone(),
+                    ),
+                );
+            }),
+        )
+        .await;
+
+    match result {
+        Ok(result) => {
+            emit_installation_step(
+                window,
+                with_download_source(success_download_step(STEP_ID, STEP_TITLE), &download_source),
+            );
+            Ok(result.path)
+        }
+        Err(error) => {
+            let message = error.to_string();
+            let step = if is_cancelled_error_message(&message) {
+                cancelled_step(STEP_ID, STEP_TITLE, StepKind::Download)
+            } else {
+                error_step(STEP_ID, STEP_TITLE, StepKind::Download, message.clone())
+            };
+
+            emit_installation_step(window, with_download_source(step, &download_source));
+            emit_installation_finished(window, false, Some(message));
+            Err(error)
+        }
+    }
 }
 
 /// 下载更新文件
@@ -226,127 +339,17 @@ pub async fn download_update(
     let download_source = download_target.source_name;
     info!("下载源: {}", download_source);
 
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: "下载更新文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "download".to_string(),
-                progress: 0.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: Some(download_source.clone()),
-            },
-        },
-    );
-
-    // 创建下载目录（与 config.json 保持一致）
-    let download_dir = update_download_dir()?;
-    info!("下载目录: {}", download_dir.display());
-
     // 提取文件名
     let file_name = download_url
         .rsplit('/')
         .next()
         .unwrap_or("update.zip")
         .to_string();
-    let download_path = download_dir.join(&file_name);
 
-    // 下载文件
-    let client = create_client()?;
-    let resp = client
-        .get(&mirror_url)
-        .send()
-        .await
-        .map_err(|e| AppError::Unknown(format!("下载更新文件失败: {}", e)))?;
+    let download_path =
+        download_update_package(window, &mirror_url, &file_name, Some(download_source)).await?;
 
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "下载更新文件失败: HTTP {}",
-            resp.status()
-        )));
-    }
-
-    let total_size = resp.content_length().unwrap_or(0);
-    let mut downloaded: u64 = 0;
-    let mut stream = resp.bytes_stream();
-    let mut file = fs::File::create(&download_path)?;
-    let start_time = std::time::Instant::now();
-
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| AppError::Unknown(format!("下载数据失败: {}", e)))?;
-        std::io::copy(&mut chunk.as_ref(), &mut file)?;
-        downloaded += chunk.len() as u64;
-
-        if total_size > 0 {
-            let progress = (downloaded as f64 / total_size as f64) * 100.0;
-            let elapsed = start_time.elapsed().as_secs_f64();
-            let speed = if elapsed > 0.0 {
-                downloaded as f64 / elapsed
-            } else {
-                0.0
-            };
-            let remaining = if speed > 0.0 {
-                ((total_size - downloaded) as f64 / speed) as u64
-            } else {
-                0
-            };
-
-            let speed_str = format_speed(speed);
-            let eta_str = format_time(remaining);
-
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "download".to_string(),
-                        title: "下载更新文件".to_string(),
-                        status: ProgressStatus::Running,
-                        step_type: "download".to_string(),
-                        progress,
-                        download_speed: speed_str,
-                        eta: eta_str,
-                        downloaded_size: Some(format_bytes(downloaded)),
-                        total_size: Some(format_bytes(total_size)),
-                        error: None,
-                        download_source: Some(download_source.clone()),
-                    },
-                },
-            );
-        }
-    }
-
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: "下载更新文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "download".to_string(),
-                progress: 100.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: Some(download_source.clone()),
-            },
-        },
-    );
-
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::Finished {
-            success: true,
-            message: Some("下载完成".to_string()),
-        },
-    );
+    emit_installation_finished(window, true, Some("下载完成".to_string()));
 
     info!("更新文件已下载到: {}", download_path.display());
     Ok(download_path)
@@ -768,28 +771,6 @@ echo "更新完成"
     Ok(())
 }
 
-/// 格式化速度
-fn format_speed(bytes_per_sec: f64) -> String {
-    if bytes_per_sec >= 1024.0 * 1024.0 {
-        format!("{:.2} MB/s", bytes_per_sec / (1024.0 * 1024.0))
-    } else if bytes_per_sec >= 1024.0 {
-        format!("{:.2} KB/s", bytes_per_sec / 1024.0)
-    } else {
-        format!("{:.0} B/s", bytes_per_sec)
-    }
-}
-
-/// 格式化时间
-fn format_time(seconds: u64) -> String {
-    if seconds >= 3600 {
-        format!("{}h {}m", seconds / 3600, (seconds % 3600) / 60)
-    } else if seconds >= 60 {
-        format!("{}m {}s", seconds / 60, seconds % 60)
-    } else {
-        format!("{}s", seconds)
-    }
-}
-
 /// 根据 tag 更新自身（一体化更新流程，类似 Python 版本）
 ///
 /// # Arguments
@@ -1004,173 +985,17 @@ pub async fn update_self_by_tag(window: &Window, tag: &str) -> AppResult<PathBuf
     // 步骤 3: 下载更新文件
     info!("开始下载 {}，版本：{}", file_name, tag);
 
-    let mirror_url = resolve_github_download_target(&download_url).url;
+    let download_target = resolve_github_download_target(&download_url);
+    let mirror_url = download_target.url;
+    let download_source = download_target.source_name;
     info!("镜像链接：{}", mirror_url);
 
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: "下载更新文件".to_string(),
-                status: ProgressStatus::Running,
-                step_type: "download".to_string(),
-                progress: 0.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        },
-    );
+    info!("下载源: {}", download_source);
 
-    // 创建下载目录（与 config.json 保持一致）
-    let download_dir = update_download_dir()?;
-    info!("下载目录: {}", download_dir.display());
+    let download_path =
+        download_update_package(window, &mirror_url, &file_name, Some(download_source)).await?;
 
-    let download_path = download_dir.join(&file_name);
-
-    // 下载文件
-    let client = create_client()?;
-    let resp = client.get(&mirror_url).send().await.map_err(|e| {
-        let err = AppError::Unknown(format!("下载更新文件失败: {}", e));
-        let _ = window.emit(
-            "installation-event",
-            ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "download".to_string(),
-                    title: "下载更新文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "download".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(err.to_string()),
-                    download_source: None,
-                },
-            },
-        );
-        let _ = window.emit(
-            "installation-event",
-            ProgressEvent::Finished {
-                success: false,
-                message: Some(err.to_string()),
-            },
-        );
-        err
-    })?;
-
-    if !resp.status().is_success() {
-        let err_msg = format!("下载更新文件失败: HTTP {}", resp.status());
-        let _ = window.emit(
-            "installation-event",
-            ProgressEvent::StepUpdate {
-                step: ProgressStep {
-                    id: "download".to_string(),
-                    title: "下载更新文件".to_string(),
-                    status: ProgressStatus::Error,
-                    step_type: "download".to_string(),
-                    progress: 0.0,
-                    download_speed: String::new(),
-                    eta: String::new(),
-                    downloaded_size: None,
-                    total_size: None,
-                    error: Some(err_msg.clone()),
-                    download_source: None,
-                },
-            },
-        );
-        let _ = window.emit(
-            "installation-event",
-            ProgressEvent::Finished {
-                success: false,
-                message: Some(err_msg.clone()),
-            },
-        );
-        return Err(AppError::Unknown(err_msg));
-    }
-
-    let total_size = resp.content_length().unwrap_or(0);
-    let mut downloaded: u64 = 0;
-    let mut stream = resp.bytes_stream();
-    let mut file = fs::File::create(&download_path)?;
-    let start_time = std::time::Instant::now();
-
-    info!("开始下载文件，总大小：{} 字节", total_size);
-
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| AppError::Unknown(format!("下载数据失败: {}", e)))?;
-        std::io::copy(&mut chunk.as_ref(), &mut file)?;
-        downloaded += chunk.len() as u64;
-
-        if total_size > 0 {
-            let progress = (downloaded as f64 / total_size as f64) * 100.0;
-            let elapsed = start_time.elapsed().as_secs_f64();
-            let speed = if elapsed > 0.0 {
-                downloaded as f64 / elapsed
-            } else {
-                0.0
-            };
-            let remaining = if speed > 0.0 {
-                ((total_size - downloaded) as f64 / speed) as u64
-            } else {
-                0
-            };
-
-            let speed_str = format_speed(speed);
-            let eta_str = format_time(remaining);
-
-            let _ = window.emit(
-                "installation-event",
-                ProgressEvent::StepUpdate {
-                    step: ProgressStep {
-                        id: "download".to_string(),
-                        title: "下载更新文件".to_string(),
-                        status: ProgressStatus::Running,
-                        step_type: "download".to_string(),
-                        progress,
-                        download_speed: speed_str,
-                        eta: eta_str,
-                        downloaded_size: None,
-                        total_size: None,
-                        error: None,
-                        download_source: None,
-                    },
-                },
-            );
-        }
-    }
-
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::StepUpdate {
-            step: ProgressStep {
-                id: "download".to_string(),
-                title: "下载更新文件".to_string(),
-                status: ProgressStatus::Success,
-                step_type: "download".to_string(),
-                progress: 100.0,
-                download_speed: String::new(),
-                eta: String::new(),
-                downloaded_size: None,
-                total_size: None,
-                error: None,
-                download_source: None,
-            },
-        },
-    );
-
-    let _ = window.emit(
-        "installation-event",
-        ProgressEvent::Finished {
-            success: true,
-            message: Some("下载完成".to_string()),
-        },
-    );
+    emit_installation_finished(window, true, Some("下载完成".to_string()));
 
     info!(
         "{} 版本 [{}] 已下载至 {}",
