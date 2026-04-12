@@ -149,13 +149,76 @@ jobs:
       - build-macos-app
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v5
     - uses: actions/download-artifact@v7
       with:
         path: dist
+    - name: Generate release notes
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('node:fs');
+
+          const tagName = context.ref.replace('refs/tags/', '');
+          const versionCandidates = [...new Set([
+            tagName,
+            tagName.replace(/^v/i, ''),
+          ].filter(Boolean))];
+
+          function extractChangelogEntry(filePath, versions) {
+            if (!fs.existsSync(filePath)) {
+              return '';
+            }
+
+            const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+
+            for (const version of versions) {
+              const heading = `## ${version}`;
+              const startIndex = lines.findIndex((line) => line.trim() === heading);
+              if (startIndex === -1) {
+                continue;
+              }
+
+              let endIndex = startIndex + 1;
+              while (endIndex < lines.length && !lines[endIndex].trim().startsWith('## ')) {
+                endIndex += 1;
+              }
+
+              return lines.slice(startIndex, endIndex).join('\n').trim();
+            }
+
+            return '';
+          }
+
+          const changelogEntry = extractChangelogEntry('changelog.md', versionCandidates);
+
+          const { data } = await github.rest.repos.generateReleaseNotes({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: tagName,
+          });
+
+          const appendix = [
+            'macOS 下如果提示程序损坏, 可以执行一下下面的命令:',
+            '',
+            '```bash',
+            'xattr -d com.apple.quarantine /path/to/NS\\ Emu\\ Tools.app',
+            '```',
+          ].join('\n');
+
+          const sections = [
+            changelogEntry,
+            data.body.trim(),
+            appendix,
+          ].filter(Boolean);
+
+          const releaseNotes = `${sections.join('\n\n')}\n`;
+          fs.writeFileSync('dist/release-notes.md', releaseNotes);
     - name: Release
       uses: softprops/action-gh-release@v2.2.2
       with:
         draft: true
+        body_path: dist/release-notes.md
         files: |
           dist/NsEmuTools-windows-zip/NsEmuTools-windows-portable.zip
           dist/NsEmuTools-windows-exe/NsEmuTools.exe
