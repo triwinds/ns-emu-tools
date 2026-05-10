@@ -12,8 +12,23 @@ use tracing::info;
 fn setup_window(window: &WebviewWindow) {
     // 从配置读取窗口大小
     let config = ns_emu_tools_lib::config::get_config();
-    let width = config.setting.ui.width;
-    let height = config.setting.ui.height;
+    let (width, height) = ns_emu_tools_lib::config::clamp_window_size(
+        config.setting.ui.width,
+        config.setting.ui.height,
+    );
+
+    if let Err(e) = window.set_min_size(Some(tauri::Size::Physical(tauri::PhysicalSize {
+        width: ns_emu_tools_lib::config::MIN_WINDOW_WIDTH,
+        height: ns_emu_tools_lib::config::MIN_WINDOW_HEIGHT,
+    }))) {
+        tracing::warn!("failed to set minimum window size: {}", e);
+    }
+
+    if (width, height) != (config.setting.ui.width, config.setting.ui.height) {
+        if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
+            tracing::warn!("failed to persist normalized window size: {}", e);
+        }
+    }
 
     // 设置窗口大小
     if let Err(e) = window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height })) {
@@ -189,6 +204,6 @@ fn main() {
             commands::save_manager::restore_yuzu_save_from_backup_cmd,
             commands::save_manager::open_yuzu_save_backup_folder_cmd,
         ])
-        .run(tauri::generate_context!())
+        .run(tauri::generate_context!("tauri.conf.json"))
         .expect("运行 Tauri 应用程序时出错");
 }

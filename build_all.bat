@@ -43,6 +43,20 @@ echo.
 
 REM Step 3: Build Tauri backend
 echo [3/3] Building Tauri backend...
+set "STALE_TAURI_PERMISSIONS="
+for /d %%D in ("target\release\build\tauri-*") do (
+    if exist "%%~fD\out\tauri-core-app-permission-files" (
+        findstr /m /c:"%CD%" "%%~fD\out\tauri-core-app-permission-files" >nul || set "STALE_TAURI_PERMISSIONS=1"
+    )
+)
+
+if defined STALE_TAURI_PERMISSIONS (
+    echo Detected stale Tauri permission metadata. Cleaning cached Tauri release artifacts...
+    for /d %%D in ("target\release\build\tauri-*") do rd /s /q "%%~fD"
+    for /d %%D in ("target\release\.fingerprint\tauri-*") do rd /s /q "%%~fD"
+    echo Stale Tauri release artifacts cleaned.
+)
+
 cargo build --release
 if errorlevel 1 (
     echo Error: Tauri build failed!

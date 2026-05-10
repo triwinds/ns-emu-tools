@@ -454,12 +454,31 @@ fn default_last_page() -> String {
     "ryujinx".to_string()
 }
 
+pub const MIN_WINDOW_WIDTH: u32 = 50;
+pub const MIN_WINDOW_HEIGHT: u32 = 50;
+
 fn default_width() -> u32 {
     1300
 }
 
 fn default_height() -> u32 {
     850
+}
+
+pub fn clamp_window_size(width: u32, height: u32) -> (u32, u32) {
+    (width.max(MIN_WINDOW_WIDTH), height.max(MIN_WINDOW_HEIGHT))
+}
+
+impl UiSetting {
+    fn normalize_window_size(&mut self) -> bool {
+        let (width, height) = clamp_window_size(self.width, self.height);
+        let changed = self.width != width || self.height != height;
+        if changed {
+            self.width = width;
+            self.height = height;
+        }
+        changed
+    }
 }
 
 impl Default for UiSetting {
@@ -517,6 +536,10 @@ impl Config {
         normalize_download_backend_alias_value(&mut self.setting.download.backend)
     }
 
+    fn normalize_window_size(&mut self) -> bool {
+        self.setting.ui.normalize_window_size()
+    }
+
     /// 从文件加载配置
     pub fn load() -> AppResult<Self> {
         let path = config_path();
@@ -525,11 +548,22 @@ impl Config {
             info!("正在从 {} 加载配置", path.display());
             let content = std::fs::read_to_string(&path)?;
             let mut config: Config = serde_json::from_str(&content)?;
+            let mut normalized = false;
+            if config.normalize_window_size() {
+                info!(
+                    "window size in config was below minimum, normalized to {}x{}",
+                    config.setting.ui.width, config.setting.ui.height
+                );
+                normalized = true;
+            }
             if config.normalize_download_backend_alias() {
                 info!("download.backend = bytehaul 已废弃，自动映射为 rust");
-                persist_config_snapshot(&config)?;
+                normalized = true;
             }
             debug!("配置加载成功");
+            if normalized {
+                persist_config_snapshot(&config)?;
+            }
             Ok(config)
         } else {
             info!("配置文件不存在，将创建默认配置文件：{}", path.display());
@@ -542,6 +576,12 @@ impl Config {
     /// 保存配置到文件
     pub fn save(&self) -> AppResult<()> {
         let mut snapshot = self.clone();
+        if snapshot.normalize_window_size() {
+            info!(
+                "window size was below minimum during save, normalized to {}x{}",
+                snapshot.setting.ui.width, snapshot.setting.ui.height
+            );
+        }
         if snapshot.normalize_download_backend_alias() {
             info!("download.backend = bytehaul 已废弃，保存时自动映射为 rust");
         }
@@ -594,6 +634,12 @@ pub fn update_dark_state(dark: bool) -> AppResult<()> {
 
 /// 更新设置
 pub fn update_setting(mut setting: CommonSetting) -> AppResult<()> {
+    if setting.ui.normalize_window_size() {
+        info!(
+            "window size was below minimum during setting update, normalized to {}x{}",
+            setting.ui.width, setting.ui.height
+        );
+    }
     if normalize_download_backend_alias_value(&mut setting.download.backend) {
         info!("download.backend = bytehaul 已废弃，更新设置时自动映射为 rust");
     }
@@ -614,6 +660,8 @@ pub fn update_setting(mut setting: CommonSetting) -> AppResult<()> {
 
 /// 更新窗口大小
 pub fn update_window_size(width: u32, height: u32) -> AppResult<()> {
+    let (width, height) = clamp_window_size(width, height);
+
     let snapshot = {
         let mut config = CONFIG.write();
         if config.setting.ui.width == width && config.setting.ui.height == height {
@@ -635,6 +683,12 @@ pub fn get_config() -> Config {
 
 /// 使用新配置替换当前配置并延迟保存。
 pub fn replace_config(mut config: Config) -> AppResult<()> {
+    if config.normalize_window_size() {
+        info!(
+            "window size was below minimum during config replace, normalized to {}x{}",
+            config.setting.ui.width, config.setting.ui.height
+        );
+    }
     if config.normalize_download_backend_alias() {
         info!("download.backend = bytehaul 已废弃，替换配置时自动映射为 rust");
     }
@@ -721,5 +775,22 @@ mod tests {
 
         assert!(!changed);
         assert_eq!(config.setting.download.backend, "rust");
+    }
+
+    #[test]
+    fn test_clamp_window_size_keeps_valid_dimensions() {
+        assert_eq!(clamp_window_size(1300, 850), (1300, 850));
+    }
+
+    #[test]
+    fn test_clamp_window_size_applies_minimum_dimensions() {
+        assert_eq!(
+            clamp_window_size(MIN_WINDOW_WIDTH - 1, MIN_WINDOW_HEIGHT - 1),
+            (MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+        );
+        assert_eq!(
+            clamp_window_size(320, 200),
+            (MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+        );
     }
 }
