@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T04:04:11.861Z",
+  "generated_at": "2026-05-10T04:13:48.733Z",
   "source": {
     "url": "https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js",
     "raw_url": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js",
@@ -10,7 +10,7 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 24,
+    "download": 23,
     "raw": 7
   },
   "download": [
@@ -138,13 +138,6 @@
       "url": "https://down.npee.cn/?https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [npee社区] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://raw.ihtw.moe/github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [raw.ihtw.moe] 提供",
       "source_array": "download_url_us"
     },
     {
