@@ -7,11 +7,13 @@ use crate::models::cheats::{
     CheatChunkInfo, CheatEntry, CheatFile, CheatFileInfo, GameCheatFolder,
 };
 use crate::services::cheats_parser::{parse_file, serialize};
+use indexmap::IndexMap;
 use regex::Regex;
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use tracing::{debug, info, warn};
+
+type CheatMap = IndexMap<String, CheatEntry>;
 
 /// 金手指服务
 pub struct CheatsService;
@@ -344,7 +346,7 @@ impl CheatsService {
             chunk_map.keys().collect::<Vec<_>>()
         );
 
-        let mut cheat_map = HashMap::new();
+        let mut cheat_map = IndexMap::new();
         for title in enable_titles {
             if let Some(entry) = chunk_map.get(title) {
                 debug!("添加金手指: {}", title);
@@ -410,10 +412,10 @@ impl CheatsService {
     }
 
     /// 解析 Yuzu 金手指文件
-    fn parse_yuzu_cheat_file(&self, cheat_file: &Path) -> AppResult<HashMap<String, CheatEntry>> {
+    fn parse_yuzu_cheat_file(&self, cheat_file: &Path) -> AppResult<CheatMap> {
         let cheat_file_obj = parse_file(cheat_file, 1000)?;
 
-        let mut result = HashMap::new();
+        let mut result = IndexMap::new();
         for entry in cheat_file_obj.entries {
             result.insert(entry.title.clone(), entry);
         }
@@ -422,13 +424,7 @@ impl CheatsService {
     }
 
     /// 保存金手指映射到文件
-    fn save_cheat_map_to_file(
-        &self,
-        cheats_map: &HashMap<String, CheatEntry>,
-        file_path: &Path,
-    ) -> AppResult<()> {
-        // 将 HashMap 转换为 CheatFile，保持原始顺序
-        // 注意: HashMap 没有顺序保证，但这与 Python 行为一致
+    fn save_cheat_map_to_file(&self, cheats_map: &CheatMap, file_path: &Path) -> AppResult<()> {
         let entries: Vec<_> = cheats_map.values().cloned().collect();
 
         let cheat_file = CheatFile { entries };
@@ -476,6 +472,30 @@ mod tests {
         (temp_dir, base_path)
     }
 
+    fn test_cheat_file_path(base_path: &Path) -> PathBuf {
+        base_path
+            .join("0100000000000001")
+            .join("Cheat Manager Patch")
+            .join("cheats")
+            .join("0100000000000001.txt")
+    }
+
+    fn test_chunk_file_path(base_path: &Path) -> PathBuf {
+        base_path
+            .join("0100000000000001")
+            .join("Cheat Manager Patch")
+            .join("cheats_chunk")
+            .join("0100000000000001_chunk.txt")
+    }
+
+    fn ordered_cheat_content() -> &'static str {
+        "[Shared Setup]\n01000000 00000001\n\n[Mode B]\n02000000 00000002\n\n[Mode A]\n03000000 00000003\n\n[Late Toggle]\n04000000 00000004\n"
+    }
+
+    fn parsed_titles(path: &Path) -> Vec<String> {
+        parse_file(path, 1000).unwrap().get_all_titles()
+    }
+
     #[test]
     fn test_scan_all_cheats_folder() {
         let (_temp_dir, base_path) = create_test_cheat_structure();
@@ -501,5 +521,50 @@ mod tests {
             .unwrap();
         assert_eq!(result.len(), 1);
         assert!(result[0].name.contains("Test Cheat 1"));
+    }
+
+    #[test]
+    fn test_load_cheat_chunk_info_preserves_file_order() {
+        let (_temp_dir, base_path) = create_test_cheat_structure();
+        let service = CheatsService::new();
+        let cheat_file = test_cheat_file_path(&base_path);
+        fs::write(&cheat_file, ordered_cheat_content()).unwrap();
+
+        let result = service.load_cheat_chunk_info(&cheat_file).unwrap();
+        let titles: Vec<_> = result.iter().map(|item| item.title.as_str()).collect();
+        assert_eq!(
+            titles,
+            vec!["Shared Setup", "Mode B", "Mode A", "Late Toggle"]
+        );
+        assert!(result.iter().all(|item| item.enable));
+
+        assert_eq!(
+            parsed_titles(&test_chunk_file_path(&base_path)),
+            vec!["Shared Setup", "Mode B", "Mode A", "Late Toggle"]
+        );
+    }
+
+    #[test]
+    fn test_update_current_cheats_preserves_loaded_order() {
+        let (_temp_dir, base_path) = create_test_cheat_structure();
+        let service = CheatsService::new();
+        let cheat_file = test_cheat_file_path(&base_path);
+        fs::write(&cheat_file, ordered_cheat_content()).unwrap();
+
+        let chunk_info = service.load_cheat_chunk_info(&cheat_file).unwrap();
+        let enabled_titles: Vec<_> = chunk_info
+            .into_iter()
+            .map(|item| item.title)
+            .filter(|title| title != "Mode B")
+            .collect();
+
+        service
+            .update_current_cheats(&enabled_titles, &cheat_file, None)
+            .unwrap();
+
+        assert_eq!(
+            parsed_titles(&cheat_file),
+            vec!["Shared Setup", "Mode A", "Late Toggle"]
+        );
     }
 }

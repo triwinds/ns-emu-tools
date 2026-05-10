@@ -2975,6 +2975,7 @@ dependencies = [
  "hickory-proto",
  "hickory-resolver",
  "http-cache-reqwest",
+ "indexmap 2.12.1",
  "md5",
  "moka",
  "nix 0.29.0",
