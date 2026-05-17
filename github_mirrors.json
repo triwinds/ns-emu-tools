@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-13T04:11:27.338Z",
+  "generated_at": "2026-05-17T04:21:24.403Z",
   "source": {
     "url": "https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js",
     "raw_url": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js",
@@ -10,8 +10,8 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 23,
-    "raw": 7
+    "download": 21,
+    "raw": 6
   },
   "download": [
     {
@@ -128,20 +128,6 @@
     },
     {
       "kind": "download",
-      "url": "https://gh.llkk.cc/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [gh.llkk.cc] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://down.npee.cn/?https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [npee社区] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
       "url": "https://gh.nxnow.top/https://github.com",
       "region": "美国",
       "description": "[美国 洛杉矶] - 该公益加速源由 [gh.nxnow.top] 提供",
@@ -189,13 +175,6 @@
       "url": "https://hk.gh-proxy.org/https://raw.githubusercontent.com",
       "region": "香港 2",
       "description": "[中国香港] - 该公益加速源由 [gh-proxy.com] 提供\n\n - 缓存：有（官方注明 2 小时）",
-      "source_array": "raw_url"
-    },
-    {
-      "kind": "raw",
-      "url": "https://hub.glowp.xyz/https://raw.githubusercontent.com",
-      "region": "香港 3",
-      "description": "[中国香港] - 该公益加速源由 [hub.glowp.xyz] 提供\n\n - 缓存：有",
       "source_array": "raw_url"
     },
     {
