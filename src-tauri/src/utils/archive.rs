@@ -322,6 +322,37 @@ pub fn list_zip_entries(filepath: &Path) -> AppResult<Vec<String>> {
 pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
     use std::process::Command;
 
+    struct DmgMountGuard {
+        mount_point: PathBuf,
+        attached: bool,
+    }
+
+    impl DmgMountGuard {
+        fn new(mount_point: PathBuf) -> Self {
+            Self {
+                mount_point,
+                attached: false,
+            }
+        }
+
+        fn mark_attached(&mut self) {
+            self.attached = true;
+        }
+    }
+
+    impl Drop for DmgMountGuard {
+        fn drop(&mut self) {
+            if self.attached {
+                let _ = Command::new("hdiutil")
+                    .args(["detach", "-quiet"])
+                    .arg(&self.mount_point)
+                    .output();
+            }
+
+            let _ = std::fs::remove_dir_all(&self.mount_point);
+        }
+    }
+
     info!(
         "挂载 DMG: {} -> {}",
         dmg_path.display(),
@@ -331,6 +362,7 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
     // 创建临时挂载点
     let mount_point = std::env::temp_dir().join(format!("dmg_mount_{}", std::process::id()));
     std::fs::create_dir_all(&mount_point)?;
+    let mut mount_guard = DmgMountGuard::new(mount_point.clone());
 
     // 挂载 DMG
     let mount_result = Command::new("hdiutil")
@@ -341,12 +373,12 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
         .output()?;
 
     if !mount_result.status.success() {
-        let _ = std::fs::remove_dir_all(&mount_point);
         return Err(AppError::Extract(format!(
             "DMG 挂载失败: {}",
             String::from_utf8_lossy(&mount_result.stderr)
         )));
     }
+    mount_guard.mark_attached();
 
     // 查找 .app
     let app_path = find_app_in_dir(&mount_point)?;
@@ -370,15 +402,6 @@ pub fn extract_dmg(dmg_path: &Path, target_path: &Path) -> AppResult<PathBuf> {
         .arg(&app_path)
         .arg(&target_app)
         .output()?;
-
-    // 卸载 DMG（无论复制是否成功都要卸载）
-    let _ = Command::new("hdiutil")
-        .args(["detach", "-quiet"])
-        .arg(&mount_point)
-        .output();
-
-    // 清理挂载点目录
-    let _ = std::fs::remove_dir_all(&mount_point);
 
     if !copy_result.status.success() {
         return Err(AppError::Extract(format!(

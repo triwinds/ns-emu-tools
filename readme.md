@@ -23,7 +23,8 @@
  - 支持安装 Ryubing/Ryujinx 正式/Canary 版模拟器及版本检测及更新
  - 支持安装 Eden 模拟器及版本检测及更新
  - Eden 下载源已切换到官方自建 Git 仓库
- - ~~支持安装 Citron 模拟器及版本检测及更新~~ (Citron 项目已关闭)
+ - 支持安装 Citron 模拟器及版本检测及更新（Windows/macOS）
+ - Citron 下载源使用官方 GitHub Releases
  - 自动检测并安装 msvc 运行库
  - 支持安装及更新 NS 固件至模拟器
  - 支持固件版本检测 (感谢 [a709560839](https://tieba.baidu.com/home/main?id=tb.1.f9804802.YmDokXJSRkAJB0xF8XfaCQ&fr=pb) 提供的思路)
@@ -65,7 +66,7 @@ Telegram: [Telegram 讨论组](https://t.me/+mxI34BRClLUwZDcx)
  - ~~[Yuzu](https://github.com/yuzu-emu/yuzu) - Yuzu 模拟器~~
  - [Ryubing/Ryujinx](https://ryujinx.app/) - Ryujinx 模拟器
  - [Eden](https://git.eden-emu.dev/eden-emu/eden) - Eden 模拟器（官方自建 Git 仓库）
- - ~~[Citron](https://citron-emu.org/) - Citron 模拟器~~（项目已关闭）
+ - [Citron](https://citron-neo.github.io/) - Citron 模拟器
  - ~~[hactool](https://github.com/SciresM/hactool) - NS 固件解析~~
  - [nsz](https://github.com/nicoboss/nsz) - NS 固件解析
  - [aria2](https://github.com/aria2/aria2) - aria2 下载器

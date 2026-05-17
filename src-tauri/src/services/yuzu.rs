@@ -37,8 +37,9 @@ const DETECT_EXE_LIST: &[&str] = &["Eden.app", "Citron.app", "yuzu.app"];
 const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.exe", "cemu.exe"];
 
 /// 支持下载的分支
-const DOWNLOAD_AVAILABLE_BRANCH: &[&str] = &["eden"];
+const DOWNLOAD_AVAILABLE_BRANCH: &[&str] = &[EDEN_BRANCH, CITRON_BRANCH];
 const EDEN_BRANCH: &str = "eden";
+const CITRON_BRANCH: &str = "citron";
 const EDEN_NAME: &str = "Eden";
 
 static INSTALL_FLOW_LOCK: Lazy<tokio::sync::Mutex<()>> = Lazy::new(|| tokio::sync::Mutex::new(()));
@@ -50,24 +51,45 @@ where
     on_event(ProgressEvent::StepUpdate { step });
 }
 
-fn eden_download_title() -> String {
-    format!("下载 {}", EDEN_NAME)
+fn emulator_download_title(branch: &str) -> String {
+    format!("下载 {}", get_emu_name(branch))
 }
 
 /// 获取模拟器名称
 pub fn get_emu_name(branch: &str) -> &'static str {
     match branch {
-        "eden" => "Eden",
+        "eden" => EDEN_NAME,
         "citron" => "Citron",
         _ => "Yuzu",
     }
 }
 
 fn unsupported_install_branch_error(branch: &str) -> AppError {
-    if branch == "citron" {
-        AppError::Unsupported("Citron 分支已不再支持在线版本、下载和安装".to_string())
-    } else {
-        AppError::InvalidArgument(format!("不支持的分支: {}，当前仅支持 eden", branch))
+    AppError::InvalidArgument(format!("不支持的分支: {}，当前支持 eden、citron", branch))
+}
+
+#[cfg(any(target_os = "linux", test))]
+fn unsupported_citron_linux_error() -> AppError {
+    AppError::Unsupported(
+        "Citron Linux AppImage 安装暂未支持，请改用 Windows 或 macOS 安装包".to_string(),
+    )
+}
+
+fn validate_yuzu_install_platform(branch: &str) -> AppResult<()> {
+    match branch {
+        EDEN_BRANCH => Ok(()),
+        CITRON_BRANCH => {
+            #[cfg(target_os = "linux")]
+            {
+                return Err(unsupported_citron_linux_error());
+            }
+
+            #[cfg(not(target_os = "linux"))]
+            {
+                Ok(())
+            }
+        }
+        _ => Err(unsupported_install_branch_error(branch)),
     }
 }
 
@@ -99,6 +121,10 @@ fn preferred_yuzu_user_dir_names(branch: &str) -> Vec<&'static str> {
 #[cfg(not(target_os = "windows"))]
 fn default_yuzu_user_dir_name(branch: &str) -> &'static str {
     normalize_yuzu_branch(branch).unwrap_or("eden")
+}
+
+fn is_macos_target() -> bool {
+    cfg!(target_os = "macos")
 }
 
 fn find_existing_yuzu_user_dir(base_dir: &Path, branch: &str) -> Option<PathBuf> {
@@ -179,10 +205,6 @@ fn select_macos_asset(
     release_info: &crate::models::release::ReleaseInfo,
     branch: &str,
 ) -> Option<String> {
-    if branch != "eden" {
-        return None;
-    }
-
     for asset in &release_info.assets {
         let name = &asset.name;
 
@@ -195,13 +217,69 @@ fn select_macos_asset(
             continue;
         }
 
-        // Eden: 匹配 macOS + .tar.gz
-        if name.contains("macOS") && name_lower.ends_with(".tar.gz") {
-            debug!("选择 Eden macOS 资源: {}", name);
-            return Some(asset.download_url.clone());
+        match branch {
+            EDEN_BRANCH if name.contains("macOS") && name_lower.ends_with(".tar.gz") => {
+                debug!("选择 Eden macOS 资源: {}", name);
+                return Some(asset.download_url.clone());
+            }
+            CITRON_BRANCH
+                if name_lower.starts_with("citron-macos-") && name_lower.ends_with(".dmg") =>
+            {
+                debug!("选择 Citron macOS DMG 资源: {}", name);
+                return Some(asset.download_url.clone());
+            }
+            _ => {}
         }
     }
     None
+}
+
+fn select_windows_asset(
+    release_info: &crate::models::release::ReleaseInfo,
+    branch: &str,
+) -> Option<String> {
+    match branch {
+        EDEN_BRANCH => {
+            for asset in &release_info.assets {
+                let name = asset.name.to_lowercase();
+                debug!("检查资源: {} (size: {})", asset.name, asset.size);
+
+                if name.ends_with(".7z") {
+                    debug!("选择 .7z 资源: {}", asset.name);
+                    return Some(asset.download_url.clone());
+                } else if name.starts_with("windows-yuzu-ea-") && name.ends_with(".zip") {
+                    debug!("选择 Yuzu EA .zip 资源: {}", asset.name);
+                    return Some(asset.download_url.clone());
+                } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
+                    debug!("选择 Eden .zip 资源: {}", asset.name);
+                    return Some(asset.download_url.clone());
+                }
+            }
+            None
+        }
+        CITRON_BRANCH => release_info
+            .assets
+            .iter()
+            .find(|asset| {
+                let name = asset.name.to_lowercase();
+                name.starts_with("citron-windows-")
+                    && name.contains("-x64-msvc")
+                    && name.ends_with(".zip")
+            })
+            .or_else(|| {
+                release_info.assets.iter().find(|asset| {
+                    let name = asset.name.to_lowercase();
+                    name.starts_with("citron-windows-")
+                        && name.contains("-x64-clangtron")
+                        && name.ends_with(".zip")
+                })
+            })
+            .map(|asset| {
+                debug!("选择 Citron Windows 资源: {}", asset.name);
+                asset.download_url.clone()
+            }),
+        _ => None,
+    }
 }
 
 /// 下载 Eden
@@ -230,6 +308,8 @@ where
         return Err(unsupported_install_branch_error(branch));
     }
 
+    validate_yuzu_install_platform(branch)?;
+
     info!("开始下载 {} 版本: {}", get_emu_name(branch), target_version);
 
     // 获取版本信息
@@ -256,30 +336,10 @@ where
     );
 
     // 查找下载 URL - 根据平台选择
-    let download_url: Option<String> = if cfg!(target_os = "macos") {
+    let download_url: Option<String> = if is_macos_target() {
         select_macos_asset(&release_info, branch)
     } else {
-        // Windows 筛选逻辑
-        let mut url = None;
-        for asset in &release_info.assets {
-            let name = asset.name.to_lowercase();
-            debug!("检查资源: {} (size: {})", asset.name, asset.size);
-
-            if name.ends_with(".7z") {
-                url = Some(asset.download_url.clone());
-                debug!("选择 .7z 资源: {}", asset.name);
-                break;
-            } else if name.starts_with("windows-yuzu-ea-") && name.ends_with(".zip") {
-                url = Some(asset.download_url.clone());
-                debug!("选择 Yuzu EA .zip 资源: {}", asset.name);
-                break;
-            } else if name.starts_with("eden-windows-") && name.ends_with(".zip") {
-                url = Some(asset.download_url.clone());
-                debug!("选择 Eden .zip 资源: {}", asset.name);
-                break;
-            }
-        }
-        url
+        select_windows_asset(&release_info, branch)
     };
 
     let url = download_url.ok_or_else(|| {
@@ -336,7 +396,11 @@ pub fn unzip_yuzu(package_path: &Path, target_dir: Option<&Path>) -> AppResult<P
     Ok(extract_dir)
 }
 
-async fn validate_eden_release_step<F>(target_version: &str, on_event: F) -> AppResult<()>
+async fn validate_yuzu_release_step<F>(
+    target_version: &str,
+    branch: &str,
+    on_event: F,
+) -> AppResult<()>
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
@@ -345,10 +409,11 @@ where
         running_step(STEP_FETCH_VERSION, TITLE_FETCH_VERSION),
     );
 
-    match get_yuzu_release_info_by_version(target_version, EDEN_BRANCH).await {
+    match get_yuzu_release_info_by_version(target_version, branch).await {
         Ok(info) => {
             if info.tag_name.is_empty() {
-                let error_message = format!("未找到 {} 版本: {}", EDEN_NAME, target_version);
+                let error_message =
+                    format!("未找到 {} 版本: {}", get_emu_name(branch), target_version);
                 emit_step(
                     &on_event,
                     error_step(
@@ -382,12 +447,24 @@ where
     }
 }
 
-async fn download_eden_package_step<F>(target_version: &str, on_event: F) -> AppResult<PathBuf>
+fn yuzu_download_source_origin(branch: &str) -> &'static str {
+    match branch {
+        EDEN_BRANCH => "https://git.eden-emu.dev",
+        CITRON_BRANCH => "https://github.com/citron-neo/emulator",
+        _ => "https://github.com",
+    }
+}
+
+async fn download_yuzu_package_step<F>(
+    target_version: &str,
+    branch: &str,
+    on_event: F,
+) -> AppResult<PathBuf>
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
-    let download_title = eden_download_title();
-    let download_source = get_download_source_name("https://git.eden-emu.dev");
+    let download_title = emulator_download_title(branch);
+    let download_source = get_download_source_name(yuzu_download_source_origin(branch));
     emit_step(
         &on_event,
         running_download_step(STEP_DOWNLOAD, download_title.clone()),
@@ -395,12 +472,13 @@ where
 
     let on_event_clone = on_event.clone();
     let progress_download_source = download_source.clone();
-    let package_path = match download_yuzu(target_version, EDEN_BRANCH, move |progress| {
+    let branch_for_progress = branch.to_string();
+    let package_path = match download_yuzu(target_version, branch, move |progress| {
         emit_step(
             &on_event_clone,
             download_progress_step(
                 STEP_DOWNLOAD,
-                eden_download_title(),
+                emulator_download_title(&branch_for_progress),
                 &progress,
                 Some(progress_download_source.clone()),
             ),
@@ -430,7 +508,7 @@ where
                 &on_event,
                 error_step(
                     STEP_DOWNLOAD,
-                    eden_download_title(),
+                    emulator_download_title(branch),
                     StepKind::Download,
                     error_message,
                 )
@@ -442,7 +520,7 @@ where
 
     emit_step(
         &on_event,
-        success_download_step(STEP_DOWNLOAD, eden_download_title()),
+        success_download_step(STEP_DOWNLOAD, emulator_download_title(branch)),
     );
     Ok(package_path)
 }
@@ -511,6 +589,90 @@ where
     Ok(())
 }
 
+#[cfg(any(target_os = "macos", test))]
+fn ensure_citron_bundle_name(installed_app: &Path) -> AppResult<()> {
+    let bundle_name = installed_app
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| AppError::Extract("无法获取 Citron .app 名称".to_string()))?;
+
+    if bundle_name != "Citron.app" {
+        return Err(AppError::Extract(format!(
+            "Citron DMG 中的应用名称为 {}，期望 Citron.app",
+            bundle_name
+        )));
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+async fn install_citron_macos_step<F>(
+    package_path: &Path,
+    yuzu_path: &Path,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    emit_step(&on_event, running_step(STEP_EXTRACT, TITLE_EXTRACT));
+
+    let package_path_for_extract = package_path.to_path_buf();
+    let yuzu_path_for_extract = yuzu_path.to_path_buf();
+    let installed_app = match spawn_blocking_io("install_citron_dmg", move || {
+        crate::utils::archive::extract_dmg(&package_path_for_extract, &yuzu_path_for_extract)
+    })
+    .await
+    {
+        Ok(installed_app) => installed_app,
+        Err(error) => {
+            emit_step(
+                &on_event,
+                error_step(
+                    STEP_EXTRACT,
+                    TITLE_EXTRACT,
+                    StepKind::Normal,
+                    error.to_string(),
+                ),
+            );
+            return Err(error);
+        }
+    };
+
+    if let Err(error) = ensure_citron_bundle_name(&installed_app) {
+        emit_step(
+            &on_event,
+            error_step(
+                STEP_EXTRACT,
+                TITLE_EXTRACT,
+                StepKind::Normal,
+                error.to_string(),
+            ),
+        );
+        return Err(error);
+    }
+
+    emit_step(&on_event, success_step(STEP_EXTRACT, TITLE_EXTRACT));
+    emit_step(&on_event, running_step(STEP_INSTALL, TITLE_INSTALL));
+
+    if let Err(error) = finalize_macos_app_install(&installed_app, Some("Citron")) {
+        emit_step(
+            &on_event,
+            error_step(
+                STEP_INSTALL,
+                TITLE_INSTALL,
+                StepKind::Normal,
+                error.to_string(),
+            ),
+        );
+        return Err(error);
+    }
+
+    info!("Citron.app 已安装到: {}", installed_app.display());
+    emit_step(&on_event, success_step(STEP_INSTALL, TITLE_INSTALL));
+    Ok(())
+}
+
 #[cfg(not(target_os = "macos"))]
 fn create_install_staging_dir(yuzu_path: &Path) -> AppResult<PathBuf> {
     let base_dir = yuzu_path
@@ -543,10 +705,11 @@ fn cleanup_install_staging_dir(staging_dir: &Path) {
 }
 
 #[cfg(not(target_os = "macos"))]
-async fn install_eden_windows_step<F>(
+async fn install_windows_zip_step<F>(
     package_path: &Path,
     yuzu_path: &Path,
     on_event: F,
+    task_label: &'static str,
 ) -> AppResult<()>
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
@@ -564,7 +727,11 @@ where
 
     let package_path_for_extract = package_path.to_path_buf();
     let staging_dir_for_extract = staging_dir.clone();
-    if let Err(error) = spawn_blocking_io("extract_eden_package", move || {
+    let extract_task_name = match task_label {
+        "citron" => "extract_citron_package",
+        _ => "extract_eden_package",
+    };
+    if let Err(error) = spawn_blocking_io(extract_task_name, move || {
         unzip_yuzu(&package_path_for_extract, Some(&staging_dir_for_extract)).map(|_| ())
     })
     .await
@@ -587,7 +754,11 @@ where
 
     let staging_dir_for_install = staging_dir.clone();
     let yuzu_path_for_install = yuzu_path.to_path_buf();
-    if let Err(error) = spawn_blocking_io("install_eden_files", move || {
+    let install_task_name = match task_label {
+        "citron" => "install_citron_files",
+        _ => "install_eden_files",
+    };
+    if let Err(error) = spawn_blocking_io(install_task_name, move || {
         copy_back_yuzu_files(&staging_dir_for_install, &yuzu_path_for_install)
     })
     .await
@@ -607,6 +778,30 @@ where
 
     emit_step(&on_event, success_step(STEP_INSTALL, TITLE_INSTALL));
     Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+async fn install_eden_windows_step<F>(
+    package_path: &Path,
+    yuzu_path: &Path,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    install_windows_zip_step(package_path, yuzu_path, on_event, EDEN_BRANCH).await
+}
+
+#[cfg(not(target_os = "macos"))]
+async fn install_citron_windows_step<F>(
+    package_path: &Path,
+    yuzu_path: &Path,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    install_windows_zip_step(package_path, yuzu_path, on_event, CITRON_BRANCH).await
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -653,8 +848,9 @@ where
         )
     };
 
-    validate_eden_release_step(target_version, on_event.clone()).await?;
-    let package_path = download_eden_package_step(target_version, on_event.clone()).await?;
+    validate_yuzu_release_step(target_version, EDEN_BRANCH, on_event.clone()).await?;
+    let package_path =
+        download_yuzu_package_step(target_version, EDEN_BRANCH, on_event.clone()).await?;
 
     #[cfg(target_os = "macos")]
     install_eden_macos_step(&package_path, &yuzu_path, on_event.clone()).await?;
@@ -669,6 +865,45 @@ where
     run_windows_runtime_check_step(on_event.clone()).await?;
 
     // 如果配置了自动删除，删除下载文件
+    if auto_delete {
+        let _ = std::fs::remove_file(&package_path);
+    }
+
+    Ok(())
+}
+
+pub async fn install_citron<F>(target_version: &str, on_event: F) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    info!("开始安装 Citron 版本: {}", target_version);
+
+    validate_yuzu_install_platform(CITRON_BRANCH)?;
+
+    let (yuzu_path, auto_delete) = {
+        let config = get_config();
+        (
+            PathBuf::from(&config.yuzu.yuzu_path),
+            config.setting.download.auto_delete_after_install,
+        )
+    };
+
+    validate_yuzu_release_step(target_version, CITRON_BRANCH, on_event.clone()).await?;
+    let package_path =
+        download_yuzu_package_step(target_version, CITRON_BRANCH, on_event.clone()).await?;
+
+    #[cfg(target_os = "macos")]
+    install_citron_macos_step(&package_path, &yuzu_path, on_event.clone()).await?;
+
+    #[cfg(not(target_os = "macos"))]
+    install_citron_windows_step(&package_path, &yuzu_path, on_event.clone()).await?;
+
+    #[cfg(target_os = "macos")]
+    emit_step(&on_event, success_step(STEP_CHECK_ENV, TITLE_CHECK_ENV));
+
+    #[cfg(not(target_os = "macos"))]
+    run_windows_runtime_check_step(on_event.clone()).await?;
+
     if auto_delete {
         let _ = std::fs::remove_file(&package_path);
     }
@@ -925,6 +1160,8 @@ where
 
     let _install_guard = INSTALL_FLOW_LOCK.lock().await;
 
+    validate_yuzu_install_platform(branch)?;
+
     // 删除旧的可执行文件/应用（只删除当前分支的）
     spawn_blocking_io("remove_target_yuzu_app", {
         let branch = branch.to_string();
@@ -935,6 +1172,7 @@ where
     // 根据分支安装
     match branch {
         "eden" => install_eden(target_version, on_event).await?,
+        "citron" => install_citron(target_version, on_event).await?,
         _ => return Err(unsupported_install_branch_error(branch)),
     }
 
@@ -1860,7 +2098,7 @@ pub fn update_yuzu_path(new_yuzu_path: &str) -> AppResult<()> {
 pub async fn get_yuzu_change_logs() -> AppResult<String> {
     // 直接获取配置的克隆
     let branch = get_config().yuzu.branch.clone();
-    if branch != "eden" {
+    if !DOWNLOAD_AVAILABLE_BRANCH.contains(&branch.as_str()) {
         return Err(unsupported_install_branch_error(&branch));
     }
 
@@ -2089,6 +2327,109 @@ mod tests {
     }
 
     #[test]
+    fn test_select_windows_asset_citron_prefers_msvc() {
+        let release = ReleaseInfo {
+            name: "2026-04-27".to_string(),
+            tag_name: "2026-04-27".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "Citron-windows-nightly-0237a9b88-x64-clangtron.zip".to_string(),
+                    download_url: "https://example.com/clangtron.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Citron-windows-nightly-0237a9b88-x64-msvc.zip".to_string(),
+                    download_url: "https://example.com/msvc.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let url = select_windows_asset(&release, CITRON_BRANCH);
+        assert_eq!(url, Some("https://example.com/msvc.zip".to_string()));
+    }
+
+    #[test]
+    fn test_select_windows_asset_citron_falls_back_to_clangtron() {
+        let release = ReleaseInfo {
+            name: "2026-04-27".to_string(),
+            tag_name: "2026-04-27".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![ReleaseAsset {
+                name: "Citron-windows-nightly-0237a9b88-x64-clangtron.zip".to_string(),
+                download_url: "https://example.com/clangtron.zip".to_string(),
+                size: 0,
+                content_type: None,
+            }],
+        };
+
+        let url = select_windows_asset(&release, CITRON_BRANCH);
+        assert_eq!(url, Some("https://example.com/clangtron.zip".to_string()));
+    }
+
+    #[test]
+    fn test_select_macos_asset_citron_dmg() {
+        let release = ReleaseInfo {
+            name: "2026-04-27".to_string(),
+            tag_name: "2026-04-27".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: vec![
+                ReleaseAsset {
+                    name: "citron_nightly-0237a9b88-linux-x86_64.AppImage".to_string(),
+                    download_url: "https://example.com/linux.AppImage".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Citron-Android-nightly-0237a9b88.apk".to_string(),
+                    download_url: "https://example.com/android.apk".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Citron-windows-nightly-0237a9b88-x64-msvc.zip".to_string(),
+                    download_url: "https://example.com/windows.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Citron-macOS-nightly-0237a9b88.dmg.zsync".to_string(),
+                    download_url: "https://example.com/macos.dmg.zsync".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Source code (zip)".to_string(),
+                    download_url: "https://example.com/source.zip".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+                ReleaseAsset {
+                    name: "Citron-macOS-nightly-0237a9b88.dmg".to_string(),
+                    download_url: "https://example.com/macos.dmg".to_string(),
+                    size: 0,
+                    content_type: None,
+                },
+            ],
+        };
+
+        let url = select_macos_asset(&release, CITRON_BRANCH);
+        assert_eq!(url, Some("https://example.com/macos.dmg".to_string()));
+    }
+
+    #[test]
     fn test_find_existing_yuzu_user_dir_prefers_requested_branch() {
         let dir = tempdir().unwrap();
         let base = dir.path();
@@ -2155,15 +2496,16 @@ mod tests {
         );
     }
 
+    #[cfg(target_os = "linux")]
     #[tokio::test]
-    async fn test_download_yuzu_rejects_citron_branch() {
+    async fn test_download_yuzu_rejects_citron_linux_before_network() {
         let error = download_yuzu("stable", "citron", |_| {}).await.unwrap_err();
         assert!(matches!(error, AppError::Unsupported(_)));
-        assert!(error.to_string().contains("Citron"));
+        assert!(error.to_string().contains("AppImage"));
     }
 
     #[test]
-    fn test_select_macos_asset_rejects_unsupported_branch() {
+    fn test_select_macos_asset_citron_dmg_is_not_selected_for_eden() {
         let release = ReleaseInfo {
             name: "stable".to_string(),
             tag_name: "stable-01c042048".to_string(),
@@ -2193,8 +2535,27 @@ mod tests {
             ],
         };
 
-        let url = select_macos_asset(&release, "citron");
+        let url = select_macos_asset(&release, "eden");
         assert_eq!(url, None);
+    }
+
+    #[test]
+    fn test_ensure_citron_bundle_name() {
+        let dir = tempdir().unwrap();
+        let citron_app = dir.path().join("Citron.app");
+        let wrong_app = dir.path().join("Eden.app");
+
+        ensure_citron_bundle_name(&citron_app).unwrap();
+        let error = ensure_citron_bundle_name(&wrong_app).unwrap_err();
+        assert!(matches!(error, AppError::Extract(_)));
+        assert!(error.to_string().contains("Citron.app"));
+    }
+
+    #[test]
+    fn test_citron_linux_unsupported_message_mentions_appimage() {
+        let error = unsupported_citron_linux_error();
+        assert!(matches!(error, AppError::Unsupported(_)));
+        assert!(error.to_string().contains("AppImage"));
     }
 
     #[test]

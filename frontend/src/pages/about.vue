@@ -60,7 +60,10 @@
             <a class="text-secondary"
                @click="openUrlWithDefaultBrowser('https://git.eden-emu.dev/eden-emu/eden')">官方自建 Git 仓库</a>
           </span><br>
-          <span>Citron：项目已关闭</span>
+          <span>Citron：下载源已切换到
+            <a class="text-secondary"
+               @click="openUrlWithDefaultBrowser('https://github.com/citron-neo/emulator')">GitHub citron-neo/emulator</a>
+          </span>
         </div>
         <div class="info-block">
           <p class="text-h5 text-warning">Credits</p>
@@ -98,7 +101,7 @@ let credits = [
   {name: 'Yuzu', link: 'https://github.com/yuzu-emu/yuzu', description: 'Yuzu 模拟器'},
   {name: 'Ryujinx', link: 'https://ryujinx.app/', description: 'Ryujinx 模拟器'},
   {name: 'Eden', link: 'https://git.eden-emu.dev/eden-emu/eden', description: 'Eden 模拟器（官方自建 Git 仓库）'},
-  {name: 'Citron', link: 'https://citron-emu.org/', description: 'Citron 模拟器（项目已关闭）'},
+  {name: 'Citron', link: 'https://github.com/citron-neo/emulator', description: 'Citron 模拟器'},
   {name: 'hactool', link: 'https://github.com/SciresM/hactool', description: 'NS 固件解析'},
   {name: 'nsz', link: 'https://github.com/nicoboss/nsz', description: 'NS 固件解析'},
   {name: 'aria2', link: 'https://github.com/aria2/aria2', description: 'aria2 下载器'},

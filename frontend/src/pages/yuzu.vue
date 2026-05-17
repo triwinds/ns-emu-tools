@@ -19,7 +19,7 @@
             <v-select variant="outlined" v-model="selectedBranch" :items="availableBranch" hide-details
                       @update:model-value="switchYuzuBranch" color="error" item-color="error"
                       item-title="text" item-value="value"
-                      label="当前使用的 Yuzu 分支"></v-select>
+                      label="当前使用的模拟器分支"></v-select>
           </v-col>
         </v-row>
       <v-row>
@@ -64,7 +64,7 @@
             <span>点击重新检测 Yuzu 版本</span>
           </v-tooltip>
           <span class="text-h6 text-secondary">
-                    最新 Yuzu 版本：
+                    最新 {{ selectedEmulatorName }} 版本：
                   </span>
           <span class="text-h6">
                     {{ latestYuzuVersion }}
@@ -117,14 +117,14 @@
       <v-divider style="margin-bottom: 15px"></v-divider>
       <v-row>
         <v-col cols="7">
-          <v-text-field hide-details label="需要安装的 Yuzu 版本" v-model="targetYuzuVersion"
+          <v-text-field hide-details :label="`需要安装的 ${selectedEmulatorName} 版本`" v-model="targetYuzuVersion"
                         :disabled='!isRunningInstall && !isBranchAvailable' variant="underlined"></v-text-field>
         </v-col>
         <v-col>
           <v-btn color="info" size="large" variant="outlined" min-width="140px"
                  :disabled='!isRunningInstall && !isBranchAvailable'
                  @click="installYuzuHandler">
-            安装 Yuzu
+            安装 {{ selectedEmulatorName }}
           </v-btn>
         </v-col>
       </v-row>
@@ -254,21 +254,25 @@ let branches = [
   {
     text: 'Eden',
     value: 'eden',
+    name: 'Eden',
     available: true
   },
   {
-    text: 'Citron (项目已关闭)',
+    text: 'Citron',
     value: 'citron',
-    available: false
+    name: 'Citron',
+    available: true
   },
   {
     text: 'Yuzu 主线 (项目已关闭)',
     value: 'mainline',
+    name: 'Yuzu',
     available: false
   },
   {
     text: 'Yuzu EA (项目已关闭)',
     value: 'ea',
+    name: 'Yuzu EA',
     available: false
   },
 ]
@@ -277,6 +281,10 @@ let branchMap: Record<string, any> = {}
 for (let branch of branches) {
   branchMap[branch.value] = branch
 }
+
+let selectedEmulatorName = computed(() => {
+  return branchMap[selectedBranch.value]?.name ?? 'Yuzu'
+})
 
 let availableBranch = ref(branches)
 let selectedBranch = ref('')

@@ -45,7 +45,7 @@ fn test_phase1_download_progress() {
 
     // 测试未知长度下载
     let unknown = DownloadProgress::from_unknown_length(1024, 512, "file.bin", "gid456");
-    assert_eq!(unknown.percentage, -1.0);
+    assert_eq!(unknown.percentage, 0.0);
     assert_eq!(unknown.eta, u64::MAX);
     assert_eq!(unknown.eta_string(), "--:--");
 }

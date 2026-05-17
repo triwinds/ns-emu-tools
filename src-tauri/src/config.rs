@@ -789,8 +789,12 @@ mod tests {
             (MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
         );
         assert_eq!(
-            clamp_window_size(320, 200),
-            (MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+            clamp_window_size(MIN_WINDOW_WIDTH - 1, 200),
+            (MIN_WINDOW_WIDTH, 200)
+        );
+        assert_eq!(
+            clamp_window_size(320, MIN_WINDOW_HEIGHT - 1),
+            (320, MIN_WINDOW_HEIGHT)
         );
     }
 }
