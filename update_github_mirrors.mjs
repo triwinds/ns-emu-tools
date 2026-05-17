@@ -434,14 +434,8 @@ export async function probeDownloadMirrorForTest(mirror, fetchImpl, timeoutMs) {
   return probeDownloadMirror(mirror, fetchImpl, timeoutMs);
 }
 
-export function buildOutputDocument({
-  generatedAt,
-  sourceVersion,
-  download,
-  raw,
-}) {
+export function buildOutputDocument({ sourceVersion, download, raw }) {
   return {
-    generated_at: generatedAt,
     source: {
       url: USERSCRIPT_BLOB_URL,
       raw_url: USERSCRIPT_RAW_URL,
@@ -511,7 +505,6 @@ export async function updateGithubMirrors({
   timeoutMs = DEFAULT_TIMEOUT_MS,
   fetchImpl = fetch,
   logger = console,
-  generatedAt = new Date().toISOString(),
 } = {}) {
   const source = await fetchUserscriptSource(fetchImpl, sourceUrl, timeoutMs);
   const extracted = extractMirrorConfigFromUserscript(source);
@@ -549,7 +542,6 @@ export async function updateGithubMirrors({
   }
 
   const output = buildOutputDocument({
-    generatedAt,
     sourceVersion: extracted.version,
     download: activeDownload,
     raw: activeRaw,

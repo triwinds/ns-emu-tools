@@ -164,9 +164,7 @@ test('probeDownloadMirror falls back to GET when HEAD is rejected', async () => 
 });
 
 test('buildOutputDocument returns stable json-friendly structure', () => {
-  const generatedAt = '2026-04-04T00:00:00.000Z';
   const document = buildOutputDocument({
-    generatedAt,
     sourceVersion: '2.6.34',
     download: [
       {
@@ -189,7 +187,7 @@ test('buildOutputDocument returns stable json-friendly structure', () => {
     removed: [],
   });
 
-  assert.equal(document.generated_at, generatedAt);
+  assert.equal(Object.hasOwn(document, 'generated_at'), false);
   assert.equal(document.source.url, USERSCRIPT_BLOB_URL);
   assert.equal(document.source.version, '2.6.34');
   assert.equal(document.counts.download, 1);
