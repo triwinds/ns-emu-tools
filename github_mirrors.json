@@ -9,7 +9,7 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 22,
+    "download": 21,
     "raw": 7
   },
   "download": [
@@ -67,13 +67,6 @@
       "url": "https://gh.monlor.com/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [gh.monlor.com] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://github.tbedu.top/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [github.tbedu.top] 提供",
       "source_array": "download_url_us"
     },
     {
