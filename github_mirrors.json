@@ -10,7 +10,7 @@
   },
   "counts": {
     "download": 21,
-    "raw": 7
+    "raw": 6
   },
   "download": [
     {
@@ -174,13 +174,6 @@
       "url": "https://hk.gh-proxy.org/https://raw.githubusercontent.com",
       "region": "香港 2",
       "description": "[中国香港] - 该公益加速源由 [gh-proxy.com] 提供\n\n - 缓存：有（官方注明 2 小时）",
-      "source_array": "raw_url"
-    },
-    {
-      "kind": "raw",
-      "url": "https://hub.glowp.xyz/https://raw.githubusercontent.com",
-      "region": "香港 3",
-      "description": "[中国香港] - 该公益加速源由 [hub.glowp.xyz] 提供\n\n - 缓存：有",
       "source_array": "raw_url"
     },
     {
