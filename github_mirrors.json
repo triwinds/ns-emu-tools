@@ -9,7 +9,7 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 21,
+    "download": 20,
     "raw": 6
   },
   "download": [
@@ -116,13 +116,6 @@
       "url": "https://down.npee.cn/?https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [npee社区] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://raw.ihtw.moe/github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [raw.ihtw.moe] 提供",
       "source_array": "download_url_us"
     },
     {
