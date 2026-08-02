@@ -2,7 +2,7 @@
   "source": {
     "url": "https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js",
     "raw_url": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js",
-    "version": "2.6.38"
+    "version": "2.6.39"
   },
   "probe_targets": {
     "download": "https://github.com/XIU2/CloudflareSpeedTest/releases/download/v2.2.2/CloudflareST_windows_amd64.zip",
