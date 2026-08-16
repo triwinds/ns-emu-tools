@@ -9,8 +9,8 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 20,
-    "raw": 6
+    "download": 19,
+    "raw": 5
   },
   "download": [
     {
@@ -145,23 +145,9 @@
       "region": "其他",
       "description": "[日本、韩国、新加坡、美国、德国等]（CDN 不固定） - 该公益加速源由 [ghproxy.link] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
       "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://wget.la/https://github.com",
-      "region": "其他",
-      "description": "[中国香港、中国台湾、日本、美国等]（CDN 不固定） - 该公益加速源由 [ucdn.me] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
-      "source_array": "download_url_us"
     }
   ],
   "raw": [
-    {
-      "kind": "raw",
-      "url": "https://wget.la/https://raw.githubusercontent.com",
-      "region": "香港 1",
-      "description": "[中国香港、中国台湾、日本、美国等]（CDN 不固定） - 该公益加速源由 [ucdn.me] 提供\n\n - 缓存：无（或很短）",
-      "source_array": "raw_url"
-    },
     {
       "kind": "raw",
       "url": "https://hk.gh-proxy.org/https://raw.githubusercontent.com",
