@@ -16,9 +16,9 @@ use crate::services::installer::{
 use crate::services::msvc::check_and_install_msvc;
 use crate::services::network::{get_download_source_name, get_final_url};
 use crate::utils::archive::uncompress;
-use crate::utils::spawn_blocking_io;
 #[cfg(target_os = "macos")]
 use crate::utils::{finalize_macos_app_install, get_macos_bundle_executable_path};
+use crate::utils::{is_process_running_at_path, spawn_blocking_io};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tracing::{debug, info, warn};
@@ -124,6 +124,58 @@ fn get_ryujinx_exe_path_internal(ryujinx_path: &Path) -> Option<PathBuf> {
         warn!("未在 {} 中找到 Ryujinx 可执行文件", ryujinx_path.display());
         None
     }
+}
+
+fn get_ryujinx_executable_paths(ryujinx_path: &Path) -> Vec<PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        get_ryujinx_exe_path_internal(ryujinx_path)
+            .into_iter()
+            .collect()
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        RYUJINX_EXE_NAMES
+            .iter()
+            .map(|name| ryujinx_path.join(name))
+            .filter(|path| path.is_file())
+            .collect()
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::fs::read_dir(ryujinx_path)
+            .into_iter()
+            .flatten()
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.is_file()
+                    && path.file_name().is_some_and(|file_name| {
+                        let name = file_name.to_string_lossy().to_ascii_lowercase();
+                        name.starts_with("ryujinx") && name.ends_with(".exe")
+                    })
+            })
+            .collect()
+    }
+}
+
+fn find_running_ryujinx_executable(ryujinx_path: &Path) -> Option<PathBuf> {
+    get_ryujinx_executable_paths(ryujinx_path)
+        .into_iter()
+        .find(|exe_path| is_process_running_at_path(exe_path))
+}
+
+/// 检查安装目录中的 Ryujinx 程序是否仍在运行。
+pub fn is_ryujinx_running() -> bool {
+    let config = get_config();
+    let ryujinx_path = PathBuf::from(&config.ryujinx.path);
+    let running_executable = find_running_ryujinx_executable(&ryujinx_path);
+    if let Some(exe_path) = &running_executable {
+        info!("检测到正在运行的 Ryujinx: {}", exe_path.display());
+    }
+    running_executable.is_some()
 }
 
 /// 检测当前 Ryujinx 分支
@@ -854,6 +906,13 @@ fn clear_ryujinx_folder(ryujinx_path: &Path) -> AppResult<()> {
     if !ryujinx_path.exists() {
         std::fs::create_dir_all(ryujinx_path)?;
         return Ok(());
+    }
+
+    if let Some(exe_path) = find_running_ryujinx_executable(ryujinx_path) {
+        return Err(AppError::Process(format!(
+            "Ryujinx 正在运行，请先关闭模拟器后重试: {}",
+            exe_path.display()
+        )));
     }
 
     info!("清理 Ryujinx 目录: {}", ryujinx_path.display());
@@ -1832,6 +1891,28 @@ mod tests {
     fn test_get_ryujinx_user_folder() {
         // 测试需要配置环境
         let _path = get_ryujinx_user_folder();
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_get_ryujinx_executable_paths_matches_cleanup_targets() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        for name in ["Ryujinx.exe", "Ryujinx.Ava.exe", "ryujinx-helper.EXE"] {
+            std::fs::write(temp_dir.path().join(name), b"").unwrap();
+        }
+        std::fs::write(temp_dir.path().join("other.exe"), b"").unwrap();
+        std::fs::create_dir(temp_dir.path().join("Ryujinx-folder.exe")).unwrap();
+
+        let mut names = get_ryujinx_executable_paths(temp_dir.path())
+            .into_iter()
+            .map(|path| path.file_name().unwrap().to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+        names.sort();
+
+        assert_eq!(
+            names,
+            vec!["Ryujinx.Ava.exe", "Ryujinx.exe", "ryujinx-helper.EXE"]
+        );
     }
 
     #[test]

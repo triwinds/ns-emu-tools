@@ -3,10 +3,12 @@
 #[cfg(target_os = "macos")]
 use crate::error::{AppError, AppResult};
 use std::env::consts::{ARCH, OS};
+use std::path::Path;
 #[cfg(target_os = "macos")]
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 #[cfg(target_os = "macos")]
 use std::process::Command;
+use sysinfo::{ProcessesToUpdate, System};
 #[cfg(target_os = "macos")]
 use tracing::{debug, warn};
 
@@ -61,6 +63,38 @@ impl Platform {
     pub fn is_linux(&self) -> bool {
         matches!(self.os, PlatformOS::Linux)
     }
+}
+
+fn process_path_matches(process_path: &Path, target_path: &Path) -> bool {
+    let process_path = std::fs::canonicalize(process_path).unwrap_or_else(|_| process_path.into());
+    let target_path = std::fs::canonicalize(target_path).unwrap_or_else(|_| target_path.into());
+
+    #[cfg(windows)]
+    {
+        let normalize = |path: &Path| {
+            path.to_string_lossy()
+                .replace('/', "\\")
+                .trim_start_matches("\\\\?\\")
+                .to_string()
+        };
+        normalize(&process_path).eq_ignore_ascii_case(&normalize(&target_path))
+    }
+
+    #[cfg(not(windows))]
+    {
+        process_path == target_path
+    }
+}
+
+/// 检查指定完整路径对应的程序是否正在运行。
+pub fn is_process_running_at_path(exe_path: &Path) -> bool {
+    let mut system = System::new();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+    system.processes().values().any(|process| {
+        process
+            .exe()
+            .is_some_and(|process_path| process_path_matches(process_path, exe_path))
+    })
 }
 
 /// 读取 macOS .app bundle 的可执行文件名
@@ -267,11 +301,29 @@ pub fn find_app_bundle_in_dir(dir: &Path) -> AppResult<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_os = "macos")]
     use super::*;
 
     #[cfg(target_os = "macos")]
     use tempfile::tempdir;
+
+    #[test]
+    fn test_current_process_is_detected_by_exact_path() {
+        let current_exe = std::env::current_exe().unwrap();
+        assert!(is_process_running_at_path(&current_exe));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_process_path_matching_is_case_and_separator_insensitive_on_windows() {
+        assert!(process_path_matches(
+            Path::new(r"C:\Emulators\Eden\eden.exe"),
+            Path::new("c:/emulators/eden/EDEN.EXE")
+        ));
+        assert!(!process_path_matches(
+            Path::new(r"C:\Emulators\Eden\eden.exe"),
+            Path::new(r"D:\Emulators\Eden\eden.exe")
+        ));
+    }
 
     #[cfg(target_os = "macos")]
     #[test]

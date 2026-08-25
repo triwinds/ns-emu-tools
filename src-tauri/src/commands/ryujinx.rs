@@ -2,6 +2,7 @@
 //!
 //! 暴露给前端的 Ryujinx 管理命令
 
+use crate::commands::wait_for_emulator_exit;
 use crate::models::response::ApiResponse;
 use crate::services::installer::{
     error_step, install_steps, pending_step, running_step, success_step, InstallReporter, StepKind,
@@ -52,6 +53,13 @@ pub async fn install_ryujinx_by_version_command(
             error!("aria2 安装失败: {}", error_message);
             return Err(format!("aria2 安装失败: {}", error_message));
         }
+    }
+
+    if let Err(error_message) = wait_for_emulator_exit(&window, "Ryujinx", is_ryujinx_running).await
+    {
+        info!("安装已取消: {}", error_message);
+        reporter.finish(false, Some("安装已取消".to_string()));
+        return Err(error_message);
     }
 
     // 安装
