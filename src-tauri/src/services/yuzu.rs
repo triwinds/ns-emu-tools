@@ -32,6 +32,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
+use sysinfo::{ProcessesToUpdate, System};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
@@ -1199,6 +1200,70 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
     Ok(())
 }
 
+fn target_app_executable_path(branch: &str) -> Option<PathBuf> {
+    let config = get_config();
+    let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
+
+    #[cfg(target_os = "macos")]
+    {
+        get_macos_bundle_spec(branch).map(|_| expected_yuzu_exe_path_for_branch(&yuzu_path, branch))
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let exe_name = match normalize_yuzu_branch(branch) {
+            Some(EDEN_BRANCH) => "eden.exe",
+            Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => "citron.exe",
+            _ => return None,
+        };
+        Some(yuzu_path.join(exe_name))
+    }
+}
+
+fn process_path_matches(process_path: &Path, target_path: &Path) -> bool {
+    let process_path = std::fs::canonicalize(process_path).unwrap_or_else(|_| process_path.into());
+    let target_path = std::fs::canonicalize(target_path).unwrap_or_else(|_| target_path.into());
+
+    #[cfg(windows)]
+    {
+        let normalize = |path: &Path| {
+            path.to_string_lossy()
+                .replace('/', "\\")
+                .trim_start_matches("\\\\?\\")
+                .to_string()
+        };
+        normalize(&process_path).eq_ignore_ascii_case(&normalize(&target_path))
+    }
+
+    #[cfg(not(windows))]
+    {
+        process_path == target_path
+    }
+}
+
+fn is_process_running_at_path(exe_path: &Path) -> bool {
+    let mut system = System::new();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+    system.processes().values().any(|process| {
+        let is_match = process
+            .exe()
+            .is_some_and(|process_path| process_path_matches(process_path, exe_path));
+        if is_match {
+            info!(
+                "检测到正在运行的模拟器进程: pid={}, path={}",
+                process.pid(),
+                exe_path.display()
+            );
+        }
+        is_match
+    })
+}
+
+/// 检查当前分支将被替换的模拟器程序是否仍在运行。
+pub fn is_target_app_running(branch: &str) -> bool {
+    target_app_executable_path(branch).is_some_and(|exe_path| is_process_running_at_path(&exe_path))
+}
+
 /// 删除所有模拟器可执行文件（已废弃，使用 remove_target_app 代替）
 #[deprecated(note = "使用 remove_target_app 代替，以避免误删其他分支的应用")]
 pub fn remove_all_executable_file() -> AppResult<()> {
@@ -1358,6 +1423,13 @@ where
     let _install_guard = INSTALL_FLOW_LOCK.lock().await;
 
     validate_yuzu_install_platform(branch)?;
+
+    if is_target_app_running(branch) {
+        return Err(AppError::Process(format!(
+            "{} 正在运行，请先关闭模拟器后重试",
+            get_emu_name(branch)
+        )));
+    }
 
     // 删除旧的可执行文件/应用（只删除当前分支的）
     spawn_blocking_io("remove_target_yuzu_app", {
@@ -2452,6 +2524,25 @@ mod tests {
     }
 
     #[test]
+    fn test_current_process_is_detected_by_exact_path() {
+        let current_exe = std::env::current_exe().unwrap();
+        assert!(is_process_running_at_path(&current_exe));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_process_path_matching_is_case_and_separator_insensitive_on_windows() {
+        assert!(process_path_matches(
+            Path::new(r"C:\Emulators\Eden\eden.exe"),
+            Path::new("c:/emulators/eden/EDEN.EXE")
+        ));
+        assert!(!process_path_matches(
+            Path::new(r"C:\Emulators\Eden\eden.exe"),
+            Path::new(r"D:\Emulators\Eden\eden.exe")
+        ));
+    }
+
+    #[test]
     fn test_citron_legacy_branch_normalizes_to_stable() {
         assert_eq!(
             require_downloadable_yuzu_branch("citron").unwrap(),
@@ -2842,7 +2933,11 @@ mod tests {
         let normalized = normalize_citron_bundle_name(&lower_case_app).unwrap();
         assert_eq!(normalized, normalized_app);
         assert!(normalized.exists());
-        assert!(!lower_case_app.exists());
+
+        let mut entries = std::fs::read_dir(dir.path()).unwrap();
+        let installed_name = entries.next().unwrap().unwrap().file_name();
+        assert_eq!(installed_name.to_string_lossy(), "Citron.app");
+        assert!(entries.next().is_none());
     }
 
     #[test]

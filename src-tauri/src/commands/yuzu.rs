@@ -10,7 +10,43 @@ use crate::services::installer::{
 use crate::services::notifier::send_notify;
 use crate::services::yuzu::*;
 use tauri::Window;
-use tracing::{error, info};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use tracing::{error, info, warn};
+
+async fn wait_for_target_app_exit(window: &Window, branch: &str) -> Result<(), String> {
+    loop {
+        if !is_target_app_running(branch) {
+            return Ok(());
+        }
+
+        let emulator_name = get_emu_name(branch);
+        warn!("{} 仍在运行，等待用户关闭模拟器", emulator_name);
+
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        window
+            .dialog()
+            .message(format!(
+                "检测到 {} 仍在运行。\n\n请关闭模拟器后选择“重新检测”，或取消本次安装。",
+                emulator_name
+            ))
+            .title(format!("请关闭 {}", emulator_name))
+            .kind(MessageDialogKind::Warning)
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "重新检测".to_string(),
+                "取消安装".to_string(),
+            ))
+            .show(move |retry| {
+                let _ = sender.send(retry);
+            });
+
+        let retry = receiver
+            .await
+            .map_err(|_| "无法获取模拟器进程检测对话框结果".to_string())?;
+        if !retry {
+            return Err("用户取消安装".to_string());
+        }
+    }
+}
 
 /// 获取所有 Yuzu/Eden 版本列表
 #[tauri::command]
@@ -56,6 +92,12 @@ pub async fn install_yuzu_by_version(
             error!("aria2 安装失败: {}", error_message);
             return Err(format!("aria2 安装失败: {}", error_message));
         }
+    }
+
+    if let Err(error_message) = wait_for_target_app_exit(&window, &branch).await {
+        info!("安装已取消: {}", error_message);
+        reporter.finish(false, Some("安装已取消".to_string()));
+        return Err(error_message);
     }
 
     // 安装
