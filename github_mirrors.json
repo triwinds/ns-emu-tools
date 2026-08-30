@@ -71,6 +71,13 @@
     },
     {
       "kind": "download",
+      "url": "https://github.ednovas.xyz/https://github.com",
+      "region": "美国",
+      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [github.ednovas.xyz] 提供",
+      "source_array": "download_url_us"
+    },
+    {
+      "kind": "download",
       "url": "https://ghfile.geekertao.top/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [ghfile.geekertao.top] 提供",
@@ -116,13 +123,6 @@
       "url": "https://ghproxy.monkeyray.net/https://github.com",
       "region": "美国",
       "description": "[美国 洛杉矶] - 该公益加速源由 [ghproxy.monkeyray.net] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://ghproxy.net/https://github.com",
-      "region": "其他",
-      "description": "[英国伦敦] - 该公益加速源由 [ghproxy.net] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
       "source_array": "download_url_us"
     },
     {
