@@ -177,6 +177,9 @@ fn build_download_spec(url: &str, options: &DownloadOptions) -> AppResult<(Downl
         .output_dir(output_dir)
         .headers(headers)
         .max_connections(max_connections)
+        // 下载实测中 8 MiB 批次减少了请求开销，同时保持较短的尾段耗时。
+        .request_batch_size(8 * 1024 * 1024)
+        // .slow_transfer_mode(SlowTransferMode::AdaptiveWithHedging)
         .min_split_size(min_split_size)
         .connect_timeout(options.connect_timeout)
         .read_timeout(options.read_timeout)

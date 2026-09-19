@@ -12,6 +12,7 @@
   </v-snackbar>
   <router-view />
   <ProgressDialog />
+  <EmulatorRunningDialog />
 </template>
 
 
@@ -20,6 +21,7 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { useConsoleDialogStore } from "@/stores/ConsoleDialogStore";
 import { useProgressStore } from "@/stores/ProgressStore"; // Import store
 import ProgressDialog from "@/components/ProgressDialog.vue"; // Import component
+import EmulatorRunningDialog from "@/components/EmulatorRunningDialog.vue";
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event'; // Import listen
 import { ask } from '@tauri-apps/plugin-dialog';

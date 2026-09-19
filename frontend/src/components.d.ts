@@ -10,6 +10,7 @@ declare module 'vue' {
     ChangeLogDialog: typeof import('./components/ChangeLogDialog.vue')['default']
     ConsoleDialog: typeof import('./components/ConsoleDialog.vue')['default']
     DialogTitle: typeof import('./components/DialogTitle.vue')['default']
+    EmulatorRunningDialog: typeof import('./components/EmulatorRunningDialog.vue')['default']
     FaqGroup: typeof import('./components/FaqGroup.vue')['default']
     MarkdownContentBox: typeof import('./components/MarkdownContentBox.vue')['default']
     NewVersionDialog: typeof import('./components/NewVersionDialog.vue')['default']
