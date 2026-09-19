@@ -2,14 +2,14 @@
   "source": {
     "url": "https://github.com/XIU2/UserScript/blob/master/GithubEnhanced-High-Speed-Download.user.js",
     "raw_url": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js",
-    "version": "2.6.39"
+    "version": "2.6.41"
   },
   "probe_targets": {
     "download": "https://github.com/XIU2/CloudflareSpeedTest/releases/download/v2.2.2/CloudflareST_windows_amd64.zip",
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 20,
+    "download": 19,
     "raw": 6
   },
   "download": [
@@ -85,13 +85,6 @@
     },
     {
       "kind": "download",
-      "url": "https://cdn.crashmc.com/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [cdn.crashmc.com] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
       "url": "https://git.yylx.win/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [git.yylx.win] 提供",
@@ -136,7 +129,7 @@
       "kind": "download",
       "url": "https://ghproxy.net/https://github.com",
       "region": "其他",
-      "description": "[英国伦敦] - 该公益加速源由 [ghproxy.net] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
+      "description": "[法国] - 该公益加速源由 [ghproxy.net] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
       "source_array": "download_url_us"
     },
     {
