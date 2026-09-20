@@ -90,14 +90,20 @@ url = "2.5"
 # 随机数
 rand = "0.9"
 
-# MD5 哈希
+# 文件摘要
 md5 = "0.7"
+sha2 = "0.10"
+
+# 可恢复安装：跨进程锁和同目录原子替换
+fs2 = "0.4"
+tempfile = "3.15"
 
 # AES 加密
 aes = "0.8"
 cipher = { version = "0.4", features = ["block-padding"] }
 ctr = "0.9"
 hex = "0.4"
+base64 = "0.22"
 crc32fast = "1.4"
 
 # URL 编解码
@@ -124,6 +130,7 @@ reqwest-middleware = "0.4.2"
 moka = { version = "0.12", features = ["future"] }
 
 [target.'cfg(windows)'.dependencies]
+winreg = "0.55"
 # Windows API
 windows = { version = "0.58", features = [
     "Win32_System_Registry",
@@ -151,7 +158,6 @@ opt-level = "s"
 strip = true
 
 [dev-dependencies]
-tempfile = "3.15"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ctor = "0.2"
 # HTTP 服务器模拟（集成测试）

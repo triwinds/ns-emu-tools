@@ -8,6 +8,7 @@ import {
   mdiKeyVariant,
   mdiLinkVariant,
   mdiMemory,
+  mdiMonitorShimmer,
   mdiNewBox,
   mdiSpeedometer,
   mdiTestTube,
@@ -118,6 +119,12 @@ function openReleasePage() {
             </template>
           </v-list-item>
         </template>
+        <v-list-item link to="/graphics">
+          <template v-slot:prepend>
+            <div class="my-prepend-box"><v-icon color="secondary" :icon="mdiMonitorShimmer" /></div>
+          </template>
+          <v-list-item-title>图形增强</v-list-item-title>
+        </v-list-item>
         <v-list-item link to="/yuzuCheatsManagement">
           <template v-slot:prepend>
             <div class="my-prepend-box">

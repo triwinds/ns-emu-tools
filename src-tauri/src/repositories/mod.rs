@@ -11,3 +11,5 @@ pub use app_info::*;
 pub use config_data::*;
 pub use ryujinx::*;
 pub use yuzu::*;
+
+pub mod graphics_components;

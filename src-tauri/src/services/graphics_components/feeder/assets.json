@@ -1,0 +1,57 @@
+[
+  {
+    "name": "feeder.zip",
+    "sha256": "0f9d9cda66e05a0f21ccabbd778694b826c8c80402cc62046aedea6d157bdcad",
+    "url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.6/DLSS5-Feeder-1.16.0-beta.6.zip"
+  },
+  {
+    "name": "Shaders/lumenite_Kernel.fx",
+    "sha256": "dc44d101c568a8492606884037c86059a31b844fd5e144e733fb70dabc91f25c",
+    "url": "https://raw.githubusercontent.com/umar-afzaal/LumeniteFX/f8cbbb4eccfcb7adf0d74bb358ba349272e3c1e9/Shaders/lumenite_Kernel.fx"
+  },
+  {
+    "name": "Shaders/include/lumenite_ColorManagement.fxh",
+    "sha256": "116d3c41cd48f7787a2ed87eefc65fb2d9083fc1ab609766a3fbcca3e62649a6",
+    "url": "https://raw.githubusercontent.com/umar-afzaal/LumeniteFX/f8cbbb4eccfcb7adf0d74bb358ba349272e3c1e9/Shaders/include/lumenite_ColorManagement.fxh"
+  },
+  {
+    "name": "Shaders/include/lumenite_Compute.fxh",
+    "sha256": "736e3f39fc0c48a405c4d10b0d158502009db940e2673ff778e6b919d3c1a55f",
+    "url": "https://raw.githubusercontent.com/umar-afzaal/LumeniteFX/f8cbbb4eccfcb7adf0d74bb358ba349272e3c1e9/Shaders/include/lumenite_Compute.fxh"
+  },
+  {
+    "name": "Shaders/include/lumenite_Helpers.fxh",
+    "sha256": "8826d613944be27e14095982b20098fff6d45e91c7d4028473c2f5b784c80028",
+    "url": "https://raw.githubusercontent.com/umar-afzaal/LumeniteFX/f8cbbb4eccfcb7adf0d74bb358ba349272e3c1e9/Shaders/include/lumenite_Helpers.fxh"
+  },
+  {
+    "name": "Shaders/include/lumenite_Projections.fxh",
+    "sha256": "709ec414649b74e573ca0f12a5ef25998d332238f7cab14a3d91053c8d388cab",
+    "url": "https://raw.githubusercontent.com/umar-afzaal/LumeniteFX/f8cbbb4eccfcb7adf0d74bb358ba349272e3c1e9/Shaders/include/lumenite_Projections.fxh"
+  },
+  {
+    "name": "Textures/lumenite_bluenoise256.png",
+    "sha256": "2ad9e5b0bd28ddff569dbd756a551fe8e681b67eb72a83bb027434e1be24122b",
+    "url": "https://raw.githubusercontent.com/umar-afzaal/LumeniteFX/f8cbbb4eccfcb7adf0d74bb358ba349272e3c1e9/Textures/lumenite_bluenoise256.png"
+  },
+  {
+    "name": "Shaders/ReShade.fxh",
+    "sha256": "6dabfbbaf968c3871905d2ea17f96572ff7b1cec01310b5d0e5252b66b30174f",
+    "url": "https://raw.githubusercontent.com/crosire/reshade-shaders/6db142b4b1a05c764222e5b0bd9a644b7ccfe1dc/Shaders/ReShade.fxh"
+  },
+  {
+    "url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.9.1/nvngx_dlss_310.9.1.zip",
+    "name": "dlss-310.9.1.zip",
+    "sha256": "aaba83b288bd145c3808e8d7a0ba03cc8c8676d18ad984b1bfa6563046a3ba37"
+  },
+  {
+    "url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.8.0/nvngx_dlssnr_310.8.0.zip",
+    "name": "dlssnr-310.8.0.zip",
+    "sha256": "388c0a7912e15ec911b9c9e11a692142b11fe387ddf2b637d8c358138fffb3ac"
+  },
+  {
+    "url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-4.70/renodx-dlss5_4.70.zip",
+    "name": "renodx-dlss5-4.70.zip",
+    "sha256": "d6e356d01b429af6288f488a4926c44f1d779a7d4586ee8c79d04d3a09a536e6"
+  }
+]

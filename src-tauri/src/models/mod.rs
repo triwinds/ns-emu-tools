@@ -3,6 +3,7 @@
 //! 定义应用程序中使用的所有数据模型
 
 pub mod cheats;
+pub mod graphics_components;
 pub mod progress;
 pub mod release;
 pub mod response;

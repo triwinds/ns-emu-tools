@@ -1471,6 +1471,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2945,6 +2955,7 @@ dependencies = [
  "anyhow",
  "aria2-ws",
  "async-trait",
+ "base64 0.22.1",
  "bytehaul",
  "bzip2 0.4.4",
  "chrono",
@@ -2954,6 +2965,7 @@ dependencies = [
  "ctr",
  "directories",
  "flate2",
+ "fs2",
  "futures-util",
  "hex",
  "hickory-proto",
@@ -2974,6 +2986,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sevenz-rust",
+ "sha2 0.10.9",
  "sysinfo",
  "tar",
  "tauri",
@@ -2995,6 +3008,7 @@ dependencies = [
  "walkdir",
  "which",
  "windows 0.58.0",
+ "winreg 0.55.0",
  "wiremock",
  "xz2",
  "zip",

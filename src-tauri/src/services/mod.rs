@@ -8,6 +8,7 @@ pub mod crypto;
 pub mod doh;
 pub mod downloader;
 pub mod firmware;
+pub mod graphics_components;
 pub mod installer;
 pub mod keys;
 pub mod msvc;
