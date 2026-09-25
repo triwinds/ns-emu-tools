@@ -1,0 +1,13 @@
+*
+!*/
+!/.gitignore
+!/README.md
+!/ryujinx-fg-2026-09-25/README.md
+!/ryujinx-fg-2026-09-25/installed-unbounded-live.json
+!/ryujinx-fg-2026-09-25/live-control.json
+!/ryujinx-fg-2026-09-25/motion-prototype-live.json
+!/sdk-fg-2026-09-25/passed-002/cycle-trace.jsonl
+!/sdk-fg-2026-09-25/passed-002/fg-result.json
+!/sdk-recovery-2026-09-25/passed-001/cycle-00/cycle-trace.jsonl
+!/sdk-recovery-2026-09-25/passed-001/cycle-00/sdk-swapchain-calls.json
+!/sdk-route-resize-2026-09-25/passed-001/layer.jsonl

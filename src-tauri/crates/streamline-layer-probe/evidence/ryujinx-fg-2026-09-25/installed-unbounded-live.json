@@ -1,0 +1,70 @@
+{
+  "live_snapshot": true,
+  "session": "C:\\Users\\64119\\AppData\\Roaming\\nsemu\\tools\\data\\graphics\\streamline-fg\\sessions\\game-ipmYSp\\run",
+  "on_frames": 1746,
+  "presented_twice": 1740,
+  "max_on_frames": 1746,
+  "frames_after_600": 1146,
+  "nonzero_sdk_status": 0,
+  "retired_native_presents": 3851,
+  "events": [
+    {
+      "details": {
+        "device_idle_completed": true,
+        "on_frames": 290,
+        "reason": "background",
+        "swapchain": 4431847830224
+      },
+      "elapsed_us": 33623659,
+      "event": "target_fg_paused",
+      "phase": 0,
+      "thread": "ThreadId(1)"
+    },
+    {
+      "details": {
+        "device_idle_completed": true,
+        "on_frames": 1276,
+        "reason": "background",
+        "swapchain": 4431847830224
+      },
+      "elapsed_us": 73329695,
+      "event": "target_fg_paused",
+      "phase": 0,
+      "thread": "ThreadId(1)"
+    }
+  ],
+  "last_frame": {
+    "details": {
+      "frame": 2114,
+      "input_wait_completed": true,
+      "off_reason": null,
+      "on_frames": 1746,
+      "present_markers_only": true,
+      "reflex_frame_limit_us": 0,
+      "requested_on": true,
+      "sleep_frame_limit_us": 0,
+      "state": {
+        "fence": 4431431082960,
+        "maximum": 5,
+        "minimum": 100,
+        "presented": 2,
+        "status": 0,
+        "value": 2114
+      },
+      "swapchain": 4431847830224,
+      "timing_us": {
+        "begin_and_reflex_sleep": 119,
+        "input_wait": 2604,
+        "options": 7,
+        "proxy_present": 124
+      },
+      "window_stop_reason": -1
+    },
+    "elapsed_us": 93528446,
+    "event": "target_fg_frame",
+    "phase": 0,
+    "thread": "ThreadId(1)"
+  },
+  "not_scanout_measurement": true,
+  "shutdown_not_yet_verified": true
+}

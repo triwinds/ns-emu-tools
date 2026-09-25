@@ -10,6 +10,7 @@ use std::io::{Read, Seek, SeekFrom};
 pub mod feeder;
 pub mod packages;
 pub mod planning;
+pub mod streamline_fg;
 pub mod transaction;
 pub mod vulkan;
 use std::path::{Path, PathBuf};
@@ -290,3 +291,5 @@ pub fn detect(
 
 #[cfg(test)]
 mod tests;
+
+pub mod streamline_install;

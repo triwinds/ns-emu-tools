@@ -1,0 +1,367 @@
+diff --git a/source/core/sl.api/sl.cpp b/source/core/sl.api/sl.cpp
+index 69662c3..b7aa5f8 100644
+--- a/source/core/sl.api/sl.cpp
++++ b/source/core/sl.api/sl.cpp
+@@ -44,6 +44,7 @@
+ #include "source/core/sl.plugin-manager/pluginManager.h"
+ #include "include/sl_helpers.h"
+ #include "include/sl_helpers_vk.h"
++#include "source/core/sl.interposer/vulkan/layerRoute.h"
+ 
+ using namespace sl;
+ 
+@@ -322,6 +323,7 @@ Result slShutdown()
+         return Result::eErrorNotInitialized;
+     }
+     manager->unloadPlugins();
++    sl::layer_route::clear();
+ 
+     plugin_manager::destroyInterface();
+     param::destroyInterface();
+@@ -466,6 +468,14 @@ Result slEvaluateFeature(sl::Feature feature, const sl::FrameToken& frame, const
+     SL_EXCEPTION_HANDLE_END_RETURN(Result::eErrorExceptionHandler);
+ }
+ 
++extern "C" sl::Result slRegisterVulkanLayerRouteV1(const SlLayerRouteV1* route)
++{
++    SL_EXCEPTION_HANDLE_START;
++    SL_CHECK(slValidateState());
++    return sl::layer_route::bind(route);
++    SL_EXCEPTION_HANDLE_END_RETURN(Result::eErrorExceptionHandler);
++}
++
+ Result slSetVulkanInfo(const sl::VulkanInfo& info)
+ {
+     //! IMPORTANT:
+diff --git a/source/core/sl.interposer/exports.def b/source/core/sl.interposer/exports.def
+index 582077b..28d19a3 100644
+--- a/source/core/sl.interposer/exports.def
++++ b/source/core/sl.interposer/exports.def
+@@ -1,4 +1,5 @@
+ EXPORTS
++    slRegisterVulkanLayerRouteV1
+ 
+ 	; d3d11.dll
+ 	D3D11CreateDevice
+diff --git a/source/core/sl.interposer/vulkan/layerRoute.cpp b/source/core/sl.interposer/vulkan/layerRoute.cpp
+new file mode 100644
+index 0000000..5a99edf
+--- /dev/null
++++ b/source/core/sl.interposer/vulkan/layerRoute.cpp
+@@ -0,0 +1,91 @@
++#include "layerRoute.h"
++#include <cstring>
++#include <mutex>
++
++namespace sl::layer_route
++{
++namespace
++{
++std::mutex mutex;
++SlLayerRouteV1 binding{};
++bool claimed = false;
++}
++
++sl::Result bind(const SlLayerRouteV1* route)
++{
++    if (!route || route->size != sizeof(SlLayerRouteV1) || route->version != 1 ||
++        !route->instance || !route->physicalDevice || !route->device ||
++        !route->getInstanceProcAddr || !route->getDeviceProcAddr ||
++        route->getInstanceProcAddr == instanceProc || route->getDeviceProcAddr == deviceProc)
++        return sl::Result::eErrorInvalidParameter;
++    std::lock_guard<std::mutex> lock(mutex);
++    if (binding.device)
++        return sl::Result::eErrorInvalidState;
++    binding = *route;
++    return sl::Result::eOk;
++}
++
++sl::Result claim(VkInstance instance, VkPhysicalDevice physical, VkDevice device)
++{
++    std::lock_guard<std::mutex> lock(mutex);
++    if (!binding.device || claimed || binding.instance != instance ||
++        binding.physicalDevice != physical || binding.device != device)
++        return sl::Result::eErrorInvalidState;
++    claimed = true;
++    return sl::Result::eOk;
++}
++
++void clear()
++{
++    // Only after plugin teardown; this does not wait for host-owned work.
++    std::lock_guard<std::mutex> lock(mutex);
++    binding = {};
++    claimed = false;
++}
++
++PFN_vkVoidFunction VKAPI_CALL physicalProc(VkPhysicalDevice physical, const char* name)
++{
++    VkInstance instance{};
++    {
++        std::lock_guard<std::mutex> lock(mutex);
++        if (!claimed || !physical || physical != binding.physicalDevice || !name)
++            return nullptr;
++        instance = binding.instance;
++    }
++    // Only the audited physical-device queries are exposed through this channel.
++    if (std::strcmp(name, "vkGetPhysicalDeviceProperties2") != 0 &&
++        std::strcmp(name, "vkGetPhysicalDeviceToolProperties") != 0)
++        return nullptr;
++    return instanceProc(instance, name);
++}
++
++PFN_vkVoidFunction VKAPI_CALL instanceProc(VkInstance instance, const char* name)
++{
++    PFN_vkGetInstanceProcAddr next{};
++    {
++        std::lock_guard<std::mutex> lock(mutex);
++        if (!claimed || !name || !instance || instance != binding.instance)
++            return nullptr;
++        next = binding.getInstanceProcAddr;
++    }
++    if (std::strcmp(name, "vkGetInstanceProcAddr") == 0)
++        return reinterpret_cast<PFN_vkVoidFunction>(instanceProc);
++    if (std::strcmp(name, "vkGetDeviceProcAddr") == 0)
++        return reinterpret_cast<PFN_vkVoidFunction>(deviceProc);
++    return next(instance, name); // Do not hold the lock across downstream calls.
++}
++
++PFN_vkVoidFunction VKAPI_CALL deviceProc(VkDevice device, const char* name)
++{
++    PFN_vkGetDeviceProcAddr next{};
++    {
++        std::lock_guard<std::mutex> lock(mutex);
++        if (!claimed || !name || !device || device != binding.device)
++            return nullptr;
++        next = binding.getDeviceProcAddr;
++    }
++    if (std::strcmp(name, "vkGetDeviceProcAddr") == 0)
++        return reinterpret_cast<PFN_vkVoidFunction>(deviceProc);
++    return next(device, name);
++}
++}
+\ No newline at end of file
+diff --git a/source/core/sl.interposer/vulkan/layerRoute.h b/source/core/sl.interposer/vulkan/layerRoute.h
+new file mode 100644
+index 0000000..756b9d7
+--- /dev/null
++++ b/source/core/sl.interposer/vulkan/layerRoute.h
+@@ -0,0 +1,34 @@
++#pragma once
++// Experimental private ABI; official VulkanInfo and VkTable layouts are unchanged.
++#include <cstdint>
++#include "external/vulkan/include/vulkan/vulkan.h"
++#include "include/sl_result.h"
++
++struct SlLayerRouteV1
++{
++    uint32_t size;
++    uint32_t version;
++    VkInstance instance;
++    VkPhysicalDevice physicalDevice;
++    VkDevice device;
++    PFN_vkGetInstanceProcAddr getInstanceProcAddr;
++    PFN_vkGetDeviceProcAddr getDeviceProcAddr;
++};
++static_assert(sizeof(SlLayerRouteV1) == 48, "This experiment requires Windows x64");
++
++// Host serializes registration, slSetVulkanInfo and shutdown. Callback code and
++// native objects must outlive all SDK work and successful slShutdown.
++extern "C" sl::Result slRegisterVulkanLayerRouteV1(const SlLayerRouteV1* route);
++
++namespace sl::layer_route
++{
++sl::Result bind(const SlLayerRouteV1* route);
++sl::Result claim(VkInstance instance, VkPhysicalDevice physical, VkDevice device);
++void clear();
++// Private cross-module parameter; no public VkTable layout change.
++inline constexpr const char* kPhysicalResolver = "sl.layer_route.v1.physicalResolver";
++using PhysicalResolver = PFN_vkVoidFunction (VKAPI_PTR*)(VkPhysicalDevice, const char*);
++PFN_vkVoidFunction VKAPI_CALL physicalProc(VkPhysicalDevice physical, const char* name);
++PFN_vkVoidFunction VKAPI_CALL instanceProc(VkInstance instance, const char* name);
++PFN_vkVoidFunction VKAPI_CALL deviceProc(VkDevice device, const char* name);
++}
+\ No newline at end of file
+diff --git a/source/core/sl.interposer/vulkan/wrapper.cpp b/source/core/sl.interposer/vulkan/wrapper.cpp
+index 54366bf..54bf1cd 100644
+--- a/source/core/sl.interposer/vulkan/wrapper.cpp
++++ b/source/core/sl.interposer/vulkan/wrapper.cpp
+@@ -21,6 +21,7 @@
+ */
+ 
+ #include <unordered_set>
++#include "layerRoute.h"
+ 
+ #include "include/sl.h"
+ #include "source/core/sl.api/internal.h"
+@@ -62,10 +63,11 @@ sl::Result processVulkanInterface(const sl::VulkanInfo* extension)
+         return sl::Result::eErrorVulkanAPI;
+     }
+ 
++    SL_CHECK(sl::layer_route::claim(extension->instance, extension->physicalDevice, extension->device));
+     s_vk.instance = extension->instance;
+     s_vk.device = extension->device;
+-    s_vk.getDeviceProcAddr = (PFN_vkGetDeviceProcAddr)GetProcAddress(s_module, "vkGetDeviceProcAddr");
+-    s_vk.getInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(s_module, "vkGetInstanceProcAddr");
++    s_vk.getDeviceProcAddr = sl::layer_route::deviceProc;
++    s_vk.getInstanceProcAddr = sl::layer_route::instanceProc;
+     s_vk.graphicsQueueFamily = extension->graphicsQueueFamily;
+     s_vk.graphicsQueueIndex = extension->graphicsQueueIndex;
+     s_vk.computeQueueFamily = extension->computeQueueFamily;
+@@ -89,6 +91,8 @@ sl::Result processVulkanInterface(const sl::VulkanInfo* extension)
+     s_vk.mapVulkanDeviceAPI(s_vk.device);
+     s_ddt = s_vk.dispatchDeviceMap[s_vk.device];
+ 
++    sl::param::getInterface()->set(sl::layer_route::kPhysicalResolver,
++        reinterpret_cast<void*>(sl::layer_route::physicalProc));
+     // Allow all plugins to access this information
+     sl::param::getInterface()->set(sl::param::global::kVulkanTable, &s_vk);
+ 
+@@ -1884,13 +1888,10 @@ extern "C"
+ 
+     VkResult VKAPI_CALL vkGetPhysicalDeviceToolProperties(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties)
+     {
+-        auto lib = loadVulkanLibrary();
+-        if (!lib)
+-        {
+-            SL_LOG_ERROR( "Failed to load Vulkan library");
++        auto trampoline = reinterpret_cast<PFN_vkGetPhysicalDeviceToolProperties>(
++            sl::layer_route::physicalProc(physicalDevice, "vkGetPhysicalDeviceToolProperties"));
++        if (!trampoline)
+             return VK_ERROR_INITIALIZATION_FAILED;
+-        }
+-        auto trampoline = (PFN_vkGetPhysicalDeviceToolProperties)GetProcAddress(lib, "vkGetPhysicalDeviceToolProperties");
+         return trampoline(physicalDevice, pToolCount, pToolProperties);
+     }
+ 
+diff --git a/source/platforms/sl.chi/vulkan.cpp b/source/platforms/sl.chi/vulkan.cpp
+index 6635318..ae30f93 100644
+--- a/source/platforms/sl.chi/vulkan.cpp
++++ b/source/platforms/sl.chi/vulkan.cpp
+@@ -2858,24 +2858,21 @@ ComputeStatus Vulkan::destroyInstance(chi::Instance& instance)
+     return res;
+ }
+ 
+-ComputeStatus Vulkan::getLUIDFromDevice(chi::PhysicalDevice device, uint32_t& deviceId, LUID* outId)
++ComputeStatus Vulkan::getLUIDFromDevice(chi::PhysicalDevice device, uint32_t& deviceId, LUID* outId, PFN_vkGetPhysicalDeviceProperties2 properties)
+ {
+-    auto res = getStaticVKMethods();
+-    if (res == ComputeStatus::eOk)
+-    {
+-        VkPhysicalDeviceIDProperties physicalDeviceIDProperties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, nullptr };
+-        VkPhysicalDeviceProperties2 physicalDeviceProperties2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &physicalDeviceIDProperties };
++    if (!device || !outId || !properties)
++        return ComputeStatus::eInvalidPointer;
++    VkPhysicalDeviceIDProperties physicalDeviceIDProperties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, nullptr };
++    VkPhysicalDeviceProperties2 physicalDeviceProperties2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &physicalDeviceIDProperties };
+ 
+-        *outId = {};
+-        auto physicalDevice = (VkPhysicalDevice)device;
+-        vkGetPhysicalDeviceProperties2(physicalDevice, &physicalDeviceProperties2);
+-        if (physicalDeviceIDProperties.deviceLUIDValid)
+-        {
+-            memcpy(outId, physicalDeviceIDProperties.deviceLUID, sizeof(LUID));
+-        }
+-        deviceId = physicalDeviceProperties2.properties.deviceID;
++    *outId = {};
++    properties((VkPhysicalDevice)device, &physicalDeviceProperties2);
++    if (physicalDeviceIDProperties.deviceLUIDValid)
++    {
++        memcpy(outId, physicalDeviceIDProperties.deviceLUID, sizeof(LUID));
+     }
+-    return res;
++    deviceId = physicalDeviceProperties2.properties.deviceID;
++    return ComputeStatus::eOk;
+ }
+ 
+ ComputeStatus Vulkan::getOpticalFlowQueueInfo(chi::PhysicalDevice physDevice, uint32_t& queueFamilyIndex, uint32_t& queueIndex)
+diff --git a/source/platforms/sl.chi/vulkan.h b/source/platforms/sl.chi/vulkan.h
+index 0d581cf..05f8758 100644
+--- a/source/platforms/sl.chi/vulkan.h
++++ b/source/platforms/sl.chi/vulkan.h
+@@ -386,7 +386,7 @@ public:
+     // Helper methods for NGX feature requirements and slIsFeatureSupported
+     static ComputeStatus createInstanceAndFindPhysicalDevice(uint32_t id, chi::Instance& instance, chi::PhysicalDevice& device);
+     static ComputeStatus destroyInstance(chi::Instance& instance);
+-    static ComputeStatus getLUIDFromDevice(chi::PhysicalDevice device, uint32_t& deviceId, LUID* OutId);
++    static ComputeStatus getLUIDFromDevice(chi::PhysicalDevice device, uint32_t& deviceId, LUID* OutId, PFN_vkGetPhysicalDeviceProperties2 properties);
+     static ComputeStatus getOpticalFlowQueueInfo(chi::PhysicalDevice physicalDevice, uint32_t& queueFamilyIndex, uint32_t& queueIndex);
+     virtual ComputeStatus isNativeOpticalFlowSupported() override final;
+ 
+diff --git a/source/plugins/sl.common/commonEntry.cpp b/source/plugins/sl.common/commonEntry.cpp
+index 3ca32da..d739956 100644
+--- a/source/plugins/sl.common/commonEntry.cpp
++++ b/source/plugins/sl.common/commonEntry.cpp
+@@ -39,6 +39,7 @@
+ #include "source/core/sl.param/parameters.h"
+ #include "source/core/sl.interposer/d3d12/d3d12.h"
+ #include "source/core/sl.interposer/vulkan/layer.h"
++#include "source/core/sl.interposer/vulkan/layerRoute.h"
+ #include "source/plugins/sl.common/versions.h"
+ #include "source/platforms/sl.chi/d3d12.h"
+ #include "source/platforms/sl.chi/vulkan.h"
+@@ -1486,6 +1487,18 @@ bool slOnPluginStartup(const char* jsonConfig, void* device)
+         }
+ 
+         NVSDK_NGX_Result ngxStatus{};
++        sl::interposer::VkTable* ngxVkTable{};
++        if (deviceType == RenderAPI::eVulkan)
++        {
++            auto* devices = static_cast<VkDevices*>(device);
++            if (!param::getPointerParam(parameters, sl::param::global::kVulkanTable, &ngxVkTable) ||
++                !ngxVkTable || !ngxVkTable->getInstanceProcAddr || !ngxVkTable->getDeviceProcAddr ||
++                ngxVkTable->instance != devices->instance || ngxVkTable->device != devices->device)
++            {
++                SL_LOG_ERROR("Experimental Vulkan route missing before NGX initialization");
++                return false;
++            }
++        }
+         
+         bool hasProjectId = !engineVersion.empty() && !projectId.empty();
+         if (hasProjectId)
+@@ -1513,7 +1526,7 @@ bool slOnPluginStartup(const char* jsonConfig, void* device)
+             {
+                 VkDevices* slVkDevices = (VkDevices*)device;
+ 
+-                ngxStatus = NVSDK_NGX_VULKAN_Init_with_ProjectID(projectId.c_str(), (NVSDK_NGX_EngineType)engine, engineVersion.c_str(), documentsDataPath, slVkDevices->instance, slVkDevices->physical, slVkDevices->device, nullptr/* TODO TBD plumb in vkGetInstanceProcAddr*/, nullptr/* TODO TBD plumb in vkGetDeviceProcAddr*/, &info, NVSDK_NGX_Version_API);
++                ngxStatus = NVSDK_NGX_VULKAN_Init_with_ProjectID(projectId.c_str(), (NVSDK_NGX_EngineType)engine, engineVersion.c_str(), documentsDataPath, slVkDevices->instance, slVkDevices->physical, slVkDevices->device, ngxVkTable->getInstanceProcAddr, ngxVkTable->getDeviceProcAddr, &info, NVSDK_NGX_Version_API);
+                 ngxStatus = NVSDK_NGX_VULKAN_GetCapabilityParameters(&ctx.ngxContext.params);
+             }
+         }
+@@ -1553,7 +1566,7 @@ bool slOnPluginStartup(const char* jsonConfig, void* device)
+             {
+                 VkDevices* slVkDevices = (VkDevices*)device;
+ 
+-                ngxStatus = NVSDK_NGX_VULKAN_Init(appId, documentsDataPath, slVkDevices->instance, slVkDevices->physical, slVkDevices->device, nullptr/* TODO TBD plumb in vkGetInstanceProcAddr*/, nullptr/* TODO TBD plumb in vkGetDeviceProcAddr*/, &info, NVSDK_NGX_Version_API);
++                ngxStatus = NVSDK_NGX_VULKAN_Init(appId, documentsDataPath, slVkDevices->instance, slVkDevices->physical, slVkDevices->device, ngxVkTable->getInstanceProcAddr, ngxVkTable->getDeviceProcAddr, &info, NVSDK_NGX_Version_API);
+                 ngxStatus = NVSDK_NGX_VULKAN_GetCapabilityParameters(&ctx.ngxContext.params);
+             }
+         }
+@@ -1918,7 +1931,13 @@ sl::Result findAdapter(const sl::AdapterInfo& adapterInfo, uint32_t adapterMask)
+     uint32_t deviceId{};
+     if (adapterInfo.vkPhysicalDevice)
+     {
+-        chi::Vulkan::getLUIDFromDevice(adapterInfo.vkPhysicalDevice, deviceId, &id);
++        sl::layer_route::PhysicalResolver resolver{};
++        if (!param::getPointerParam(api::getContext()->parameters, sl::layer_route::kPhysicalResolver, &resolver) || !resolver)
++            return sl::Result::eErrorInvalidState;
++        auto properties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(
++            resolver(reinterpret_cast<VkPhysicalDevice>(adapterInfo.vkPhysicalDevice), "vkGetPhysicalDeviceProperties2"));
++        if (chi::Vulkan::getLUIDFromDevice(adapterInfo.vkPhysicalDevice, deviceId, &id, properties) != chi::ComputeStatus::eOk)
++            return sl::Result::eErrorInvalidParameter;
+     }
+     else if (!adapterInfo.deviceLUID || sizeof(LUID) > adapterInfo.deviceLUIDSizeInBytes)
+     {
+diff --git a/tools/packman/bootstrap/fetch_file_from_packman_bootstrap.cmd b/tools/packman/bootstrap/fetch_file_from_packman_bootstrap.cmd
+index 8f8d593..f483230 100644
+--- a/tools/packman/bootstrap/fetch_file_from_packman_bootstrap.cmd
++++ b/tools/packman/bootstrap/fetch_file_from_packman_bootstrap.cmd
+@@ -20,7 +20,7 @@
+ @echo Fetching %PACKAGE_NAME% ...
+ 
+ @powershell -ExecutionPolicy ByPass -NoLogo -NoProfile -File "%~dp0download_file_from_url.ps1" ^
+-    -source "http://bootstrap.packman.nvidia.com/%PACKAGE_NAME%" -output %TARGET_PATH%
++    -source "https://bootstrap.packman.nvidia.com/%PACKAGE_NAME%" -output %TARGET_PATH%
+ :: A bug in powershell prevents the errorlevel code from being set when using the -File execution option
+ :: We must therefore do our own failure analysis, basically make sure the file exists:
+ @if not exist %TARGET_PATH% goto ERROR_DOWNLOAD_FAILED

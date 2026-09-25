@@ -1,0 +1,14 @@
+{
+  "application_frames": 600,
+  "display_effect_verified": false,
+  "game_integration_verified": false,
+  "height": 800,
+  "input_completion_wait_count": 530,
+  "input_completion_waited": true,
+  "maximum_input_completion_value": 609,
+  "requested_multiplier": 2,
+  "sdk_reported_presented": 1129,
+  "sdk_reports_extra_frames": true,
+  "shutdown_fg_off": true,
+  "width": 1280
+}

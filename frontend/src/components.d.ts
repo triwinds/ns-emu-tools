@@ -20,6 +20,8 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SimplePage: typeof import('./components/SimplePage.vue')['default']
     SpeedDial: typeof import('./components/SpeedDial.vue')['default']
+    StreamlineFgLive: typeof import('./components/StreamlineFgLive.vue')['default']
+    StreamlineFgPanel: typeof import('./components/StreamlineFgPanel.vue')['default']
     YuzuSaveCommonPart: typeof import('./components/YuzuSaveCommonPart.vue')['default']
     YuzuSaveRestoreTab: typeof import('./components/YuzuSaveRestoreTab.vue')['default']
   }

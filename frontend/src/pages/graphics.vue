@@ -4,6 +4,7 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { open } from '@tauri-apps/plugin-dialog'
 import { mdiFolderOpenOutline, mdiRefresh, mdiMonitorShimmer, mdiCheckCircleOutline } from '@mdi/js'
 import { graphicsCommand, type GraphicsApi, type GraphicsTarget, type Detection, type InstallPreview, type Operation, type ComponentState } from '@/utils/graphics'
+import StreamlineFgPanel from '@/components/StreamlineFgPanel.vue'
 import { useProgressStore } from '@/stores/ProgressStore'
 
 const targets = ref<GraphicsTarget[]>([])
@@ -23,7 +24,10 @@ const removal = ref<'reshade' | 'feeder' | null>(null)
 const progress = useProgressStore()
 let revision = 0
 const nameOf = (path: string) => path.split(/[\\/]/).pop()?.replace(/\.exe$/i, '') || '模拟器'
-const items = computed(() => targets.value.map(t => ({ title: `${nameOf(t.executable)} — ${t.executable}`, value: t.executable })))
+const displayPath = (path: string) => path
+  .replace(/^\\\\\?\\UNC\\/i, '\\\\')
+  .replace(/^\\\\\?\\([a-z]:\\)/i, '$1')
+const items = computed(() => targets.value.map(t => ({ title: `${nameOf(t.executable)} — ${displayPath(t.executable)}`, value: t.executable })))
 const locked = computed(() => busy.value || loading.value || dialog.value || !!removal.value)
 const canInstall = computed(() => !!report.value?.installationAvailable && !locked.value)
 const feederPresent = computed(() => report.value && !['notInstalled', 'unsupported'].includes(report.value.feederState))
@@ -114,7 +118,13 @@ onMounted(loadTargets)
 <template>
   <main class="graphics-page">
     <header class="page-heading">
-      <div><h1>图形增强</h1><p>为你的模拟器管理 ReShade 与 DLSS5。</p></div>
+      <div>
+        <h1>图形增强</h1>
+        <p>为你的模拟器管理帧生成、ReShade 与 DLSS5。</p>
+        <p class="text-warning mt-2">
+          使用前，请先完整备份模拟器目录，并备份配置与存档。
+        </p>
+      </div>
       <v-chip
         size="small"
         variant="outlined"
@@ -168,7 +178,7 @@ onMounted(loadTargets)
         v-if="executable"
         class="target-path"
       >
-        {{ executable }}
+        {{ displayPath(executable) }}
       </p>
       <p
         v-else
@@ -216,6 +226,8 @@ onMounted(loadTargets)
     >
       {{ notice }}
     </v-alert>
+    <StreamlineFgPanel :executable="executable" :api="api" :disabled="locked" />
+
     <p class="operation-hint">
       安装或卸载前，请保存游戏并退出模拟器。安装状态仅代表文件状态。
     </p>
@@ -337,7 +349,7 @@ onMounted(loadTargets)
         <v-card-title>安装预览 · {{ component === 'reshade' ? 'ReShade' : 'DLSS5' }}</v-card-title>
         <v-card-text class="preview-body">
           <p class="target-path">
-            {{ executable }}
+            {{ displayPath(executable) }}
           </p><p>{{ api === 'vulkan' ? 'Vulkan' : 'OpenGL' }} · {{ preview.version || preview.bundle }}</p>
           <v-alert
             v-for="blocker in preview.blockers"
@@ -361,7 +373,7 @@ onMounted(loadTargets)
               v-if="preview.destination"
               class="target-path"
             >
-              {{ preview.destination }}
+              {{ displayPath(preview.destination) }}
             </p><ul>
               <li
                 v-for="file in preview.files"
@@ -400,7 +412,7 @@ onMounted(loadTargets)
               :key="target"
               class="target-path"
             >
-              {{ target }}
+              {{ displayPath(target) }}
             </p><v-checkbox
               v-model="vulkanConsent"
               label="我了解并同意共享 Vulkan 图层的影响范围"
@@ -429,7 +441,7 @@ onMounted(loadTargets)
       <v-card>
         <v-card-title>卸载 {{ removal === 'feeder' ? 'DLSS5' : 'ReShade' }}</v-card-title><v-card-text>
           <p class="target-path">
-            {{ executable }}
+            {{ displayPath(executable) }}
           </p><p>{{ removal === 'feeder' ? '移除管理的 DLSS5 组件并恢复备份，保留 ReShade。' : '移除管理的 ReShade 安装并恢复备份。' }}修改过的文件将按恢复规则处理。</p>
         </v-card-text><v-card-actions>
           <v-spacer /><v-btn @click="removal = null">

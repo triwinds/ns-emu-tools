@@ -1,0 +1,307 @@
+{
+  "application": {
+    "generations": [
+      {
+        "acquire2_count": 1,
+        "acquire_count": 2,
+        "attempt": 0,
+        "elapsed_us": 197234,
+        "fault_injected": false,
+        "generation": 0,
+        "height": 201,
+        "old_swapchain": 0,
+        "present_count": 3,
+        "present_fences_waited": 3,
+        "queue_idle": true,
+        "reason": "complete",
+        "rebuild": false,
+        "swapchain": 2542743796944,
+        "width": 304
+      },
+      {
+        "acquire2_count": 0,
+        "acquire_count": 0,
+        "attempt": 0,
+        "elapsed_us": 210201,
+        "fault_injected": true,
+        "generation": 1,
+        "height": 441,
+        "old_swapchain": 2542743796944,
+        "present_count": 0,
+        "present_fences_waited": 0,
+        "queue_idle": true,
+        "reason": "acquire_out_of_date",
+        "rebuild": true,
+        "swapchain": 2542743802064,
+        "width": 624
+      },
+      {
+        "acquire2_count": 1,
+        "acquire_count": 2,
+        "attempt": 1,
+        "elapsed_us": 217566,
+        "fault_injected": false,
+        "generation": 1,
+        "height": 441,
+        "old_swapchain": 2542743802064,
+        "present_count": 3,
+        "present_fences_waited": 3,
+        "queue_idle": true,
+        "reason": "complete",
+        "rebuild": false,
+        "swapchain": 2542743796944,
+        "width": 624
+      },
+      {
+        "acquire2_count": 0,
+        "acquire_count": 1,
+        "attempt": 0,
+        "elapsed_us": 296252,
+        "fault_injected": true,
+        "generation": 2,
+        "height": 441,
+        "old_swapchain": 0,
+        "present_count": 1,
+        "present_fences_waited": 1,
+        "queue_idle": true,
+        "reason": "injected_present_out_of_date",
+        "rebuild": true,
+        "swapchain": 2542743796944,
+        "width": 624
+      },
+      {
+        "acquire2_count": 1,
+        "acquire_count": 2,
+        "attempt": 1,
+        "elapsed_us": 310325,
+        "fault_injected": false,
+        "generation": 2,
+        "height": 441,
+        "old_swapchain": 2542743796944,
+        "present_count": 3,
+        "present_fences_waited": 3,
+        "queue_idle": true,
+        "reason": "complete",
+        "rebuild": false,
+        "swapchain": 2542743802064,
+        "width": 624
+      }
+    ],
+    "minimize_restore_tested": true,
+    "out_of_date_fault_injection_tested": true,
+    "presentation_restart_tested": true,
+    "resize_tested": true,
+    "sdk_reinitialization_tested": false,
+    "surface_destroyed": true,
+    "swapchains_destroyed": 5,
+    "thread": "ThreadId(1)",
+    "transitions": [
+      {
+        "elapsed_us": 197248,
+        "event": "before_resize",
+        "fg_enabled": false
+      },
+      {
+        "elapsed_us": 198992,
+        "event": "window_resized"
+      },
+      {
+        "attempt": 0,
+        "elapsed_us": 210204,
+        "event": "rebuild_requested",
+        "fault_injected": true,
+        "fg_enabled": false,
+        "generation": 1,
+        "reason": "acquire_out_of_date"
+      },
+      {
+        "elapsed_us": 238063,
+        "event": "presentation_stopped"
+      },
+      {
+        "elapsed_us": 238072,
+        "event": "before_minimize",
+        "fg_enabled": false
+      },
+      {
+        "elapsed_us": 241913,
+        "event": "presentation_suspended",
+        "height": 0,
+        "iconic": true,
+        "present_called": false,
+        "swapchain_created": false,
+        "width": 0
+      },
+      {
+        "elapsed_us": 245670,
+        "event": "window_restored"
+      },
+      {
+        "attempt": 0,
+        "elapsed_us": 296258,
+        "event": "rebuild_requested",
+        "fault_injected": true,
+        "fg_enabled": false,
+        "generation": 2,
+        "reason": "injected_present_out_of_date"
+      }
+    ],
+    "window_destroyed": true
+  },
+  "fg_enabled": false,
+  "owner": "diagnostic host",
+  "presentation_restart_tested": true,
+  "queue_index": 0,
+  "resize_tested": true,
+  "sdk": {
+    "generations": [
+      {
+        "acquire2_count": 1,
+        "acquire_count": 2,
+        "attempt": 0,
+        "elapsed_us": 77010,
+        "fault_injected": false,
+        "generation": 0,
+        "height": 201,
+        "old_swapchain": 0,
+        "present_count": 3,
+        "present_fences_waited": 3,
+        "queue_idle": true,
+        "reason": "complete",
+        "rebuild": false,
+        "swapchain": 2542743802064,
+        "width": 304
+      },
+      {
+        "acquire2_count": 0,
+        "acquire_count": 0,
+        "attempt": 0,
+        "elapsed_us": 91189,
+        "fault_injected": true,
+        "generation": 1,
+        "height": 441,
+        "old_swapchain": 2542743802064,
+        "present_count": 0,
+        "present_fences_waited": 0,
+        "queue_idle": true,
+        "reason": "acquire_out_of_date",
+        "rebuild": true,
+        "swapchain": 2542743796944,
+        "width": 624
+      },
+      {
+        "acquire2_count": 1,
+        "acquire_count": 2,
+        "attempt": 1,
+        "elapsed_us": 107215,
+        "fault_injected": false,
+        "generation": 1,
+        "height": 441,
+        "old_swapchain": 2542743796944,
+        "present_count": 3,
+        "present_fences_waited": 3,
+        "queue_idle": true,
+        "reason": "complete",
+        "rebuild": false,
+        "swapchain": 2542743802064,
+        "width": 624
+      },
+      {
+        "acquire2_count": 0,
+        "acquire_count": 1,
+        "attempt": 0,
+        "elapsed_us": 190157,
+        "fault_injected": true,
+        "generation": 2,
+        "height": 441,
+        "old_swapchain": 0,
+        "present_count": 1,
+        "present_fences_waited": 1,
+        "queue_idle": true,
+        "reason": "injected_present_out_of_date",
+        "rebuild": true,
+        "swapchain": 2542743802064,
+        "width": 624
+      },
+      {
+        "acquire2_count": 1,
+        "acquire_count": 2,
+        "attempt": 1,
+        "elapsed_us": 208389,
+        "fault_injected": false,
+        "generation": 2,
+        "height": 441,
+        "old_swapchain": 2542743802064,
+        "present_count": 3,
+        "present_fences_waited": 3,
+        "queue_idle": true,
+        "reason": "complete",
+        "rebuild": false,
+        "swapchain": 2542743796944,
+        "width": 624
+      }
+    ],
+    "minimize_restore_tested": true,
+    "out_of_date_fault_injection_tested": true,
+    "presentation_restart_tested": true,
+    "resize_tested": true,
+    "sdk_reinitialization_tested": false,
+    "surface_destroyed": true,
+    "swapchains_destroyed": 5,
+    "thread": "ThreadId(1)",
+    "transitions": [
+      {
+        "elapsed_us": 77014,
+        "event": "before_resize",
+        "fg_enabled": false
+      },
+      {
+        "elapsed_us": 78128,
+        "event": "window_resized"
+      },
+      {
+        "attempt": 0,
+        "elapsed_us": 91193,
+        "event": "rebuild_requested",
+        "fault_injected": true,
+        "fg_enabled": false,
+        "generation": 1,
+        "reason": "acquire_out_of_date"
+      },
+      {
+        "elapsed_us": 127761,
+        "event": "presentation_stopped"
+      },
+      {
+        "elapsed_us": 127767,
+        "event": "before_minimize",
+        "fg_enabled": false
+      },
+      {
+        "elapsed_us": 131009,
+        "event": "presentation_suspended",
+        "height": 0,
+        "iconic": true,
+        "present_called": false,
+        "swapchain_created": false,
+        "width": 0
+      },
+      {
+        "elapsed_us": 134403,
+        "event": "window_restored"
+      },
+      {
+        "attempt": 0,
+        "elapsed_us": 190161,
+        "event": "rebuild_requested",
+        "fault_injected": true,
+        "fg_enabled": false,
+        "generation": 2,
+        "reason": "injected_present_out_of_date"
+      }
+    ],
+    "window_destroyed": true
+  },
+  "sdk_owned_worker_tested": false,
+  "sdk_reinitialization_tested": false
+}

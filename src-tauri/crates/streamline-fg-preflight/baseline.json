@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+  "reference_build": "2026.911.47",
+  "loader_version": "1.4.341.0",
+  "artifacts": [
+    {
+      "scope": "reference",
+      "path": "Ryujinx.exe",
+      "mode": "binary",
+      "sha256": "bb518e2ec059d46dfad7df2dcdb3acc608cc8b77bde38e3ac0852ec3ceb103ed"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/sl.interposer.dll",
+      "mode": "binary",
+      "sha256": "f54318c050d7c13528fc1560066584c33766694084f5c416a02ec096884bdb44"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/sl.common.dll",
+      "mode": "binary",
+      "sha256": "b1b4017343a5fbcf2edad190ae0de229725648c7b9f1975ba30563df8371ebee"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/sl.dlss_g.dll",
+      "mode": "binary",
+      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/sl.reflex.dll",
+      "mode": "binary",
+      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/sl.pcl.dll",
+      "mode": "binary",
+      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/nvngx_dlssg.dll",
+      "mode": "binary",
+      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+    },
+    {
+      "scope": "reference",
+      "path": "dlss/NvLowLatencyVk.dll",
+      "mode": "binary",
+      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_appidentity.h",
+      "mode": "utf8_lf",
+      "sha256": "5e130035fb687de0fd6a0d266b804c979678afda7c3eabf52da631c3c9226a67"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_consts.h",
+      "mode": "utf8_lf",
+      "sha256": "56d2ced0319ac2086e9032bea2c0b42601cd309e2db5d60343f9044a3797e7cb"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_core_api.h",
+      "mode": "utf8_lf",
+      "sha256": "227ce30af8b64b932ce3a37f07e53b07c9c4b5d814b52829fca9199ced05201b"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_core_types.h",
+      "mode": "utf8_lf",
+      "sha256": "81ec5835ad077ffbd94dfc0cdfe8ba8ffaed4d5b3ce4f33674fe8c3b0e53ebf6"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_deepdvc.h",
+      "mode": "utf8_lf",
+      "sha256": "bf5411e9ee2fc1d46d3afb5c8d915b508c73ca7c1b1862c7577a336b1ad9433d"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_device_wrappers.h",
+      "mode": "utf8_lf",
+      "sha256": "d7a0cfa144895fe00987af89e81ec8ef46bd49507ad6bd70f5a18a60d4be13d6"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_directsr.h",
+      "mode": "utf8_lf",
+      "sha256": "1cd45d5c6042017116d3db6a411dee377cef14d9d825686493adfa532e33500e"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_dlss_d.h",
+      "mode": "utf8_lf",
+      "sha256": "c7b8bed0c482374c94270e1587d923ed3be3f424c170b074d2c551bf09ad1548"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_dlss_g.h",
+      "mode": "utf8_lf",
+      "sha256": "075bc65a5d30a59e158d3c1ea4dff34f8335bc16486c31b33394e9270ee59e8c"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_dlss.h",
+      "mode": "utf8_lf",
+      "sha256": "00a26ea060f67c7ea03ced3efde83479ac9e088a5c024625a291be4b17aaf09b"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_helpers_vk.h",
+      "mode": "utf8_lf",
+      "sha256": "36de94fa0339232a2c50d449eed639d2c6831c18409a580aa95ead903297b301"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_helpers.h",
+      "mode": "utf8_lf",
+      "sha256": "8636a06ff0ccff2c65060da5eeec77746c6c6f9c0d6fe40b90f59d7505d83fe8"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_hooks.h",
+      "mode": "utf8_lf",
+      "sha256": "6953da2aafbb33b80ca953e72af14aaf95f7e3fe8f1a4a7bafe31e7702c3984e"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_matrix_helpers.h",
+      "mode": "utf8_lf",
+      "sha256": "c3520f0c249a0eb0ced474e0c55734e1e86f197bb521500dda834b13b96bed33"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_nis.h",
+      "mode": "utf8_lf",
+      "sha256": "5264c7271f5d31f505b29d3935b7388e2614c9ce1b3baa3f101b194409eb36a7"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_nvperf.h",
+      "mode": "utf8_lf",
+      "sha256": "02f8f9209dbf989d14b93eec0ae1ea13efb6fbefd680727f408952a43aaf3f8b"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_pcl.h",
+      "mode": "utf8_lf",
+      "sha256": "a9c37fa9a99c4eb06cd0843968e33e278aae61759f59e46fcb80f489660a2d7e"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_reflex.h",
+      "mode": "utf8_lf",
+      "sha256": "0afbacef659231077626506c7ff8a6a1f2dff90703f96ac889bc777facba25ef"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_result.h",
+      "mode": "utf8_lf",
+      "sha256": "8219c300c7084b55f2cc2e095bef21b03db91e3189014f6281cbc942313d8fee"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_security.h",
+      "mode": "utf8_lf",
+      "sha256": "249a1a568a756db35ff126ef37f27dd2164695a329cc0145956c5df7e28622c7"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_struct.h",
+      "mode": "utf8_lf",
+      "sha256": "5b9bdcbcbdcd7e68fa02efcfb466d4878b4575917b3682396b5885c915d3033f"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_template.h",
+      "mode": "utf8_lf",
+      "sha256": "106c62a7e31d2b182bb46be3faddfff59b3fd50aa9c5c49bdc392a13be727411"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl_version.h",
+      "mode": "utf8_lf",
+      "sha256": "bd12fbacdc69db9607f5820082fbb05f5f21a7d842e32784b220d0accab61616"
+    },
+    {
+      "scope": "sdk",
+      "path": "include/sl.h",
+      "mode": "utf8_lf",
+      "sha256": "e8efb374ab4d68cfca92ed7664f70173cf4158caceb5b7837ebfa0c5b6ec71ec"
+    },
+    {
+      "scope": "sdk",
+      "path": "source/core/sl.interposer/vulkan/wrapper.cpp",
+      "mode": "utf8_lf",
+      "sha256": "04ca9b6abcde0e93d697c76af43a785a1043045b0181a6bef08a7fea85debf70"
+    },
+    {
+      "scope": "sdk",
+      "path": "source/core/sl.interposer/vulkan/layer.h",
+      "mode": "utf8_lf",
+      "sha256": "16001ac7ce26db6d42d59a01c2005d03ec856b7f69753a1c56c9e20374c3b965"
+    },
+    {
+      "scope": "sdk",
+      "path": "source/core/sl.interposer/exports.def",
+      "mode": "utf8_lf",
+      "sha256": "083232a840e80a49b83b29e499d991ed504f149a616d5ed35c3eb654ed6b41a9"
+    },
+    {
+      "scope": "sdk",
+      "path": "source/core/sl.api/sl.cpp",
+      "mode": "utf8_lf",
+      "sha256": "72706805f899a646adb880ab1371915255796ec81498be2c3ac5dca82d567f8b"
+    },
+    {
+      "scope": "sdk",
+      "path": "source/platforms/sl.chi/vulkan.cpp",
+      "mode": "utf8_lf",
+      "sha256": "005f98a8a16848029a7f1d2cae23cecade4e4674c33f5cd86e40e8924bd82a16"
+    },
+    {
+      "scope": "sdk",
+      "path": "source/plugins/sl.common/commonEntry.cpp",
+      "mode": "utf8_lf",
+      "sha256": "79ed6faa645859f88ec90c02e8560d6cf373b9b705a935bc37455a8544cf795b"
+    },
+    {
+      "scope": "sdk",
+      "path": "docs/ProgrammingGuideManualHooking.md",
+      "mode": "utf8_lf",
+      "sha256": "793d8f6cdc26c6f1e5dfd85e4338a0dbfdb31023b5ab2a3c6605777a01c59acc"
+    },
+    {
+      "scope": "sdk",
+      "path": "docs/ProgrammingGuideDLSS_G.md",
+      "mode": "utf8_lf",
+      "sha256": "9ba6da909579f9087a3e3328020187d990f8e12eb561e2e196c40904739d386b"
+    },
+    {
+      "scope": "loader",
+      "path": "vulkan-1.dll",
+      "mode": "binary",
+      "sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb"
+    }
+  ]
+}

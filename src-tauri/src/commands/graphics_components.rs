@@ -297,3 +297,99 @@ pub async fn get_feeder_installation(
         Err(e) => ApiResponse::fail(e.to_string()),
     }
 }
+
+/// Read-only FG preflight; never infers live FG state from installed files.
+#[tauri::command]
+pub async fn detect_streamline_fg(
+    executable: PathBuf,
+    graphics_api: GraphicsApi,
+) -> ApiResponse<graphics_components::streamline_fg::FgPreflight> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::streamline_fg::detect(executable, graphics_api)
+    })
+    .await
+    {
+        Ok(Ok(report)) => ApiResponse::success(report),
+        Ok(Err(error)) => ApiResponse::fail(error),
+        Err(error) => ApiResponse::fail(format!("FG 检测任务失败：{error}")),
+    }
+}
+
+#[tauri::command]
+pub async fn install_streamline_fg(
+    executable: PathBuf,
+    graphics_api: GraphicsApi,
+    allow_unverified: bool,
+    expected_sha256: String,
+) -> ApiResponse<graphics_components::streamline_install::Operation> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::streamline_install::install(
+            executable,
+            graphics_api,
+            allow_unverified,
+            expected_sha256,
+        )
+    })
+    .await
+    {
+        Ok(Ok(v)) => ApiResponse::success(v),
+        Ok(Err(e)) => ApiResponse::fail(e),
+        Err(e) => ApiResponse::fail(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn launch_streamline_fg(
+    executable: PathBuf,
+    graphics_api: GraphicsApi,
+    allow_unverified: bool,
+    expected_sha256: String,
+    game: Option<PathBuf>,
+) -> ApiResponse<graphics_components::streamline_install::Operation> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::streamline_install::launch(
+            executable,
+            graphics_api,
+            allow_unverified,
+            expected_sha256,
+            game,
+        )
+    })
+    .await
+    {
+        Ok(Ok(v)) => ApiResponse::success(v),
+        Ok(Err(e)) => ApiResponse::fail(e),
+        Err(e) => ApiResponse::fail(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn uninstall_streamline_fg(
+    executable: PathBuf,
+) -> ApiResponse<graphics_components::streamline_install::Operation> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::streamline_install::uninstall(executable)
+    })
+    .await
+    {
+        Ok(Ok(v)) => ApiResponse::success(v),
+        Ok(Err(e)) => ApiResponse::fail(e),
+        Err(e) => ApiResponse::fail(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn live_streamline_fg(
+    executable: PathBuf,
+    enabled: Option<bool>,
+) -> ApiResponse<serde_json::Value> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::streamline_install::live(executable, enabled)
+    })
+    .await
+    {
+        Ok(Ok(v)) => ApiResponse::success(v),
+        Ok(Err(e)) => ApiResponse::fail(e),
+        Err(e) => ApiResponse::fail(e.to_string()),
+    }
+}

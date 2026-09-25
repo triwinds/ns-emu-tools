@@ -1,0 +1,30 @@
+[package]
+name = "streamline-layer-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0"
+
+[workspace]
+
+[lib]
+name = "streamline_probe_layer"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ash = "0.38"
+dunce = "1"
+libloading = "0.8"
+serde_json = "1"
+sha2 = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_UI_WindowsAndMessaging"] }
+
+[features]
+sdk-bridge = []
+
+[build-dependencies]
+cc = "1"
+serde_json = "1"
+sha2 = "0.10"

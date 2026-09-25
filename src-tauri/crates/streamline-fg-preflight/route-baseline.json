@@ -1,0 +1,112 @@
+[
+  {
+    "path": "include/sl_helpers_vk.h",
+    "sha256_lf": "36de94fa0339232a2c50d449eed639d2c6831c18409a580aa95ead903297b301",
+    "markers": [
+      "SL_STRUCT_BEGIN(VulkanInfo"
+    ]
+  },
+  {
+    "path": "source/core/sl.api/sl.cpp",
+    "sha256_lf": "72706805f899a646adb880ab1371915255796ec81498be2c3ac5dca82d567f8b",
+    "markers": [
+      "processVulkanInterface(&info)",
+      "return pluginManager->initializePlugins();"
+    ]
+  },
+  {
+    "path": "source/core/sl.interposer/vulkan/wrapper.cpp",
+    "sha256_lf": "04ca9b6abcde0e93d697c76af43a785a1043045b0181a6bef08a7fea85debf70",
+    "markers": [
+      "s_vk.getDeviceProcAddr =",
+      "s_vk.getInstanceProcAddr =",
+      "s_ddt.GetDeviceProcAddr =",
+      "s_idt.GetInstanceProcAddr =",
+      "PFN_vkGetPhysicalDeviceToolProperties)GetProcAddress",
+      "kVulkanTable, &s_vk"
+    ]
+  },
+  {
+    "path": "source/core/sl.interposer/vulkan/layer.h",
+    "sha256_lf": "16001ac7ce26db6d42d59a01c2005d03ec856b7f69753a1c56c9e20374c3b965",
+    "markers": [
+      "dt.GetInstanceProcAddr =",
+      "dt.GetDeviceProcAddr ="
+    ]
+  },
+  {
+    "path": "source/platforms/sl.chi/vulkan.cpp",
+    "sha256_lf": "005f98a8a16848029a7f1d2cae23cecade4e4674c33f5cd86e40e8924bd82a16",
+    "markers": [
+      "m_vk->getInstanceProcAddr = vk->getInstanceProcAddr",
+      "m_vk->getDeviceProcAddr = vk->getDeviceProcAddr",
+      "m_vk->mapVulkanDeviceAPI",
+      "ComputeStatus Vulkan::getStaticVKMethods()",
+      "ComputeStatus Vulkan::getLUIDFromDevice",
+      "ComputeStatus Vulkan::getOpticalFlowQueueInfo"
+    ]
+  },
+  {
+    "path": "source/plugins/sl.common/commonEntry.cpp",
+    "sha256_lf": "79ed6faa645859f88ec90c02e8560d6cf373b9b705a935bc37455a8544cf795b",
+    "markers": [
+      "NVSDK_NGX_VULKAN_Init_with_ProjectID(",
+      "NVSDK_NGX_VULKAN_Init(",
+      "createInstanceAndFindPhysicalDevice"
+    ]
+  },
+  {
+    "path": "external/ngx-sdk/include/nvsdk_ngx_vk.h",
+    "sha256_lf": "2d364ce7132881eb669e9498fd570d74cba563b1fbebc82c235f8e1ad2dd8b6d",
+    "markers": [
+      "PFN_vkGetInstanceProcAddr InGIPA",
+      "PFN_vkGetDeviceProcAddr InGDPA"
+    ]
+  },
+  {
+    "path": "premake.lua",
+    "sha256_lf": "ce51bd1e0e35cb2de3fd5c5fdc5ada180b5ba2cc0efe5fade3314a1cc9a6fc56",
+    "markers": [
+      "project \"sl.interposer\"",
+      "project \"sl.common\"",
+      "nvsdk_ngx_d.lib"
+    ]
+  },
+  {
+    "path": "project.xml",
+    "sha256_lf": "674b2442b749a49d18ce94c806119ce5cb963f2d8f4918be9d49b1430fcbfd8e",
+    "markers": [
+      "name=\"VulkanSDK\"",
+      "name=\"premake\""
+    ]
+  },
+  {
+    "path": "setup.bat",
+    "sha256_lf": "cd638923cba2d8481542a684fc5cc939ad5eb342db93b4e036e110ff35c52fa3",
+    "markers": [
+      "packman.cmd pull",
+      "premake5.exe"
+    ]
+  },
+  {
+    "path": "build.bat",
+    "sha256_lf": "739b8949997303cba958d2aa457f03146a6da193cb4349d02451a1debed37a5d",
+    "markers": [
+      "[17^,18^)",
+      "msbuild .\\_project\\vs2022"
+    ]
+  },
+  {
+    "path": "license.txt",
+    "sha256_lf": "c7782fdc4dfc64f7e6b09f37a694dcfa64034b712903986d252b13a08d5849cd",
+    "markers": [
+      "Permission is hereby granted",
+      "NSight Perf SDK License"
+    ]
+  },
+  {
+    "path": "external/ngx-sdk/license.txt",
+    "sha256_lf": "d4216e39ebef5f9b50a6712ebb37beeb5379862a67733a9999c651f21592aaf0",
+    "markers": []
+  }
+]

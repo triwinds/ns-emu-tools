@@ -1,0 +1,54 @@
+#version 450
+// Experimental current-to-previous UV block matching; not the VORT implementation.
+layout(local_size_x=8,local_size_y=8) in;
+layout(binding=0) uniform sampler2D currentFrame;
+layout(binding=1) uniform sampler2D previousFrame;
+layout(binding=2,rg32f) uniform writeonly image2D motion;
+layout(std430,binding=3) buffer Stats { uint blocks; uint moving; uint rejected; uint magnitude; } stats;
+layout(push_constant) uniform Settings { uint reset; } settings;
+float luma(vec3 x) { return dot(x,vec3(.299,.587,.114)); }
+float cost(ivec2 p,ivec2 delta) {
+    ivec2 size=textureSize(currentFrame,0); float e=0.;
+    for(int y=-2;y<=2;y++) for(int x=-2;x<=2;x++) {
+        ivec2 a=clamp(p+ivec2(x,y),ivec2(0),size-1);
+        ivec2 b=clamp(p+ivec2(x,y)+delta,ivec2(0),size-1);
+        e+=abs(luma(texelFetch(currentFrame,a,0).rgb)-luma(texelFetch(previousFrame,b,0).rgb));
+    }
+    return e/25.;
+}
+void main() {
+    ivec2 base=ivec2(gl_GlobalInvocationID.xy)*8;
+    ivec2 size=imageSize(motion); if(any(greaterThanEqual(base,size))) return;
+    ivec2 small=textureSize(currentFrame,0);
+    ivec2 p=clamp(ivec2((vec2(base)+4.)*vec2(small)/vec2(size)),ivec2(2),small-3);
+    vec2 uv=vec2(0); bool reject=false;
+    if(settings.reset==0) {
+        float zero=cost(p,ivec2(0)); float best=zero; ivec2 delta=ivec2(0);
+        // Global coarse search prevents a greedy large step from locking onto
+        // an unrelated local minimum before fine refinement.
+        for(int y=-16;y<=16;y+=4) for(int x=-16;x<=16;x+=4) {
+            ivec2 trial=ivec2(x,y);
+            if(any(lessThan(p+trial,ivec2(2))) || any(greaterThanEqual(p+trial,small-2))) continue;
+            float candidate=cost(p,trial)+.00015*length(vec2(trial));
+            if(candidate<best) {best=candidate;delta=trial;}
+        }
+        for(int step=2;step>=1;step/=2) {
+            ivec2 center=delta;
+            for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++) {
+                ivec2 trial=center+ivec2(x,y)*step;
+                if(any(lessThan(p+trial,ivec2(2))) || any(greaterThanEqual(p+trial,small-2))) continue;
+                float candidate=cost(p,trial)+.00015*length(vec2(trial));
+                if(candidate<best) {best=candidate;delta=trial;}
+            }
+        }
+        // Low confidence or unchanged blocks fall back to zero rather than invent motion.
+        reject=best>.06;
+        if(!reject && best<zero*.85 && zero>.004) uv=vec2(delta)/vec2(small);
+    }
+    atomicAdd(stats.blocks,1);
+    if(length(uv)>0.) {atomicAdd(stats.moving,1);atomicAdd(stats.magnitude,uint(length(uv)*100000.));}
+    if(reject) atomicAdd(stats.rejected,1);
+    for(int y=0;y<8;y++) for(int x=0;x<8;x++) {
+        ivec2 at=base+ivec2(x,y);if(all(lessThan(at,size))) imageStore(motion,at,vec4(uv,0,0));
+    }
+}

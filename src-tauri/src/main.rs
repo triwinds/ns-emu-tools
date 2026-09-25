@@ -136,6 +136,11 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::graphics_components::list_graphics_component_targets,
             commands::graphics_components::detect_graphics_components,
+            commands::graphics_components::detect_streamline_fg,
+            commands::graphics_components::live_streamline_fg,
+            commands::graphics_components::install_streamline_fg,
+            commands::graphics_components::launch_streamline_fg,
+            commands::graphics_components::uninstall_streamline_fg,
             commands::graphics_components::plan_graphics_component_install,
             commands::graphics_components::get_graphics_component_versions,
             commands::graphics_components::prepare_official_graphics_component_install,

@@ -1,0 +1,24 @@
+{
+  "initial": {
+    "app_fps_median": 29.792995712548482,
+    "native_presentation_fps_median": 59.612213618060125,
+    "sample_count": 10,
+    "last_reason": "active",
+    "command_acknowledged": true
+  },
+  "off": {
+    "app_fps_median": 29.715877579802488,
+    "native_presentation_fps_median": 29.715877579802488,
+    "sample_count": 18,
+    "last_reason": "user_disabled",
+    "command_acknowledged": true
+  },
+  "on": {
+    "app_fps_median": 29.70461213724309,
+    "native_presentation_fps_median": 60.36800200140269,
+    "sample_count": 8,
+    "last_reason": "window_operation",
+    "command_acknowledged": true
+  },
+  "limitations": "After On resumed ~60 native presents/s, a window operation triggered the existing terminal stop; final snapshot is ~30. No display scanout measurement."
+}
