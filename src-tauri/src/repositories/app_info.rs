@@ -16,6 +16,24 @@ const APP_RELEASES_API: &str = "https://api.github.com/repos/triwinds/ns-emu-too
 const CHANGELOG_URL: &str =
     "https://raw.githubusercontent.com/triwinds/ns-emu-tools/main/changelog.md";
 
+/// Dependency asset releases share this repository but must never replace the application feed.
+fn is_application_release(release: &serde_json::Value) -> bool {
+    if release["draft"].as_bool().unwrap_or(false) {
+        return false;
+    }
+    let Some(tag) = release["tag_name"].as_str() else {
+        return false;
+    };
+    let tag = tag.strip_prefix('v').unwrap_or(tag);
+    let core = tag.split(['-', '+']).next().unwrap_or("");
+    let parts: Vec<_> = core.split('.').collect();
+    parts.len() == 3
+        && parts.iter().all(|part| {
+            !part.is_empty()
+                && part.bytes().all(|b| b.is_ascii_digit())
+                && part.parse::<u32>().is_ok()
+        })
+}
 /// 获取所有应用版本
 pub async fn get_all_release() -> AppResult<Vec<serde_json::Value>> {
     info!("正在获取所有应用版本信息");
@@ -25,7 +43,10 @@ pub async fn get_all_release() -> AppResult<Vec<serde_json::Value>> {
     let releases = data
         .as_array()
         .ok_or_else(|| AppError::InvalidArgument("无效的 API 响应格式".to_string()))?
-        .clone();
+        .iter()
+        .filter(|release| is_application_release(release))
+        .cloned()
+        .collect::<Vec<_>>();
 
     debug!("共获取到 {} 个应用版本", releases.len());
     Ok(releases)
@@ -183,6 +204,26 @@ fn is_newer_version(new_version: &str, current_version: &str) -> bool {
 mod tests {
     use super::*;
 
+    #[test]
+    fn excludes_runtime_assets_even_from_the_prerelease_channel() {
+        use serde_json::json;
+        let releases = [
+            json!({"tag_name":"aio-runtimes-v1","prerelease":true}),
+            json!({"tag_name":"v0.7.0-beta.1","prerelease":true}),
+            json!({"tag_name":"0.6.3","prerelease":false}),
+            json!({"tag_name":"0.8.0","draft":true}),
+        ];
+        let app: Vec<_> = releases
+            .iter()
+            .filter(|r| is_application_release(r))
+            .collect();
+        assert_eq!(app.len(), 2);
+        assert_eq!(app[0]["tag_name"], "v0.7.0-beta.1");
+        assert_eq!(
+            app.iter().find(|r| r["prerelease"] == false).unwrap()["tag_name"],
+            "0.6.3"
+        );
+    }
     #[test]
     fn test_version_comparison() {
         assert!(is_newer_version("1.0.1", "1.0.0"));
