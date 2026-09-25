@@ -1,0 +1,18 @@
+[package]
+name = "streamline-sdk-audit"
+version = "0.1.0"
+edition = "2021"
+publish = false
+default-run = "streamline-sdk-audit"
+license = "GPL-3.0"
+
+# Deliberately independent from the Tauri application and future injected DLL.
+[workspace]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"

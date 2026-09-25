@@ -1,0 +1,43 @@
+[package]
+name = "streamline-fg"
+version = "0.1.0"
+edition = "2021"
+publish = false
+default-run = "streamline-layer-probe"
+autobins = false
+license = "GPL-3.0"
+
+[workspace]
+
+# Preserve installed artifact names and Vulkan ABI while separating source roles.
+[[bin]]
+name = "streamline-layer-probe"
+path = "src/main.rs"
+
+[[bin]]
+name = "streamline-fg-diagnostics"
+path = "src/diagnostics/main.rs"
+required-features = ["diagnostics"]
+
+[lib]
+name = "streamline_probe_layer"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ash = "0.38"
+dunce = "1"
+libloading = "0.8"
+serde_json = "1"
+sha2 = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_UI_WindowsAndMessaging"] }
+
+[features]
+sdk-bridge = []
+diagnostics = ["sdk-bridge"]
+
+[build-dependencies]
+cc = "1"
+serde_json = "1"
+sha2 = "0.10"
