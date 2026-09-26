@@ -5,23 +5,76 @@ import { useConfigStore } from '@/stores/ConfigStore'
 import { updateSetting } from '@/utils/tauri'
 import { mdiCheckCircleOutline, mdiAlertCircleOutline, mdiClockOutline, mdiLayersOutline } from '@mdi/js'
 import type { GraphicsApi } from '@/utils/graphics'
-import { detectStreamlineFg, operateStreamlineFg, type FgCheck, type FgPreflight } from '@/utils/streamlineFg'
+import { detectStreamlineFg, operateStreamlineFg, liveStreamlineFg, type FgLive, type FgCheck, type FgPreflight } from '@/utils/streamlineFg'
 
 const props = defineProps<{ executable: string; api: GraphicsApi; disabled: boolean }>()
 const configStore = useConfigStore()
 const savingNvof = ref(false)
 const nvofError = ref('')
+const srFeedback = ref('自动保存；连接专用启动的游戏后实时应用。')
+const srPending = ref(0)
+let srDeadline = 0
+function receiveLive(value: FgLive) {
+  if (!srPending.value) return
+  if (value.connected && value.fresh && (value.sr?.appliedRevision ?? 0) >= srPending.value) {
+    srPending.value = 0
+    srFeedback.value = value.sr?.active ? 'SR 已生效。' : `SR ${value.sr?.reason ?? '未运行'}`
+  } else if (Date.now() > srDeadline) {
+    srPending.value = 0
+    srFeedback.value = '已保存，但尚未收到生效确认。请回到游戏恢复画面后查看运行状态。'
+  }
+}
 const nvofEnabled = computed(() => configStore.config.setting.other?.streamline_nvof ?? true)
+const srEnabled = computed(() => configStore.config.setting.other?.streamline_sr ?? false)
+const srMode = computed(() => configStore.config.setting.other?.streamline_sr_mode ?? 'quality')
+const srModes = [
+  { title: '质量 · 约 67% 输入', value: 'quality' },
+  { title: '均衡 · 约 58% 输入', value: 'balanced' },
+  { title: '性能 · 约 50% 输入', value: 'performance' },
+  { title: 'DLAA · 原尺寸输入', value: 'dlaa' },
+]
+type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nvof' | 'streamline_sr' | 'streamline_sr_mode'>>
 async function setNvof(value: boolean | null) {
-  if (value === null || savingNvof.value || !configStore.config.setting.other) return
+  if (value !== null) await saveGraphics({ streamline_nvof: value })
+}
+async function setSr(value: boolean | null) {
+  if (value !== null) await saveGraphics({ streamline_sr: value })
+}
+async function setSrMode(value: unknown) {
+  if (value === 'quality' || value === 'balanced' || value === 'performance' || value === 'dlaa') {
+    await saveGraphics({ streamline_sr_mode: value })
+  }
+}
+async function saveGraphics(patch: GraphicsSettings) {
+  if (savingNvof.value || !configStore.config.setting.other) return
+  const executable = props.executable
   savingNvof.value = true
   nvofError.value = ''
   try {
     const setting = configStore.config.setting
-    await updateSetting({ ...setting, other: { ...setting.other, streamline_nvof: value } })
-    configStore.config.setting.other.streamline_nvof = value
+    await updateSetting({ ...setting, other: { ...setting.other, ...patch } })
+    Object.assign(configStore.config.setting.other, patch)
+    if ('streamline_sr' in patch || 'streamline_sr_mode' in patch) {
+      if (executable !== props.executable) return
+      srFeedback.value = '已保存，正在连接游戏…'
+      try {
+        const status = executable ? await liveStreamlineFg(executable) : { connected: false }
+        if (executable !== props.executable) return
+        if (!status.connected) {
+          srFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
+        } else {
+          const result = await liveStreamlineFg(executable, undefined, srEnabled.value ? srMode.value : 'off')
+          if (executable !== props.executable) return
+          srPending.value = result.sentSrRevision ?? 0
+          srDeadline = Date.now() + 10000
+          srFeedback.value = '已保存，正在应用到当前游戏…'
+        }
+      } catch (e) {
+        srFeedback.value = `已保存，实时应用失败：${e instanceof Error ? e.message : String(e)}`
+      }
+    }
   } catch (e) {
-    nvofError.value = `光流设置保存失败：${e instanceof Error ? e.message : String(e)}`
+    nvofError.value = `图形设置保存失败：${e instanceof Error ? e.message : String(e)}`
   } finally {
     savingNvof.value = false
   }
@@ -47,6 +100,8 @@ const checkedTime = computed(() => report.value ? new Date(report.value.checkedA
 // Clear old evidence immediately, including when an earlier request is still running.
 watch(() => [props.executable, props.api], () => {
   revision++
+  srPending.value = 0
+  srFeedback.value = '自动保存；连接专用启动的游戏后实时应用。'
   allowUnverified.value = false
   report.value = null
   error.value = ''
@@ -109,7 +164,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           size="24"
         />
         <h2 id="fg-title">
-          DLSS 帧生成
+          DLSS 画面增强
         </h2>
         <v-chip
           size="x-small"
@@ -258,6 +313,43 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         >
           本次运行记录：{{ cleanPath(session) }}
         </p>
+        <div class="fg-sr-setting">
+          <v-switch
+            :model-value="srEnabled"
+            label="SR 画面重建"
+            color="primary"
+            density="compact"
+            hide-details
+            inset
+            :loading="savingNvof"
+            :disabled="disabled || loading || savingNvof || !configStore.config.setting.other"
+            aria-describedby="fg-sr-description"
+            @update:model-value="setSr"
+          />
+          <p id="fg-sr-description">
+            实验版：先处理模拟器输出画面，再进行帧生成。文字和界面也会参与重建。
+          </p>
+          <div
+            v-if="srEnabled"
+            class="fg-sr-options"
+          >
+            <v-select
+              :model-value="srMode"
+              :items="srModes"
+              label="重建模式"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :disabled="disabled || loading || savingNvof"
+              @update:model-value="setSrMode"
+            />
+            <p>{{ srMode === 'dlaa' ? '以窗口原尺寸处理，不缩小输入。' : '将窗口画面缩小到 SDK 建议尺寸，再重建回窗口尺寸。' }} 不降低模拟器内部渲染分辨率，不保证提升帧率。</p>
+            <p>建议保留 NVIDIA 光流辅助；不可用时逐帧重置重建历史。实际输入尺寸和执行结果写入本次运行记录。</p>
+          </div>
+          <p class="fg-motion-timing">
+            {{ srFeedback }} 切换模式可能短暂停顿，实际运行状态见下方。
+          </p>
+        </div>
         <div class="fg-motion-setting">
           <v-switch
             :model-value="nvofEnabled"
@@ -311,7 +403,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             :disabled="!canUse || disabled || loading || savingNvof"
             @click="operate('launch')"
           >
-            以 FG 启动
+            {{ srEnabled ? '以 SR + FG 启动' : '以 FG 启动' }}
           </v-btn>
           <v-btn
             v-if="report && report.installationState !== 'unmanaged'"
@@ -324,7 +416,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         </div>
       </div>
     </div>
-    <StreamlineFgLive :executable="executable" />
+    <StreamlineFgLive
+      :executable="executable"
+      @status="receiveLive"
+    />
     <div class="fg-footer">
       <span>安装：{{ report?.installationState === 'installed' ? '已安装' : report?.installationState === 'damaged' ? '需检查' : '未安装' }}</span>
       <span>仅专用启动生效</span>
@@ -448,6 +543,9 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-blockers { padding-left: 18px; }
 .fg-trial { margin-top: 12px; font-size: 13px; line-height: 1.7; padding: 12px; background: rgba(var(--v-theme-warning), .09); border-radius: 8px; }
 .fg-error { color: rgb(var(--v-theme-error)); overflow-wrap: anywhere; }
+.fg-sr-setting { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
+.fg-sr-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); margin-top: 6px; }
+.fg-sr-options { display: grid; gap: 10px; margin: 16px 0 12px; }
 .fg-motion-setting { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
 .fg-motion-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); }
 .fg-motion-setting .fg-motion-timing { margin-top: 6px; }

@@ -61,3 +61,14 @@ mod tests {
         assert!(expected_hash(&manifest, "../sl.interposer.dll").is_err());
     }
 }
+
+pub const SR_PLUGINS: &[&str] = &["sl.dlss.dll", "nvngx_dlss.dll"];
+pub fn verify_sr(path: &Path, name: &str) -> Result<String> {
+    let manifest: Value = serde_json::from_str(include_str!("../sdk-route/sr-runtime.json"))?;
+    let expected = expected_hash(&manifest, name)?;
+    let actual = hash(path)?;
+    if actual != expected {
+        return Err(format!("SR runtime hash mismatch: {}", path.display()).into());
+    }
+    Ok(actual)
+}

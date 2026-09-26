@@ -220,8 +220,9 @@ pub(super) unsafe fn run(
         selection.ok_or("no NVIDIA family meeting disjoint queue requirements")?;
     let supported = *sdk.get::<Address>(b"slIsFeatureSupported\0")? as *mut c_void;
     if !route_requested {
-        let support: Vec<_> = [1000, 3, 4]
-            .into_iter()
+        let support: Vec<_> = requirements
+            .iter()
+            .map(|r| r["feature"].as_u64().unwrap() as u32)
             .map(|id| {
                 json!({
                     "feature": id, "result": probe_sl_supported(supported, id, physical.as_raw())
@@ -247,6 +248,9 @@ pub(super) unsafe fn run(
             }
         }
     }
+    // DLSS advertises both historical variants. Vulkan forbids enabling EXT
+    // buffer_device_address together with its KHR/core replacement.
+    device_ext.retain(|name| name.as_c_str() != c"VK_EXT_buffer_device_address");
     let available = context
         .instance
         .enumerate_device_extension_properties(physical)?;
@@ -440,8 +444,7 @@ pub(super) unsafe fn run(
         return Err(format!("slSetVulkanInfo failed: {set_result}").into());
     }
     if route_requested {
-        let support: Vec<_> = [1000, 3, 4]
-            .into_iter()
+        let support: Vec<_> = requirements.iter().map(|r| r["feature"].as_u64().unwrap() as u32)
             .map(|id| {
                 json!({
                     "feature": id, "result": probe_sl_supported(supported, id, sdk_physical.as_raw())
@@ -455,6 +458,39 @@ pub(super) unsafe fn run(
         if support.iter().any(|s| s["result"] != 0) {
             return Err("SDK adapter support check failed".into());
         }
+    }
+    if std::env::var("NS_STREAMLINE_PROBE_SR").as_deref() == Ok("1") {
+        phase(20);
+        crate::sdk_sr::exercise(session, sdk, &context.instance, physical, device, family)?;
+        device.device_wait_idle()?;
+        let shutdown = context.shutdown;
+        context.shutdown = std::ptr::null_mut();
+        let result = probe_sl_shutdown(shutdown);
+        write_json(
+            &session.join("sdk-shutdown.json"),
+            &json!({"result": result}),
+        )?;
+        if result != 0 {
+            std::process::abort();
+        }
+        drop(context);
+        let log = std::fs::read_to_string(root_session.join("sl.log"))?;
+        if log.lines().any(|line| line.contains("[error]")) {
+            return Err("SDK runtime error during SR experiment; inspect sl.log".into());
+        }
+        if live() != 0 {
+            return Err("SR dispatch maps leaked".into());
+        }
+        write_json(
+            &session.join("sr-session.json"),
+            &json!({
+                "completed": true, "shutdown_result": result, "live_dispatch_objects": 0,
+                "sdk_errors": 0,
+                "sdk_warnings": log.lines().filter(|line| line.contains("[warn]")).collect::<Vec<_>>(),
+                "game_integration_verified": false, "image_quality_verified": false
+            }),
+        )?;
+        return Ok(());
     }
     let gdpa = *sdk.get::<vk::PFN_vkGetDeviceProcAddr>(b"vkGetDeviceProcAddr\0")?;
     if route_requested {

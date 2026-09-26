@@ -18,6 +18,7 @@ struct Requirements {
 }
 #[link(name = "streamline_query_bridge", kind = "static")]
 unsafe extern "C" {
+    fn probe_sl_init_sr(function: *mut c_void, directory: *const u16) -> i32;
     fn probe_sl_init(function: *mut c_void, directory: *const u16) -> i32;
     fn probe_sl_requirements(function: *mut c_void, feature: u32, out: *mut Requirements) -> i32;
     pub(super) fn probe_sl_shutdown(function: *mut c_void) -> i32;
@@ -102,6 +103,17 @@ unsafe fn run_child(device_probe: bool) -> Result<()> {
             std::env::var("NS_STREAMLINE_PROBE_SDK_ROUTE").as_deref() == Ok("1"),
         )?;
     }
+    let sr = std::env::var("NS_STREAMLINE_PROBE_SR").as_deref() == Ok("1");
+    if sr {
+        for name in crate::sdk_sr::PLUGINS {
+            crate::sdk_sr::verify_plugin(&session.join(name), name)?;
+        }
+    }
+    let features: &[(u32, &str)] = if sr {
+        &[(0, "DLSS-SR")]
+    } else {
+        &[(1000, "DLSS-G"), (3, "Reflex"), (4, "PCL")]
+    };
     let expected = PathBuf::from(
         std::env::var_os("NS_STREAMLINE_PROBE_EXE").ok_or("missing expected executable")?,
     )
@@ -156,7 +168,11 @@ unsafe fn run_child(device_probe: bool) -> Result<()> {
             std::fs::create_dir(&session)?;
         }
         let modules_before_init = module_snapshot();
-        let init_result = probe_sl_init(init, directory.as_ptr());
+        let init_result = if sr {
+            probe_sl_init_sr(init, directory.as_ptr())
+        } else {
+            probe_sl_init(init, directory.as_ptr())
+        };
         let mut guard = Shutdown(if init_result == 0 {
             shutdown
         } else {
@@ -169,7 +185,7 @@ unsafe fn run_child(device_probe: bool) -> Result<()> {
                 "preferences_size": abi[1], "preferences_version": abi[2],
                 "requirements_size": abi[3], "requirements_version": abi[4],
                 "bridge_requirements_size": abi[5], "vulkan_info_size": abi[6], "vulkan_info_version": abi[7],
-                "feature_ids": [1000,3,4], "preference_flags": 133,
+                "feature_ids": features.iter().map(|v| v.0).collect::<Vec<_>>(), "preference_flags": 133,
                 "application_id": 0, "engine_version": "NSEmu-P0-Probe-0.1",
                 "project_id": "fd3bfdaf-72d1-48b9-a4ae-4dcb031c535b",
                 "ota_enabled": false, "vulkan_objects_created": false, "fg_enabled": false
@@ -181,7 +197,7 @@ unsafe fn run_child(device_probe: bool) -> Result<()> {
 
         let mut results = Vec::new();
         let mut all_ok = true;
-        for (feature, label) in [(1000, "DLSS-G"), (3, "Reflex"), (4, "PCL")] {
+        for &(feature, label) in features {
             let mut req: Requirements = std::mem::zeroed();
             let result = probe_sl_requirements(query, feature, &mut req);
             all_ok &= result == 0;

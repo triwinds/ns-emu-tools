@@ -297,7 +297,14 @@ pub fn launch(
         .arg(&bundle)
         .arg("--session")
         .arg(stage.path().join("run"));
-    if crate::config::CONFIG.read().setting.other.streamline_nvof {
+    let graphics_settings = crate::config::CONFIG.read().setting.other.clone();
+    cmd.arg("--sr-mode")
+        .arg(if graphics_settings.streamline_sr {
+            graphics_settings.streamline_sr_mode.as_str()
+        } else {
+            "off"
+        });
+    if graphics_settings.streamline_nvof {
         cmd.arg("--nvof");
     }
     if let Some(path) = game {
@@ -434,7 +441,11 @@ fn read_live_json(path: &Path) -> Result<serde_json::Value, String> {
     }
     serde_json::from_slice(&fs::read(path).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
 }
-pub fn live(exe: PathBuf, enabled: Option<bool>) -> Result<serde_json::Value, String> {
+pub fn live(
+    exe: PathBuf,
+    enabled: Option<bool>,
+    sr_mode: Option<String>,
+) -> Result<serde_json::Value, String> {
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
     let exe = exe.canonicalize().map_err(|e| e.to_string())?;
@@ -477,22 +488,43 @@ pub fn live(exe: PathBuf, enabled: Option<bool>) -> Result<serde_json::Value, St
         v["active"] = false.into();
         v["fresh"] = false.into();
     }
-    if let Some(on) = enabled {
+    if enabled.is_some() || sr_mode.is_some() {
         if !connected {
             return Err("游戏未连接，请通过工具箱重新启动游戏".into());
         }
         let command = run.join("control.json");
-        let previous = if command.exists() {
-            read_live_json(&command)?["revision"].as_u64().unwrap_or(0)
+        let mut control = if command.exists() {
+            read_live_json(&command)?
         } else {
-            0
+            serde_json::json!({})
         };
-        let revision = now.max(previous.saturating_add(1));
-        atomic_json(
-            &command,
-            &serde_json::json!({"enabled":on,"revision":revision}),
-        )?;
-        v["sentRevision"] = revision.into();
+        if let Some(mode) = sr_mode {
+            if !matches!(
+                mode.as_str(),
+                "off" | "quality" | "balanced" | "performance" | "dlaa"
+            ) {
+                return Err("无效的 SR 模式".into());
+            }
+            if v["srLiveSupported"] != true {
+                return Err("当前会话不支持 SR 实时切换，请更新组件并重新专用启动一次".into());
+            }
+            let revision = now.max(
+                control["srRevision"]
+                    .as_u64()
+                    .unwrap_or(0)
+                    .saturating_add(1),
+            );
+            control["srMode"] = mode.into();
+            control["srRevision"] = revision.into();
+            v["sentSrRevision"] = revision.into();
+        }
+        if let Some(on) = enabled {
+            let revision = now.max(control["revision"].as_u64().unwrap_or(0).saturating_add(1));
+            control["enabled"] = on.into();
+            control["revision"] = revision.into();
+            v["sentRevision"] = revision.into();
+        }
+        atomic_json(&command, &control)?;
     }
     Ok(v)
 }

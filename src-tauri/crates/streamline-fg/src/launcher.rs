@@ -17,12 +17,24 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut allow_unverified = false;
     let mut sdk_off = false;
     let mut fg = false;
+    let mut sr_mode = String::from("off");
     let mut reflex_ab = false;
     let mut bounded = false;
     let mut reference_params = false;
     let mut motion_estimate = false;
     let mut args = args.iter();
     while let Some(flag) = args.next() {
+        if flag == "--sr-mode" {
+            let value = args
+                .next()
+                .and_then(|s| s.to_str())
+                .ok_or("missing SR mode")?;
+            if !["off", "quality", "balanced", "performance", "dlaa"].contains(&value) {
+                return Err("invalid SR mode".into());
+            }
+            sr_mode = value.to_owned();
+            continue;
+        }
         if flag == "--nvof" || flag == "--estimate-motion" {
             motion_estimate = true;
             continue;
@@ -83,6 +95,9 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         *slot = Some(path);
     }
+    if sr_mode != "off" && !fg {
+        return Err("SR currently requires --fg presentation integration".into());
+    }
     if motion_estimate && !fg {
         return Err("--nvof requires --fg".into());
     }
@@ -140,6 +155,13 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     if sdk_off {
         let runtime = runtime.ok_or("missing --runtime")?;
         fs::create_dir(&runtime_dest)?;
+        if fg {
+            for name in crate::runtime::SR_PLUGINS {
+                crate::runtime::verify_sr(&runtime.join(name), name)?;
+                fs::copy(runtime.join(name), runtime_dest.join(name))?;
+                crate::runtime::verify_sr(&runtime_dest.join(name), name)?;
+            }
+        }
         for name in crate::runtime::PLUGINS {
             crate::runtime::verify_runtime(&runtime.join(name), name, true)?;
             fs::copy(runtime.join(name), runtime_dest.join(name))?;
@@ -175,6 +197,8 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_TARGET_SDK", if sdk_off { "1" } else { "0" })
         .env("NS_STREAMLINE_TARGET_RUNTIME", &runtime_dest)
         .env("NS_STREAMLINE_TARGET_FG", if fg { "1" } else { "0" })
+        .env("NS_STREAMLINE_TARGET_SR_MODE", &sr_mode)
+        .env("NS_STREAMLINE_TARGET_SR_READY", if fg { "1" } else { "0" })
         .env(
             "NS_STREAMLINE_TARGET_REFLEX_AB",
             if reflex_ab { "1" } else { "0" },
@@ -200,7 +224,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"fg_requested":fg,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"fg_requested":fg,"sr_mode":sr_mode,"sr_input":"present_source_override","reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     if hash(&executable)? != target_hash {
         return Err("target changed during launch preparation; inspect it again".into());

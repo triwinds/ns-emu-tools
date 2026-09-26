@@ -3,6 +3,11 @@ use super::*;
 use crate::fg_api::*;
 use std::{sync::Arc, time::Instant};
 struct Chain {
+    sr: Option<crate::target_sr::Sr>,
+    sr_failed: bool,
+    sr_allowed: bool,
+    sr_mode: u32,
+    sr_revision: u64,
     extent: vk::Extent2D,
     device: ash::Device,
     count: u32,
@@ -46,15 +51,24 @@ pub(super) unsafe fn created(
     queue_family_count: u32,
     instance: u64,
     hwnd: isize,
+    sr_allowed: bool,
 ) -> std::result::Result<(), String> {
     if format != vk::Format::B8G8R8A8_UNORM || queue_family_count > 1 {
         return Err("unsupported FG swapchain format/sharing".into());
     }
     crate::target_window::install(hwnd)?;
+    if crate::target_sr::available() && !sr_allowed {
+        crate::live::sr(json!({"active":false,"reason":"当前显示表面不支持 SR 读写"}));
+    }
     chains().insert(
         handle.as_raw(),
         Arc::new(Mutex::new(Chain {
             extent,
+            sr: None,
+            sr_failed: !sr_allowed,
+            sr_allowed,
+            sr_mode: 0,
+            sr_revision: 0,
             device: crate::target_runtime::sdk_device(device)?,
             count,
             instance,
@@ -108,6 +122,7 @@ unsafe fn guides(
             chain.extent,
             motion_format(),
             vk::ImageUsageFlags::SAMPLED
+                | vk::ImageUsageFlags::TRANSFER_SRC
                 | vk::ImageUsageFlags::TRANSFER_DST
                 | if crate::target_nvof::enabled() {
                     vk::ImageUsageFlags::STORAGE
@@ -236,20 +251,85 @@ pub(super) unsafe fn present(
             Some("user_disabled")
         });
         let on = off_reason.is_none();
-        if chain.resources.is_none() && on {
+        let (sr_mode, sr_revision) = crate::live::sr_requested();
+        if sr_mode != chain.sr_mode || sr_revision != chain.sr_revision {
+            // Previous SR submission and FG input consumption have completed.
+            device.device_wait_idle()?;
+            drop(chain.sr.take());
+            chain.sr_mode = sr_mode;
+            chain.sr_revision = sr_revision;
+            chain.sr_failed = !chain.sr_allowed;
+        }
+        let sr_requested = crate::target_sr::available() && sr_mode != 0 && !chain.sr_failed;
+        if sr_mode == 0 {
+            crate::live::sr(json!({"active":false,"reason":"已关闭"}));
+        } else if !chain.sr_allowed {
+            crate::live::sr(json!({"active":false,"reason":"当前显示表面不支持 SR 读写"}));
+        }
+        if chain.resources.is_none() && (on || sr_requested) {
             chain.resources = Some(guides(d, &device, &mut chain, queue, handle)?);
         }
         let mut flow_ready = None;
         let mut reset = !chain.was_on;
-        if on {
+        let mut sr_reset = chain.sr.is_none();
+        if on || sr_requested {
             if let Some(resources) = chain.resources {
                 if let Some(flow) = chain.flow.as_mut() {
-                    let (ready, guidance_reset) =
-                        flow.run(queue, &*info, resources[1], reset, frame)?;
+                    let (ready, guidance_reset) = flow.run(
+                        queue,
+                        &*info,
+                        resources[1],
+                        if sr_requested { sr_reset } else { reset },
+                        frame,
+                    )?;
                     flow_ready = Some(ready);
                     reset |= guidance_reset;
+                    sr_reset |= guidance_reset;
                 }
             }
+        }
+        if sr_requested && chain.sr.is_none() {
+            let parent =
+                instance(vk::Instance::from_raw(chain.instance)).ok_or("missing SR instance")?;
+            let inst = ash::Instance::load_with(
+                |name| {
+                    (parent.gipa)(parent.handle, name.as_ptr())
+                        .map_or(std::ptr::null(), |f| f as *const _)
+                },
+                parent.handle,
+            );
+            match crate::target_sr::Sr::new(
+                &inst,
+                d.physical,
+                &device,
+                handle,
+                chain.extent,
+                sr_mode,
+            ) {
+                Ok(sr) => chain.sr = Some(sr),
+                Err(error) => {
+                    chain.sr_failed = true;
+                    crate::live::sr(json!({"active":false,"reason":error.to_string()}));
+                    trace::event!("target_sr_fallback", json!({"reason":error.to_string()}));
+                }
+            }
+        }
+        let sr_motion = if flow_ready.is_some() {
+            chain.resources.map(|r| r[1])
+        } else {
+            None
+        };
+        let mut sr_completed = false;
+        if let Some(sr) = chain.sr.as_mut() {
+            let waits = flow_ready.into_iter().collect::<Vec<_>>();
+            let input = if waits.is_empty() {
+                *info
+            } else {
+                (*info).wait_semaphores(&waits)
+            };
+            sr.run(queue, &input, token, sr_motion, sr_reset)?;
+            flow_ready = None;
+            sr_completed = true;
         }
         if let Some(resources) = chain.resources {
             checked(
@@ -278,7 +358,9 @@ pub(super) unsafe fn present(
         let options_us = options_started.elapsed().as_micros();
         let present_started = Instant::now();
         let flow_waits = flow_ready.into_iter().collect::<Vec<_>>();
-        let forwarded = if flow_waits.is_empty() {
+        let forwarded = if sr_completed {
+            (*info).wait_semaphores(&[])
+        } else if flow_waits.is_empty() {
             *info
         } else {
             (*info).wait_semaphores(&flow_waits)
@@ -314,6 +396,7 @@ pub(super) unsafe fn present(
             crate::target_window::active(false);
         }
         chain.was_on = on;
+        crate::live::sr_applied(sr_mode, sr_revision);
         crate::live::frame(on, off_reason, control_revision);
         trace::event!(
             "target_fg_frame",
@@ -355,6 +438,8 @@ pub(super) unsafe fn after_destroy(handle: vk::Device, swapchain: vk::SwapchainK
         if device.device_wait_idle().is_err() {
             std::process::abort()
         }
+        drop(chain.sr.take());
+        crate::live::sr(json!({"active":false,"reason":"waiting"}));
         drop(chain.flow.take());
         if let Some(resources) = chain.resources {
             let api = crate::target_runtime::fg_api().unwrap();

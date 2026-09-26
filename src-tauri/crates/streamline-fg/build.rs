@@ -16,6 +16,7 @@ fn main() {
     }
     println!("cargo:rerun-if-env-changed=STREAMLINE_SDK_DIR");
     println!("cargo:rerun-if-changed=bridge/query.cpp");
+    println!("cargo:rerun-if-changed=bridge/sr.cpp");
     println!("cargo:rerun-if-changed=sdk/baseline.json");
     if env::var_os("CARGO_FEATURE_SDK_BRIDGE").is_none() {
         return;

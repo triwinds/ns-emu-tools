@@ -39,12 +39,14 @@ pub fn run() -> Result<()> {
         return unsafe { child(args[1] == "layered") };
     }
     if args.len() == 1 && args[0] == "--help" {
-        println!("streamline-fg-diagnostics [--sdk-requirements | --sdk-device | --sdk-idle-capture | --sdk-route | --sdk-route-repeat | --sdk-fg] --layer <absolute probe DLL> --interposer <absolute frozen sl.interposer.dll> --session <new absolute directory>\nDefault: uninitialized baseline/layered experiment. Optional sdk-bridge feature: --sdk-requirements queries before Vulkan creation; --sdk-device tests initialized idle dispatch. --sdk-idle-capture tests scoped next-address selection for idle only. --sdk-route-repeat attempts 20 same-process SDK lifecycles and stops on the first failure. Only --sdk-fg enables FG in the diagnostic host. ReShade is disabled only in these children. No registry changes. Sessions are never overwritten.");
+        println!("streamline-fg-diagnostics [--sdk-requirements | --sdk-device | --sdk-idle-capture | --sdk-route | --sdk-route-repeat | --sdk-fg | --sdk-sr] --layer <absolute probe DLL> --interposer <absolute frozen sl.interposer.dll> --session <new absolute directory>\nDefault: uninitialized baseline/layered experiment. Optional sdk-bridge feature: --sdk-requirements queries before Vulkan creation; --sdk-device tests initialized idle dispatch. --sdk-idle-capture tests scoped next-address selection for idle only. --sdk-route-repeat attempts 20 same-process SDK lifecycles and stops on the first failure. --sdk-sr evaluates native Vulkan DLSS on synthetic inputs and reads back output. Only --sdk-fg enables FG in the diagnostic host. ReShade is disabled only in these children. No registry changes. Sessions are never overwritten.");
         return Ok(());
     }
+    let sdk_sr = args.first().is_some_and(|a| a == "--sdk-sr");
     let sdk_fg = args.first().is_some_and(|a| a == "--sdk-fg");
     let sdk_repeat = args.first().is_some_and(|a| a == "--sdk-route-repeat");
-    let sdk_route = sdk_fg || sdk_repeat || args.first().is_some_and(|a| a == "--sdk-route");
+    let sdk_route =
+        sdk_sr || sdk_fg || sdk_repeat || args.first().is_some_and(|a| a == "--sdk-route");
     let idle_capture = args.first().is_some_and(|a| a == "--sdk-idle-capture");
     let sdk_device = sdk_route || idle_capture || args.first().is_some_and(|a| a == "--sdk-device");
     let requirements_only = sdk_device || args.first().is_some_and(|a| a == "--sdk-requirements");
@@ -112,6 +114,20 @@ pub fn run() -> Result<()> {
             );
         }
     }
+    if sdk_sr {
+        for name in crate::sdk_sr::PLUGINS {
+            let source = interposer
+                .parent()
+                .ok_or("missing runtime directory")?
+                .join(name);
+            crate::sdk_sr::verify_plugin(&source, name)?;
+            fs::copy(source, session.join(name))?;
+            staged_hashes.insert(
+                name.to_string(),
+                json!(crate::sdk_sr::verify_plugin(&session.join(name), name)?),
+            );
+        }
+    }
     let manifests = session.join("manifests");
     fs::create_dir(&manifests)?;
     write_json(
@@ -158,7 +174,7 @@ pub fn run() -> Result<()> {
     }
     write_json(
         &session.join("inputs.json"),
-        &json!({"loader": loader, "loader_sha256": loader_hash, "source_interposer": interposer, "interposer_sha256": interposer_hash, "layer_sha256": layer_hash, "host_sha256": host_hash, "staged_binary_hashes": staged_hashes, "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b", "parent_environment": environment, "child_layer_path": layer_paths.to_string_lossy(), "child_disable": disable, "sdk_initialized_at_launch": false, "requested_sdk_device_probe": sdk_device, "requested_sdk_route": sdk_route, "requested_fg_experiment":sdk_fg, "requested_idle_capture": idle_capture, "requested_sdk_requirements": requirements_only, "fg_enabled": false}),
+        &json!({"loader": loader, "loader_sha256": loader_hash, "source_interposer": interposer, "interposer_sha256": interposer_hash, "layer_sha256": layer_hash, "host_sha256": host_hash, "staged_binary_hashes": staged_hashes, "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b", "parent_environment": environment, "child_layer_path": layer_paths.to_string_lossy(), "child_disable": disable, "sdk_initialized_at_launch": false, "requested_sdk_device_probe": sdk_device, "requested_sdk_route": sdk_route, "requested_fg_experiment":sdk_fg, "requested_sr_experiment":sdk_sr, "requested_idle_capture": idle_capture, "requested_sdk_requirements": requirements_only, "fg_enabled": false}),
     )?;
     let modes: &[&str] = if requirements_only {
         if sdk_device {
@@ -197,6 +213,7 @@ pub fn run() -> Result<()> {
                 if sdk_repeat { "1" } else { "0" },
             )
             .env("NS_STREAMLINE_PROBE_FG", if sdk_fg { "1" } else { "0" })
+            .env("NS_STREAMLINE_PROBE_SR", if sdk_sr { "1" } else { "0" })
             .env("NS_STREAMLINE_PROBE_EXE", &executable)
             .env("NS_STREAMLINE_PROBE_SESSION", &session)
             .env("NS_STREAMLINE_PROBE_DLL", &layer)

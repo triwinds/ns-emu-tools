@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { liveStreamlineFg, type FgLive, type FgSample } from '@/utils/streamlineFg'
 const props = defineProps<{ executable: string }>()
+const emit = defineEmits<{ status: [value: FgLive] }>()
 const live = ref<FgLive>({ connected: false })
 const error = ref('')
 const pending = ref(0)
@@ -19,6 +20,7 @@ let generation = 0
 let timer: ReturnType<typeof setTimeout> | undefined
 let disposed = false
 let deadline = 0
+const srModeLabel = computed(() => ({ 1: '性能', 2: '均衡', 3: '质量', 6: 'DLAA' })[live.value.sr?.mode as 1 | 2 | 3 | 6] ?? '')
 const samples = computed(() => live.value.samples ?? [])
 const current = computed(() => samples.value[samples.value.length - 1])
 const inspected = computed(() => selected.value === null ? current.value : samples.value[selected.value])
@@ -51,10 +53,11 @@ async function poll(token: number) {
     const result = await liveStreamlineFg(props.executable)
     if (disposed || token !== generation) return
     live.value = result
+    emit('status', result)
     if (pending.value && (result.appliedRevision ?? 0) >= pending.value) { pending.value = 0; error.value = '' }
     if (pending.value && Date.now() > deadline) { pending.value = 0; error.value = '设置尚未确认。请回到游戏恢复画面后检查开关状态。' }
   } catch (e) {
-    if (token === generation) { live.value = { connected: false }; error.value = String(e) }
+    if (token === generation) { live.value = { connected: false }; emit('status', live.value); error.value = String(e) }
   } finally {
     if (!disposed && token === generation) timer = setTimeout(() => poll(token), 1000)
   }
@@ -123,7 +126,12 @@ onBeforeUnmount(() => { disposed = true; generation++; clearTimeout(timer); resi
       通过工具箱的“以 FG 启动”入口打开模拟器后，可在这里实时切换。
     </p>
     <div class="live-sr">
-      <span>SR 超分辨率</span><span>尚未接入</span>
+      <span>SR 画面重建</span>
+      <span v-if="live.connected && live.fresh && live.sr?.active">
+        {{ srModeLabel }}运行中 · {{ live.sr.input?.join(' × ') }} → {{ live.sr.output?.join(' × ') }}
+        · {{ live.sr.motion ? '光流辅助' : '逐帧重置' }}
+      </span>
+      <span v-else>{{ live.connected && live.fresh && live.sr?.reason && live.sr.reason !== 'waiting' ? '未生效：' + live.sr.reason : '未运行' }}</span>
     </div>
     <figure class="rate-chart">
       <figcaption>

@@ -543,6 +543,8 @@ mod target_fg;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_nvof;
 #[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_sr;
+#[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_window;
 
 #[no_mangle]

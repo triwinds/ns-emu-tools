@@ -30,6 +30,8 @@ export interface Setting {
 export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
   streamline_nvof: boolean
+  streamline_sr: boolean
+  streamline_sr_mode: 'quality' | 'balanced' | 'performance' | 'dlaa'
 }
 
 export interface UiSetting {

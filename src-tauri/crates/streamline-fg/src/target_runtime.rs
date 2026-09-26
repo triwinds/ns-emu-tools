@@ -22,6 +22,7 @@ struct Requirements {
 }
 #[link(name = "streamline_query_bridge", kind = "static")]
 unsafe extern "C" {
+    fn probe_sl_init_combined(function: *mut c_void, directory: *const u16) -> i32;
     fn probe_sl_init(function: *mut c_void, directory: *const u16) -> i32;
     fn probe_sl_requirements(function: *mut c_void, feature: u32, output: *mut Requirements)
         -> i32;
@@ -97,10 +98,18 @@ unsafe fn initialize() -> Result<Option<Arc<Sdk>>> {
             compute: 0,
         };
         require(
-            probe_sl_init(address(&sdk, b"slInit\0")?, sdk._directory.as_ptr()),
+            if crate::target_sr::available() {
+                probe_sl_init_combined(address(&sdk, b"slInit\0")?, sdk._directory.as_ptr())
+            } else {
+                probe_sl_init(address(&sdk, b"slInit\0")?, sdk._directory.as_ptr())
+            },
             "slInit",
         )?;
-        for feature in [1000, 3, 4] {
+        for &feature in if crate::target_sr::available() {
+            &[1000, 3, 4, 0][..]
+        } else {
+            &[1000, 3, 4][..]
+        } {
             let mut req: Requirements = std::mem::zeroed();
             require(
                 probe_sl_requirements(
@@ -157,6 +166,8 @@ unsafe fn initialize() -> Result<Option<Arc<Sdk>>> {
                 }
             }
         }
+        sdk.device_ext
+            .retain(|name| name.as_c_str() != c"VK_EXT_buffer_device_address");
         sdk.instance_ext.extend([
             ash::khr::get_surface_capabilities2::NAME.to_owned(),
             ash::ext::surface_maintenance1::NAME.to_owned(),
@@ -461,6 +472,7 @@ pub(super) unsafe fn destroy_device(device: vk::Device) {
     if ACTIVE.load(std::sync::atomic::Ordering::SeqCst) != device.as_raw() {
         return;
     }
+    crate::live::shutdown();
     let sdk = SDK.get().unwrap();
     let function = address(sdk, b"slShutdown\0").unwrap_or_else(|_| std::process::abort());
     let result = probe_sl_shutdown(function);
@@ -580,6 +592,7 @@ pub(super) unsafe fn create_swapchain(
             .library
             .get::<vk::PFN_vkCreateSwapchainKHR>(b"vkCreateSwapchainKHR\0")
             .map_err(|e| e.to_string())?;
+        let mut sr_allowed = false;
         let mut copy = (*info).surface(vk::SurfaceKHR::from_raw(surface.shadow));
         if crate::target_fg::enabled() {
             let dispatch =
@@ -605,7 +618,7 @@ pub(super) unsafe fn create_swapchain(
                 return Err("Immediate presentation required for FG".into());
             }
             copy.present_mode = vk::PresentModeKHR::IMMEDIATE;
-            if crate::target_nvof::enabled() {
+            if crate::target_nvof::enabled() || crate::target_sr::available() {
                 let caps_query: vk::PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR =
                     std::mem::transmute(
                         (dispatch.gipa)(
@@ -618,6 +631,19 @@ pub(super) unsafe fn create_swapchain(
                 caps_query(physical, (*info).surface, &mut caps)
                     .result()
                     .map_err(|e| e.to_string())?;
+                if crate::target_sr::available() {
+                    let usage =
+                        vk::ImageUsageFlags::TRANSFER_SRC | vk::ImageUsageFlags::TRANSFER_DST;
+                    sr_allowed = caps.supported_usage_flags.contains(usage);
+                    if sr_allowed {
+                        copy.image_usage |= usage;
+                    } else {
+                        trace::event!(
+                            "target_sr_fallback",
+                            json!({"reason":"surface lacks SR transfer usage"})
+                        );
+                    }
+                }
                 if !caps
                     .supported_usage_flags
                     .contains(vk::ImageUsageFlags::TRANSFER_SRC)
@@ -643,6 +669,7 @@ pub(super) unsafe fn create_swapchain(
                 copy.queue_family_index_count,
                 surface.instance,
                 surface.hwnd,
+                sr_allowed,
             )?;
         }
 
@@ -683,4 +710,8 @@ pub(super) unsafe fn sdk_device(handle: vk::Device) -> Result<ash::Device> {
         |name| gdpa(handle, name.as_ptr()).map_or(std::ptr::null(), |f| f as *const _),
         handle,
     ))
+}
+
+pub(super) unsafe fn sr_function(name: &[u8]) -> Result<*mut c_void> {
+    address(SDK.get().ok_or("SDK missing")?, name)
 }

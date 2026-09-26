@@ -1,0 +1,14 @@
+{
+  "files": [
+    {
+      "name": "sl.dlss.dll",
+      "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c",
+      "source": "src-tauri/target/streamline-sdk-route-repro-v3/_artifacts/sl.dlss/Develop_x64/sl.dlss.dll"
+    },
+    {
+      "name": "nvngx_dlss.dll",
+      "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e",
+      "source": "D:/ryubing-dlss5-win-x64/dlss/nvngx_dlss.dll"
+    }
+  ]
+}

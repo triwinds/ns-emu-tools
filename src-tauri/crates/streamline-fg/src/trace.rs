@@ -74,7 +74,10 @@ pub fn record(name: &str, details: Value) {
             if verbose()
                 || !matches!(
                     name,
-                    "vkQueuePresentKHR" | "route_present_retired" | "target_fg_frame"
+                    "vkQueuePresentKHR"
+                        | "route_present_retired"
+                        | "target_fg_frame"
+                        | "target_sr_frame"
                 )
             {
                 let _ = file.flush();

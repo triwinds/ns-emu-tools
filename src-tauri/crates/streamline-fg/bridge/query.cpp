@@ -43,11 +43,13 @@ static bool copyNames(char (&dest)[64][128], uint32_t count, const char** source
     }
     return true;
 }
-extern "C" int32_t probe_sl_init(void* function, const wchar_t* directory) noexcept {
+static int32_t initFeatures(void* function, const wchar_t* directory, int sr) noexcept {
     if (!function || !directory) return -1000;
     try {
         // Stable storage: retained for the entire SDK session.
         static const sl::Feature features[] = {sl::kFeatureDLSS_G, sl::kFeatureReflex, sl::kFeaturePCL};
+        static const sl::Feature srFeatures[] = {sl::kFeatureDLSS};
+        static const sl::Feature combined[] = {sl::kFeatureDLSS_G, sl::kFeatureReflex, sl::kFeaturePCL, sl::kFeatureDLSS};
         static const wchar_t* paths[1];
         paths[0] = directory;
         sl::Preferences prefs;
@@ -55,8 +57,8 @@ extern "C" int32_t probe_sl_init(void* function, const wchar_t* directory) noexc
         prefs.numPathsToPlugins = 1;
         prefs.pathToLogsAndData = directory;
         prefs.logLevel = sl::LogLevel::eVerbose;
-        prefs.featuresToLoad = features;
-        prefs.numFeaturesToLoad = 3;
+        prefs.featuresToLoad = sr == 2 ? combined : sr ? srFeatures : features;
+        prefs.numFeaturesToLoad = sr == 2 ? 4 : sr ? 1 : 3;
         prefs.flags = sl::PreferenceFlags::eDisableCLStateTracking
                     | sl::PreferenceFlags::eUseManualHooking
                     | sl::PreferenceFlags::eUseFrameBasedResourceTagging;
@@ -66,6 +68,15 @@ extern "C" int32_t probe_sl_init(void* function, const wchar_t* directory) noexc
         prefs.projectId = "fd3bfdaf-72d1-48b9-a4ae-4dcb031c535b";
         return static_cast<int32_t>(reinterpret_cast<PFun_slInit*>(function)(prefs, sl::kSDKVersion));
     } catch (...) { return -1001; }
+}
+extern "C" int32_t probe_sl_init(void* function, const wchar_t* directory) noexcept {
+    return initFeatures(function, directory, false);
+}
+extern "C" int32_t probe_sl_init_combined(void* function, const wchar_t* directory) noexcept {
+    return initFeatures(function, directory, 2);
+}
+extern "C" int32_t probe_sl_init_sr(void* function, const wchar_t* directory) noexcept {
+    return initFeatures(function, directory, true);
 }
 extern "C" int32_t probe_sl_requirements(void* function, uint32_t feature, ProbeRequirements* out) noexcept {
     if (!function || !out) return -1000;
@@ -240,12 +251,12 @@ extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32
         if (referenceParameters()) {
             constants.motionVectorsInvalidValue = 0.0f;
             constants.orthographicProjection = sl::eFalse;
-            constants.motionVectorsDilated = sl::eFalse;
+            constants.motionVectorsDilated = estimateMotion() ? sl::eTrue : sl::eFalse;
             constants.motionVectorsJittered = sl::eFalse;
             constants.minRelativeLinearDepthObjectSeparation = 40.0f;
         }
         constants.cameraAspectRatio = float(inputs[0].width)/float(inputs[0].height);
-        constants.depthInverted = sl::eFalse; constants.cameraMotionIncluded = sl::eTrue;
+        constants.depthInverted = sl::eFalse; constants.cameraMotionIncluded = estimateMotion() ? sl::eTrue : sl::eFalse;
         constants.motionVectors3D = sl::eFalse; constants.reset = reset ? sl::eTrue : sl::eFalse;
         auto r = reinterpret_cast<PFun_slSetConstants*>(api->constants)(constants, frame, sl::ViewportHandle(0));
         if (r != sl::Result::eOk) return int32_t(r);
@@ -264,3 +275,5 @@ extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32
         return int32_t(reinterpret_cast<PFun_slSetTagForFrame*>(api->tags)(frame, sl::ViewportHandle(0), tags, 2, nullptr));
     } catch (...) { return -1001; }
 }
+// SR shares the fixed-width ABI definitions above; build as one translation unit.
+#include "sr.cpp"

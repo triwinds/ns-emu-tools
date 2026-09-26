@@ -133,25 +133,46 @@ pub(crate) unsafe fn texture_with_usage(
         None,
     )?;
     let req = device.get_image_memory_requirements(image);
-    let memory = device.allocate_memory(
-        &vk::MemoryAllocateInfo::default()
-            .allocation_size(req.size)
-            .memory_type_index(memory_type(
-                props,
-                req.memory_type_bits,
-                vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            )?),
-        None,
-    )?;
-    device.bind_image_memory(image, memory, 0)?;
-    let view = device.create_image_view(
+    let allocated = (|| -> Result<vk::DeviceMemory> {
+        Ok(device.allocate_memory(
+            &vk::MemoryAllocateInfo::default()
+                .allocation_size(req.size)
+                .memory_type_index(memory_type(
+                    props,
+                    req.memory_type_bits,
+                    vk::MemoryPropertyFlags::DEVICE_LOCAL,
+                )?),
+            None,
+        )?)
+    })();
+    let memory = match allocated {
+        Ok(memory) => memory,
+        Err(error) => {
+            device.destroy_image(image, None);
+            return Err(error);
+        }
+    };
+    if let Err(error) = device.bind_image_memory(image, memory, 0) {
+        device.destroy_image(image, None);
+        device.free_memory(memory, None);
+        return Err(error.into());
+    }
+    let view_result = device.create_image_view(
         &vk::ImageViewCreateInfo::default()
             .image(image)
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(format)
             .subresource_range(range()),
         None,
-    )?;
+    );
+    let view = match view_result {
+        Ok(view) => view,
+        Err(error) => {
+            device.destroy_image(image, None);
+            device.free_memory(memory, None);
+            return Err(error.into());
+        }
+    };
     Ok(Resource {
         image: image.as_raw(),
         memory: memory.as_raw(),

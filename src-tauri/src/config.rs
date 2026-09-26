@@ -492,6 +492,26 @@ impl Default for UiSetting {
     }
 }
 
+/// SR operates on the presented frame; it does not control emulator rendering resolution.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum StreamlineSrMode {
+    #[default]
+    Quality,
+    Balanced,
+    Performance,
+    Dlaa,
+}
+impl StreamlineSrMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Quality => "quality",
+            Self::Balanced => "balanced",
+            Self::Performance => "performance",
+            Self::Dlaa => "dlaa",
+        }
+    }
+}
 /// 其他设置
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OtherSetting {
@@ -501,6 +521,10 @@ pub struct OtherSetting {
     /// FG 启动时请求 NVIDIA 硬件光流；旧配置保持开启。
     #[serde(default = "default_true")]
     pub streamline_nvof: bool,
+    #[serde(default)]
+    pub streamline_sr: bool,
+    #[serde(default)]
+    pub streamline_sr_mode: StreamlineSrMode,
 }
 
 impl Default for OtherSetting {
@@ -508,6 +532,8 @@ impl Default for OtherSetting {
         Self {
             rename_yuzu_to_cemu: false,
             streamline_nvof: true,
+            streamline_sr: false,
+            streamline_sr_mode: StreamlineSrMode::Quality,
         }
     }
 }
@@ -807,6 +833,41 @@ mod tests {
         assert_eq!(
             clamp_window_size(320, MIN_WINDOW_HEIGHT - 1),
             (320, MIN_WINDOW_HEIGHT)
+        );
+    }
+}
+
+#[cfg(test)]
+mod streamline_sr_config_tests {
+    use super::*;
+    #[test]
+    fn legacy_settings_leave_sr_off_and_preserve_nvof_default() {
+        let settings: OtherSetting =
+            serde_json::from_str(r#"{"rename_yuzu_to_cemu":true}"#).unwrap();
+        assert!(!settings.streamline_sr);
+        assert!(settings.streamline_nvof);
+        assert_eq!(settings.streamline_sr_mode, StreamlineSrMode::Quality);
+        assert!(settings.rename_yuzu_to_cemu);
+    }
+    #[test]
+    fn sr_modes_roundtrip_and_reject_unknown_modes() {
+        for mode in [
+            StreamlineSrMode::Quality,
+            StreamlineSrMode::Balanced,
+            StreamlineSrMode::Performance,
+            StreamlineSrMode::Dlaa,
+        ] {
+            let mut settings = OtherSetting::default();
+            settings.streamline_sr = true;
+            settings.streamline_sr_mode = mode;
+            let encoded = serde_json::to_string(&settings).unwrap();
+            assert_eq!(
+                serde_json::from_str::<OtherSetting>(&encoded).unwrap(),
+                settings
+            );
+        }
+        assert!(
+            serde_json::from_str::<OtherSetting>(r#"{"streamline_sr_mode":"invalid"}"#).is_err()
         );
     }
 }

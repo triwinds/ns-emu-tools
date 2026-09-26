@@ -15,6 +15,8 @@ mod sdk_fg;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod sdk_query;
 #[cfg(all(windows, feature = "sdk-bridge"))]
+mod sdk_sr;
+#[cfg(all(windows, feature = "sdk-bridge"))]
 mod sdk_swapchain;
 #[cfg(windows)]
 #[path = "../session_verify.rs"]

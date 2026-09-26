@@ -37,3 +37,7 @@ cargo test --locked --manifest-path src-tauri/tools/streamline-sdk-audit/Cargo.t
 ```
 
 The default launcher no longer accepts SDK-host modes. The separate diagnostic binary retains them, including explicit `--target-probe` session verification. Historical commands that used the old combined executable for SDK host tests must use `streamline-fg-diagnostics` instead.
+
+## Experimental present-source SR
+
+Use the toolbox SR switch or `--sr-mode quality` alongside `--fg`. Default off. This version downsamples the final emulator image and reconstructs it to the same window size; it does not lower emulator rendering resolution. See [scope, tests and known exit failures](docs/SR-present-experiment.md).
