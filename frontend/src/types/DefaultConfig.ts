@@ -39,7 +39,8 @@ export const defaultConfig: AppConfig = {
       "backend": "auto"
     },
     "other": {
-      "rename_yuzu_to_cemu": false
+      "rename_yuzu_to_cemu": false,
+      "streamline_nvof": true
     }
   }
 }

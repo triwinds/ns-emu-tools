@@ -493,11 +493,23 @@ impl Default for UiSetting {
 }
 
 /// 其他设置
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OtherSetting {
     /// 将 Yuzu 重命名为 Cemu
     #[serde(default)]
     pub rename_yuzu_to_cemu: bool,
+    /// FG 启动时请求 NVIDIA 硬件光流；旧配置保持开启。
+    #[serde(default = "default_true")]
+    pub streamline_nvof: bool,
+}
+
+impl Default for OtherSetting {
+    fn default() -> Self {
+        Self {
+            rename_yuzu_to_cemu: false,
+            streamline_nvof: true,
+        }
+    }
 }
 
 /// 通用设置

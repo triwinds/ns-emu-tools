@@ -10,7 +10,7 @@ pub extern "system" fn probeCaptureIdleNext(enabled: u32) -> u32 {
         return 0;
     }
     ACTIVE.with(|v| v.set(enabled != 0));
-    crate::trace::event(
+    crate::trace::event!(
         "idle_capture_scope",
         serde_json::json!({"enabled": enabled != 0}),
     );

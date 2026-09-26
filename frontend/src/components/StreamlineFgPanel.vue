@@ -1,11 +1,31 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import StreamlineFgLive from './StreamlineFgLive.vue'
+import { useConfigStore } from '@/stores/ConfigStore'
+import { updateSetting } from '@/utils/tauri'
 import { mdiCheckCircleOutline, mdiAlertCircleOutline, mdiClockOutline, mdiLayersOutline } from '@mdi/js'
 import type { GraphicsApi } from '@/utils/graphics'
 import { detectStreamlineFg, operateStreamlineFg, type FgCheck, type FgPreflight } from '@/utils/streamlineFg'
 
 const props = defineProps<{ executable: string; api: GraphicsApi; disabled: boolean }>()
+const configStore = useConfigStore()
+const savingNvof = ref(false)
+const nvofError = ref('')
+const nvofEnabled = computed(() => configStore.config.setting.other?.streamline_nvof ?? true)
+async function setNvof(value: boolean | null) {
+  if (value === null || savingNvof.value || !configStore.config.setting.other) return
+  savingNvof.value = true
+  nvofError.value = ''
+  try {
+    const setting = configStore.config.setting
+    await updateSetting({ ...setting, other: { ...setting.other, streamline_nvof: value } })
+    configStore.config.setting.other.streamline_nvof = value
+  } catch (e) {
+    nvofError.value = `光流设置保存失败：${e instanceof Error ? e.message : String(e)}`
+  } finally {
+    savingNvof.value = false
+  }
+}
 const report = ref<FgPreflight | null>(null)
 const loading = ref(false)
 const error = ref('')
@@ -53,7 +73,7 @@ async function inspect() {
   }
 }
 async function operate(action: 'install' | 'launch' | 'uninstall') {
-  if (!report.value || loading.value || props.disabled) return
+  if (!report.value || loading.value || savingNvof.value || props.disabled) return
   const token = ++revision
   const executable = props.executable
   const api = props.api
@@ -238,6 +258,36 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         >
           本次运行记录：{{ cleanPath(session) }}
         </p>
+        <div class="fg-motion-setting">
+          <v-switch
+            :model-value="nvofEnabled"
+            label="NVIDIA 光流辅助"
+            color="primary"
+            density="compact"
+            hide-details
+            inset
+            :loading="savingNvof"
+            :disabled="disabled || loading || savingNvof || !configStore.config.setting.other"
+            aria-describedby="fg-motion-description fg-motion-timing"
+            @update:model-value="setNvof"
+          />
+          <p id="fg-motion-description">
+            利用 NVIDIA 硬件估算画面运动，辅助帧生成。会增加处理开销，可关闭对比效果；不支持时自动回退。
+          </p>
+          <p
+            id="fg-motion-timing"
+            class="fg-motion-timing"
+          >
+            自动保存 · 下次以 FG 启动时生效，当前游戏会话不变。
+          </p>
+          <p
+            v-if="nvofError"
+            class="fg-error"
+            role="alert"
+          >
+            {{ nvofError }}
+          </p>
+        </div>
         <div class="fg-actions">
           <v-btn
             color="primary"
@@ -258,7 +308,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           <v-btn
             v-if="report?.installationState === 'installed'"
             color="primary"
-            :disabled="!canUse || disabled || loading"
+            :disabled="!canUse || disabled || loading || savingNvof"
             @click="operate('launch')"
           >
             以 FG 启动
@@ -398,6 +448,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-blockers { padding-left: 18px; }
 .fg-trial { margin-top: 12px; font-size: 13px; line-height: 1.7; padding: 12px; background: rgba(var(--v-theme-warning), .09); border-radius: 8px; }
 .fg-error { color: rgb(var(--v-theme-error)); overflow-wrap: anywhere; }
+.fg-motion-setting { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
+.fg-motion-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); }
+.fg-motion-setting .fg-motion-timing { margin-top: 6px; }
+.fg-motion-setting .fg-error { margin-top: 6px; color: rgb(var(--v-theme-error)); }
 .fg-actions { gap: 6px; margin-top: 18px; flex-wrap: wrap; }
 .fg-footer { border-top: 1px solid rgba(var(--v-theme-on-surface), .1); gap: 24px; padding: 12px 26px; font-size: 12px; color: rgba(var(--v-theme-on-surface), .65); flex-wrap: wrap; }
 .fg-dialog { font-family: 'Segoe UI', 'Microsoft YaHei UI', sans-serif; }

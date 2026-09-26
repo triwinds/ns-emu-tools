@@ -17,7 +17,7 @@ struct Chain {
     frame_budget: Option<u32>,
     stopped: Option<&'static str>,
     resources: Option<[Resource; 2]>,
-    flow: Option<crate::target_motion::Flow>,
+    flow: Option<crate::target_nvof::Flow>,
 }
 static CHAINS: OnceLock<Mutex<HashMap<u64, Arc<Mutex<Chain>>>>> = OnceLock::new();
 static FRAME: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
@@ -25,7 +25,7 @@ fn chains() -> std::sync::MutexGuard<'static, HashMap<u64, Arc<Mutex<Chain>>>> {
     CHAINS.get_or_init(Default::default).lock().unwrap()
 }
 fn motion_format() -> vk::Format {
-    if crate::target_motion::enabled() {
+    if crate::target_nvof::requested() {
         return vk::Format::R32G32_SFLOAT;
     }
     if std::env::var("NS_STREAMLINE_TARGET_REFERENCE_PARAMS").as_deref() == Ok("1") {
@@ -109,7 +109,7 @@ unsafe fn guides(
             motion_format(),
             vk::ImageUsageFlags::SAMPLED
                 | vk::ImageUsageFlags::TRANSFER_DST
-                | if crate::target_motion::enabled() {
+                | if crate::target_nvof::enabled() {
                     vk::ImageUsageFlags::STORAGE
                 } else {
                     vk::ImageUsageFlags::empty()
@@ -162,43 +162,22 @@ unsafe fn guides(
     device.wait_for_fences(&[fence], true, 5_000_000_000)?;
     device.destroy_fence(fence, None);
     device.destroy_command_pool(pool, None);
-    if crate::target_motion::enabled() {
-        let formats = [
-            (
-                vk::Format::R32G32_SFLOAT,
-                vk::FormatFeatureFlags::STORAGE_IMAGE,
-            ),
-            (
-                vk::Format::B8G8R8A8_UNORM,
-                vk::FormatFeatureFlags::BLIT_SRC
-                    | vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR,
-            ),
-            (
-                vk::Format::R8G8B8A8_UNORM,
-                vk::FormatFeatureFlags::BLIT_DST | vk::FormatFeatureFlags::SAMPLED_IMAGE,
-            ),
-        ];
-        for (format, required) in formats {
-            if !instance
-                .get_physical_device_format_properties(d.physical, format)
-                .optimal_tiling_features
-                .contains(required)
-            {
-                return Err("unsupported optical flow format".into());
+    if crate::target_nvof::enabled() {
+        // Initialization has not consumed any application semaphore. Unsupported
+        // formats/session creation can safely fall back to already-cleared guides.
+        match crate::target_nvof::Flow::new(&instance, d.physical, device, swapchain, resources[1])
+        {
+            Ok(flow) => chain.flow = Some(flow),
+            Err(error) => {
+                if error.downcast_ref::<vk::Result>() == Some(&vk::Result::ERROR_DEVICE_LOST) {
+                    return Err(error);
+                }
+                trace::event!(
+                    "target_nvof_fallback",
+                    json!({"reason":error.to_string(),"motion":"zero","stage":"initialization"}),
+                );
             }
         }
-        if !instance.get_physical_device_queue_family_properties(d.physical)[0]
-            .queue_flags
-            .contains(vk::QueueFlags::COMPUTE)
-        {
-            return Err("flow requires compute on graphics queue".into());
-        }
-        chain.flow = Some(crate::target_motion::Flow::new(
-            device,
-            &props,
-            swapchain,
-            resources[1],
-        )?);
     }
     Ok(resources)
 }
@@ -265,9 +244,10 @@ pub(super) unsafe fn present(
         if on {
             if let Some(resources) = chain.resources {
                 if let Some(flow) = chain.flow.as_mut() {
-                    let (ready, scene_cut) = flow.run(queue, &*info, resources[1], reset, frame)?;
+                    let (ready, guidance_reset) =
+                        flow.run(queue, &*info, resources[1], reset, frame)?;
                     flow_ready = Some(ready);
-                    reset |= scene_cut;
+                    reset |= guidance_reset;
                 }
             }
         }
@@ -323,7 +303,7 @@ pub(super) unsafe fn present(
             device.device_wait_idle()?;
             chain.stopped =
                 crate::target_fg_gate::terminal_stop(off_reason, chain.frame_budget.is_some());
-            trace::event(
+            trace::event!(
                 if chain.stopped.is_some() {
                     "target_fg_stopped"
                 } else {
@@ -335,7 +315,7 @@ pub(super) unsafe fn present(
         }
         chain.was_on = on;
         crate::live::frame(on, off_reason, control_revision);
-        trace::event(
+        trace::event!(
             "target_fg_frame",
             json!({"frame":frame,"swapchain":handle.as_raw(),"requested_on":on,"off_reason":off_reason,"input_wait_completed":true,"timing_us":{"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
         );
@@ -344,7 +324,7 @@ pub(super) unsafe fn present(
     match result {
         Ok(value) => value,
         Err(error) => {
-            trace::event("target_fg_failure", json!({"error":error.to_string()}));
+            trace::event!("target_fg_failure", json!({"error":error.to_string()}));
             std::process::abort()
         }
     }
@@ -401,11 +381,11 @@ pub(super) unsafe fn after_destroy(handle: vk::Device, swapchain: vk::SwapchainK
             }
         }
         crate::target_window::retired(chain.frame_budget.is_none());
-        trace::event(
+        trace::event!(
             "target_fg_window_guard_rearmed",
             json!({"swapchain":swapchain.as_raw(),"allowed":chain.frame_budget.is_none(),"device_idle_completed":true}),
         );
-        trace::event(
+        trace::event!(
             "target_fg_retired",
             json!({"swapchain":swapchain.as_raw(),"on_frames":chain.on_frames}),
         );

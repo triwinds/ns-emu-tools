@@ -1,0 +1,22 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(std430,binding=0) readonly buffer Data { uint words[]; } data;
+layout(rg32f,binding=1) uniform writeonly image2D motion;
+layout(push_constant) uniform Settings { uint width; uint height; uint reset; uint reserved; } settings;
+vec2 vectorAt(ivec2 p) {
+    p=clamp(p,ivec2(0),ivec2(settings.width,settings.height)-1);
+    uint raw=data.words[uint(p.y)*settings.width+uint(p.x)];
+    return vec2(float(int(raw<<16)>>16),float(int(raw)>>16))/32.;
+}
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy); ivec2 size=imageSize(motion);
+    if(any(greaterThanEqual(p,size))) return;
+    vec2 uv=vec2(0);
+    if(settings.reset==0) {
+        vec2 pos=(vec2(p)+.5)/4.-.5; ivec2 b=ivec2(floor(pos)); vec2 f=fract(pos);
+        vec2 flow=mix(mix(vectorAt(b),vectorAt(b+ivec2(1,0)),f.x),
+            mix(vectorAt(b+ivec2(0,1)),vectorAt(b+ivec2(1,1)),f.x),f.y);
+        uv=flow/vec2(size);
+    }
+    imageStore(motion,p,vec4(uv,0,0));
+}

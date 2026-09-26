@@ -19,7 +19,7 @@ unsafe fn initialize<T: Handle + Copy>(d: Device, object: T) -> vk::Result {
         vk::Result::ERROR_INITIALIZATION_FAILED
     };
     let matches = result == vk::Result::SUCCESS && key(object) == key(d.handle);
-    trace::event(
+    trace::event!(
         "route_loader_data",
         json!({
             "device": d.handle.as_raw(), "object": object.as_raw(), "type": format!("{:?}", T::TYPE),
@@ -152,7 +152,7 @@ unsafe extern "system" fn present(queue: vk::Queue, info: *const vk::PresentInfo
         std::process::abort();
     }
     let waited = device.wait_for_fences(&fences, true, 5_000_000_000);
-    trace::event(
+    trace::event!(
         "route_present_retired",
         json!({"result":result.as_raw(), "fence_wait_succeeded":waited.is_ok(), "queue":queue.as_raw(), "swapchain":(*(*info).p_swapchains).as_raw(), "image_index":*(*info).p_image_indices}),
     );

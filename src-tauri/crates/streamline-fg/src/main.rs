@@ -16,7 +16,7 @@ fn main() {
         }
         let args: Vec<_> = std::env::args_os().skip(1).collect();
         if args.len() == 1 && args[0] == "--help" {
-            println!("streamline-layer-probe --target-probe --fg --target <exe> --layer <dll> --runtime <directory> --session <new directory> [--game <file>] [--reference-params]\nToolbox launcher. SDK host experiments require the separate streamline-fg-diagnostics binary.");
+            println!("streamline-layer-probe --target-probe --fg --target <exe> --layer <dll> --runtime <directory> --session <new directory> [--game <file>] [--reference-params] [--nvof]\nToolbox launcher. SDK host experiments require the separate streamline-fg-diagnostics binary.");
             return;
         }
         let result = if args.first().is_some_and(|a| a == "--target-probe") {

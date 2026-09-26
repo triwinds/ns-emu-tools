@@ -3,12 +3,12 @@ $ErrorActionPreference = 'Stop'
 $crate = $PSScriptRoot
 $tauri = [IO.Path]::GetFullPath((Join-Path $crate '../..'))
 $bundle = Join-Path $tauri 'target/streamline-fg-package'
-cargo build --locked --manifest-path (Join-Path $crate 'Cargo.toml') --lib --bin streamline-layer-probe --features sdk-bridge
+cargo build --locked --release --manifest-path (Join-Path $crate 'Cargo.toml') --lib --bin streamline-layer-probe --features sdk-bridge
 if ($LASTEXITCODE -ne 0) { throw 'FG build failed' }
 New-Item -ItemType Directory -Force -Path $bundle | Out-Null
 $files = @()
 foreach ($name in @('streamline-layer-probe.exe', 'streamline_probe_layer.dll')) {
-    $source = Join-Path $crate "target/debug/$name"
+    $source = Join-Path $crate "target/release/$name"
     Copy-Item -LiteralPath $source -Destination (Join-Path $bundle $name) -Force
     $files += @{name=$name; sha256=(Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()}
 }

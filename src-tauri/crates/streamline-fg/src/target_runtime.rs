@@ -163,7 +163,7 @@ unsafe fn initialize() -> Result<Option<Arc<Sdk>>> {
         ]);
         sdk.device_ext
             .push(ash::ext::swapchain_maintenance1::NAME.to_owned());
-        trace::event(
+        trace::event!(
             "target_sdk_requirements",
             json!({"graphics":sdk.graphics,"compute":sdk.compute,"instance_extensions":sdk.instance_ext.iter().map(|s|s.to_string_lossy()).collect::<Vec<_>>(),"device_extensions":sdk.device_ext.iter().map(|s|s.to_string_lossy()).collect::<Vec<_>>(),"fg_enabled":false}),
         );
@@ -219,7 +219,7 @@ pub(super) unsafe fn create_instance(
     match result {
         Ok(value) => value,
         Err(error) => {
-            trace::event(
+            trace::event!(
                 "target_sdk_error",
                 json!({"stage":"instance","error":error}),
             );
@@ -284,11 +284,33 @@ pub(super) unsafe fn create_device(
         if props.vendor_id != 0x10de || props.api_version < vk::API_VERSION_1_3 {
             return Err("unsupported target GPU/API".into());
         }
-        let names = extensions(
+        let mut names = extensions(
             (*info).pp_enabled_extension_names,
             (*info).enabled_extension_count,
             &sdk.device_ext,
         );
+        let optical_family = if crate::target_nvof::requested() {
+            match crate::target_nvof::capability(&instance, physical, original.queue_family_index) {
+                Ok(family) => Some(family),
+                Err(error) => {
+                    trace::event!(
+                        "target_nvof_fallback",
+                        json!({"reason":error.to_string(),"motion":"zero","stage":"capability"}),
+                    );
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        crate::target_nvof::set_family(optical_family);
+        if optical_family.is_some()
+            && !names
+                .iter()
+                .any(|n| n.as_c_str() == ash::nv::optical_flow::NAME)
+        {
+            names.push(ash::nv::optical_flow::NAME.to_owned());
+        }
         let available = instance
             .enumerate_device_extension_properties(physical)
             .map_err(|e| e.to_string())?;
@@ -322,14 +344,29 @@ pub(super) unsafe fn create_device(
             std::slice::from_raw_parts(original.p_queue_priorities, original.queue_count as usize)
                 .to_vec();
         priorities.resize(plan.total as usize, 1.0);
-        let queues = [(*original).queue_priorities(&priorities)];
+        let optical_priority = [1.0];
+        let mut queues = vec![(*original).queue_priorities(&priorities)];
+        if let Some(family) = optical_family {
+            queues.push(
+                vk::DeviceQueueCreateInfo::default()
+                    .queue_family_index(family)
+                    .queue_priorities(&optical_priority),
+            );
+        }
         let chain = crate::target_device_plan::FeatureChain::for_target((*info).p_next)?;
         let pointers: Vec<_> = names.iter().map(|s| s.as_ptr()).collect();
         let mut copy = (*info)
             .enabled_extension_names(&pointers)
             .queue_create_infos(&queues);
         copy.p_next = chain.head();
-        trace::event(
+        let mut optical_feature =
+            vk::PhysicalDeviceOpticalFlowFeaturesNV::default().optical_flow(true);
+        if optical_family.is_some() {
+            optical_feature.p_next = copy.p_next.cast_mut();
+            copy.p_next =
+                (&optical_feature as *const vk::PhysicalDeviceOpticalFlowFeaturesNV).cast();
+        }
+        trace::event!(
             "target_device_plan",
             json!({"family":original.queue_family_index,"application_count":plan.application_count,"sdk_graphics_start":plan.graphics_start,"sdk_compute_start":plan.compute_start,"total":plan.total,"capacity":family.queue_count,"original_api":"1.2","requested_api":"1.3","fg_enabled":false}),
         );
@@ -338,7 +375,7 @@ pub(super) unsafe fn create_device(
     match result {
         Ok(value) => value,
         Err(error) => {
-            trace::event("target_sdk_error", json!({"stage":"device","error":error}));
+            trace::event!("target_sdk_error", json!({"stage":"device","error":error}));
             vk::Result::ERROR_INITIALIZATION_FAILED
         }
     }
@@ -406,14 +443,14 @@ pub(super) unsafe fn ensure_device(device: vk::Device) {
             "set Vulkan info",
         )?;
         ACTIVE.store(device.as_raw(), std::sync::atomic::Ordering::SeqCst);
-        trace::event(
+        trace::event!(
             "target_sdk_ready",
             json!({"device":device.as_raw(),"fg_enabled":false,"after_loader_create_device":true}),
         );
         Ok(())
     })();
     if let Err(error) = result {
-        trace::event(
+        trace::event!(
             "target_sdk_error",
             json!({"stage":"deferred_set_info","error":error}),
         );
@@ -427,7 +464,7 @@ pub(super) unsafe fn destroy_device(device: vk::Device) {
     let sdk = SDK.get().unwrap();
     let function = address(sdk, b"slShutdown\0").unwrap_or_else(|_| std::process::abort());
     let result = probe_sl_shutdown(function);
-    trace::event("target_sdk_shutdown", json!({"result":result}));
+    trace::event!("target_sdk_shutdown", json!({"result":result}));
     if result != 0 {
         std::process::abort()
     }
@@ -568,7 +605,7 @@ pub(super) unsafe fn create_swapchain(
                 return Err("Immediate presentation required for FG".into());
             }
             copy.present_mode = vk::PresentModeKHR::IMMEDIATE;
-            if crate::target_motion::enabled() {
+            if crate::target_nvof::enabled() {
                 let caps_query: vk::PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR =
                     std::mem::transmute(
                         (dispatch.gipa)(
@@ -585,9 +622,14 @@ pub(super) unsafe fn create_swapchain(
                     .supported_usage_flags
                     .contains(vk::ImageUsageFlags::TRANSFER_SRC)
                 {
-                    return Err("surface cannot supply motion input".into());
+                    crate::target_nvof::set_family(None);
+                    trace::event!(
+                        "target_nvof_fallback",
+                        json!({"reason":"surface cannot supply motion input","motion":"zero","stage":"swapchain"}),
+                    );
+                } else {
+                    copy.image_usage |= vk::ImageUsageFlags::TRANSFER_SRC;
                 }
-                copy.image_usage |= vk::ImageUsageFlags::TRANSFER_SRC;
             }
         }
         let result = create(device, &copy, alloc, out);
@@ -604,7 +646,7 @@ pub(super) unsafe fn create_swapchain(
             )?;
         }
 
-        trace::event(
+        trace::event!(
             "target_proxy_swapchain",
             json!({"result":result.as_raw(),"application_surface":(*info).surface.as_raw(),"sdk_surface":surface.shadow,"width":copy.image_extent.width,"height":copy.image_extent.height,"format":copy.image_format.as_raw(),"usage":copy.image_usage.as_raw(),"present_mode":copy.present_mode.as_raw(),"fg_enabled":false}),
         );
@@ -613,7 +655,7 @@ pub(super) unsafe fn create_swapchain(
     Some(match result {
         Ok(value) => value,
         Err(error) => {
-            trace::event(
+            trace::event!(
                 "target_sdk_error",
                 json!({"stage":"swapchain","error":error}),
             );

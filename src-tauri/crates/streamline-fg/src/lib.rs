@@ -74,7 +74,7 @@ pub unsafe extern "system" fn vkNegotiateLoaderLayerInterfaceVersion(
     (*p).gipa = Some(vkGetInstanceProcAddr);
     (*p).gdpa = Some(vkGetDeviceProcAddr);
     (*p).physical_gpa = Some(physical_gpa);
-    trace::event("negotiate", json!({"version": 2}));
+    trace::event!("negotiate", json!({"version": 2}));
     vk::Result::SUCCESS
 }
 
@@ -102,7 +102,7 @@ pub unsafe extern "system" fn vkCreateInstance(
         return vk::Result::ERROR_INITIALIZATION_FAILED;
     };
     let next: vk::PFN_vkCreateInstance = std::mem::transmute(next);
-    trace::event(
+    trace::event!(
         "instance_request",
         json!({"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count),"api_version":if (*info).p_application_info.is_null(){0}else{(*(*info).p_application_info).api_version}}),
     );
@@ -127,7 +127,7 @@ pub unsafe extern "system" fn vkCreateInstance(
             },
         );
     }
-    trace::event(
+    trace::event!(
         "vkCreateInstance",
         json!({"result": result.as_raw(), "next": next as usize}),
     );
@@ -147,7 +147,7 @@ pub unsafe extern "system" fn vkDestroyInstance(
         std::mem::transmute((dispatch.gipa)(handle, c"vkDestroyInstance".as_ptr()).unwrap());
     next(handle, alloc);
     state().instances.remove(&k);
-    trace::event(
+    trace::event!(
         "vkDestroyInstance",
         json!({"remaining_instances": state().instances.len()}),
     );
@@ -196,7 +196,7 @@ pub unsafe extern "system" fn vkCreateDevice(
             json!({"family":q.queue_family_index,"count":q.queue_count,"flags":q.flags.as_raw()})
         })
         .collect();
-    trace::event(
+    trace::event!(
         "device_request",
         json!({"queues":queues,"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count)}),
     );
@@ -224,14 +224,14 @@ pub unsafe extern "system" fn vkCreateDevice(
     #[cfg(all(windows, feature = "sdk-bridge"))]
     if result == vk::Result::SUCCESS && target_runtime::enabled() {
         if let Err(error) = target_runtime::device_created(parent, physical, *output, info) {
-            trace::event(
+            trace::event!(
                 "target_sdk_error",
                 json!({"stage":"set_info","error":error}),
             );
             std::process::abort();
         }
     }
-    trace::event(
+    trace::event!(
         "vkCreateDevice",
         json!({"result": result.as_raw(), "next": next as usize}),
     );
@@ -255,7 +255,7 @@ pub unsafe extern "system" fn vkDestroyDevice(
         std::mem::transmute((dispatch.gdpa)(handle, c"vkDestroyDevice".as_ptr()).unwrap());
     next(handle, alloc);
     state().devices.remove(&k);
-    trace::event(
+    trace::event!(
         "vkDestroyDevice",
         json!({"remaining_devices": state().devices.len()}),
     );
@@ -274,7 +274,7 @@ macro_rules! device_hook {
             #[cfg(all(windows,feature="sdk-bridge"))]
             let next=if target_runtime::enabled(){target_runtime::device_proc(d.handle,CStr::from_bytes_with_nul_unchecked(name.as_bytes())).unwrap_or(next)}else{next};
             let next: vk::$pfn = std::mem::transmute(next);
-            trace::event(stringify!($name), json!({"next": next as usize, "hook": $name as *const () as usize, "object": $first.as_raw()}));
+            trace::event!(stringify!($name), json!({"next": next as usize, "hook": $name as *const () as usize, "object": $first.as_raw()}));
             next($first, $($arg),*)
         }
     };
@@ -329,7 +329,7 @@ pub unsafe extern "system" fn vkGetDeviceProcAddr(
     // Never advertise an unsupported command merely because we have a wrapper.
     next?;
     if capture::select_next(CStr::from_ptr(name)) {
-        trace::event(
+        trace::event!(
             "idle_capture_query",
             json!({"next": address(next), "device": handle.as_raw()}),
         );
@@ -338,7 +338,7 @@ pub unsafe extern "system" fn vkGetDeviceProcAddr(
     let intercepted = device_intercept(CStr::from_ptr(name));
     let result = intercepted.or(next);
     if intercepted.is_some() {
-        trace::event(
+        trace::event!(
             "gdpa",
             json!({"name": CStr::from_ptr(name).to_string_lossy(), "next": address(next), "returned": address(result)}),
         );
@@ -426,7 +426,7 @@ pub unsafe extern "system" fn probeRouteGipa(
         .find(|d| d.handle == handle)
         .copied()?;
     let next = (dispatch.gipa)(handle, name);
-    trace::event(
+    trace::event!(
         "route_gipa",
         json!({"handle":handle.as_raw(),"name":CStr::from_ptr(name).to_string_lossy(),"next":address(next)}),
     );
@@ -446,7 +446,7 @@ pub unsafe extern "system" fn probeRouteGdpa(
         .find(|d| d.handle == handle)
         .copied()?;
     let next = (dispatch.gdpa)(handle, name);
-    trace::event(
+    trace::event!(
         "route_gdpa",
         json!({"handle":handle.as_raw(),"name":CStr::from_ptr(name).to_string_lossy(),"next":address(next)}),
     );
@@ -490,7 +490,7 @@ pub unsafe extern "system" fn vkCreateWin32SurfaceKHR(
     if target_runtime::enabled() && result == vk::Result::SUCCESS {
         target_runtime::surface_created(handle, info, *out);
     }
-    trace::event(
+    trace::event!(
         "vkCreateWin32SurfaceKHR",
         json!({"result":result.as_raw(),"object":handle.as_raw()}),
     );
@@ -510,7 +510,7 @@ pub unsafe extern "system" fn vkDestroySurfaceKHR(
     let next: vk::PFN_vkDestroySurfaceKHR =
         std::mem::transmute((d.gipa)(handle, c"vkDestroySurfaceKHR".as_ptr()).unwrap());
     next(handle, surface, alloc);
-    trace::event("vkDestroySurfaceKHR", json!({"object":handle.as_raw()}));
+    trace::event!("vkDestroySurfaceKHR", json!({"object":handle.as_raw()}));
 }
 #[no_mangle]
 pub unsafe extern "system" fn vkCreateSwapchainKHR(
@@ -522,7 +522,7 @@ pub unsafe extern "system" fn vkCreateSwapchainKHR(
     let Some(d) = device(handle) else {
         return vk::Result::ERROR_INITIALIZATION_FAILED;
     };
-    trace::event("vkCreateSwapchainKHR", json!({"object":handle.as_raw()}));
+    trace::event!("vkCreateSwapchainKHR", json!({"object":handle.as_raw()}));
     #[cfg(all(windows, feature = "sdk-bridge"))]
     if target_runtime::enabled() {
         target_runtime::ensure_device(handle);
@@ -541,7 +541,7 @@ mod fg_api;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_fg;
 #[cfg(all(windows, feature = "sdk-bridge"))]
-mod target_motion;
+mod target_nvof;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_window;
 
@@ -563,7 +563,7 @@ pub unsafe extern "system" fn vkQueuePresentKHR(
     #[cfg(not(all(windows, feature = "sdk-bridge")))]
     let address = native;
     let next: vk::PFN_vkQueuePresentKHR = std::mem::transmute(address);
-    trace::event(
+    trace::event!(
         "vkQueuePresentKHR",
         json!({"object":queue.as_raw(),"next":address as usize,"hook":vkQueuePresentKHR as *const () as usize}),
     );
@@ -599,7 +599,7 @@ pub unsafe extern "system" fn vkDestroySwapchainKHR(
     if target_fg::enabled() {
         target_fg::after_destroy(handle, swapchain);
     }
-    trace::event(
+    trace::event!(
         "vkDestroySwapchainKHR",
         json!({"object":handle.as_raw(),"next":address as usize,"hook":vkDestroySwapchainKHR as *const () as usize}),
     );

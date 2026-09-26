@@ -297,6 +297,9 @@ pub fn launch(
         .arg(&bundle)
         .arg("--session")
         .arg(stage.path().join("run"));
+    if crate::config::CONFIG.read().setting.other.streamline_nvof {
+        cmd.arg("--nvof");
+    }
     if let Some(path) = game {
         cmd.arg("--game").arg(path);
     }

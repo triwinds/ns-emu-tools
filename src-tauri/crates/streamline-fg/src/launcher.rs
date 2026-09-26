@@ -23,7 +23,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut motion_estimate = false;
     let mut args = args.iter();
     while let Some(flag) = args.next() {
-        if flag == "--estimate-motion" {
+        if flag == "--nvof" || flag == "--estimate-motion" {
             motion_estimate = true;
             continue;
         }
@@ -84,7 +84,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         *slot = Some(path);
     }
     if motion_estimate && !fg {
-        return Err("--estimate-motion requires --fg".into());
+        return Err("--nvof requires --fg".into());
     }
     if reference_params && !fg {
         return Err("--reference-params requires --fg".into());
@@ -200,7 +200,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"fg_requested":fg,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"frame_budget":if bounded {Some(600)} else {None},"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"fg_requested":fg,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     if hash(&executable)? != target_hash {
         return Err("target changed during launch preparation; inspect it again".into());

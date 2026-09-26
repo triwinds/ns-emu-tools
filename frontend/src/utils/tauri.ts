@@ -376,6 +376,7 @@ export interface UiSetting {
 /** 其他设置 */
 export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
+  streamline_nvof: boolean
 }
 
 /** 通用设置 */

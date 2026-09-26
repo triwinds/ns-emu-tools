@@ -29,6 +29,7 @@ export interface Setting {
 
 export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
+  streamline_nvof: boolean
 }
 
 export interface UiSetting {

@@ -1,6 +1,6 @@
 # Streamline FG runtime
 
-Windows x64 Vulkan frame-generation layer and the launcher used by the toolbox. This remains an experimental integration: it uses reference constants, zero motion vectors and constant depth. Window-operation protection and SDK capability checks still apply; SR is not implemented.
+Windows x64 Vulkan frame-generation layer and the launcher used by the toolbox. This remains an experimental integration: it uses reference constants and constant depth. Toolbox launches request native NVIDIA hardware optical flow for motion vectors, with zero-motion fallback when unavailable. See [NVOF integration](docs/NVOF.md). Window-operation protection and SDK capability checks still apply; SR is not implemented.
 
 ## Source layout
 
