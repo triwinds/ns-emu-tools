@@ -10,7 +10,7 @@
   },
   "counts": {
     "download": 20,
-    "raw": 6
+    "raw": 5
   },
   "download": [
     {
@@ -188,13 +188,6 @@
       "url": "https://cdn.gh-proxy.org/https://raw.githubusercontent.com",
       "region": "日本 2",
       "description": "[Fastly CDN] - 该公益加速源由 [gh-proxy.com] 提供\n\n - 缓存：有",
-      "source_array": "raw_url"
-    },
-    {
-      "kind": "raw",
-      "url": "https://g.blfrp.cn/https://raw.githubusercontent.com",
-      "region": "日本 3",
-      "description": "[日本 东京] - 该公益加速源由 [g.blfrp.cn] 提供",
       "source_array": "raw_url"
     }
   ]
