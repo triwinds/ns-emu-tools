@@ -284,6 +284,18 @@ pub fn launch(
     fs::create_dir(&bundle).map_err(|e| e.to_string())?;
     copy_package(&installed, &bundle)?;
     let mut cmd = Command::new(bundle.join("streamline-layer-probe.exe"));
+    // Diagnostic flags must never leak into a normal game launch from the parent.
+    for name in [
+        "NS_STREAMLINE_SR_TIMING",
+        "NS_STREAMLINE_NVOF_TIMING",
+        "NS_STREAMLINE_SOURCE_MEASURE",
+        "NS_STREAMLINE_SOURCE_TRACK_ONLY",
+        "NS_STREAMLINE_SOURCE_BENCH_OFF",
+    ] {
+        cmd.env_remove(name);
+    }
+    cmd.env("NS_STREAMLINE_TRACE_VERBOSE", "0");
+    cmd.env("NS_STREAMLINE_TRACE_FRAMES", "0");
     cmd.arg("--target-probe")
         .arg("--fg")
         .arg("--reference-params")
@@ -304,6 +316,14 @@ pub fn launch(
         } else {
             "off"
         });
+    cmd.arg("--sr-preset")
+        .arg(graphics_settings.streamline_sr_preset.as_str());
+    if let Some(scale) = graphics_settings.streamline_sr_scale {
+        if !(50..=200).contains(&scale) {
+            return Err("SR 倍率必须为 0.5～2.0".into());
+        }
+        cmd.arg("--sr-scale").arg(scale.to_string());
+    }
     if graphics_settings.streamline_nvof {
         cmd.arg("--nvof");
     }
@@ -361,7 +381,7 @@ mod tests {
     fn local_live_control() {
         let exe = PathBuf::from(std::env::var_os("FG_SMOKE_TARGET").expect("FG_SMOKE_TARGET"));
         let enabled = std::env::var("FG_SMOKE_ENABLED").ok().map(|v| v == "1");
-        let result = live(exe, enabled).unwrap();
+        let result = live(exe, enabled, None, None, None).unwrap();
         println!("FG_LIVE={result}");
         assert_eq!(result["connected"], true);
     }
@@ -445,6 +465,8 @@ pub fn live(
     exe: PathBuf,
     enabled: Option<bool>,
     sr_mode: Option<String>,
+    sr_scale: Option<u16>,
+    sr_preset: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
@@ -488,7 +510,16 @@ pub fn live(
         v["active"] = false.into();
         v["fresh"] = false.into();
     }
-    if enabled.is_some() || sr_mode.is_some() {
+    if sr_scale.is_some_and(|v| !(50..=200).contains(&v)) {
+        return Err("SR 倍率必须为 0.5～2.0".into());
+    }
+    if sr_preset
+        .as_deref()
+        .is_some_and(|p| crate::config::StreamlineSrPreset::parse(p).is_none())
+    {
+        return Err("无效的 SR 模型预设".into());
+    }
+    if enabled.is_some() || sr_mode.is_some() || sr_scale.is_some() || sr_preset.is_some() {
         if !connected {
             return Err("游戏未连接，请通过工具箱重新启动游戏".into());
         }
@@ -498,6 +529,17 @@ pub fn live(
         } else {
             serde_json::json!({})
         };
+        if sr_scale.is_some()
+            && (v["srScaleSupported"] != true || v["srScaleBasis"] != "source_output")
+        {
+            return Err("当前会话不支持倍率滑块，请更新组件并重新专用启动一次".into());
+        }
+        if sr_preset.is_some() && v["srPresetSupported"] != true {
+            return Err("当前会话不支持模型切换，请更新组件并重新启动游戏".into());
+        }
+        if (sr_scale.is_some() || sr_preset.is_some()) && sr_mode.is_none() {
+            return Err("倍率更新必须同时指定 SR 模式".into());
+        }
         if let Some(mode) = sr_mode {
             if !matches!(
                 mode.as_str(),
@@ -515,6 +557,12 @@ pub fn live(
                     .saturating_add(1),
             );
             control["srMode"] = mode.into();
+            if let Some(scale) = sr_scale {
+                control["srScale"] = scale.into();
+            }
+            if let Some(preset) = sr_preset {
+                control["srPreset"] = preset.into();
+            }
             control["srRevision"] = revision.into();
             v["sentSrRevision"] = revision.into();
         }

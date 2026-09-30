@@ -2,6 +2,8 @@
 use crate::support::{hash, write_json, Result};
 use serde_json::{json, Value};
 use std::{ffi::OsString, fs, path::PathBuf, process::Command};
+#[path = "../../streamline-sr-preset.rs"]
+mod sr_preset;
 #[path = "../../streamline-target-policy.rs"]
 mod target_policy;
 pub(super) fn run(args: &[OsString]) -> Result<()> {
@@ -17,13 +19,53 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut allow_unverified = false;
     let mut sdk_off = false;
     let mut fg = false;
+    let mut scale_probe = false;
+    let mut scale_copy = false;
+    let mut scale_replace = false;
+    let mut sr_scale: Option<u16> = None;
     let mut sr_mode = String::from("off");
+    let mut sr_preset = sr_preset::StreamlineSrPreset::Default;
     let mut reflex_ab = false;
     let mut bounded = false;
     let mut reference_params = false;
     let mut motion_estimate = false;
     let mut args = args.iter();
     while let Some(flag) = args.next() {
+        if flag == "--scale-replace-probe" {
+            scale_replace = true;
+            scale_copy = true;
+            scale_probe = true;
+            continue;
+        }
+        if flag == "--scale-copy-probe" {
+            scale_copy = true;
+            scale_probe = true;
+            continue;
+        }
+        if flag == "--scale-probe" {
+            scale_probe = true;
+            continue;
+        }
+        if flag == "--sr-scale" {
+            let value = args
+                .next()
+                .and_then(|s| s.to_str())
+                .ok_or("missing SR scale")?
+                .parse::<u16>()?;
+            if !(50..=200).contains(&value) {
+                return Err("SR scale must be 50..200 percent".into());
+            }
+            sr_scale = Some(value);
+            continue;
+        }
+        if flag == "--sr-preset" {
+            sr_preset = args
+                .next()
+                .and_then(|v| v.to_str())
+                .and_then(sr_preset::StreamlineSrPreset::parse)
+                .ok_or("invalid SR preset")?;
+            continue;
+        }
         if flag == "--sr-mode" {
             let value = args
                 .next()
@@ -95,6 +137,9 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         *slot = Some(path);
     }
+    if scale_probe && sdk_off {
+        return Err("--scale-probe requires transparent mode (no --fg/--sdk-off)".into());
+    }
     if sr_mode != "off" && !fg {
         return Err("SR currently requires --fg presentation integration".into());
     }
@@ -121,6 +166,9 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     let compatibility = target_policy::classify(&target_hash, true);
     compatibility.authorize(allow_unverified)?;
+    if scale_copy && compatibility != target_policy::Compatibility::Verified {
+        return Err("GPU copy trial requires the pinned verified executable".into());
+    }
     // An unknown build must not inherit the verified build's version or publisher metadata.
     let profile = if compatibility == target_policy::Compatibility::Verified {
         let mut profile = baseline;
@@ -187,10 +235,22 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut command = Command::new(&executable);
     command
         .current_dir(executable.parent().unwrap())
+        .env(
+            "NS_STREAMLINE_SCALE_COPY",
+            if scale_copy { "1" } else { "0" },
+        )
+        .env(
+            "NS_STREAMLINE_SCALE_REPLACE",
+            if scale_replace { "1" } else { "0" },
+        )
         .env("VK_LAYER_PATH", std::env::join_paths(paths)?)
         .env("VK_INSTANCE_LAYERS", "VK_LAYER_NSEMU_streamline_probe")
         .env("VK_LOADER_LAYERS_DISABLE", &disable)
         .env("VK_LOADER_DEBUG", "error,warn,layer")
+        .env(
+            "NS_STREAMLINE_SCALE_PROBE",
+            if scale_probe { "1" } else { "0" },
+        )
         .env("NS_STREAMLINE_LIVE_DIR", &session)
         .env("NS_STREAMLINE_PROBE_EXE", &executable)
         .env("NS_STREAMLINE_PROBE_TRACE", session.join("layer.jsonl"))
@@ -198,6 +258,19 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_TARGET_RUNTIME", &runtime_dest)
         .env("NS_STREAMLINE_TARGET_FG", if fg { "1" } else { "0" })
         .env("NS_STREAMLINE_TARGET_SR_MODE", &sr_mode)
+        .env("NS_STREAMLINE_TARGET_SR_PRESET", sr_preset.as_str())
+        .env(
+            "NS_STREAMLINE_TARGET_SR_SCALE",
+            sr_scale.map(|v| v.to_string()).unwrap_or_default(),
+        )
+        .env(
+            "NS_STREAMLINE_SOURCE_AUTO",
+            if fg && compatibility == target_policy::Compatibility::Verified {
+                "1"
+            } else {
+                "0"
+            },
+        )
         .env("NS_STREAMLINE_TARGET_SR_READY", if fg { "1" } else { "0" })
         .env(
             "NS_STREAMLINE_TARGET_REFLEX_AB",
@@ -219,12 +292,21 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_PROBE_SDK_ROUTE", "0")
         .stdout(fs::File::create(session.join("target.stdout.log"))?)
         .stderr(fs::File::create(session.join("target.stderr.log"))?);
+    // Ryubing applies this override after ReloadConfig, including per-game config.
+    // Enhanced launches require Vulkan even when the stored backend is invalid.
+    if fg {
+        command.args(["--graphics-backend", "Vulkan"]);
+    }
     if let Some(game) = &game {
         command.arg(game);
     }
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"fg_requested":fg,"sr_mode":sr_mode,"sr_input":"present_source_override","reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg,"fg_experiment_requested":fg,"child_disable":disable}),
+    )?;
+    write_json(
+        &session.join("target-command.json"),
+        &json!({"arguments":command.get_args().map(|a|a.to_string_lossy().into_owned()).collect::<Vec<_>>(),"graphics_backend_override":if fg {Some("Vulkan")} else {None}}),
     )?;
     if hash(&executable)? != target_hash {
         return Err("target changed during launch preparation; inspect it again".into());

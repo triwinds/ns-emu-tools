@@ -492,6 +492,10 @@ impl Default for UiSetting {
     }
 }
 
+#[path = "../crates/streamline-sr-preset.rs"]
+mod sr_preset;
+pub use sr_preset::StreamlineSrPreset;
+
 /// SR operates on the presented frame; it does not control emulator rendering resolution.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -525,6 +529,10 @@ pub struct OtherSetting {
     pub streamline_sr: bool,
     #[serde(default)]
     pub streamline_sr_mode: StreamlineSrMode,
+    #[serde(default)]
+    pub streamline_sr_scale: Option<u16>,
+    #[serde(default)]
+    pub streamline_sr_preset: StreamlineSrPreset,
 }
 
 impl Default for OtherSetting {
@@ -534,6 +542,8 @@ impl Default for OtherSetting {
             streamline_nvof: true,
             streamline_sr: false,
             streamline_sr_mode: StreamlineSrMode::Quality,
+            streamline_sr_scale: None,
+            streamline_sr_preset: StreamlineSrPreset::Default,
         }
     }
 }
@@ -847,6 +857,7 @@ mod streamline_sr_config_tests {
         assert!(!settings.streamline_sr);
         assert!(settings.streamline_nvof);
         assert_eq!(settings.streamline_sr_mode, StreamlineSrMode::Quality);
+        assert_eq!(settings.streamline_sr_preset, StreamlineSrPreset::Default);
         assert!(settings.rename_yuzu_to_cemu);
     }
     #[test]

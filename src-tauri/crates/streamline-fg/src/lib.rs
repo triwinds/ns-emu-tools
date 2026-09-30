@@ -5,6 +5,14 @@ mod capture;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod live;
 mod route_objects;
+mod scale_copy;
+mod scale_model;
+mod scale_probe;
+mod source_auto;
+mod source_model;
+#[cfg(any(test, all(windows, feature = "sdk-bridge")))]
+#[path = "../../streamline-sr-preset.rs"]
+mod sr_preset;
 #[cfg(any(test, all(windows, feature = "sdk-bridge")))]
 mod target_device_plan;
 #[cfg(any(test, all(windows, feature = "sdk-bridge")))]
@@ -295,6 +303,9 @@ device_hook!(vkQueueWaitIdle, PFN_vkQueueWaitIdle, (handle: vk::Queue), vk::Resu
 
 unsafe fn device_intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
     macro_rules! pick { ($($f:ident),*) => { match name.to_bytes() { $(s if s == stringify!($f).as_bytes() => return Some(std::mem::transmute($f as *const ())),)* _ => {} } }; }
+    if let Some(hook) = scale_probe::intercept(name) {
+        return Some(hook);
+    }
     pick!(
         vkGetDeviceProcAddr,
         vkDestroyDevice,
@@ -532,7 +543,13 @@ pub unsafe extern "system" fn vkCreateSwapchainKHR(
     }
     let next: vk::PFN_vkCreateSwapchainKHR =
         std::mem::transmute((d.gdpa)(handle, c"vkCreateSwapchainKHR".as_ptr()).unwrap());
-    next(handle, info, alloc, out)
+    let mut copy = *info;
+    copy.image_usage = scale_copy::swapchain_usage(d, &copy);
+    let result = next(handle, &copy, alloc, out);
+    if result == vk::Result::SUCCESS {
+        scale_copy::swapchain_created(d, *out, &copy, result);
+    }
+    result
 }
 
 #[cfg(all(windows, feature = "sdk-bridge"))]
@@ -573,7 +590,15 @@ pub unsafe extern "system" fn vkQueuePresentKHR(
     if target_fg::enabled() {
         return target_fg::present(d, queue, info, next);
     }
-    next(queue, info)
+    let consumed = scale_copy::before_present(d, queue, &*info);
+    let mut forwarded = *info;
+    if consumed {
+        forwarded.wait_semaphore_count = 0;
+        forwarded.p_wait_semaphores = std::ptr::null();
+    }
+    let result = next(queue, &forwarded);
+    scale_probe::present(queue, info, result);
+    result
 }
 #[no_mangle]
 pub unsafe extern "system" fn vkDestroySwapchainKHR(

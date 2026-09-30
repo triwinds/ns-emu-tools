@@ -1,0 +1,144 @@
+{
+  "semantics": "processing_output / original_input",
+  "cases": [
+    {
+      "session": "sr-ratio-001",
+      "frames": [
+        {
+          "source": "native_source",
+          "scale_percent": 200,
+          "original_input": [
+            1920,
+            1080
+          ],
+          "dlss_input": [
+            1920,
+            1080
+          ],
+          "processing_output": [
+            3840,
+            2160
+          ],
+          "window_output": [
+            2560,
+            1335
+          ],
+          "frames": 444
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 100,
+          "original_input": [
+            1920,
+            1080
+          ],
+          "dlss_input": [
+            1920,
+            1080
+          ],
+          "processing_output": [
+            1920,
+            1080
+          ],
+          "window_output": [
+            2560,
+            1335
+          ],
+          "frames": 181
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 50,
+          "original_input": [
+            1920,
+            1080
+          ],
+          "dlss_input": [
+            960,
+            540
+          ],
+          "processing_output": [
+            960,
+            540
+          ],
+          "window_output": [
+            2560,
+            1335
+          ],
+          "frames": 195
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 150,
+          "original_input": [
+            1920,
+            1080
+          ],
+          "dlss_input": [
+            1920,
+            1080
+          ],
+          "processing_output": [
+            2880,
+            1620
+          ],
+          "window_output": [
+            2560,
+            1335
+          ],
+          "frames": 190
+        }
+      ],
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "trace_sha256": "d090d514256d818881c7378745d17e9c3b3f8157357a935e32f3d7ceab3e6c51"
+    },
+    {
+      "session": "sr-ratio-002",
+      "frames": [
+        {
+          "source": "present_source",
+          "scale_percent": 200,
+          "original_input": [
+            2560,
+            1335
+          ],
+          "dlss_input": [
+            2560,
+            1335
+          ],
+          "processing_output": [
+            5120,
+            2670
+          ],
+          "window_output": [
+            2560,
+            1335
+          ],
+          "frames": 246
+        }
+      ],
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "trace_sha256": "09cc94324f74243012893908fab6c5f04da9a79dc440441fbe4829286bbe6d59"
+    }
+  ],
+  "limits": [
+    "FG remained background-gated; strict FG verifier therefore exits 1",
+    "No visual-quality, performance or active FG coexistence claim"
+  ]
+}

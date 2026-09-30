@@ -32,8 +32,9 @@ export function operateStreamlineFg(action: 'install' | 'launch' | 'uninstall', 
 export interface FgSample { time: number; appFps: number | null; presentFps: number | null }
 export interface FgLive {
   srLiveSupported?: boolean
+  srPresetSupported?: boolean
   sentSrRevision?: number
-  sr?: { mode?: number; appliedRevision?: number; active: boolean; input?: number[]; output?: number[]; motion?: boolean; reason?: string } | null
+  sr?: { preset?: string; source?: string; fallbackReason?: string; scale?: number; mode?: number; appliedRevision?: number; active: boolean; original_input?: number[]; processing_output?: number[]; input?: number[]; output?: number[]; motion?: boolean; reason?: string } | null
   connected: boolean
   fresh?: boolean
   requested?: boolean
@@ -45,6 +46,6 @@ export interface FgLive {
   sentRevision?: number
   samples?: FgSample[]
 }
-export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string) {
-  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode })
+export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string) {
+  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset })
 }

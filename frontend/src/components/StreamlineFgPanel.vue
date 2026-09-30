@@ -27,23 +27,35 @@ function receiveLive(value: FgLive) {
 const nvofEnabled = computed(() => configStore.config.setting.other?.streamline_nvof ?? true)
 const srEnabled = computed(() => configStore.config.setting.other?.streamline_sr ?? false)
 const srMode = computed(() => configStore.config.setting.other?.streamline_sr_mode ?? 'quality')
-const srModes = [
-  { title: '质量 · 约 67% 输入', value: 'quality' },
-  { title: '均衡 · 约 58% 输入', value: 'balanced' },
-  { title: '性能 · 约 50% 输入', value: 'performance' },
-  { title: 'DLAA · 原尺寸输入', value: 'dlaa' },
+const srPreset = computed(() => configStore.config.setting.other?.streamline_sr_preset ?? 'default')
+const srPresets = [
+  { title: '自动（运行库默认）', value: 'default' },
+  { title: 'K · 画质优先', value: 'k' },
+  { title: 'J · 减少拖影，可能增加闪烁', value: 'j' },
+  { title: 'M · Performance 模式默认模型', value: 'm' },
+  { title: 'L · Ultra Performance 模式默认模型', value: 'l' },
 ]
-type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nvof' | 'streamline_sr' | 'streamline_sr_mode'>>
+async function setSrPreset(value: string) {
+  if (srPresets.some(p => p.value === value)) {
+    await saveGraphics({ streamline_sr_preset: value as NonNullable<GraphicsSettings['streamline_sr_preset']> })
+  }
+}
+const savedScale = computed(() => configStore.config.setting.other?.streamline_sr_scale ?? ({ quality: 150, balanced: 172, performance: 200, dlaa: 100 }[srMode.value]))
+const sliderScale = (value: number) => Math.min(2, Math.max(1, value / 100))
+const srScale = ref(sliderScale(savedScale.value))
+watch(savedScale, value => { srScale.value = sliderScale(value) })
+type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nvof' | 'streamline_sr' | 'streamline_sr_mode' | 'streamline_sr_scale' | 'streamline_sr_preset'>>
 async function setNvof(value: boolean | null) {
   if (value !== null) await saveGraphics({ streamline_nvof: value })
 }
 async function setSr(value: boolean | null) {
-  if (value !== null) await saveGraphics({ streamline_sr: value })
+  if (value !== null) await saveGraphics({ streamline_sr: value, streamline_sr_scale: Math.round(srScale.value * 100) })
 }
-async function setSrMode(value: unknown) {
-  if (value === 'quality' || value === 'balanced' || value === 'performance' || value === 'dlaa') {
-    await saveGraphics({ streamline_sr_mode: value })
-  }
+async function setSrScale() {
+  const scale = Math.round(srScale.value * 100)
+  if (!Number.isFinite(scale) || scale < 100 || scale > 200 || scale === savedScale.value) return
+  await saveGraphics({ streamline_sr_scale: scale })
+  srScale.value = sliderScale(savedScale.value)
 }
 async function saveGraphics(patch: GraphicsSettings) {
   if (savingNvof.value || !configStore.config.setting.other) return
@@ -54,7 +66,7 @@ async function saveGraphics(patch: GraphicsSettings) {
     const setting = configStore.config.setting
     await updateSetting({ ...setting, other: { ...setting.other, ...patch } })
     Object.assign(configStore.config.setting.other, patch)
-    if ('streamline_sr' in patch || 'streamline_sr_mode' in patch) {
+    if ('streamline_sr' in patch || 'streamline_sr_mode' in patch || 'streamline_sr_scale' in patch || 'streamline_sr_preset' in patch) {
       if (executable !== props.executable) return
       srFeedback.value = '已保存，正在连接游戏…'
       try {
@@ -63,7 +75,7 @@ async function saveGraphics(patch: GraphicsSettings) {
         if (!status.connected) {
           srFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
         } else {
-          const result = await liveStreamlineFg(executable, undefined, srEnabled.value ? srMode.value : 'off')
+          const result = await liveStreamlineFg(executable, undefined, srEnabled.value ? srMode.value : 'off', savedScale.value, srPreset.value)
           if (executable !== props.executable) return
           srPending.value = result.sentSrRevision ?? 0
           srDeadline = Date.now() + 10000
@@ -316,7 +328,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         <div class="fg-sr-setting">
           <v-switch
             :model-value="srEnabled"
-            label="SR 画面重建"
+            label="SR 画面重建（DLAA 抗锯齿）"
             color="primary"
             density="compact"
             hide-details
@@ -327,27 +339,48 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             @update:model-value="setSr"
           />
           <p id="fg-sr-description">
-            实验版：先处理模拟器输出画面，再进行帧生成。文字和界面也会参与重建。
+            实验版 DLAA 抗锯齿：先处理模拟器输出画面，再进行帧生成。文字和界面也会参与重建。
           </p>
           <div
             v-if="srEnabled"
             class="fg-sr-options"
           >
             <v-select
-              :model-value="srMode"
-              :items="srModes"
-              label="重建模式"
+              :model-value="srPreset"
+              :items="srPresets"
+              label="SR / DLAA 模型预设"
               variant="outlined"
               density="compact"
-              hide-details
-              :disabled="disabled || loading || savingNvof"
-              @update:model-value="setSrMode"
+              :disabled="disabled || loading || savingNvof || !!srPending"
+              hint="自动保存并实时应用。不同模型会改变画质和耗时，M / L 不代表一定更快。"
+              persistent-hint
+              @update:model-value="setSrPreset"
             />
-            <p>{{ srMode === 'dlaa' ? '以窗口原尺寸处理，不缩小输入。' : '将窗口画面缩小到 SDK 建议尺寸，再重建回窗口尺寸。' }} 不降低模拟器内部渲染分辨率，不保证提升帧率。</p>
-            <p>建议保留 NVIDIA 光流辅助；不可用时逐帧重置重建历史。实际输入尺寸和执行结果写入本次运行记录。</p>
+            <div class="fg-sr-scale-label">
+              <span id="fg-sr-scale-label">放大倍率</span><output>{{ srScale.toFixed(2) }}×</output>
+            </div>
+            <v-slider
+              v-model="srScale"
+              :min="1.0"
+              :max="2.0"
+              :step="0.05"
+              color="primary"
+              thumb-label
+              hide-details
+              aria-labelledby="fg-sr-scale-label"
+              :disabled="disabled || loading || savingNvof"
+              @end="setSrScale"
+              @keyup="setSrScale"
+            />
+            <div class="fg-sr-scale-label">
+              <span>1.0× 等尺寸抗锯齿</span><span>2.0×</span>
+            </div>
+            <p>1.0× 使用 DLAA 等尺寸抗锯齿；高于 1.0× 先重建到更高分辨率，再缩回窗口以改善锯齿。2.0× 表示输入宽高各两倍，处理像素数为四倍，会增加 GPU 开销。</p>
+            <p>优先处理模拟器缩放前的画面；无法识别时自动使用窗口画面。不会改变模拟器内部渲染分辨率，不保证提升帧率。</p>
+            <p>建议保留 NVIDIA 光流辅助；不可用时逐帧重置重建历史。实际输入尺寸和执行状态见下方运行控制。</p>
           </div>
           <p class="fg-motion-timing">
-            {{ srFeedback }} 切换模式可能短暂停顿，实际运行状态见下方。
+            {{ srFeedback }} 调整倍率或模型可能短暂停顿，实际运行状态见下方。
           </p>
         </div>
         <div class="fg-motion-setting">
@@ -545,6 +578,8 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-error { color: rgb(var(--v-theme-error)); overflow-wrap: anywhere; }
 .fg-sr-setting { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
 .fg-sr-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); margin-top: 6px; }
+.fg-sr-scale-label { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.fg-sr-scale-label output { font-weight: 600; }
 .fg-sr-options { display: grid; gap: 10px; margin: 16px 0 12px; }
 .fg-motion-setting { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
 .fg-motion-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); }

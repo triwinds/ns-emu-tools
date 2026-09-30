@@ -1,5 +1,7 @@
 //! Session-local control and measured rates. File I/O never runs on a Vulkan thread.
+use crate::sr_preset::StreamlineSrPreset;
 use serde_json::{json, Value};
+type SrControl = (u32, u64, u16, StreamlineSrPreset);
 use std::{
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -12,20 +14,28 @@ static APP: AtomicU64 = AtomicU64::new(0);
 static NATIVE: AtomicU64 = AtomicU64::new(0);
 static LAST: Mutex<Option<(Instant, bool, String, u64)>> = Mutex::new(None);
 static SR: Mutex<Option<Value>> = Mutex::new(None);
-static SR_CONTROL: OnceLock<Mutex<(u32, u64)>> = OnceLock::new();
-fn sr_control() -> &'static Mutex<(u32, u64)> {
-    SR_CONTROL.get_or_init(|| Mutex::new((crate::target_sr::initial_mode(), 0)))
+static SR_CONTROL: OnceLock<Mutex<SrControl>> = OnceLock::new();
+fn sr_control() -> &'static Mutex<SrControl> {
+    SR_CONTROL.get_or_init(|| {
+        Mutex::new((
+            crate::target_sr::initial_mode(),
+            0,
+            crate::target_sr::initial_scale(),
+            crate::target_sr::initial_preset(),
+        ))
+    })
 }
-pub fn sr_requested() -> (u32, u64) {
+pub fn sr_requested() -> SrControl {
     *sr_control().lock().unwrap()
 }
-pub fn sr_applied(mode: u32, revision: u64) {
+pub fn sr_applied(mode: u32, revision: u64, preset: StreamlineSrPreset) {
     let mut status = SR.lock().unwrap();
     let value = status.get_or_insert_with(|| json!({"active":false,"reason":"waiting"}));
     value["mode"] = mode.into();
+    value["preset"] = preset.as_str().into();
     value["appliedRevision"] = revision.into();
 }
-fn apply_sr_control(control: &mut (u32, u64), value: &Value) {
+fn apply_sr_control(control: &mut SrControl, value: &Value) {
     let mode = match value["srMode"].as_str() {
         Some("off") => 0,
         Some("quality") => 3,
@@ -36,7 +46,21 @@ fn apply_sr_control(control: &mut (u32, u64), value: &Value) {
     };
     if let Some(revision) = value["srRevision"].as_u64() {
         if revision > control.1 {
-            *control = (mode, revision);
+            let scale = match value.get("srScale") {
+                None => control.2,
+                Some(v) => match v.as_u64().filter(|v| (50..=200).contains(v)) {
+                    Some(v) => v as u16,
+                    None => return,
+                },
+            };
+            let preset = match value.get("srPreset") {
+                None => control.3,
+                Some(v) => match v.as_str().and_then(StreamlineSrPreset::parse) {
+                    Some(p) => p,
+                    None => return,
+                },
+            };
+            *control = (mode, revision, scale, preset);
         }
     }
 }
@@ -74,8 +98,13 @@ fn worker(dir: std::path::PathBuf) {
     while !STOP.load(Ordering::Acquire) {
         if let Ok(bytes) = std::fs::read(dir.join("control.json")) {
             if let Ok(v) = serde_json::from_slice::<Value>(&bytes) {
+                if v["sourceTrackingStop"] == true {
+                    crate::source_auto::stop_measurement_tracking();
+                }
                 apply_control(&mut CONTROL.lock().unwrap(), &v);
                 apply_sr_control(&mut sr_control().lock().unwrap(), &v);
+                let fg_requested = CONTROL.lock().unwrap().0;
+                crate::source_auto::set_requested(sr_requested().0 != 0 || fg_requested);
             }
         }
         if sample_at.elapsed() >= Duration::from_secs(1) {
@@ -99,7 +128,11 @@ fn worker(dir: std::path::PathBuf) {
                 last.map(|v| (v.1, v.2, v.3))
                     .unwrap_or((false, "waiting".into(), 0));
             let control = *CONTROL.lock().unwrap();
-            let status = json!({"srLiveSupported":crate::target_sr::available(),"sr":SR.lock().unwrap().clone(),"protocol":1,"updatedAt":now,"fresh":fresh,"requested":control.0,"revision":control.1,"appliedRevision":applied,"active":active && fresh,"reason":if fresh {reason} else {"waiting".into()},"samples":samples});
+            let status = json!({"srPresetSupported":true,"srScaleSupported":true,"srScaleBasis":"source_output","srLiveSupported":crate::target_sr::available(),"sr":SR.lock().unwrap().clone(),"protocol":1,"updatedAt":now,"fresh":fresh,"requested":control.0,"revision":control.1,"appliedRevision":applied,"active":active && fresh,"reason":if fresh {reason} else {"waiting".into()},"samples":samples});
+            let mut status = status;
+            if crate::source_auto::measuring() {
+                status["sourceMeasurement"] = crate::source_auto::measurement();
+            }
             if let Ok(bytes) = serde_json::to_vec(&status) {
                 if std::fs::write(dir.join("telemetry.tmp"), bytes).is_ok() {
                     let _ = std::fs::rename(dir.join("telemetry.tmp"), dir.join("telemetry.json"));
@@ -133,13 +166,57 @@ fn apply_control(control: &mut (bool, u64), v: &Value) {
 mod tests {
     use super::*;
     #[test]
+    fn preset_updates_are_atomic_and_older_controls_preserve_selection() {
+        let mut control = (6, 10, 100, StreamlineSrPreset::K);
+        apply_sr_control(
+            &mut control,
+            &json!({"srMode":"dlaa","srPreset":"j","srRevision":11}),
+        );
+        assert_eq!(control, (6, 11, 100, StreamlineSrPreset::J));
+        for preset in [json!("invalid"), json!(10), json!(null)] {
+            apply_sr_control(
+                &mut control,
+                &json!({"srMode":"off","srPreset":preset,"srScale":150,"srRevision":12}),
+            );
+            assert_eq!(control, (6, 11, 100, StreamlineSrPreset::J));
+        }
+        apply_sr_control(&mut control, &json!({"srMode":"off","srRevision":12}));
+        assert_eq!(control, (0, 12, 100, StreamlineSrPreset::J));
+        apply_sr_control(
+            &mut control,
+            &json!({"srMode":"dlaa","srPreset":"k","srRevision":11}),
+        );
+        assert_eq!(control, (0, 12, 100, StreamlineSrPreset::J));
+    }
+    #[test]
+    fn scale_revisions_are_atomic_and_reject_invalid_values() {
+        let mut control = (3, 1, 150, StreamlineSrPreset::Default);
+        for scale in [json!(49), json!(201), json!(-1), json!(1.5), json!("150")] {
+            apply_sr_control(
+                &mut control,
+                &json!({"srMode":"quality","srScale":scale,"srRevision":2}),
+            );
+            assert_eq!(control, (3, 1, 150, StreamlineSrPreset::Default));
+        }
+        apply_sr_control(
+            &mut control,
+            &json!({"srMode":"quality","srScale":50,"srRevision":2}),
+        );
+        assert_eq!(control, (3, 2, 50, StreamlineSrPreset::Default));
+        apply_sr_control(
+            &mut control,
+            &json!({"srMode":"quality","srScale":200,"srRevision":3}),
+        );
+        assert_eq!(control, (3, 3, 200, StreamlineSrPreset::Default));
+    }
+    #[test]
     fn sr_revisions_are_independent_and_invalid_modes_are_ignored() {
-        let mut sr = (0, 0);
+        let mut sr = (0, 0, 150, StreamlineSrPreset::Default);
         let mut fg = (false, 7);
         let value = json!({"srMode":"quality","srRevision":10,"enabled":true,"revision":6});
         apply_sr_control(&mut sr, &value);
         apply_control(&mut fg, &value);
-        assert_eq!(sr, (3, 10));
+        assert_eq!(sr, (3, 10, 150, StreamlineSrPreset::Default));
         assert_eq!(fg, (false, 7));
         for value in [
             json!({"srMode":"off","srRevision":9}),
@@ -147,12 +224,12 @@ mod tests {
             json!({"srMode":"off"}),
         ] {
             apply_sr_control(&mut sr, &value);
-            assert_eq!(sr, (3, 10));
+            assert_eq!(sr, (3, 10, 150, StreamlineSrPreset::Default));
         }
         apply_sr_control(&mut sr, &json!({"srMode":"off","srRevision":11}));
-        assert_eq!(sr, (0, 11));
+        assert_eq!(sr, (0, 11, 150, StreamlineSrPreset::Default));
         apply_sr_control(&mut sr, &json!({"srMode":"dlaa","srRevision":12}));
-        assert_eq!(sr, (6, 12));
+        assert_eq!(sr, (6, 12, 150, StreamlineSrPreset::Default));
     }
     #[test]
     fn stale_or_incomplete_commands_cannot_reverse_manual_off() {

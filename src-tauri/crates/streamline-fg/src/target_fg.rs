@@ -17,6 +17,7 @@ struct Chain {
     frames: u32,
     on_frames: u32,
     was_on: bool,
+    region: Option<[u32; 4]>,
     applied_frame_limit_us: u32,
     reflex_ab: bool,
     frame_budget: Option<u32>,
@@ -77,6 +78,7 @@ pub(super) unsafe fn created(
             frames: 0,
             on_frames: 0,
             was_on: false,
+            region: None,
             applied_frame_limit_us: 0,
             reflex_ab: std::env::var("NS_STREAMLINE_TARGET_REFLEX_AB").as_deref() == Ok("1"),
             frame_budget: std::env::var("NS_STREAMLINE_TARGET_FRAME_BUDGET")
@@ -231,6 +233,20 @@ pub(super) unsafe fn present(
             windows_sys::Win32::UI::WindowsAndMessaging::GA_ROOT,
         );
         let (requested, control_revision) = crate::live::requested();
+        let native_source = crate::source_auto::select(queue, &*info);
+        let region = native_source.ok().and_then(|source| {
+            crate::target_fg_gate::content_region(
+                source.viewport,
+                [chain.extent.width, chain.extent.height],
+            )
+        });
+        let region_changed = region != chain.region;
+        chain.region = region;
+        let region_off = match region {
+            None => Some("fg_region_unavailable"),
+            Some([_, _, w, h]) if w < s.minimum || h < s.minimum => Some("fg_region_too_small"),
+            _ => None,
+        };
         let off_reason = crate::target_fg_gate::Inputs {
             status: s.status,
             minimum: s.minimum,
@@ -249,9 +265,10 @@ pub(super) unsafe fn present(
             None
         } else {
             Some("user_disabled")
-        });
+        })
+        .or(region_off);
         let on = off_reason.is_none();
-        let (sr_mode, sr_revision) = crate::live::sr_requested();
+        let (sr_mode, sr_revision, sr_scale, sr_preset) = crate::live::sr_requested();
         if sr_mode != chain.sr_mode || sr_revision != chain.sr_revision {
             // Previous SR submission and FG input consumption have completed.
             device.device_wait_idle()?;
@@ -259,6 +276,14 @@ pub(super) unsafe fn present(
             chain.sr_mode = sr_mode;
             chain.sr_revision = sr_revision;
             chain.sr_failed = !chain.sr_allowed;
+        }
+        if chain
+            .sr
+            .as_ref()
+            .is_some_and(|sr| !sr.matches_source(native_source.ok()))
+        {
+            device.device_wait_idle()?;
+            drop(chain.sr.take());
         }
         let sr_requested = crate::target_sr::available() && sr_mode != 0 && !chain.sr_failed;
         if sr_mode == 0 {
@@ -270,8 +295,8 @@ pub(super) unsafe fn present(
             chain.resources = Some(guides(d, &device, &mut chain, queue, handle)?);
         }
         let mut flow_ready = None;
-        let mut reset = !chain.was_on;
-        let mut sr_reset = chain.sr.is_none();
+        let mut reset = !chain.was_on || region_changed;
+        let mut sr_reset = chain.sr.is_none() || region_changed;
         if on || sr_requested {
             if let Some(resources) = chain.resources {
                 if let Some(flow) = chain.flow.as_mut() {
@@ -305,6 +330,9 @@ pub(super) unsafe fn present(
                 handle,
                 chain.extent,
                 sr_mode,
+                sr_scale,
+                sr_preset,
+                native_source.ok(),
             ) {
                 Ok(sr) => chain.sr = Some(sr),
                 Err(error) => {
@@ -327,13 +355,19 @@ pub(super) unsafe fn present(
             } else {
                 (*info).wait_semaphores(&waits)
             };
-            sr.run(queue, &input, token, sr_motion, sr_reset)?;
+            sr.run(queue, &input, token, sr_motion, sr_reset, native_source)?;
             flow_ready = None;
             sr_completed = true;
         }
         if let Some(resources) = chain.resources {
             checked(
-                probe_fg_inputs(&api, token, u32::from(reset), resources.as_ptr()),
+                probe_fg_inputs(
+                    &api,
+                    token,
+                    u32::from(reset),
+                    resources.as_ptr(),
+                    region.as_ref().map_or(std::ptr::null(), |r| r.as_ptr()),
+                ),
                 "FG constants/tags",
             )?;
         }
@@ -395,12 +429,18 @@ pub(super) unsafe fn present(
             );
             crate::target_window::active(false);
         }
+        if region_changed {
+            trace::event!(
+                "target_fg_region",
+                json!({"region":region,"source_error":native_source.err(),"reset":reset})
+            );
+        }
         chain.was_on = on;
-        crate::live::sr_applied(sr_mode, sr_revision);
+        crate::live::sr_applied(sr_mode, sr_revision, sr_preset);
         crate::live::frame(on, off_reason, control_revision);
         trace::event!(
             "target_fg_frame",
-            json!({"frame":frame,"swapchain":handle.as_raw(),"requested_on":on,"off_reason":off_reason,"input_wait_completed":true,"timing_us":{"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
+            json!({"frame":frame,"swapchain":handle.as_raw(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
         );
         Ok(result)
     })();
@@ -456,7 +496,7 @@ pub(super) unsafe fn after_destroy(handle: vk::Device, swapchain: vk::SwapchainK
                 r.image = 0;
                 r
             });
-            if probe_fg_inputs(&api, token, 1, nulls.as_ptr()) != 0 {
+            if probe_fg_inputs(&api, token, 1, nulls.as_ptr(), std::ptr::null()) != 0 {
                 std::process::abort()
             }
             for r in resources {

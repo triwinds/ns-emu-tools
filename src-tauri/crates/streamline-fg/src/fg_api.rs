@@ -53,6 +53,7 @@ unsafe extern "C" {
         token: u64,
         reset: u32,
         resources: *const Resource,
+        region: *const u32,
     ) -> i32;
 }
 pub(crate) fn checked(result: i32, operation: &str) -> Result<()> {

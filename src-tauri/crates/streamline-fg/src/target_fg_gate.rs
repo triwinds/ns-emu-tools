@@ -1,4 +1,22 @@
 //! Eligibility for the bounded diagnostic. A completed stop is terminal for this chain.
+// Reject ambiguous fractional viewports instead of rounding into the black bars.
+pub(super) fn content_region(viewport: [f32; 4], size: [u32; 2]) -> Option<[u32; 4]> {
+    if viewport
+        .iter()
+        .any(|v| !v.is_finite() || *v < 0.0 || v.fract() != 0.0)
+    {
+        return None;
+    }
+    let [x, y, width, height] = viewport.map(|v| v as u32);
+    if width == 0
+        || height == 0
+        || x.checked_add(width)? > size[0]
+        || y.checked_add(height)? > size[1]
+    {
+        return None;
+    }
+    Some([x, y, width, height])
+}
 #[derive(Clone, Copy)]
 pub(super) struct Inputs {
     pub status: u32,
@@ -218,7 +236,11 @@ mod pacing_tests {
 
 // Focus changes pause ordinary sessions; explicit diagnostics retain terminal stops.
 pub(super) fn terminal_stop(reason: Option<&'static str>, bounded: bool) -> Option<&'static str> {
-    if matches!(reason, Some("background" | "user_disabled")) && !bounded {
+    if matches!(
+        reason,
+        Some("fg_region_unavailable" | "fg_region_too_small")
+    ) || (matches!(reason, Some("background" | "user_disabled")) && !bounded)
+    {
         None
     } else {
         reason
@@ -229,11 +251,45 @@ mod lifecycle_tests {
     use super::*;
     #[test]
     fn focus_can_resume_but_window_and_sdk_failures_remain_terminal() {
+        for bounded in [false, true] {
+            assert_eq!(terminal_stop(Some("fg_region_unavailable"), bounded), None);
+            assert_eq!(terminal_stop(Some("fg_region_too_small"), bounded), None);
+        }
         assert_eq!(terminal_stop(Some("background"), false), None);
         assert_eq!(terminal_stop(Some("user_disabled"), false), None);
         assert_eq!(terminal_stop(Some("background"), true), Some("background"));
         for reason in ["window_operation", "sdk_status", "frame_budget"] {
             assert_eq!(terminal_stop(Some(reason), false), Some(reason));
+        }
+    }
+}
+
+#[cfg(test)]
+mod region_tests {
+    use super::*;
+    #[test]
+    fn accepts_horizontal_vertical_and_no_bars() {
+        for (viewport, size, expected) in [
+            ([93., 0., 2374., 1335.], [2560, 1335], [93, 0, 2374, 1335]),
+            ([0., 140., 1920., 800.], [1920, 1080], [0, 140, 1920, 800]),
+            ([0., 0., 1920., 1080.], [1920, 1080], [0, 0, 1920, 1080]),
+        ] {
+            assert_eq!(content_region(viewport, size), Some(expected));
+        }
+    }
+    #[test]
+    fn rejects_invalid_or_outdated_regions() {
+        for viewport in [
+            [93.5, 0., 2374., 1335.],
+            [93., 0., 2500., 1335.],
+            [0., 1., 2560., 1335.],
+            [0., 0., 0., 1335.],
+            [-1., 0., 2374., 1335.],
+            [f32::NAN, 0., 2374., 1335.],
+            [0., 0., f32::INFINITY, 1335.],
+            [f32::MAX, 0., 1., 1335.],
+        ] {
+            assert_eq!(content_region(viewport, [2560, 1335]), None);
         }
     }
 }

@@ -233,16 +233,42 @@ extern "C" int32_t probe_fg_marker(const ProbeFGApi* api, uint64_t token, uint32
     try { return int32_t(fgFunction<PFun_slPCLSetMarker>(api, sl::kFeaturePCL, "slPCLSetMarker")(sl::PCLMarker(marker), *reinterpret_cast<sl::FrameToken*>(token))); }
     catch (...) { return -1001; }
 }
+// The Rust ABI is x/y/width/height; sl::Extent declares top BEFORE left.
+static constexpr sl::Extent fgExtent(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    sl::Extent extent{};
+    extent.left = x;
+    extent.top = y;
+    extent.width = width;
+    extent.height = height;
+    return extent;
+}
+// Exercise the actual pinned SDK type, including asymmetric letterboxing.
+static_assert(fgExtent(93, 0, 2374, 1335).left == 93 &&
+              fgExtent(93, 0, 2374, 1335).top == 0 &&
+              fgExtent(93, 0, 2374, 1335).height == 1335);
+static_assert(fgExtent(0, 140, 1920, 800).top == 140 &&
+              fgExtent(0, 140, 1920, 800).left == 0 &&
+              fgExtent(0, 140, 1920, 800).width == 1920);
 extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32_t reset,
-    const ProbeFGResource* inputs) noexcept {
+    const ProbeFGResource* inputs, const uint32_t* region) noexcept {
     try {
+        sl::Extent extent{0,0,inputs[0].width,inputs[0].height};
+        if (region) extent = fgExtent(region[0],region[1],region[2],region[3]);
+        if (!extent.width || !extent.height) return -1002;
+        for (uint32_t i=0; i<2; ++i) {
+            if (extent.left > inputs[i].width || extent.top > inputs[i].height ||
+                extent.width > inputs[i].width - extent.left ||
+                extent.height > inputs[i].height - extent.top) return -1002;
+        }
         auto& frame = *reinterpret_cast<sl::FrameToken*>(token);
         sl::Constants constants;
         sl::float4x4 identity;
         for (uint32_t i=0; i<4; ++i) identity.setRow(i, {i==0 ? 1.0f : 0.0f, i==1 ? 1.0f : 0.0f, i==2 ? 1.0f : 0.0f, i==3 ? 1.0f : 0.0f});
         constants.cameraViewToClip = constants.clipToCameraView = constants.clipToLensClip = constants.clipToPrevClip = constants.prevClipToClip = identity;
         constants.jitterOffset = constants.cameraPinholeOffset = {0,0};
-        constants.mvecScale = {1,1};
+        // NVOF stores UV displacement relative to the full texture. Tags below
+        // crop that texture, so normalize displacement to the active region.
+        constants.mvecScale = {float(inputs[1].width)/float(extent.width), float(inputs[1].height)/float(extent.height)};
         constants.cameraPos = {0,0,0}; constants.cameraUp = {0,1,0};
         constants.cameraRight = {1,0,0}; constants.cameraFwd = {0,0,1};
         constants.cameraNear = 0.1f;
@@ -255,7 +281,7 @@ extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32
             constants.motionVectorsJittered = sl::eFalse;
             constants.minRelativeLinearDepthObjectSeparation = 40.0f;
         }
-        constants.cameraAspectRatio = float(inputs[0].width)/float(inputs[0].height);
+        constants.cameraAspectRatio = float(extent.width)/float(extent.height);
         constants.depthInverted = sl::eFalse; constants.cameraMotionIncluded = estimateMotion() ? sl::eTrue : sl::eFalse;
         constants.motionVectors3D = sl::eFalse; constants.reset = reset ? sl::eTrue : sl::eFalse;
         auto r = reinterpret_cast<PFun_slSetConstants*>(api->constants)(constants, frame, sl::ViewportHandle(0));
@@ -268,11 +294,13 @@ extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32
             resources[i].nativeFormat=inputs[i].format; resources[i].mipLevels=1; resources[i].arrayLayers=1;
             resources[i].flags=0; resources[i].usage=inputs[i].usage;
         }
-        sl::Extent extent{0,0,inputs[0].width,inputs[0].height};
         sl::ResourceTag tags[] = {
             {inputs[0].image ? &resources[0] : nullptr, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &extent},
-            {inputs[1].image ? &resources[1] : nullptr, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &extent}};
-        return int32_t(reinterpret_cast<PFun_slSetTagForFrame*>(api->tags)(frame, sl::ViewportHandle(0), tags, 2, nullptr));
+            {inputs[1].image ? &resources[1] : nullptr, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &extent},
+            // SL already knows the backbuffer. Pixels outside this extent are
+            // copied unchanged, rather than interpolated across the black bars.
+            {nullptr, sl::kBufferTypeBackbuffer, sl::ResourceLifecycle{}, &extent}};
+        return int32_t(reinterpret_cast<PFun_slSetTagForFrame*>(api->tags)(frame, sl::ViewportHandle(0), tags, 3, nullptr));
     } catch (...) { return -1001; }
 }
 // SR shares the fixed-width ABI definitions above; build as one translation unit.

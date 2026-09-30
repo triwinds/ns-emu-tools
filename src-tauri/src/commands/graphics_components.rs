@@ -383,9 +383,13 @@ pub async fn live_streamline_fg(
     executable: PathBuf,
     enabled: Option<bool>,
     sr_mode: Option<String>,
+    sr_scale: Option<u16>,
+    sr_preset: Option<String>,
 ) -> ApiResponse<serde_json::Value> {
     match tauri::async_runtime::spawn_blocking(move || {
-        graphics_components::streamline_install::live(executable, enabled, sr_mode)
+        graphics_components::streamline_install::live(
+            executable, enabled, sr_mode, sr_scale, sr_preset,
+        )
     })
     .await
     {

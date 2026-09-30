@@ -20,7 +20,7 @@ let generation = 0
 let timer: ReturnType<typeof setTimeout> | undefined
 let disposed = false
 let deadline = 0
-const srModeLabel = computed(() => ({ 1: '性能', 2: '均衡', 3: '质量', 6: 'DLAA' })[live.value.sr?.mode as 1 | 2 | 3 | 6] ?? '')
+const srModeLabel = computed(() => live.value.sr?.scale ? `${(live.value.sr.scale / 100).toFixed(2)}×` : '')
 const samples = computed(() => live.value.samples ?? [])
 const current = computed(() => samples.value[samples.value.length - 1])
 const inspected = computed(() => selected.value === null ? current.value : samples.value[selected.value])
@@ -128,8 +128,10 @@ onBeforeUnmount(() => { disposed = true; generation++; clearTimeout(timer); resi
     <div class="live-sr">
       <span>SR 画面重建</span>
       <span v-if="live.connected && live.fresh && live.sr?.active">
-        {{ srModeLabel }}运行中 · {{ live.sr.input?.join(' × ') }} → {{ live.sr.output?.join(' × ') }}
+        {{ srModeLabel }} {{ live.sr.source === 'native_source' ? '缩放前画面' : '窗口画面' }}运行中 · {{ (live.sr.original_input ?? live.sr.input)?.join(' × ') }} → {{ live.sr.processing_output?.join(' × ') }} → 窗口 {{ live.sr.output?.join(' × ') }}
+        <span v-if="live.sr.source === 'present_source' && live.sr.fallbackReason"> · 自动回退：{{ live.sr.fallbackReason }}</span>
         · {{ live.sr.motion ? '光流辅助' : '逐帧重置' }}
+        · 预设 {{ !live.sr.preset || live.sr.preset === 'default' ? '自动' : live.sr.preset.toUpperCase() }}
       </span>
       <span v-else>{{ live.connected && live.fresh && live.sr?.reason && live.sr.reason !== 'waiting' ? '未生效：' + live.sr.reason : '未运行' }}</span>
     </div>

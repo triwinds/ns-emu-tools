@@ -1,0 +1,134 @@
+{
+  "date": "2026-09-26",
+  "game": "TOTK 0100F2C0115B6000 v0",
+  "target": "Ryubing 1.3.351+475615f",
+  "baseline": [
+    {
+      "phase": "tracking",
+      "fps": 7.474654167377603,
+      "seconds": 18.125,
+      "observer_ms_per_second": 800.4350620689655,
+      "observer_ms_per_frame": 107.08656803981462,
+      "category_ms_per_second": [
+        653.5803972413794,
+        58.488568275862065,
+        45.18517517241379,
+        7.393759999999999,
+        35.78716137931034
+      ]
+    },
+    {
+      "phase": "stopped",
+      "fps": 30.01532481220289,
+      "seconds": 18.117,
+      "observer_ms_per_second": 0.0,
+      "observer_ms_per_frame": 0.0,
+      "category_ms_per_second": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "fixed": [
+    {
+      "phase": "tracking",
+      "valid": true,
+      "fps": 30.001240175723293,
+      "observer_ms_per_second": 207.62118223105307,
+      "sr": {
+        "active": false,
+        "appliedRevision": 1790423821192,
+        "mode": 0,
+        "reason": "已关闭"
+      },
+      "observer_ms_per_frame": 6.920419989806224
+    },
+    {
+      "phase": "sr1",
+      "valid": true,
+      "fps": 29.69989353063435,
+      "observer_ms_per_second": 203.22269729844714,
+      "sr": {
+        "active": true,
+        "appliedRevision": 1790423841221,
+        "fallbackReason": null,
+        "input": [
+          1920,
+          1080
+        ],
+        "mode": 6,
+        "motion": true,
+        "original_input": [
+          1920,
+          1080
+        ],
+        "output": [
+          2560,
+          1335
+        ],
+        "processing_output": [
+          1920,
+          1080
+        ],
+        "scale": 100,
+        "source": "native_source"
+      },
+      "observer_ms_per_frame": 6.842539589875311
+    },
+    {
+      "phase": "sr2",
+      "valid": true,
+      "fps": 29.79971363179734,
+      "observer_ms_per_second": 200.44981552433663,
+      "sr": {
+        "active": true,
+        "appliedRevision": 1790423861240,
+        "fallbackReason": null,
+        "input": [
+          1920,
+          1080
+        ],
+        "mode": 6,
+        "motion": true,
+        "original_input": [
+          1920,
+          1080
+        ],
+        "output": [
+          2560,
+          1335
+        ],
+        "processing_output": [
+          3840,
+          2160
+        ],
+        "scale": 200,
+        "source": "native_source"
+      },
+      "observer_ms_per_frame": 6.7265685167675455
+    }
+  ],
+  "category_order": [
+    "descriptors",
+    "barriers",
+    "draws",
+    "renderpasses",
+    "other"
+  ],
+  "sessions": [
+    "sr-perf-gameplay",
+    "sr-perf-fixed2-gameplay"
+  ],
+  "limits": [
+    "User entered actual game scene and stayed stationary; this is a short scene comparison, not a broad game benchmark.",
+    "FG disabled throughout; SR stages use NVOF.",
+    "Observer timings sum instrumented callback processing, include JSON/lock waits, exclude underlying Vulkan calls, hook dispatch and present-time source selection. Not whole-machine CPU utilization.",
+    "Diagnostic track-only override keeps tracking enabled with SR off for a fair comparison. Production SR off suspends per-frame tracking.",
+    "No visual pixel comparison or Vulkan validation layer used in this run."
+  ],
+  "tested_layer_sha256": "84b5ee7db984e3fc7e50d0d8f1890cc63a4bc02e005a03d1d3b6febd3949d52c",
+  "release_package": "local-52f2ec5f4583-96042b55d56f"
+}

@@ -131,6 +131,43 @@ fn analyze(rows: &[Value], fg: bool, sdk: bool) -> Result<Value> {
     )
 }
 
+fn analyze_shutdown(rows: &[Value], sdk: bool) -> Result<Value> {
+    if rows.iter().any(|r| {
+        matches!(
+            r["event"].as_str(),
+            Some("target_fg_failure" | "target_sdk_error")
+        )
+    }) {
+        return Err("target recorded an SDK/FG failure".into());
+    }
+    for (event, field) in [
+        ("vkDestroyDevice", "remaining_devices"),
+        ("vkDestroyInstance", "remaining_instances"),
+    ] {
+        if rows
+            .iter()
+            .rev()
+            .find(|r| r["event"] == event)
+            .is_none_or(|r| r["details"][field] != 0)
+        {
+            return Err(format!("missing clean {event}").into());
+        }
+    }
+    if sdk
+        && rows
+            .iter()
+            .rev()
+            .find(|r| r["event"] == "target_sdk_shutdown")
+            .is_none_or(|r| r["details"]["result"] != 0)
+    {
+        return Err("SDK shutdown failed".into());
+    }
+    Ok(
+        json!({"clean_shutdown":true,"frame_trace_enabled":false,"bounded_activation_verified":false,
+        "visual_intermediate_frames_verified":false,"scanout_cadence_verified":false,"latency_verified":false}),
+    )
+}
+
 pub(super) fn verify(session: &Path) -> Result<()> {
     let inputs: Value = serde_json::from_slice(&fs::read(session.join("target-inputs.json"))?)?;
     let exit: Value = serde_json::from_slice(&fs::read(session.join("target-exit.json"))?)?;
@@ -159,7 +196,11 @@ pub(super) fn verify(session: &Path) -> Result<()> {
             rows.push(row);
         }
     }
-    let mut result = analyze(&rows, fg, sdk)?;
+    let mut result = if inputs["frame_trace_enabled"] == false {
+        analyze_shutdown(&rows, sdk)?
+    } else {
+        analyze(&rows, fg, sdk)?
+    };
     if sdk {
         let log = fs::read_to_string(session.join("runtime/sl.log"))?;
         if log.lines().any(|l| l.contains("[error]")) {
@@ -179,6 +220,22 @@ pub(super) fn verify(session: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn quiet_sessions_still_require_clean_shutdown_and_reject_errors() {
+        let mut rows = vec![
+            json!({"event":"vkDestroyDevice","details":{"remaining_devices":0}}),
+            json!({"event":"vkDestroyInstance","details":{"remaining_instances":0}}),
+            json!({"event":"target_sdk_shutdown","details":{"result":0}}),
+        ];
+        assert_eq!(
+            analyze_shutdown(&rows, true).unwrap()["bounded_activation_verified"],
+            false
+        );
+        assert!(analyze(&rows, true, true).is_err());
+        assert!(analyze_shutdown(&rows[..2], true).is_err());
+        rows.push(json!({"event":"target_fg_failure"}));
+        assert!(analyze_shutdown(&rows, true).is_err());
+    }
     fn valid() -> Vec<Value> {
         let mut rows = Vec::new();
         for _ in 0..3 {

@@ -291,7 +291,13 @@ unsafe fn run(
             return Err("unexpected surface change while FG enabled".into());
         }
         checked(
-            probe_fg_inputs(&api, token, u32::from(frame == 0), resources.as_ptr()),
+            probe_fg_inputs(
+                &api,
+                token,
+                u32::from(frame == 0),
+                resources.as_ptr(),
+                std::ptr::null(),
+            ),
             "constants / tags",
         )?;
         device.reset_fences(&[fence])?;
@@ -381,7 +387,7 @@ unsafe fn run(
     // New token to clear tags without setting constants twice for one frame.
     checked(probe_fg_begin(&api, 700, &mut token), "cleanup token")?;
     checked(
-        probe_fg_inputs(&api, token, 1, nulls.as_ptr()),
+        probe_fg_inputs(&api, token, 1, nulls.as_ptr(), std::ptr::null()),
         "clear tags",
     )?;
     swap.destroy_swapchain(chain, None);

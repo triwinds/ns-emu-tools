@@ -40,6 +40,17 @@ fn hot_event(name: &str) -> bool {
         || matches!(name, "target_nvof_frame" | "target_nvof_confidence")
 }
 pub fn enabled(name: &str) -> bool {
+    static FRAMES: OnceLock<bool> = OnceLock::new();
+    let frames =
+        *FRAMES.get_or_init(|| std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"));
+    if !frames
+        && matches!(
+            name,
+            "vkQueuePresentKHR" | "route_present_retired" | "target_fg_frame" | "target_sr_frame"
+        )
+    {
+        return false;
+    }
     !hot_event(name) || verbose()
 }
 macro_rules! event {
@@ -78,6 +89,9 @@ pub fn record(name: &str, details: Value) {
                         | "route_present_retired"
                         | "target_fg_frame"
                         | "target_sr_frame"
+                        | "target_sr_profile"
+                        | "target_nvof_gpu"
+                        | "target_nvof_profile"
                 )
             {
                 let _ = file.flush();

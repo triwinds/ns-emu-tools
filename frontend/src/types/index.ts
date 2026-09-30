@@ -31,6 +31,8 @@ export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
   streamline_nvof: boolean
   streamline_sr: boolean
+  streamline_sr_scale?: number
+  streamline_sr_preset?: 'default' | 'j' | 'k' | 'l' | 'm'
   streamline_sr_mode: 'quality' | 'balanced' | 'performance' | 'dlaa'
 }
 

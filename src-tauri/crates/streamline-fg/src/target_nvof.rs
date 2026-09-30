@@ -851,6 +851,14 @@ impl Flow {
             "target_nvof_frame",
             json!({"frame":frame,"reset":reset,"submit_us":started.elapsed().as_micros(),"grid":4,"confidence_masked":false,"diagnostic_statistics":false}),
         );
+        if self.timing.is_some() {
+            trace::event!(
+                "target_nvof_profile",
+                json!({"frame":frame,
+                "cpu_prepare_and_submit_us":started.elapsed().as_micros(),
+                "includes_previous_frame_fence_wait":true})
+            );
+        }
         self.current = 1 - self.current;
         self.initialized = true;
         self.previous_frame = frame;
