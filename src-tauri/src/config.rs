@@ -442,12 +442,15 @@ pub struct UiSetting {
     /// 是否深色模式
     #[serde(default = "default_true")]
     pub dark: bool,
-    /// 窗口宽度
+    /// 窗口宽度（逻辑像素）
     #[serde(default = "default_width")]
     pub width: u32,
-    /// 窗口高度
+    /// 窗口高度（逻辑像素）
     #[serde(default = "default_height")]
     pub height: u32,
+    /// 旧配置没有此字段，窗口尺寸按物理像素保存。
+    #[serde(default)]
+    pub window_size_is_logical: bool,
 }
 
 fn default_last_page() -> String {
@@ -488,6 +491,7 @@ impl Default for UiSetting {
             dark: true,
             width: default_width(),
             height: default_height(),
+            window_size_is_logical: true,
         }
     }
 }
@@ -694,6 +698,7 @@ pub fn update_setting(mut setting: CommonSetting) -> AppResult<()> {
 
     let snapshot = {
         let mut config = CONFIG.write();
+        setting.ui.window_size_is_logical = config.setting.ui.window_size_is_logical;
         if config.setting == setting {
             info!("设置未变化，跳过保存");
             return Ok(());
@@ -712,11 +717,15 @@ pub fn update_window_size(width: u32, height: u32) -> AppResult<()> {
 
     let snapshot = {
         let mut config = CONFIG.write();
-        if config.setting.ui.width == width && config.setting.ui.height == height {
+        if config.setting.ui.width == width
+            && config.setting.ui.height == height
+            && config.setting.ui.window_size_is_logical
+        {
             return Ok(());
         }
         config.setting.ui.width = width;
         config.setting.ui.height = height;
+        config.setting.ui.window_size_is_logical = true;
         info!("已将窗口大小更新为 {}x{}", width, height);
         config.clone()
     };
@@ -743,6 +752,7 @@ pub fn replace_config(mut config: Config) -> AppResult<()> {
 
     let snapshot = {
         let mut current = CONFIG.write();
+        config.setting.ui.window_size_is_logical = current.setting.ui.window_size_is_logical;
         if *current == config {
             info!("配置未变化，跳过保存");
             return Ok(());
@@ -769,10 +779,17 @@ mod tests {
         assert_eq!(config.yuzu.branch, "eden");
         assert_eq!(config.ryujinx.branch, "mainline");
         assert!(config.setting.ui.dark);
+        assert!(config.setting.ui.window_size_is_logical);
         assert_eq!(
             config.setting.network.eden_git_download_mirror,
             "auto-detect"
         );
+    }
+
+    #[test]
+    fn test_legacy_window_size_is_treated_as_physical() {
+        let ui: UiSetting = serde_json::from_str(r#"{"width":1950,"height":1275}"#).unwrap();
+        assert!(!ui.window_size_is_logical);
     }
 
     #[test]

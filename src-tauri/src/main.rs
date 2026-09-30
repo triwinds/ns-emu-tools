@@ -8,53 +8,103 @@ use ns_emu_tools_lib::{commands, logging};
 use tauri::{Emitter, Manager, WebviewWindow, WindowEvent};
 use tracing::info;
 
+fn logical_window_size(size: tauri::PhysicalSize<u32>, scale_factor: f64) -> (u32, u32) {
+    let logical = size.to_logical::<u32>(scale_factor);
+    ns_emu_tools_lib::config::clamp_window_size(logical.width, logical.height)
+}
+
 /// 设置窗口大小并监听窗口变化事件
 fn setup_window(window: &WebviewWindow) {
     // 从配置读取窗口大小
     let config = ns_emu_tools_lib::config::get_config();
-    let (width, height) = ns_emu_tools_lib::config::clamp_window_size(
-        config.setting.ui.width,
-        config.setting.ui.height,
-    );
+    let saved_size = tauri::PhysicalSize::new(config.setting.ui.width, config.setting.ui.height);
+    let (width, height) = if config.setting.ui.window_size_is_logical {
+        ns_emu_tools_lib::config::clamp_window_size(saved_size.width, saved_size.height)
+    } else {
+        // 旧版本把 Resized 的物理像素直接写入了配置，启动时迁移一次。
+        let scale_factor = window.scale_factor().unwrap_or_else(|error| {
+            tracing::warn!(
+                "failed to get window scale factor for size migration: {}",
+                error
+            );
+            1.0
+        });
+        logical_window_size(saved_size, scale_factor)
+    };
 
-    if let Err(e) = window.set_min_size(Some(tauri::Size::Physical(tauri::PhysicalSize {
-        width: ns_emu_tools_lib::config::MIN_WINDOW_WIDTH,
-        height: ns_emu_tools_lib::config::MIN_WINDOW_HEIGHT,
-    }))) {
+    if let Err(e) = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(
+        ns_emu_tools_lib::config::MIN_WINDOW_WIDTH as f64,
+        ns_emu_tools_lib::config::MIN_WINDOW_HEIGHT as f64,
+    )))) {
         tracing::warn!("failed to set minimum window size: {}", e);
     }
 
-    if (width, height) != (config.setting.ui.width, config.setting.ui.height) {
+    if (width, height) != (config.setting.ui.width, config.setting.ui.height)
+        || !config.setting.ui.window_size_is_logical
+    {
         if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
             tracing::warn!("failed to persist normalized window size: {}", e);
         }
     }
 
     // 设置窗口大小
-    if let Err(e) = window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height })) {
+    if let Err(e) = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(
+        width as f64,
+        height as f64,
+    ))) {
         tracing::warn!("设置窗口大小失败: {}", e);
     }
 
     // 监听窗口大小变化事件
-    window.on_window_event(move |event| {
-        match event {
-            WindowEvent::Resized(size) => {
-                let width = size.width;
-                let height = size.height;
-
-                // 更新配置中的窗口大小
+    let resize_window = window.clone();
+    window.on_window_event(move |event| match event {
+        WindowEvent::Resized(size) => match resize_window.scale_factor() {
+            Ok(scale_factor) => {
+                let (width, height) = logical_window_size(*size, scale_factor);
                 if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
                     tracing::warn!("保存窗口大小失败: {}", e);
                 }
             }
-            WindowEvent::CloseRequested { .. } => {
-                if let Err(e) = ns_emu_tools_lib::config::flush_pending_config_save() {
-                    tracing::warn!("退出前刷新配置失败: {}", e);
-                }
+            Err(e) => tracing::warn!("failed to get window scale factor on resize: {}", e),
+        },
+        WindowEvent::ScaleFactorChanged {
+            scale_factor,
+            new_inner_size,
+            ..
+        } => {
+            let (width, height) = logical_window_size(*new_inner_size, *scale_factor);
+            if let Err(e) = ns_emu_tools_lib::config::update_window_size(width, height) {
+                tracing::warn!("保存窗口大小失败: {}", e);
             }
-            _ => {}
         }
+        WindowEvent::CloseRequested { .. } => {
+            if let Err(e) = ns_emu_tools_lib::config::flush_pending_config_save() {
+                tracing::warn!("退出前刷新配置失败: {}", e);
+            }
+        }
+        _ => {}
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn window_size_is_stable_across_display_scale_factors() {
+        assert_eq!(
+            logical_window_size(tauri::PhysicalSize::new(1300, 850), 1.0),
+            (1300, 850)
+        );
+        assert_eq!(
+            logical_window_size(tauri::PhysicalSize::new(1950, 1275), 1.5),
+            (1300, 850)
+        );
+        assert_eq!(
+            logical_window_size(tauri::PhysicalSize::new(2600, 1700), 2.0),
+            (1300, 850)
+        );
+    }
 }
 
 fn main() {
