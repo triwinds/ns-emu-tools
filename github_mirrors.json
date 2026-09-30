@@ -9,8 +9,8 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 20,
-    "raw": 5
+    "download": 18,
+    "raw": 6
   },
   "download": [
     {
@@ -71,13 +71,6 @@
     },
     {
       "kind": "download",
-      "url": "https://github.ednovas.xyz/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [github.ednovas.xyz] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
       "url": "https://ghfile.geekertao.top/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [ghfile.geekertao.top] 提供",
@@ -95,13 +88,6 @@
       "url": "https://git.yylx.win/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [git.yylx.win] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://gh.xxooo.cf/https://github.com",
-      "region": "美国",
-      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [gh.xxooo.cf] 提供",
       "source_array": "download_url_us"
     },
     {
@@ -188,6 +174,13 @@
       "url": "https://cdn.gh-proxy.org/https://raw.githubusercontent.com",
       "region": "日本 2",
       "description": "[Fastly CDN] - 该公益加速源由 [gh-proxy.com] 提供\n\n - 缓存：有",
+      "source_array": "raw_url"
+    },
+    {
+      "kind": "raw",
+      "url": "https://g.blfrp.cn/https://raw.githubusercontent.com",
+      "region": "日本 3",
+      "description": "[日本 东京] - 该公益加速源由 [g.blfrp.cn] 提供",
       "source_array": "raw_url"
     }
   ]
