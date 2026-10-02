@@ -1199,6 +1199,10 @@ pub fn get_download_source_name(origin_url: &str) -> String {
         get_source_name_by_mode(&ryujinx_mirror, "Ryujinx 官方源")
     } else if origin_url.starts_with("https://git.eden-emu.dev") {
         get_source_name_by_mode(&eden_mirror, "Eden 官方源")
+    } else if origin_url.starts_with("https://nightly.eden-emu.dev/")
+        || origin_url == "https://nightly.eden-emu.dev"
+    {
+        "Eden Nightly 官方源".to_string()
     } else if origin_url.starts_with("https://github.com") {
         get_github_download_source_name()
     } else {

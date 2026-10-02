@@ -317,6 +317,7 @@ pub const COMMON_DOMAINS: &[&str] = &[
     "cfrp.e6ex.com",
     "git.ryujinx.app",
     "git.eden-emu.dev",
+    "nightly.eden-emu.dev",
 ];
 
 #[cfg(test)]

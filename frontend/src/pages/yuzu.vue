@@ -267,6 +267,12 @@ let branches = [
     available: true
   },
   {
+    text: 'Eden Nightly',
+    value: 'eden-nightly',
+    name: 'Eden Nightly',
+    available: true
+  },
+  {
     text: 'Citron Stable',
     value: 'citron-stable',
     name: 'Citron Stable',

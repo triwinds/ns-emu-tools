@@ -1,22 +1,30 @@
 //! Release metadata access for Eden/Citron emulator branches.
 
 use crate::error::{AppError, AppResult};
-use crate::models::release::ReleaseInfo;
+use crate::models::release::{ReleaseAsset, ReleaseInfo};
 use crate::models::yuzu_branch::{
     normalize_yuzu_branch, CITRON_NIGHTLY_BRANCH, CITRON_STABLE_BRANCH, EDEN_BRANCH,
+    EDEN_NIGHTLY_BRANCH,
 };
 use crate::services::network::{request_git_api, request_github_api};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use std::collections::HashSet;
 use tracing::{debug, info};
 
 const EDEN_RELEASES_API: &str = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases";
+const EDEN_NIGHTLY_RELEASES_API: &str =
+    "https://git.eden-emu.dev/api/v1/repos/eden-ci/nightly/releases";
+static EDEN_PACKAGE_LINKS: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"\[[^\]\r\n]*\]\((https://[^\s)]+)\)").expect("valid Eden package link regex")
+});
 const CITRON_STABLE_RELEASES_API: &str =
     "https://api.github.com/repos/citron-neo/emulator/releases";
 const CITRON_NIGHTLY_RELEASES_API: &str = "https://api.github.com/repos/citron-neo/CI/releases";
 
 fn unsupported_yuzu_branch_error(branch: &str) -> AppError {
     AppError::InvalidArgument(format!(
-        "Unsupported Yuzu branch: {}; supported branches: eden, citron-stable, citron-nightly",
+        "Unsupported Yuzu branch: {}; supported branches: eden, eden-nightly, citron-stable, citron-nightly",
         branch
     ))
 }
@@ -24,6 +32,13 @@ fn unsupported_yuzu_branch_error(branch: &str) -> AppError {
 pub async fn get_all_yuzu_release_versions(branch: &str) -> AppResult<Vec<String>> {
     match normalize_yuzu_branch(branch) {
         Some(EDEN_BRANCH) => get_eden_all_release_versions().await,
+        Some(EDEN_NIGHTLY_BRANCH) => {
+            let releases = get_eden_all_release_info_for_branch(EDEN_NIGHTLY_BRANCH).await?;
+            Ok(releases
+                .into_iter()
+                .map(|release| release.tag_name)
+                .collect())
+        }
         Some(CITRON_STABLE_BRANCH) => get_citron_all_release_versions(CITRON_STABLE_BRANCH).await,
         Some(CITRON_NIGHTLY_BRANCH) => get_citron_all_release_versions(CITRON_NIGHTLY_BRANCH).await,
         _ => Err(unsupported_yuzu_branch_error(branch)),
@@ -33,6 +48,9 @@ pub async fn get_all_yuzu_release_versions(branch: &str) -> AppResult<Vec<String
 pub async fn get_yuzu_all_release_info(branch: &str) -> AppResult<Vec<ReleaseInfo>> {
     match normalize_yuzu_branch(branch) {
         Some(EDEN_BRANCH) => get_eden_all_release_info().await,
+        Some(EDEN_NIGHTLY_BRANCH) => {
+            get_eden_all_release_info_for_branch(EDEN_NIGHTLY_BRANCH).await
+        }
         Some(CITRON_STABLE_BRANCH) => get_citron_all_release_info(CITRON_STABLE_BRANCH).await,
         Some(CITRON_NIGHTLY_BRANCH) => get_citron_all_release_info(CITRON_NIGHTLY_BRANCH).await,
         _ => Err(unsupported_yuzu_branch_error(branch)),
@@ -45,6 +63,9 @@ pub async fn get_yuzu_release_info_by_version(
 ) -> AppResult<ReleaseInfo> {
     match normalize_yuzu_branch(branch) {
         Some(EDEN_BRANCH) => get_eden_release_info_by_version(version).await,
+        Some(EDEN_NIGHTLY_BRANCH) => {
+            get_eden_release_info_for_branch(version, EDEN_NIGHTLY_BRANCH).await
+        }
         Some(CITRON_STABLE_BRANCH) => {
             get_citron_release_info_by_version(version, CITRON_STABLE_BRANCH).await
         }
@@ -56,15 +77,21 @@ pub async fn get_yuzu_release_info_by_version(
 }
 
 pub async fn get_eden_all_release_info() -> AppResult<Vec<ReleaseInfo>> {
-    info!("Fetching Eden release information");
+    get_eden_all_release_info_for_branch(EDEN_BRANCH).await
+}
 
-    let data = request_git_api(EDEN_RELEASES_API).await?;
+async fn get_eden_all_release_info_for_branch(branch: &str) -> AppResult<Vec<ReleaseInfo>> {
+    let api =
+        yuzu_release_api_for_branch(branch).ok_or_else(|| unsupported_yuzu_branch_error(branch))?;
+    info!("Fetching Eden release information for {}", branch);
+
+    let data = request_git_api(api).await?;
 
     let releases: Vec<ReleaseInfo> = data
         .as_array()
         .ok_or_else(|| AppError::InvalidArgument("Invalid Forgejo API response".to_string()))?
         .iter()
-        .filter_map(ReleaseInfo::from_forgejo_api)
+        .filter_map(parse_eden_release)
         .collect();
 
     debug!("Fetched {} Eden releases", releases.len());
@@ -78,14 +105,55 @@ pub async fn get_eden_all_release_versions() -> AppResult<Vec<String>> {
 }
 
 pub async fn get_eden_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
-    info!("Fetching Eden release information for {}", version);
+    get_eden_release_info_for_branch(version, EDEN_BRANCH).await
+}
 
-    let url = format!("{}/tags/{}", EDEN_RELEASES_API, version);
+async fn get_eden_release_info_for_branch(version: &str, branch: &str) -> AppResult<ReleaseInfo> {
+    let api =
+        yuzu_release_api_for_branch(branch).ok_or_else(|| unsupported_yuzu_branch_error(branch))?;
+    info!(
+        "Fetching Eden release information for {} ({})",
+        version, branch
+    );
+
+    let url = format!("{}/tags/{}", api, urlencoding::encode(version));
     let data = request_git_api(&url).await?;
 
-    ReleaseInfo::from_forgejo_api(&data).ok_or_else(|| {
+    parse_eden_release(&data).ok_or_else(|| {
         AppError::InvalidArgument(format!("Unable to parse Eden release {}", version))
     })
+}
+
+fn parse_eden_release(data: &serde_json::Value) -> Option<ReleaseInfo> {
+    let mut release = ReleaseInfo::from_forgejo_api(data)?;
+    // New releases host packages externally and list them in the Markdown body,
+    // while older releases expose Forgejo attachments in `assets`.
+    let packages = EDEN_PACKAGE_LINKS
+        .captures_iter(&release.description)
+        .filter_map(|capture| {
+            let download_url = capture.get(1)?.as_str();
+            let url = url::Url::parse(download_url).ok()?;
+            if !matches!(
+                url.host_str(),
+                Some("nightly.eden-emu.dev" | "git.eden-emu.dev")
+            ) {
+                return None;
+            }
+            let filename = url.path_segments()?.next_back()?;
+            let name = urlencoding::decode(filename).ok()?.into_owned();
+            if !name.starts_with("Eden-") {
+                return None;
+            }
+            Some(ReleaseAsset {
+                name,
+                download_url: download_url.to_string(),
+                size: 0,
+                content_type: None,
+            })
+        })
+        .collect();
+    merge_release_assets(&mut release, packages);
+    Some(release)
 }
 
 fn citron_releases_api(branch: &str) -> Option<&'static str> {
@@ -99,6 +167,7 @@ fn citron_releases_api(branch: &str) -> Option<&'static str> {
 pub fn yuzu_release_api_for_branch(branch: &str) -> Option<&'static str> {
     match normalize_yuzu_branch(branch)? {
         EDEN_BRANCH => Some(EDEN_RELEASES_API),
+        EDEN_NIGHTLY_BRANCH => Some(EDEN_NIGHTLY_RELEASES_API),
         CITRON_STABLE_BRANCH => Some(CITRON_STABLE_RELEASES_API),
         CITRON_NIGHTLY_BRANCH => Some(CITRON_NIGHTLY_RELEASES_API),
         _ => None,
@@ -267,6 +336,62 @@ mod tests {
     use super::*;
     use crate::models::release::ReleaseAsset;
     use crate::models::yuzu_branch::LEGACY_CITRON_BRANCH;
+
+    #[test]
+    fn test_eden_nightly_packages_from_release_body() {
+        let url = "https://nightly.eden-emu.dev/v1790892656.d3550c4571/Eden-Windows-d3550c4571-amd64-msvc-standard.zip";
+        let json = serde_json::json!({
+            "name": "Eden Nightly - Oct 01 2026",
+            "tag_name": "v1790892656.d3550c4571",
+            "assets": [],
+            "body": format!(
+                "[MSVC zip]({url})\n[Same zip]({url})\n\
+                 [macOS DMG](https://nightly.eden-emu.dev/v1790892656.d3550c4571/Eden-macOS-d3550c4571.dmg)\n\
+                 [Commit](https://git.eden-emu.dev/eden-emu/eden/commit/d3550c4571)\n\
+                 [Other host](https://example.com/Eden-Windows-test.zip)\n\
+                 [Lookalike host](https://nightly.eden-emu.dev.example.com/Eden-Windows-test.zip)"
+            )
+        });
+
+        let release = parse_eden_release(&json).unwrap();
+        assert_eq!(release.tag_name, "v1790892656.d3550c4571");
+        assert_eq!(release.assets.len(), 2);
+        assert_eq!(release.assets[0].download_url, url);
+        assert_eq!(
+            release.assets[0].name,
+            "Eden-Windows-d3550c4571-amd64-msvc-standard.zip"
+        );
+        assert_eq!(release.assets[1].name, "Eden-macOS-d3550c4571.dmg");
+    }
+
+    #[test]
+    fn test_eden_packages_preserve_forgejo_attachments() {
+        let url = "https://git.eden-emu.dev/eden-ci/nightly/releases/download/v1782329232.599ab16288/Eden-Windows-599ab16288-amd64-msvc-standard.zip";
+        let json = serde_json::json!({
+            "tag_name": "v1782329232.599ab16288",
+            "body": format!("[MSVC zip]({url})"),
+            "assets": [{
+                "name": "Eden-Windows-599ab16288-amd64-msvc-standard.zip",
+                "browser_download_url": url,
+                "size": 123456
+            }]
+        });
+        let release = parse_eden_release(&json).unwrap();
+        assert_eq!(release.assets.len(), 1);
+        assert_eq!(release.assets[0].size, 123456);
+    }
+
+    #[test]
+    fn test_eden_channels_use_separate_release_apis() {
+        assert_eq!(
+            yuzu_release_api_for_branch(EDEN_BRANCH),
+            Some(EDEN_RELEASES_API)
+        );
+        assert_eq!(
+            yuzu_release_api_for_branch(EDEN_NIGHTLY_BRANCH),
+            Some(EDEN_NIGHTLY_RELEASES_API)
+        );
+    }
 
     #[tokio::test]
     #[ignore]
