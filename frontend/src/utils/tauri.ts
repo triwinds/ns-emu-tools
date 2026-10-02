@@ -377,6 +377,9 @@ export interface UiSetting {
 export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
   streamline_nvof: boolean
+  streamline_fg?: boolean
+  streamline_nr?: boolean
+  streamline_nr_intensity?: number
   streamline_sr: boolean
   streamline_sr_mode: 'quality' | 'balanced' | 'performance' | 'dlaa'
 }

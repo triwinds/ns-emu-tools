@@ -21,8 +21,41 @@ pub(crate) struct State {
     pub(crate) value: u64,
 }
 impl State {
+    // This is observed presentation feedback, not NGX's per-output disable flag.
+    pub(crate) fn generation(&self, enabled: bool, suspended: bool) -> &'static str {
+        if self.status != 0 {
+            "sdk_error"
+        } else if !enabled {
+            "off"
+        } else if suspended {
+            "suspended"
+        } else if self.presented > 1 {
+            "generated_observed"
+        } else if self.presented == 1 {
+            "original_only_observed"
+        } else {
+            "pending_feedback"
+        }
+    }
     pub(crate) fn json(&self) -> serde_json::Value {
         json!({"status":self.status,"minimum":self.minimum,"presented":self.presented,"maximum":self.maximum,"fence":self.fence,"value":self.value})
+    }
+}
+#[cfg(test)]
+mod generation_tests {
+    use super::State;
+    #[test]
+    fn requests_and_pending_feedback_do_not_claim_generated_frames() {
+        let mut state = State::default();
+        assert_eq!(state.generation(true, false), "pending_feedback");
+        state.presented = 1;
+        assert_eq!(state.generation(true, false), "original_only_observed");
+        state.presented = 2;
+        assert_eq!(state.generation(true, false), "generated_observed");
+        assert_eq!(state.generation(true, true), "suspended");
+        assert_eq!(state.generation(false, false), "off");
+        state.status = 2;
+        assert_eq!(state.generation(true, false), "sdk_error");
     }
 }
 #[repr(C)]
@@ -38,14 +71,6 @@ pub(crate) struct Resource {
 }
 unsafe extern "C" {
     pub(crate) fn probe_fg_state(api: &Api, state: &mut State) -> i32;
-    pub(crate) fn probe_fg_options(
-        api: &Api,
-        enabled: u32,
-        width: u32,
-        height: u32,
-        count: u32,
-        frame_limit_us: u32,
-    ) -> i32;
     pub(crate) fn probe_fg_begin(api: &Api, frame: u32, token: &mut u64) -> i32;
     pub(crate) fn probe_fg_marker(api: &Api, token: u64, marker: u32) -> i32;
     pub(crate) fn probe_fg_inputs(

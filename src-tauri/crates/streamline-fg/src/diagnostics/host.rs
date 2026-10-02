@@ -39,7 +39,7 @@ pub fn run() -> Result<()> {
         return unsafe { child(args[1] == "layered") };
     }
     if args.len() == 1 && args[0] == "--help" {
-        println!("streamline-fg-diagnostics [--sdk-requirements | --sdk-device | --sdk-idle-capture | --sdk-route | --sdk-route-repeat | --sdk-fg | --sdk-sr] --layer <absolute probe DLL> --interposer <absolute frozen sl.interposer.dll> --session <new absolute directory>\nDefault: uninitialized baseline/layered experiment. Optional sdk-bridge feature: --sdk-requirements queries before Vulkan creation; --sdk-device tests initialized idle dispatch. --sdk-idle-capture tests scoped next-address selection for idle only. --sdk-route-repeat attempts 20 same-process SDK lifecycles and stops on the first failure. --sdk-sr evaluates native Vulkan DLSS on synthetic inputs and reads back output. Only --sdk-fg enables FG in the diagnostic host. ReShade is disabled only in these children. No registry changes. Sessions are never overwritten.");
+        println!("streamline-fg-diagnostics [--sdk-requirements | --sdk-device | --sdk-idle-capture | --sdk-route | --sdk-route-repeat | --sdk-fg | --sdk-sr] --layer <absolute probe DLL> --interposer <absolute frozen sl.interposer.dll> --session <new absolute directory> [--validation-dir <pinned VVL directory>]\nDefault: uninitialized baseline/layered experiment. Optional sdk-bridge feature: --sdk-requirements queries before Vulkan creation; --sdk-device tests initialized idle dispatch. --sdk-idle-capture tests scoped next-address selection for idle only. --sdk-route-repeat attempts 20 same-process SDK lifecycles and stops on the first failure. --sdk-sr evaluates native Vulkan DLSS on synthetic inputs and reads back output. Only --sdk-fg enables FG in the diagnostic host. --sdk-fg --validation-dir requires a native-nr build but runs SDK-only FG with NR unrequested; it checks pinned VVL files and enables strict core/synchronization validation. The fixed-window FG sample waits for foreground and closes automatically. ReShade is disabled only in these children. No registry changes. Sessions are never overwritten.");
         return Ok(());
     }
     let sdk_sr = args.first().is_some_and(|a| a == "--sdk-sr");
@@ -56,13 +56,14 @@ pub fn run() -> Result<()> {
         }
         args.remove(0);
     }
-    let (mut layer, mut interposer, mut session) = (None, None, None);
+    let (mut layer, mut interposer, mut session, mut validation_dir) = (None, None, None, None);
     let mut iter = args.iter();
     while let Some(flag) = iter.next() {
         let slot = match flag.to_str() {
             Some("--layer") => &mut layer,
             Some("--interposer") => &mut interposer,
             Some("--session") => &mut session,
+            Some("--validation-dir") => &mut validation_dir,
             _ => return Err("unknown argument (use --help)".into()),
         };
         if slot.is_some() {
@@ -83,6 +84,23 @@ pub fn run() -> Result<()> {
     let interposer_hash =
         crate::runtime::verify_runtime(&interposer, "sl.interposer.dll", sdk_route)?;
     let layer_hash = hash(&layer)?;
+    let validation_files = if let Some(dir) = &validation_dir {
+        if !sdk_fg || !cfg!(feature = "native-nr") {
+            return Err(
+                "--validation-dir requires --sdk-fg and a native-nr diagnostic build".into(),
+            );
+        }
+        let manifest = hash(&dir.join("VkLayer_khronos_validation.json"))?;
+        let dll = hash(&dir.join("VkLayer_khronos_validation.dll"))?;
+        if manifest != "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+            || dll != "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac"
+        {
+            return Err("SDK validation requires the pinned VVL 1.4.363.0 files".into());
+        }
+        json!({"manifest_sha256":manifest,"dll_sha256":dll})
+    } else {
+        Value::Null
+    };
     let host_hash = hash(&std::env::current_exe()?)?;
     let mut staged_hashes = serde_json::Map::new();
     staged_hashes.insert("sl.interposer.dll".into(), json!(interposer_hash));
@@ -135,13 +153,18 @@ pub fn run() -> Result<()> {
         &json!({"file_format_version": "1.2.0", "layer": {"name": LAYER.to_str()?, "type": "GLOBAL", "library_path": layer, "api_version": "1.3.0", "implementation_version": "1", "description": "NSEmu P0 diagnostic only", "functions": {"vkNegotiateLoaderLayerInterfaceVersion": "vkNegotiateLoaderLayerInterfaceVersion"}}}),
     )?;
     let old_disable = std::env::var("VK_LOADER_LAYERS_DISABLE").unwrap_or_default();
-    let disable = if old_disable.is_empty() {
+    let disable = if validation_dir.is_some() {
+        "~implicit~".into()
+    } else if old_disable.is_empty() {
         "VK_LAYER_reshade".into()
     } else {
         format!("{old_disable},VK_LAYER_reshade")
     };
     // Preserve explicit search paths. The probe is enabled in VkInstanceCreateInfo only.
     let mut paths = vec![manifests.clone()];
+    if let Some(dir) = &validation_dir {
+        paths.push(dir.clone());
+    }
     if let Some(old) = std::env::var_os("VK_LAYER_PATH") {
         paths.extend(std::env::split_paths(&old));
     }
@@ -174,7 +197,7 @@ pub fn run() -> Result<()> {
     }
     write_json(
         &session.join("inputs.json"),
-        &json!({"loader": loader, "loader_sha256": loader_hash, "source_interposer": interposer, "interposer_sha256": interposer_hash, "layer_sha256": layer_hash, "host_sha256": host_hash, "staged_binary_hashes": staged_hashes, "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b", "parent_environment": environment, "child_layer_path": layer_paths.to_string_lossy(), "child_disable": disable, "sdk_initialized_at_launch": false, "requested_sdk_device_probe": sdk_device, "requested_sdk_route": sdk_route, "requested_fg_experiment":sdk_fg, "requested_sr_experiment":sdk_sr, "requested_idle_capture": idle_capture, "requested_sdk_requirements": requirements_only, "fg_enabled": false}),
+        &json!({"loader": loader, "loader_sha256": loader_hash, "source_interposer": interposer, "interposer_sha256": interposer_hash, "layer_sha256": layer_hash, "host_sha256": host_hash, "staged_binary_hashes": staged_hashes, "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b", "parent_environment": environment, "child_layer_path": layer_paths.to_string_lossy(), "child_disable": disable, "validation_files":validation_files,"sdk_layout_trace":std::env::var("NS_STREAMLINE_SDK_LAYOUT_TRACE").as_deref()==Ok("1"),"sdk_output_init":std::env::var("NS_STREAMLINE_SDK_OUTPUT_INIT").as_deref()!=Ok("0"),"sdk_transfer_access":std::env::var("NS_STREAMLINE_SDK_TRANSFER_ACCESS").as_deref()!=Ok("0"),"sdk_initialized_at_launch": false, "requested_sdk_device_probe": sdk_device, "requested_sdk_route": sdk_route, "requested_fg_experiment":sdk_fg, "requested_sr_experiment":sdk_sr, "requested_idle_capture": idle_capture, "requested_sdk_requirements": requirements_only, "fg_enabled": false}),
     )?;
     let modes: &[&str] = if requirements_only {
         if sdk_device {
@@ -213,6 +236,13 @@ pub fn run() -> Result<()> {
                 if sdk_repeat { "1" } else { "0" },
             )
             .env("NS_STREAMLINE_PROBE_FG", if sdk_fg { "1" } else { "0" })
+            .env("NS_STREAMLINE_NATIVE_NR", "0")
+            .env("NS_STREAMLINE_TARGET_SDK", "0")
+            .env(
+                "NS_STREAMLINE_SDK_VALIDATION",
+                if validation_dir.is_some() { "1" } else { "0" },
+            )
+            .env("NS_STREAMLINE_LIVE_DIR", &session)
             .env("NS_STREAMLINE_PROBE_SR", if sdk_sr { "1" } else { "0" })
             .env("NS_STREAMLINE_PROBE_EXE", &executable)
             .env("NS_STREAMLINE_PROBE_SESSION", &session)
@@ -228,12 +258,19 @@ pub fn run() -> Result<()> {
             if let Some(status) = process.try_wait()? {
                 break status;
             }
-            if started.elapsed() > Duration::from_secs(if sdk_route { 180 } else { 40 }) {
+            let timeout_seconds = if sdk_fg {
+                360
+            } else if sdk_route {
+                180
+            } else {
+                40
+            };
+            if started.elapsed() > Duration::from_secs(timeout_seconds) {
                 process.kill()?;
                 process.wait()?;
                 write_json(
                     &session.join(format!("{mode}.timeout.json")),
-                    &json!({"timeout_seconds": if sdk_route { 180 } else { 40 }}),
+                    &json!({"timeout_seconds": timeout_seconds}),
                 )?;
                 return Err(format!("{mode} timed out; evidence: {}", session.display()).into());
             }
@@ -246,6 +283,17 @@ pub fn run() -> Result<()> {
         }
     }
     if requirements_only {
+        if validation_dir.is_some() {
+            let report: Value =
+                serde_json::from_slice(&fs::read(session.join("nr-validation-result.json"))?)?;
+            if report["validation_passed"] != true {
+                return Err(format!(
+                    "SDK core/synchronization validation failed; evidence: {}",
+                    session.display()
+                )
+                .into());
+            }
+        }
         println!(
             "SDK probe evidence saved to {}. Inspect mode-specific results; P0 remains open.",
             session.display()

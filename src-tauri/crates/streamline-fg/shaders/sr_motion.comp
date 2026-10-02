@@ -1,0 +1,17 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(binding=0) uniform sampler2D sourceMotion;
+layout(rg16f,binding=1) uniform writeonly image2D inputMotion;
+layout(push_constant) uniform Settings { vec4 region; } settings;
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size=imageSize(inputMotion);
+    if(any(greaterThanEqual(p,size))) return;
+    // Raw current-to-previous source pixels become SR input pixels. Clamp
+    // to the cropped pixel centers so letterbox vectors cannot bleed in.
+    vec2 position=settings.region.xy+(vec2(p)+.5)*settings.region.zw/vec2(size);
+    position=clamp(position,settings.region.xy+.5,
+        settings.region.xy+settings.region.zw-.5);
+    vec2 motion=textureLod(sourceMotion,position/vec2(textureSize(sourceMotion,0)),0).xy;
+    imageStore(inputMotion,p,vec4(motion*vec2(size)/settings.region.zw,0,0));
+}

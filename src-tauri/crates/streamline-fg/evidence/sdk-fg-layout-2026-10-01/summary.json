@@ -1,0 +1,3039 @@
+{
+  "date": "2026-10-01",
+  "timezone": "Asia/Shanghai",
+  "fixed_sdk_clone_initial_layout": true,
+  "sdk_only_reproduction": true,
+  "current_layer_matches_final_test": true,
+  "same_binary_off_on": true,
+  "independent_sdk_transfer_hazards_unresolved": true,
+  "strict_acceptance_passed": false,
+  "fresh_game_nr_sr_fg_retest": false,
+  "formal_image_quality_verified": false,
+  "performance_comparison": false,
+  "user_feedback": "用户确认 002、003、004 的测试窗口已保持前台；005 的日志记录实际 FG 和完成等待，本轮未取得正式画质评价。",
+  "reproduction_command": "streamline-fg-diagnostics --sdk-fg --layer <tested DLL> --interposer <pinned runtime/sl.interposer.dll> --session <new absolute directory> --validation-dir <VVL 1.4.363.0/Bin>",
+  "comparison_environment": [
+    "NS_STREAMLINE_SDK_LAYOUT_TRACE=1",
+    "NS_STREAMLINE_SDK_OUTPUT_INIT=0 (004) / 1 (005)"
+  ],
+  "source_contract": "Pinned SDK downstream-v3; matching fresh BGRA8 image, successful bind, exact clone name; first ALL_COMMANDS TRANSFER_SRC/TRANSFER_READ -> GENERAL/SHADER_READ|SHADER_WRITE barrier",
+  "spec": "https://docs.vulkan.org/spec/latest/chapters/synchronization.html#image-layout-transitions",
+  "sessions": [
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-001",
+      "inputs": {
+        "child_disable": "~implicit~",
+        "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-001\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "fg_enabled": false,
+        "host_sha256": "248198ddfa30db0cc1ca57f9daa79ff54c5553dcc933c734ff6bf6b67d76c32a",
+        "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+        "layer_sha256": "6976fb1f6600988e29f9caa87558794401b023415908b2ce85cb0b7e7a9e9863",
+        "loader": "C:\\Windows\\System32/vulkan-1.dll",
+        "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+        "parent_environment": {
+          "VK_ADD_LAYER_PATH": null,
+          "VK_INSTANCE_LAYERS": null,
+          "VK_LAYER_PATH": null,
+          "VK_LOADER_LAYERS_ALLOW": null,
+          "VK_LOADER_LAYERS_DISABLE": null,
+          "VK_LOADER_LAYERS_ENABLE": null
+        },
+        "requested_fg_experiment": true,
+        "requested_idle_capture": false,
+        "requested_sdk_device_probe": true,
+        "requested_sdk_requirements": true,
+        "requested_sdk_route": true,
+        "requested_sr_experiment": false,
+        "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+        "sdk_initialized_at_launch": false,
+        "sdk_layout_trace": true,
+        "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+        "staged_binary_hashes": {
+          "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+          "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+          "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+          "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+          "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+          "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "sdk_output_init": false,
+      "foreground_confirmed": false,
+      "requested_nr": false,
+      "emulator_running": false,
+      "process_exit_code": "0xc0000409",
+      "launcher_exit_code": 1,
+      "reports": {
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 0,
+          "input_completion_waited": false,
+          "maximum_input_completion_value": 0,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 600,
+          "sdk_reports_extra_frames": false,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "fg-failure.json": {
+          "error": "SDK did not report extra frames",
+          "fg_verified": false
+        },
+        "sdk-device-plan.json": {
+          "api_version": "1.3",
+          "compute_count": 2,
+          "compute_start": 2,
+          "device_extensions": [
+            "VK_KHR_buffer_device_address",
+            "VK_KHR_external_memory",
+            "VK_KHR_external_memory_win32",
+            "VK_KHR_external_semaphore",
+            "VK_KHR_external_semaphore_win32",
+            "VK_KHR_maintenance4",
+            "VK_KHR_push_descriptor",
+            "VK_KHR_timeline_semaphore",
+            "VK_NVX_binary_import",
+            "VK_NVX_image_view_handle",
+            "VK_NV_low_latency",
+            "VK_NV_optical_flow",
+            "VK_KHR_swapchain",
+            "VK_EXT_swapchain_maintenance1"
+          ],
+          "family": 0,
+          "features12": [
+            "bufferDeviceAddress",
+            "descriptorIndexing",
+            "timelineSemaphore"
+          ],
+          "features13": [
+            "synchronization2"
+          ],
+          "fg_enabled": false,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+          "graphics_count": 1,
+          "graphics_start": 1,
+          "host_queue_index": 0,
+          "instance_extensions": [
+            "VK_KHR_external_memory_capabilities",
+            "VK_KHR_external_semaphore_capabilities",
+            "VK_KHR_get_physical_device_properties2",
+            "VK_EXT_debug_utils",
+            "VK_KHR_surface",
+            "VK_KHR_win32_surface",
+            "VK_KHR_get_surface_capabilities2",
+            "VK_EXT_surface_maintenance1"
+          ],
+          "native_optical_flow": false,
+          "optical_flow_mode": "documented interop",
+          "swapchain_maintenance1": true,
+          "total_queues": 4
+        }
+      },
+      "clone_initial_layout_errors": 0,
+      "clone_initial_layout_messages": [],
+      "first_output_calls": [],
+      "adaptations": [],
+      "validation_groups": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 1,
+          "first_message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n"
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21,
+          "first_message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)"
+        },
+        {
+          "severity": 4096,
+          "id": -1218599613,
+          "count": 10,
+          "first_message": "vkCreateImageView(): pCreateInfo->image (VkImage 0x960000000096) was created with VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR but requires VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR|VK_IMAGE_USAGE_2_STORAGE_BIT_KHR|VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT|VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR|VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM|VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM|VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR.\nThe Vulkan spec states: image must have been created with a usage value containing at least one of the following: VK_IMAGE_USAGE_SAMPLED_BIT VK_IMAGE_USAGE_STORAGE_BIT VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageViewCreateInfo-image-04441)"
+        },
+        {
+          "severity": 4096,
+          "id": -860391127,
+          "count": 3,
+          "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] WRITE_RACING_READ hazard detected. vkCmdPipelineBarrier (from VkCommandBuffer 0x13819e580d0 submitted on the current VkQueue 0x138199614d0[nv.sl.dlss_g.cmdQ.game]) performs image layout transition on the VkImage 0xa500000000a5[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously read by vkCmdCopyImage (from VkCommandBuffer 0x13819e318d0[nv.sl.dlss_g.cmdCtx.pacer.command-buffer] submitted on VkQueue 0x138199623d0[nv.sl.dlss_g.cmdQ.pacer]). \nThe RACING hazard means the two submissions on different queues are not synchronized with each other, so the order of their accesses is undefined. Synchronize the submissions so that one runs before the other.\npImageMemoryBarriers[0]: {\n  srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,\n  srcAccessMask = VkAccessFlags2(0),\n  dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,\n  dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": -615737123,
+          "count": 1,
+          "first_message": "vkCreatePrivateDataSlot(): privateData feature was not enabled.\nThe Vulkan spec states: The privateData feature must be enabled (https://docs.vulkan.org/spec/latest/chapters/private_data.html#VUID-vkCreatePrivateDataSlot-privateData-04564)"
+        },
+        {
+          "severity": 4096,
+          "id": 929810911,
+          "count": 10,
+          "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] WRITE_AFTER_READ hazard detected. vkCmdPipelineBarrier (from VkCommandBuffer 0x13819e2e0d0 submitted on the current VkQueue 0x138199614d0) performs image layout transition on the VkImage 0x230000000023, which was previously accessed by vkAcquireNextImageKHR. \nThe current synchronization defines the destination stage mask as VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR|VK_PIPELINE_STAGE_2_COPY_BIT|VK_PIPELINE_STAGE_2_RESOLVE_BIT|VK_PIPELINE_STAGE_2_BLIT_BIT|VK_PIPELINE_STAGE_2_CLEAR_BIT, but layout transition does not synchronize with these stages.\nHint: If a submit command waits on a semaphore signaled by AcquireNextImage command at specific pipeline stages, this error can occur if the layout transition barrier does not create an execution dependency with those stages (for example, by including them in the barrier's srcStageMask).\n\nHint:\na) Image barrier layout transition:\n  Include VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR|VK_PIPELINE_STAGE_2_COPY_BIT|VK_PIPELINE_STAGE_2_RESOLVE_BIT|VK_PIPELINE_STAGE_2_BLIT_BIT|VK_PIPELINE_STAGE_2_CLEAR_BIT in srcStageMask.\n\nb) Render pass begin layout transition:\n  Either specify an external subpass dependency (VK_SUBPASS_EXTERNAL) with srcStageMask that includes VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR|VK_PIPELINE_STAGE_2_COPY_BIT|VK_PIPELINE_STAGE_2_RESOLVE_BIT|VK_PIPELINE_STAGE_2_BLIT_BIT|VK_PIPELINE_STAGE_2_CLEAR_BIT, or move the layout transition before the render pass by using a separate image barrier.\n\nc) Separate synchronization barrier before layout transition:\n  Use VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT in dstStageMask to include layout transitions.\n\nHint: An execution dependency is sufficient to prevent this hazard.\npImageMemoryBarriers[0]: {\n  srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,\n  srcAccessMask = VkAccessFlags2(0),\n  dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,\n  dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": 1180184443,
+          "count": 10,
+          "first_message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x13819e318d0[nv.sl.dlss_g.cmdCtx.pacer.command-buffer] expects VkImage 0xa500000000a5[nv.sl.dlss_g.tex2d.fake-swapchain-buffer] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_PRESENT_SRC_KHR.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        }
+      ],
+      "file_sha256": {
+        "inputs.json": "34632c2c7e4a6085328b0c421b6acbd8fc3b2057e4ad6c4ff340c5d77810db30",
+        "layer.jsonl": "9e052c22f2a400dc521d2dc6f67d9e74a840b02c1978d6dcd24c15347966337d",
+        "nr-validation.jsonl": "fbcbcf2de611a8702f179cdfb7012b8de12504e7e097340d8fccb80504745d81",
+        "fg-result.json": "49219f417ab0d4694a0fc576fc801c2e2ec077670ea1ad4a85919fac0181797c",
+        "fg-failure.json": "8616d382dd797b67c137dd0820e81e40b3345d69fbde8c62557a8f8b0f97ff2b",
+        "sdk-device-plan.json": "64eeedc41d8644c0786a8497ef6b18cf8738e21a8a0423d37266b08b76b4733a",
+        "sl.log": "47f4653d5d760d8d440f84a85aa2e206d4ee49b9b3d4932ba000ee5277618caa",
+        "sdk-device.stderr.log": "7a9051eeece4233c1974360b4bdd9c9852f6b19c7ec8df4944e04d4ca1303775"
+      }
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-002",
+      "inputs": {
+        "child_disable": "~implicit~",
+        "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-002\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "fg_enabled": false,
+        "host_sha256": "ded4ab446b57a8c8d3730f5a093f274a9ae850143304d9dc378c3634c08fdc28",
+        "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+        "layer_sha256": "6976fb1f6600988e29f9caa87558794401b023415908b2ce85cb0b7e7a9e9863",
+        "loader": "C:\\Windows\\System32/vulkan-1.dll",
+        "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+        "parent_environment": {
+          "VK_ADD_LAYER_PATH": null,
+          "VK_INSTANCE_LAYERS": null,
+          "VK_LAYER_PATH": null,
+          "VK_LOADER_LAYERS_ALLOW": null,
+          "VK_LOADER_LAYERS_DISABLE": null,
+          "VK_LOADER_LAYERS_ENABLE": null
+        },
+        "requested_fg_experiment": true,
+        "requested_idle_capture": false,
+        "requested_sdk_device_probe": true,
+        "requested_sdk_requirements": true,
+        "requested_sdk_route": true,
+        "requested_sr_experiment": false,
+        "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+        "sdk_initialized_at_launch": false,
+        "sdk_layout_trace": true,
+        "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+        "staged_binary_hashes": {
+          "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+          "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+          "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+          "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+          "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+          "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "sdk_output_init": false,
+      "foreground_confirmed": true,
+      "requested_nr": false,
+      "emulator_running": false,
+      "process_exit_code": 1,
+      "launcher_exit_code": 1,
+      "reports": {
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 54,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": false,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 598,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 161,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 749,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        },
+        "sdk-device-plan.json": {
+          "api_version": "1.3",
+          "compute_count": 2,
+          "compute_start": 2,
+          "device_extensions": [
+            "VK_KHR_buffer_device_address",
+            "VK_KHR_external_memory",
+            "VK_KHR_external_memory_win32",
+            "VK_KHR_external_semaphore",
+            "VK_KHR_external_semaphore_win32",
+            "VK_KHR_maintenance4",
+            "VK_KHR_push_descriptor",
+            "VK_KHR_timeline_semaphore",
+            "VK_NVX_binary_import",
+            "VK_NVX_image_view_handle",
+            "VK_NV_low_latency",
+            "VK_NV_optical_flow",
+            "VK_KHR_swapchain",
+            "VK_EXT_swapchain_maintenance1"
+          ],
+          "family": 0,
+          "features12": [
+            "bufferDeviceAddress",
+            "descriptorIndexing",
+            "timelineSemaphore"
+          ],
+          "features13": [
+            "synchronization2"
+          ],
+          "fg_enabled": false,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+          "graphics_count": 1,
+          "graphics_start": 1,
+          "host_queue_index": 0,
+          "instance_extensions": [
+            "VK_KHR_external_memory_capabilities",
+            "VK_KHR_external_semaphore_capabilities",
+            "VK_KHR_get_physical_device_properties2",
+            "VK_EXT_debug_utils",
+            "VK_KHR_surface",
+            "VK_KHR_win32_surface",
+            "VK_KHR_get_surface_capabilities2",
+            "VK_EXT_surface_maintenance1"
+          ],
+          "native_optical_flow": false,
+          "optical_flow_mode": "documented interop",
+          "swapchain_maintenance1": true,
+          "total_queues": 4
+        }
+      },
+      "clone_initial_layout_errors": 0,
+      "clone_initial_layout_messages": [],
+      "first_output_calls": [
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 1977839911120,
+            "dropped_calls": 0,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 1087416999871453,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 7222369,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 1977839911120,
+            "dropped_calls": 0,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 1090715534754784,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 7222554,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 2
+          },
+          "elapsed_us": 7223230,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 2
+          },
+          "elapsed_us": 7223351,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 3
+          },
+          "elapsed_us": 7229969,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 417814418555260
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 4
+          },
+          "elapsed_us": 7230019,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 5
+          },
+          "elapsed_us": 7231121,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 3
+          },
+          "elapsed_us": 7231443,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 6
+          },
+          "elapsed_us": 7231725,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841596624,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 4
+          },
+          "elapsed_us": 7231745,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841410256,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 401321744138605
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 5
+          },
+          "elapsed_us": 7233459,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841424592,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 402421255766382
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 7
+          },
+          "elapsed_us": 7234047,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841610960,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 8
+          },
+          "elapsed_us": 7238556,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841610960,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 6
+          },
+          "elapsed_us": 7238607,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841610960,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 7
+          },
+          "elapsed_us": 7239792,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841610960,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 421112953438591
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 8
+          },
+          "elapsed_us": 7239809,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841610960,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1089616023127007,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 9
+          },
+          "elapsed_us": 7240233,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1977841610960,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1977839911120,
+            "image": 1086317488243676,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 9
+          },
+          "elapsed_us": 7240304,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "adaptations": [],
+      "validation_groups": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 1,
+          "first_message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n"
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21,
+          "first_message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)"
+        },
+        {
+          "severity": 4096,
+          "id": -1218599613,
+          "count": 10,
+          "first_message": "vkCreateImageView(): pCreateInfo->image (VkImage 0x960000000096) was created with VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR but requires VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR|VK_IMAGE_USAGE_2_STORAGE_BIT_KHR|VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT|VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR|VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM|VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM|VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR.\nThe Vulkan spec states: image must have been created with a usage value containing at least one of the following: VK_IMAGE_USAGE_SAMPLED_BIT VK_IMAGE_USAGE_STORAGE_BIT VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageViewCreateInfo-image-04441)"
+        },
+        {
+          "severity": 4096,
+          "id": -860391127,
+          "count": 3,
+          "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] WRITE_RACING_READ hazard detected. vkCmdPipelineBarrier (from VkCommandBuffer 0x1cc808b80d0 submitted on the current VkQueue 0x1cc803d14d0[nv.sl.dlss_g.cmdQ.game]) performs image layout transition on the VkImage 0xa500000000a5[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously read by vkCmdCopyImage (from VkCommandBuffer 0x1cc808918d0[nv.sl.dlss_g.cmdCtx.pacer.command-buffer] submitted on VkQueue 0x1cc803d23d0[nv.sl.dlss_g.cmdQ.pacer]). \nThe RACING hazard means the two submissions on different queues are not synchronized with each other, so the order of their accesses is undefined. Synchronize the submissions so that one runs before the other.\npImageMemoryBarriers[0]: {\n  srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,\n  srcAccessMask = VkAccessFlags2(0),\n  dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,\n  dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": -615737123,
+          "count": 1,
+          "first_message": "vkCreatePrivateDataSlot(): privateData feature was not enabled.\nThe Vulkan spec states: The privateData feature must be enabled (https://docs.vulkan.org/spec/latest/chapters/private_data.html#VUID-vkCreatePrivateDataSlot-privateData-04564)"
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "count": 10,
+          "first_message": "vkCmdCopyImage(): READ_AFTER_WRITE hazard detected. vkCmdCopyImage reads VkImage 0x17c000000017c[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_READ_BIT accesses at VK_PIPELINE_STAGE_2_COPY_BIT.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 1280, height = 800, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, baseArrayLayer = 0, layerCount = 1}\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": 929810911,
+          "count": 10,
+          "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] WRITE_AFTER_READ hazard detected. vkCmdPipelineBarrier (from VkCommandBuffer 0x1cc8088e0d0 submitted on the current VkQueue 0x1cc803d14d0) performs image layout transition on the VkImage 0x230000000023, which was previously accessed by vkAcquireNextImageKHR. \nThe current synchronization defines the destination stage mask as VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR|VK_PIPELINE_STAGE_2_COPY_BIT|VK_PIPELINE_STAGE_2_RESOLVE_BIT|VK_PIPELINE_STAGE_2_BLIT_BIT|VK_PIPELINE_STAGE_2_CLEAR_BIT, but layout transition does not synchronize with these stages.\nHint: If a submit command waits on a semaphore signaled by AcquireNextImage command at specific pipeline stages, this error can occur if the layout transition barrier does not create an execution dependency with those stages (for example, by including them in the barrier's srcStageMask).\n\nHint:\na) Image barrier layout transition:\n  Include VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR|VK_PIPELINE_STAGE_2_COPY_BIT|VK_PIPELINE_STAGE_2_RESOLVE_BIT|VK_PIPELINE_STAGE_2_BLIT_BIT|VK_PIPELINE_STAGE_2_CLEAR_BIT in srcStageMask.\n\nb) Render pass begin layout transition:\n  Either specify an external subpass dependency (VK_SUBPASS_EXTERNAL) with srcStageMask that includes VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR|VK_PIPELINE_STAGE_2_COPY_BIT|VK_PIPELINE_STAGE_2_RESOLVE_BIT|VK_PIPELINE_STAGE_2_BLIT_BIT|VK_PIPELINE_STAGE_2_CLEAR_BIT, or move the layout transition before the render pass by using a separate image barrier.\n\nc) Separate synchronization barrier before layout transition:\n  Use VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT in dstStageMask to include layout transitions.\n\nHint: An execution dependency is sufficient to prevent this hazard.\npImageMemoryBarriers[0]: {\n  srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,\n  srcAccessMask = VkAccessFlags2(0),\n  dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,\n  dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": 1180184443,
+          "count": 10,
+          "first_message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1cc808918d0[nv.sl.dlss_g.cmdCtx.pacer.command-buffer] expects VkImage 0xa500000000a5[nv.sl.dlss_g.tex2d.fake-swapchain-buffer] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_PRESENT_SRC_KHR.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "count": 10,
+          "first_message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x21b000000021b[nv.ngx.dlssg.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        }
+      ],
+      "file_sha256": {
+        "inputs.json": "92bdf7d847f3bc3af2469b82ed48e9e0c5e6a6aebd316618f994e02b131beb43",
+        "layer.jsonl": "348150e0cd0487cdf65a71ee8fb4cd76b008a8774a9f0802b15983af263f5d75",
+        "nr-validation.jsonl": "bbba2236f94c061d4214c64dcf2f6a4ac0f2f04214c549dcca31a33bfb9ef05c",
+        "nr-validation-result.json": "1bba9e39ac31b1210e548673bed959f495b48a20e8a5b57b79b2b715216552b7",
+        "fg-result.json": "66463529dd966cb72556455d374a1578814868ea2f2655df91319cef389503bc",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "sdk-device-plan.json": "64eeedc41d8644c0786a8497ef6b18cf8738e21a8a0423d37266b08b76b4733a",
+        "sl.log": "aca628de2e73d45fe81515660930525a748d2cfa3c42a73cf7ce7a1aaf1747f0",
+        "sdk-device.stderr.log": "ac335e06e29a6504090fea9e9adc7c3fc3bdbbe8eeb94b15ee08e226fae54d8c"
+      }
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-003",
+      "inputs": {
+        "child_disable": "~implicit~",
+        "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-003\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "fg_enabled": false,
+        "host_sha256": "8aa4144c2c39a80d7359cacd0b40488aa06dfaf73f1a912ffee36c40ec115e3d",
+        "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+        "layer_sha256": "cc0a2b00f6022c24b5cddf11e12878574b7da9f38ab309ea1294c81316c9e8d8",
+        "loader": "C:\\Windows\\System32/vulkan-1.dll",
+        "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+        "parent_environment": {
+          "VK_ADD_LAYER_PATH": null,
+          "VK_INSTANCE_LAYERS": null,
+          "VK_LAYER_PATH": null,
+          "VK_LOADER_LAYERS_ALLOW": null,
+          "VK_LOADER_LAYERS_DISABLE": null,
+          "VK_LOADER_LAYERS_ENABLE": null
+        },
+        "requested_fg_experiment": true,
+        "requested_idle_capture": false,
+        "requested_sdk_device_probe": true,
+        "requested_sdk_requirements": true,
+        "requested_sdk_route": true,
+        "requested_sr_experiment": false,
+        "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+        "sdk_initialized_at_launch": false,
+        "sdk_layout_trace": true,
+        "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+        "staged_binary_hashes": {
+          "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+          "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+          "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+          "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+          "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+          "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "sdk_output_init": true,
+      "foreground_confirmed": true,
+      "requested_nr": false,
+      "emulator_running": false,
+      "process_exit_code": 1,
+      "launcher_exit_code": 1,
+      "reports": {
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 27,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": false,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 600,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 124,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 724,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        },
+        "sdk-device-plan.json": {
+          "api_version": "1.3",
+          "compute_count": 2,
+          "compute_start": 2,
+          "device_extensions": [
+            "VK_KHR_buffer_device_address",
+            "VK_KHR_external_memory",
+            "VK_KHR_external_memory_win32",
+            "VK_KHR_external_semaphore",
+            "VK_KHR_external_semaphore_win32",
+            "VK_KHR_maintenance4",
+            "VK_KHR_push_descriptor",
+            "VK_KHR_timeline_semaphore",
+            "VK_NVX_binary_import",
+            "VK_NVX_image_view_handle",
+            "VK_NV_low_latency",
+            "VK_NV_optical_flow",
+            "VK_KHR_swapchain",
+            "VK_EXT_swapchain_maintenance1"
+          ],
+          "family": 0,
+          "features12": [
+            "bufferDeviceAddress",
+            "descriptorIndexing",
+            "timelineSemaphore"
+          ],
+          "features13": [
+            "synchronization2"
+          ],
+          "fg_enabled": false,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+          "graphics_count": 1,
+          "graphics_start": 1,
+          "host_queue_index": 0,
+          "instance_extensions": [
+            "VK_KHR_external_memory_capabilities",
+            "VK_KHR_external_semaphore_capabilities",
+            "VK_KHR_get_physical_device_properties2",
+            "VK_EXT_debug_utils",
+            "VK_KHR_surface",
+            "VK_KHR_win32_surface",
+            "VK_KHR_get_surface_capabilities2",
+            "VK_EXT_surface_maintenance1"
+          ],
+          "native_optical_flow": false,
+          "optical_flow_mode": "documented interop",
+          "swapchain_maintenance1": true,
+          "total_queues": 4
+        }
+      },
+      "clone_initial_layout_errors": 0,
+      "clone_initial_layout_messages": [],
+      "first_output_calls": [
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 1520425894096,
+            "dropped_calls": 0,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 819136162693865,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 13429694,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 1520425894096,
+            "dropped_calls": 0,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 822434697577196,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 13430154,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 2
+          },
+          "elapsed_us": 13430728,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 1520427579600,
+            "device": 1520425894096,
+            "fresh_bound_named_clone": true,
+            "image": 821335185949419,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 13430744,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 2
+          },
+          "elapsed_us": 13430833,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 1520427579600,
+            "device": 1520425894096,
+            "fresh_bound_named_clone": true,
+            "image": 818036651066088,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 13430841,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 3
+          },
+          "elapsed_us": 13443888,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 101155069755484
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 4
+          },
+          "elapsed_us": 13443950,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 5
+          },
+          "elapsed_us": 13444736,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 3
+          },
+          "elapsed_us": 13445124,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 6
+          },
+          "elapsed_us": 13445444,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427579600,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 4
+          },
+          "elapsed_us": 13445464,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427393232,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 84662395338829
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 5
+          },
+          "elapsed_us": 13447813,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427593936,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 7
+          },
+          "elapsed_us": 13448280,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427593936,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 6
+          },
+          "elapsed_us": 13448323,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427407568,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 85761906966606
+            },
+            "device": 1520425894096,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 8
+          },
+          "elapsed_us": 13449146,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427593936,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 7
+          },
+          "elapsed_us": 13450088,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1520427593936,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 104453604638815
+            },
+            "device": 1520425894096,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 8
+          },
+          "elapsed_us": 13450111,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "adaptations": [
+        {
+          "details": {
+            "command": 1520427579600,
+            "device": 1520425894096,
+            "fresh_bound_named_clone": true,
+            "image": 821335185949419,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 13430744,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 1520427579600,
+            "device": 1520425894096,
+            "fresh_bound_named_clone": true,
+            "image": 818036651066088,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 13430841,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "validation_groups": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 1,
+          "first_message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n"
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21,
+          "first_message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)"
+        },
+        {
+          "severity": 4096,
+          "id": -1218599613,
+          "count": 6,
+          "first_message": "vkCreateImageView(): pCreateInfo->image (VkImage 0x4d000000004d) was created with VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR but requires VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR|VK_IMAGE_USAGE_2_STORAGE_BIT_KHR|VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR|VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT|VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR|VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM|VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM|VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR|VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR.\nThe Vulkan spec states: image must have been created with a usage value containing at least one of the following: VK_IMAGE_USAGE_SAMPLED_BIT VK_IMAGE_USAGE_STORAGE_BIT VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageViewCreateInfo-image-04441)"
+        },
+        {
+          "severity": 4096,
+          "id": -615737123,
+          "count": 1,
+          "first_message": "vkCreatePrivateDataSlot(): privateData feature was not enabled.\nThe Vulkan spec states: The privateData feature must be enabled (https://docs.vulkan.org/spec/latest/chapters/private_data.html#VUID-vkCreatePrivateDataSlot-privateData-04564)"
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "count": 10,
+          "first_message": "vkCmdCopyImage(): READ_AFTER_WRITE hazard detected. vkCmdCopyImage reads VkImage 0x5c000000005c[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_READ_BIT accesses at VK_PIPELINE_STAGE_2_COPY_BIT.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 1280, height = 800, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, baseArrayLayer = 0, layerCount = 1}\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "count": 10,
+          "first_message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x12d000000012d[nv.ngx.dlssg.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        }
+      ],
+      "file_sha256": {
+        "inputs.json": "135092478899c6c11227841d75c2512a76d4919ac62f74510bdd5422c5ceb5ad",
+        "layer.jsonl": "419083c9613ffcd5d1348a196ac85b663185bcdb9322cc0dc9712216effdef86",
+        "nr-validation.jsonl": "4edebaa84dfa5ddea91a28858a4eace6849e7430d84a7dcae45bdadeb4a19d5c",
+        "nr-validation-result.json": "ec06920f8eafd702f7dd599cf02078154994db35249e38ef382ce0ca374f7ad2",
+        "fg-result.json": "ed1875ba396ee7d17387f0b8fc138b6d17895870059be6fe6b45f04ef137c723",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "sdk-device-plan.json": "64eeedc41d8644c0786a8497ef6b18cf8738e21a8a0423d37266b08b76b4733a",
+        "sl.log": "17e1c02140ab47a202b935114ae536f874f42d1417aaa405c6e82ddbf57993ed",
+        "sdk-device.stderr.log": "b5f4de67516fecd30ae3bb541458aed6694f0fca808ace70e0c46cf339ac8282"
+      }
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-004",
+      "inputs": {
+        "child_disable": "~implicit~",
+        "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-004\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "fg_enabled": false,
+        "host_sha256": "3074eb67c8c0b682992ff5889018819c48df293ba79052954153798250271185",
+        "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+        "layer_sha256": "a09ba761ef0888ec290dc1aba41110d959261435a6ef2c02d9f7ac3010f2045a",
+        "loader": "C:\\Windows\\System32/vulkan-1.dll",
+        "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+        "parent_environment": {
+          "VK_ADD_LAYER_PATH": null,
+          "VK_INSTANCE_LAYERS": null,
+          "VK_LAYER_PATH": null,
+          "VK_LOADER_LAYERS_ALLOW": null,
+          "VK_LOADER_LAYERS_DISABLE": null,
+          "VK_LOADER_LAYERS_ENABLE": null
+        },
+        "requested_fg_experiment": true,
+        "requested_idle_capture": false,
+        "requested_sdk_device_probe": true,
+        "requested_sdk_requirements": true,
+        "requested_sdk_route": true,
+        "requested_sr_experiment": false,
+        "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+        "sdk_initialized_at_launch": false,
+        "sdk_layout_trace": true,
+        "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+        "staged_binary_hashes": {
+          "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+          "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+          "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+          "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+          "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+          "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "sdk_output_init": false,
+      "foreground_confirmed": true,
+      "requested_nr": false,
+      "emulator_running": false,
+      "process_exit_code": 1,
+      "launcher_exit_code": 1,
+      "reports": {
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 22,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": false,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 600,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 44,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 644,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "fg-route-verification.json": {
+          "all_native_present_fences_completed": true,
+          "display_effect_verified": false,
+          "host_frames": 600,
+          "native_presents": 643,
+          "sdk_owned_present_worker_observed": true,
+          "sdk_reported_presented": 644,
+          "worker_native_presents": 87
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        },
+        "sdk-device-plan.json": {
+          "api_version": "1.3",
+          "compute_count": 2,
+          "compute_start": 2,
+          "device_extensions": [
+            "VK_KHR_buffer_device_address",
+            "VK_KHR_external_memory",
+            "VK_KHR_external_memory_win32",
+            "VK_KHR_external_semaphore",
+            "VK_KHR_external_semaphore_win32",
+            "VK_KHR_maintenance4",
+            "VK_KHR_push_descriptor",
+            "VK_KHR_timeline_semaphore",
+            "VK_NVX_binary_import",
+            "VK_NVX_image_view_handle",
+            "VK_NV_low_latency",
+            "VK_NV_optical_flow",
+            "VK_KHR_swapchain",
+            "VK_EXT_swapchain_maintenance1"
+          ],
+          "family": 0,
+          "features12": [
+            "bufferDeviceAddress",
+            "descriptorIndexing",
+            "timelineSemaphore"
+          ],
+          "features13": [
+            "synchronization2"
+          ],
+          "fg_enabled": false,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+          "graphics_count": 1,
+          "graphics_start": 1,
+          "host_queue_index": 0,
+          "instance_extensions": [
+            "VK_KHR_external_memory_capabilities",
+            "VK_KHR_external_semaphore_capabilities",
+            "VK_KHR_get_physical_device_properties2",
+            "VK_EXT_debug_utils",
+            "VK_KHR_surface",
+            "VK_KHR_win32_surface",
+            "VK_KHR_get_surface_capabilities2",
+            "VK_EXT_surface_maintenance1"
+          ],
+          "native_optical_flow": false,
+          "optical_flow_mode": "documented interop",
+          "swapchain_maintenance1": true,
+          "total_queues": 4
+        }
+      },
+      "clone_initial_layout_errors": 2,
+      "clone_initial_layout_messages": [
+        {
+          "application_call": null,
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1d1a9e0b8d0[nv.sl.dlss_g.cmdCtx.dlssg.command-buffer] expects VkImage 0x2e800000002e8[nv.sl.dlss_g.clone.dlfg-output_0] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "review": null,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "application_call": null,
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1d1a9e0b8d0[nv.sl.dlss_g.cmdCtx.dlssg.command-buffer] expects VkImage 0x2eb00000002eb[nv.sl.dlss_g.clone.dlfg-output_1] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "review": null,
+          "severity": 4096,
+          "type": 2
+        }
+      ],
+      "first_output_calls": [
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 2000008184016,
+            "dropped_calls": 0,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 819136162693865,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 19462768,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 2000008184016,
+            "dropped_calls": 0,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 822434697577196,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 19463046,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 2
+          },
+          "elapsed_us": 19463671,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 2
+          },
+          "elapsed_us": 19463812,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 3
+          },
+          "elapsed_us": 19471122,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 101155069755484
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 4
+          },
+          "elapsed_us": 19471143,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 5
+          },
+          "elapsed_us": 19472293,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 3
+          },
+          "elapsed_us": 19472592,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 6
+          },
+          "elapsed_us": 19472892,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009869520,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 4
+          },
+          "elapsed_us": 19472913,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009683152,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 84662395338829
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 5
+          },
+          "elapsed_us": 19479386,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009883856,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 7
+          },
+          "elapsed_us": 19479902,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009883856,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 6
+          },
+          "elapsed_us": 19479945,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009697488,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 85761906966606
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 8
+          },
+          "elapsed_us": 19480470,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009883856,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 7
+          },
+          "elapsed_us": 19482040,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009883856,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 104453604638815
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 8
+          },
+          "elapsed_us": 19482059,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009883856,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 9
+          },
+          "elapsed_us": 19482435,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 2000009883856,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 2000008184016,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 9
+          },
+          "elapsed_us": 19482503,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "adaptations": [],
+      "validation_groups": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 1,
+          "first_message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n"
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21,
+          "first_message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)"
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "count": 10,
+          "first_message": "vkCmdCopyImage(): READ_AFTER_WRITE hazard detected. vkCmdCopyImage reads VkImage 0x5c000000005c[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_READ_BIT accesses at VK_PIPELINE_STAGE_2_COPY_BIT.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 1280, height = 800, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, baseArrayLayer = 0, layerCount = 1}\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": 1180184443,
+          "count": 2,
+          "first_message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1d1a9e0b8d0[nv.sl.dlss_g.cmdCtx.dlssg.command-buffer] expects VkImage 0x2e800000002e8[nv.sl.dlss_g.clone.dlfg-output_0] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "count": 10,
+          "first_message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x12d000000012d[nv.ngx.dlssg.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        }
+      ],
+      "file_sha256": {
+        "inputs.json": "7e434033c41b65e7203dc7db697f6f6d72e52e102ae89d44d956fb8400be7edd",
+        "layer.jsonl": "623715dac35a8960eceea74496b70d5858fd5bc29ddef5bf1a81b07e809c8640",
+        "nr-validation.jsonl": "5622b579462cfded099de300465fe8c86b243a6df50372ee034bceba31ee6ecc",
+        "nr-validation-result.json": "01ba9bc26424105b2699125b9755b72d7b1b5e64770a57523ee3c11f9b3fa7fe",
+        "fg-result.json": "476005ade96c696ef4de238bb23666754281daa444c40eb24cb1355fa2d59eb6",
+        "fg-route-verification.json": "aea6908cabfd70532cc917f88eda5b8906d8e7c8a00d3108a8fc9d7a9b81ee0b",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "sdk-device-plan.json": "64eeedc41d8644c0786a8497ef6b18cf8738e21a8a0423d37266b08b76b4733a",
+        "sl.log": "0002b03abcbef364197370857884b72f13cd3caa045299a470d54488e5c8f0f1",
+        "sdk-device.stderr.log": "318623d8c317720b77b020c37a269f61c66f27299a6a99e28d7f60d5a2d0b958"
+      }
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-005",
+      "inputs": {
+        "child_disable": "~implicit~",
+        "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-layout-validation-005\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "fg_enabled": false,
+        "host_sha256": "3074eb67c8c0b682992ff5889018819c48df293ba79052954153798250271185",
+        "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+        "layer_sha256": "a09ba761ef0888ec290dc1aba41110d959261435a6ef2c02d9f7ac3010f2045a",
+        "loader": "C:\\Windows\\System32/vulkan-1.dll",
+        "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+        "parent_environment": {
+          "VK_ADD_LAYER_PATH": null,
+          "VK_INSTANCE_LAYERS": null,
+          "VK_LAYER_PATH": null,
+          "VK_LOADER_LAYERS_ALLOW": null,
+          "VK_LOADER_LAYERS_DISABLE": null,
+          "VK_LOADER_LAYERS_ENABLE": null
+        },
+        "requested_fg_experiment": true,
+        "requested_idle_capture": false,
+        "requested_sdk_device_probe": true,
+        "requested_sdk_requirements": true,
+        "requested_sdk_route": true,
+        "requested_sr_experiment": false,
+        "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+        "sdk_initialized_at_launch": false,
+        "sdk_layout_trace": true,
+        "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+        "staged_binary_hashes": {
+          "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+          "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+          "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+          "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+          "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+          "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "sdk_output_init": true,
+      "foreground_confirmed": true,
+      "requested_nr": false,
+      "emulator_running": false,
+      "process_exit_code": 1,
+      "launcher_exit_code": 1,
+      "reports": {
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 20,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": false,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 600,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 599,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 1199,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "fg-route-verification.json": {
+          "all_native_present_fences_completed": true,
+          "display_effect_verified": false,
+          "host_frames": 600,
+          "native_presents": 1198,
+          "sdk_owned_present_worker_observed": true,
+          "sdk_reported_presented": 1199,
+          "worker_native_presents": 1197
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        },
+        "sdk-device-plan.json": {
+          "api_version": "1.3",
+          "compute_count": 2,
+          "compute_start": 2,
+          "device_extensions": [
+            "VK_KHR_buffer_device_address",
+            "VK_KHR_external_memory",
+            "VK_KHR_external_memory_win32",
+            "VK_KHR_external_semaphore",
+            "VK_KHR_external_semaphore_win32",
+            "VK_KHR_maintenance4",
+            "VK_KHR_push_descriptor",
+            "VK_KHR_timeline_semaphore",
+            "VK_NVX_binary_import",
+            "VK_NVX_image_view_handle",
+            "VK_NV_low_latency",
+            "VK_NV_optical_flow",
+            "VK_KHR_swapchain",
+            "VK_EXT_swapchain_maintenance1"
+          ],
+          "family": 0,
+          "features12": [
+            "bufferDeviceAddress",
+            "descriptorIndexing",
+            "timelineSemaphore"
+          ],
+          "features13": [
+            "synchronization2"
+          ],
+          "fg_enabled": false,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+          "graphics_count": 1,
+          "graphics_start": 1,
+          "host_queue_index": 0,
+          "instance_extensions": [
+            "VK_KHR_external_memory_capabilities",
+            "VK_KHR_external_semaphore_capabilities",
+            "VK_KHR_get_physical_device_properties2",
+            "VK_EXT_debug_utils",
+            "VK_KHR_surface",
+            "VK_KHR_win32_surface",
+            "VK_KHR_get_surface_capabilities2",
+            "VK_EXT_surface_maintenance1"
+          ],
+          "native_optical_flow": false,
+          "optical_flow_mode": "documented interop",
+          "swapchain_maintenance1": true,
+          "total_queues": 4
+        }
+      },
+      "clone_initial_layout_errors": 0,
+      "clone_initial_layout_messages": [],
+      "first_output_calls": [
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 1585007100112,
+            "dropped_calls": 0,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 819136162693865,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 1172706,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "creation": {
+              "extent": [
+                1280,
+                800,
+                1
+              ],
+              "flags": 0,
+              "format": 44,
+              "has_pnext": false,
+              "initial_layout": 0,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "sharing": 0,
+              "tiling": 0,
+              "usage": 31
+            },
+            "device": 1585007100112,
+            "dropped_calls": 0,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 822434697577196,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 1173052,
+          "event": "sdk_output_layout_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 2
+          },
+          "elapsed_us": 1173539,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 1585008785616,
+            "device": 1585007100112,
+            "fresh_bound_named_clone": true,
+            "image": 821335185949419,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 1173550,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 2
+          },
+          "elapsed_us": 1173636,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 1585008785616,
+            "device": 1585007100112,
+            "fresh_bound_named_clone": true,
+            "image": 818036651066088,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 1173641,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 3
+          },
+          "elapsed_us": 1180879,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 101155069755484
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 4
+          },
+          "elapsed_us": 1180901,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 5
+          },
+          "elapsed_us": 1181995,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 3
+          },
+          "elapsed_us": 1182315,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 6
+          },
+          "elapsed_us": 1182612,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008785616,
+              "dst_access": 2048,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 6,
+              "old": 1,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 4
+          },
+          "elapsed_us": 1182631,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008599248,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 84662395338829
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 5
+          },
+          "elapsed_us": 1184676,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008799952,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 7
+          },
+          "elapsed_us": 1185156,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008799952,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 6,
+              "range": [
+                1,
+                0,
+                4294967295,
+                0,
+                4294967295
+              ],
+              "src_access": 2048,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 6
+          },
+          "elapsed_us": 1185199,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008613584,
+              "kind": "copy_source",
+              "layout": 6,
+              "other": 85761906966606
+            },
+            "device": 1585007100112,
+            "image": 818036651066088,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_0",
+            "ordinal": 8
+          },
+          "elapsed_us": 1185559,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008799952,
+              "dst_access": 96,
+              "dst_family": 4294967295,
+              "dst_stage": 65536,
+              "kind": "barrier",
+              "new": 1,
+              "old": 0,
+              "range": [
+                1,
+                0,
+                1,
+                0,
+                1
+              ],
+              "src_access": 96,
+              "src_family": 4294967295,
+              "src_stage": 65536
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 7
+          },
+          "elapsed_us": 1186518,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "call": {
+              "command": 1585008799952,
+              "kind": "copy_destination",
+              "layout": 1,
+              "other": 104453604638815
+            },
+            "device": 1585007100112,
+            "image": 821335185949419,
+            "name": "nv.sl.dlss_g.clone.dlfg-output_1",
+            "ordinal": 8
+          },
+          "elapsed_us": 1186535,
+          "event": "sdk_output_layout_call",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "adaptations": [
+        {
+          "details": {
+            "command": 1585008785616,
+            "device": 1585007100112,
+            "fresh_bound_named_clone": true,
+            "image": 821335185949419,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 1173550,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 1585008785616,
+            "device": 1585007100112,
+            "fresh_bound_named_clone": true,
+            "image": 818036651066088,
+            "new": 1,
+            "old": 0,
+            "original_old": 6
+          },
+          "elapsed_us": 1173641,
+          "event": "sdk_output_initial_layout",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "validation_groups": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 1,
+          "first_message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n"
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21,
+          "first_message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)"
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "count": 10,
+          "first_message": "vkCmdCopyImage(): READ_AFTER_WRITE hazard detected. vkCmdCopyImage reads VkImage 0x5c000000005c[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_READ_BIT accesses at VK_PIPELINE_STAGE_2_COPY_BIT.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 1280, height = 800, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, baseArrayLayer = 0, layerCount = 1}\n}\n"
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "count": 10,
+          "first_message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x12d000000012d[nv.ngx.dlssg.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        }
+      ],
+      "file_sha256": {
+        "inputs.json": "b3bc0f5932ab8c804baa56e82dc6ae2cf2d9f097e0af00e7da65a382134ad190",
+        "layer.jsonl": "539f29eb173825447b93b5f77d6fe6752904e89498afeada40ae8058c489d60f",
+        "nr-validation.jsonl": "5293e715b44750ca961ea78393c80a5e8dcc7773bde677491a0a1c83b49901b2",
+        "nr-validation-result.json": "72257ef8d69670934d598831f3069f4fb2dafb725be4aea2c50176e0e57cad7e",
+        "fg-result.json": "1a17de76127ba66c618ee1775d0bc60ed11cab62f140f15d3104a005a55ba19d",
+        "fg-route-verification.json": "deb3b1ed641ff07a6d488e8f5f138184193c0a19798da8c0f0fb822d100d164f",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "sdk-device-plan.json": "64eeedc41d8644c0786a8497ef6b18cf8738e21a8a0423d37266b08b76b4733a",
+        "sl.log": "34645d9da770dcff32373207df8dfd06448d1a6863c9979ceb00e9317d596ec0",
+        "sdk-device.stderr.log": "721b554dfcb32748e3585221af31c46ee2508f2bcb30a4a7f4852a992ed9eefd"
+      }
+    }
+  ]
+}

@@ -17,6 +17,7 @@ struct Chain {
     frames: u32,
     on_frames: u32,
     was_on: bool,
+    temporal_boundary: crate::target_fg_gate::TemporalBoundary,
     region: Option<[u32; 4]>,
     applied_frame_limit_us: u32,
     reflex_ab: bool,
@@ -24,11 +25,41 @@ struct Chain {
     stopped: Option<&'static str>,
     resources: Option<[Resource; 2]>,
     flow: Option<crate::target_nvof::Flow>,
+    #[cfg(feature = "native-nr")]
+    nr: Option<crate::target_nr::Nr>,
+    #[cfg(feature = "native-nr")]
+    nr_failed: bool,
+    #[cfg(feature = "native-nr")]
+    nr_history: crate::nr_history::History,
+    #[cfg(feature = "native-nr")]
+    flow_identity: Option<crate::nr_history::Source>,
+    #[cfg(feature = "native-nr")]
+    flow_frame: Option<u32>,
 }
 static CHAINS: OnceLock<Mutex<HashMap<u64, Arc<Mutex<Chain>>>>> = OnceLock::new();
 static FRAME: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
 fn chains() -> std::sync::MutexGuard<'static, HashMap<u64, Arc<Mutex<Chain>>>> {
     CHAINS.get_or_init(Default::default).lock().unwrap()
+}
+unsafe fn finish_pending(chain: &mut Chain) -> Result<()> {
+    crate::route_objects::drain_device(chain.device.handle())?;
+    if let Some(sr) = chain.sr.as_mut() {
+        sr.finish()?;
+    }
+    #[cfg(feature = "native-nr")]
+    if let Some(nr) = chain.nr.as_mut() {
+        nr.finish_handoff()?;
+    }
+    Ok(())
+}
+pub(super) unsafe fn drain_device(device: vk::Device) {
+    let records = chains().values().cloned().collect::<Vec<_>>();
+    for record in records {
+        let mut chain = record.lock().unwrap();
+        if chain.device.handle() == device && finish_pending(&mut chain).is_err() {
+            std::process::abort();
+        }
+    }
 }
 fn motion_format() -> vk::Format {
     if crate::target_nvof::requested() {
@@ -41,7 +72,16 @@ fn motion_format() -> vk::Format {
     }
 }
 pub(super) fn enabled() -> bool {
-    std::env::var("NS_STREAMLINE_TARGET_FG").as_deref() == Ok("1")
+    let fg = std::env::var("NS_STREAMLINE_TARGET_FG").as_deref() == Ok("1")
+        || std::env::var("NS_STREAMLINE_GRAPHICS_RUNTIME").as_deref() == Ok("1");
+    #[cfg(feature = "native-nr")]
+    {
+        fg || crate::nr_runtime::requested()
+    }
+    #[cfg(not(feature = "native-nr"))]
+    {
+        fg
+    }
 }
 pub(super) unsafe fn created(
     device: vk::Device,
@@ -78,6 +118,7 @@ pub(super) unsafe fn created(
             frames: 0,
             on_frames: 0,
             was_on: false,
+            temporal_boundary: crate::target_fg_gate::TemporalBoundary::default(),
             region: None,
             applied_frame_limit_us: 0,
             reflex_ab: std::env::var("NS_STREAMLINE_TARGET_REFLEX_AB").as_deref() == Ok("1"),
@@ -88,6 +129,16 @@ pub(super) unsafe fn created(
             stopped: None,
             resources: None,
             flow: None,
+            #[cfg(feature = "native-nr")]
+            nr: None,
+            #[cfg(feature = "native-nr")]
+            nr_failed: !sr_allowed,
+            #[cfg(feature = "native-nr")]
+            nr_history: crate::nr_history::History::default(),
+            #[cfg(feature = "native-nr")]
+            flow_identity: None,
+            #[cfg(feature = "native-nr")]
+            flow_frame: None,
         })),
     );
     Ok(())
@@ -182,8 +233,14 @@ unsafe fn guides(
     if crate::target_nvof::enabled() {
         // Initialization has not consumed any application semaphore. Unsupported
         // formats/session creation can safely fall back to already-cleared guides.
-        match crate::target_nvof::Flow::new(&instance, d.physical, device, swapchain, resources[1])
-        {
+        match crate::target_nvof::Flow::new(
+            &instance,
+            parent.gipa,
+            d.physical,
+            device,
+            swapchain,
+            resources[1],
+        ) {
             Ok(flow) => chain.flow = Some(flow),
             Err(error) => {
                 if error.downcast_ref::<vk::Result>() == Some(&vk::Result::ERROR_DEVICE_LOST) {
@@ -214,6 +271,9 @@ pub(super) unsafe fn present(
             .cloned()
             .ok_or("unknown FG swapchain")?;
         let mut chain = record.lock().unwrap();
+        let retire_started = Instant::now();
+        finish_pending(&mut chain)?;
+        let retire_us = retire_started.elapsed().as_micros();
         chain.frames = chain.frames.saturating_add(1);
         let api = crate::target_runtime::fg_api()?;
         let device = chain.device.clone();
@@ -232,7 +292,15 @@ pub(super) unsafe fn present(
             chain.hwnd as _,
             windows_sys::Win32::UI::WindowsAndMessaging::GA_ROOT,
         );
-        let (requested, control_revision) = crate::live::requested();
+        let (
+            (requested, control_revision),
+            (sr_mode, sr_revision, sr_scale, sr_preset),
+            nr_applied,
+        ) = crate::live::frame_controls();
+        #[cfg(feature = "native-nr")]
+        let (nr_controls, nr_revision) = nr_applied;
+        #[cfg(not(feature = "native-nr"))]
+        let _ = nr_applied;
         let native_source = crate::source_auto::select(queue, &*info);
         let region = native_source.ok().and_then(|source| {
             crate::target_fg_gate::content_region(
@@ -268,7 +336,15 @@ pub(super) unsafe fn present(
         })
         .or(region_off);
         let on = off_reason.is_none();
-        let (sr_mode, sr_revision, sr_scale, sr_preset) = crate::live::sr_requested();
+        let boundary_reset = chain.temporal_boundary.next(foreground == root, on);
+        #[cfg(feature = "native-nr")]
+        let nr_requested = crate::nr_runtime::requested()
+            && crate::nr_runtime::ready()
+            && nr_controls.enabled
+            && !chain.nr_failed
+            && !crate::target_window::stopping();
+        #[cfg(not(feature = "native-nr"))]
+        let nr_requested = false;
         if sr_mode != chain.sr_mode || sr_revision != chain.sr_revision {
             // Previous SR submission and FG input consumption have completed.
             device.device_wait_idle()?;
@@ -291,25 +367,57 @@ pub(super) unsafe fn present(
         } else if !chain.sr_allowed {
             crate::live::sr(json!({"active":false,"reason":"当前显示表面不支持 SR 读写"}));
         }
-        if chain.resources.is_none() && (on || sr_requested) {
+        if chain.resources.is_none() && (on || sr_requested || nr_requested) {
             chain.resources = Some(guides(d, &device, &mut chain, queue, handle)?);
         }
         let mut flow_ready = None;
-        let mut reset = !chain.was_on || region_changed;
-        let mut sr_reset = chain.sr.is_none() || region_changed;
-        if on || sr_requested {
+        let mut reset = !chain.was_on || region_changed || boundary_reset;
+        let mut sr_reset = chain.sr.is_none() || region_changed || boundary_reset;
+        #[cfg(feature = "native-nr")]
+        let nr_identity = crate::target_nr::identity(handle, chain.extent, native_source.ok());
+        #[cfg(feature = "native-nr")]
+        let flow_reset = if crate::nr_runtime::requested() {
+            // Flow analyzes consecutive unprocessed present images. Rotation of
+            // equivalent native color images does not break that present pair.
+            chain.flow_identity.is_none_or(|old| {
+                old.mapping != nr_identity.mapping || old.extent != nr_identity.extent
+            }) || chain
+                .flow_frame
+                .is_none_or(|old| old.wrapping_add(1) != frame)
+        } else if sr_requested {
+            sr_reset
+        } else {
+            reset
+        };
+        #[cfg(not(feature = "native-nr"))]
+        let flow_reset = if sr_requested { sr_reset } else { reset };
+        // A reset flow produces zero motion for this frame. NR pauses rather
+        // than consuming stale guidance, then resets on its first valid pair;
+        // SR and FG receive the same boundary reset directly.
+        let flow_reset = flow_reset || boundary_reset;
+        if boundary_reset {
+            trace::event!(
+                "target_temporal_boundary",
+                json!({"frame":frame,"foreground":foreground == root,"fg_on":on,
+                    "flow_reset":true,"sr_reset":true,"fg_reset":true})
+            );
+        }
+        let mut motion_valid = false;
+        let mut duplicate = false;
+        if on || sr_requested || nr_requested {
             if let Some(resources) = chain.resources {
                 if let Some(flow) = chain.flow.as_mut() {
-                    let (ready, guidance_reset) = flow.run(
-                        queue,
-                        &*info,
-                        resources[1],
-                        if sr_requested { sr_reset } else { reset },
-                        frame,
-                    )?;
-                    flow_ready = Some(ready);
-                    reset |= guidance_reset;
-                    sr_reset |= guidance_reset;
+                    let guidance = flow.run(queue, &*info, resources[1], flow_reset, frame)?;
+                    flow_ready = Some(guidance.ready);
+                    reset |= guidance.reset;
+                    sr_reset |= guidance.reset;
+                    motion_valid = !guidance.reset;
+                    duplicate = guidance.duplicate;
+                    #[cfg(feature = "native-nr")]
+                    {
+                        chain.flow_identity = Some(nr_identity);
+                        chain.flow_frame = Some(frame);
+                    }
                 }
             }
         }
@@ -342,30 +450,179 @@ pub(super) unsafe fn present(
                 }
             }
         }
-        let sr_motion = if flow_ready.is_some() {
+        let nr_motion = if flow_ready.is_some() {
             chain.resources.map(|r| r[1])
         } else {
             None
         };
+        // Availability survives NR consuming the flow semaphore. NR's completed
+        // fence or handoff wait also orders this raw field before SR.
+        let sr_motion = if nr_motion.is_some() {
+            chain.flow.as_ref().map(|flow| flow.sr_pixel_motion())
+        } else {
+            None
+        };
+        #[cfg(feature = "native-nr")]
+        let mut processed_color = None;
+        #[cfg(not(feature = "native-nr"))]
+        let processed_color = None;
+        #[cfg(feature = "native-nr")]
+        let mut nr_completed = false;
+        #[cfg(not(feature = "native-nr"))]
+        let nr_completed = false;
+        #[cfg(feature = "native-nr")]
+        {
+            let mut decision = chain.nr_history.next(
+                nr_controls,
+                nr_identity,
+                frame as u64,
+                motion_valid && nr_requested,
+            )?;
+            if decision.evaluate {
+                if chain
+                    .nr
+                    .as_ref()
+                    .is_some_and(|nr| !nr.matches(native_source.ok()))
+                {
+                    device.device_wait_idle()?;
+                    drop(chain.nr.take());
+                    chain.nr_history.recreated();
+                    decision.reset_nr = true;
+                    decision.reset_sr = true;
+                    decision.reset_fg = true;
+                }
+                if chain.nr.is_none() {
+                    let parent = instance(vk::Instance::from_raw(chain.instance))
+                        .ok_or("NR instance missing")?;
+                    let inst = ash::Instance::load_with(
+                        |name| {
+                            (parent.gipa)(parent.handle, name.as_ptr())
+                                .map_or(std::ptr::null(), |f| f as *const _)
+                        },
+                        parent.handle,
+                    );
+                    match crate::target_nr::Nr::new(
+                        &inst,
+                        d.physical,
+                        &device,
+                        handle,
+                        chain.extent,
+                        native_source.ok(),
+                    ) {
+                        Ok(nr) => chain.nr = Some(nr),
+                        Err(error) => {
+                            chain.nr_failed = true;
+                            decision = chain.nr_history.safe_fallback();
+                            trace::event!(
+                                "target_nr_fallback",
+                                json!({"error":error.to_string(),"stage":"prepare_before_submit"})
+                            );
+                        }
+                    }
+                }
+                let to_present = chain.sr.is_none();
+                let defer_tail = std::env::var("NS_STREAMLINE_DEFER_PRESENT").as_deref() != Ok("0")
+                    && !requested
+                    && !chain.was_on
+                    && s.value == 0;
+                if let (Some(nr), Some(motion)) = (chain.nr.as_mut(), nr_motion) {
+                    processed_color = Some(nr.run(
+                        queue,
+                        &(*info).wait_semaphores(&flow_ready.into_iter().collect::<Vec<_>>()),
+                        motion,
+                        native_source.ok(),
+                        nr_controls.intensity,
+                        decision.reset_nr,
+                        to_present,
+                        defer_tail,
+                        frame,
+                    )?);
+                    flow_ready = None;
+                    nr_completed = true;
+                }
+            }
+            sr_reset |= decision.reset_sr;
+            reset |= decision.reset_fg;
+            let reason = if !nr_controls.enabled {
+                "disabled"
+            } else if let Some(reason) = crate::nr_runtime::failure() {
+                reason
+            } else if chain.nr_failed {
+                "resource_preparation_failed"
+            } else if crate::target_window::stopping() {
+                "window_transition"
+            } else if !motion_valid {
+                "motion_unavailable"
+            } else {
+                "active"
+            };
+            crate::live::nr(
+                json!({"requested":nr_controls.enabled,"active":nr_completed,"reason":reason,"intensity":nr_controls.intensity,"revision":nr_revision,"appliedRevision":nr_revision,"sourceIdentity":nr_identity.identity,"sourceGeneration":native_source.ok().map(|s|s.generation),"sourceGroupSize":native_source.ok().map(|s|s.history_members),"sourcePathCount":native_source.ok().map(|s|s.history_paths),"historyUpdate":native_source.ok().map(|s|s.history_update),"reset":decision.reset_nr,"resetReason":format!("{:?}",decision.reason),"pendingSrReset":decision.reset_sr,"pendingFgReset":decision.reset_fg,"motionValid":motion_valid,"depth":"synthetic_constant","source":if native_source.is_ok(){"native_source"}else{"present_source"},"input":nr_identity.extent}),
+            );
+            trace::event!(
+                "target_nr_frame",
+                json!({"frame":frame,"requested":nr_controls.enabled,"evaluated":nr_completed,"reason":reason,"revision":nr_revision,"intensity":nr_controls.intensity,"reset":decision.reset_nr,"reset_reason":format!("{:?}",decision.reason),"motion_valid":motion_valid,"pending_sr_reset":decision.reset_sr,"pending_fg_reset":decision.reset_fg,"source_image":native_source.map_or(handle.as_raw(), |s|s.image.as_raw()),"source_generation":native_source.ok().map(|s|s.generation),"source_identity":nr_identity.identity,"source_group_size":native_source.ok().map(|s|s.history_members),"source_path_count":native_source.ok().map(|s|s.history_paths),"history_update":native_source.ok().map(|s|s.history_update),"source_route":native_source.ok().map(|s|s.history_route),"source_usage":native_source.ok().map(|s|s.usage),"mapping":nr_identity.mapping,"input":nr_identity.extent,"nvof_wait_consumed":nr_completed})
+            );
+        }
+        #[cfg(not(feature = "native-nr"))]
+        let _ = motion_valid;
         let mut sr_completed = false;
+        let mut sr_ready = None;
+        #[cfg(feature = "native-nr")]
+        let nr_waits = chain
+            .nr
+            .as_ref()
+            .and_then(|nr| nr.ready_semaphore())
+            .into_iter()
+            .collect::<Vec<_>>();
+        #[cfg(not(feature = "native-nr"))]
+        let nr_waits: Vec<vk::Semaphore> = Vec::new();
+        #[cfg(feature = "native-nr")]
+        let defer_tail = chain.nr.as_ref().is_some_and(|nr| nr.tail_deferred());
+        #[cfg(not(feature = "native-nr"))]
+        let defer_tail = false;
         if let Some(sr) = chain.sr.as_mut() {
             let waits = flow_ready.into_iter().collect::<Vec<_>>();
-            let input = if waits.is_empty() {
+            let input = if nr_completed {
+                (*info).wait_semaphores(&nr_waits)
+            } else if waits.is_empty() {
                 *info
             } else {
                 (*info).wait_semaphores(&waits)
             };
-            sr.run(queue, &input, token, sr_motion, sr_reset, native_source)?;
+            sr_ready = sr.run(
+                queue,
+                &input,
+                token,
+                sr_motion,
+                sr_reset,
+                native_source,
+                processed_color,
+                defer_tail,
+                frame,
+            )?;
+            #[cfg(feature = "native-nr")]
+            if sr_ready.is_none() {
+                if let Some(nr) = chain.nr.as_mut() {
+                    nr.finish_handoff()?;
+                }
+            }
             flow_ready = None;
             sr_completed = true;
+            #[cfg(feature = "native-nr")]
+            chain.nr_history.sr_consumed();
         }
         if let Some(resources) = chain.resources {
+            let mut fg_resources = resources;
+            if let Some(flow) = &chain.flow {
+                fg_resources[1] = flow.pixel_motion();
+            }
             checked(
                 probe_fg_inputs(
                     &api,
                     token,
                     u32::from(reset),
-                    resources.as_ptr(),
+                    fg_resources.as_ptr(),
                     region.as_ref().map_or(std::ptr::null(), |r| r.as_ptr()),
                 ),
                 "FG constants/tags",
@@ -377,29 +634,49 @@ pub(super) unsafe fn present(
         let requested_frame_limit_us =
             crate::target_fg_gate::frame_limit_us(chain.reflex_ab && on, chain.on_frames);
         let options_started = Instant::now();
-        checked(
-            probe_fg_options(
+        let fg_motion_format = if chain.flow.is_some() {
+            vk::Format::R16G16_SFLOAT
+        } else {
+            motion_format()
+        };
+        if on && (duplicate || reset) {
+            // Keep the application Present and resource-lifetime waits intact.
+            // Streamline suspends interpolation for this pair while retaining
+            // allocations, instead of generating from a repeat/reset frame.
+            crate::fg_pause::suspend(
                 &api,
-                u32::from(on),
-                chain.extent.width,
-                chain.extent.height,
+                chain.extent,
                 chain.count,
+                fg_motion_format,
                 requested_frame_limit_us,
-            ),
-            "FG options",
-        )?;
+            )?;
+        } else {
+            crate::fg_pause::configure(
+                &api,
+                on,
+                false,
+                chain.extent,
+                chain.count,
+                fg_motion_format,
+                requested_frame_limit_us,
+            )?;
+        }
         chain.applied_frame_limit_us = requested_frame_limit_us;
         let options_us = options_started.elapsed().as_micros();
         let present_started = Instant::now();
         let flow_waits = flow_ready.into_iter().collect::<Vec<_>>();
-        let forwarded = if sr_completed {
+        let present_waits = sr_ready.into_iter().collect::<Vec<_>>();
+        let forwarded = if !present_waits.is_empty() {
+            (*info).wait_semaphores(&present_waits)
+        } else if sr_completed || nr_completed {
             (*info).wait_semaphores(&[])
         } else if flow_waits.is_empty() {
             *info
         } else {
             (*info).wait_semaphores(&flow_waits)
         };
-        let result = next(queue, &forwarded);
+        let result =
+            crate::route_objects::with_deferred(sr_ready.is_some(), || next(queue, &forwarded));
         let present_us = present_started.elapsed().as_micros();
         if result != vk::Result::SUCCESS && result != vk::Result::SUBOPTIMAL_KHR {
             return Err(format!("proxy present failed {result:?}").into());
@@ -408,6 +685,10 @@ pub(super) unsafe fn present(
         let s = crate::fg_api::state(&api)?;
         let input_started = Instant::now();
         wait_inputs(&device, &s)?;
+        #[cfg(feature = "native-nr")]
+        if on {
+            chain.nr_history.fg_consumed();
+        }
         let input_wait_us = input_started.elapsed().as_micros();
         if s.status != 0 {
             return Err(format!("SDK FG status {}", s.status).into());
@@ -436,11 +717,29 @@ pub(super) unsafe fn present(
             );
         }
         chain.was_on = on;
+        let generation = s.generation(on, on && (duplicate || reset));
+        crate::live::fg(
+            json!({"state":generation,"generationObserved":generation=="generated_observed",
+            "sdkPresented":s.presented,"requested":on,"suspended":on && (duplicate || reset),
+            "feedback":"streamline_present_count","perOutputDisableFlagAvailable":false}),
+        );
         crate::live::sr_applied(sr_mode, sr_revision, sr_preset);
         crate::live::frame(on, off_reason, control_revision);
+        if crate::frame_capture::selected(frame) {
+            trace::event!(
+                "target_capture_frame",
+                json!({
+                    "frame":frame,"on":on,"off_reason":off_reason,"sdk":s.json(),
+                    "foreground":foreground == root,"reset":reset,"boundary_reset":boundary_reset,
+                    "flow_reset":flow_reset,"motion_valid":motion_valid,"duplicate":duplicate,
+                    "nr_evaluated":nr_completed,"sr_evaluated":sr_completed,"sr_reset":sr_reset,
+                    "native_source_generation":native_source.ok().map(|s|s.generation),"region":region,
+                })
+            );
+        }
         trace::event!(
             "target_fg_frame",
-            json!({"frame":frame,"swapchain":handle.as_raw(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
+            json!({"frame":frame,"swapchain":handle.as_raw(),"composition_version":1,"fg_control_requested":requested,"fg_revision":control_revision,"sr_mode":sr_mode,"sr_revision":sr_revision,"nr_evaluated":nr_completed,"sr_evaluated":sr_completed,"color_source":if sr_completed {"sr_output"} else if nr_completed {"nr_output"} else {"original_present"},"history_reset":reset,"duplicate_color":duplicate,"interpolation_suspended":on && (duplicate || reset),"tail_deferred":sr_ready.is_some(),"present_waits":present_waits.iter().map(|s|s.as_raw()).collect::<Vec<_>>(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"retire_previous":retire_us,"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
         );
         Ok(result)
     })();
@@ -455,16 +754,18 @@ pub(super) unsafe fn present(
 pub(super) unsafe fn before_destroy(handle: vk::SwapchainKHR) {
     let record = chains().get(&handle.as_raw()).cloned();
     if let Some(record) = record {
-        let chain = record.lock().unwrap();
+        let mut chain = record.lock().unwrap();
+        if finish_pending(&mut chain).is_err() {
+            std::process::abort();
+        }
         let api = crate::target_runtime::fg_api().unwrap();
-        if probe_fg_options(
-            &api,
-            0,
-            chain.extent.width,
-            chain.extent.height,
-            chain.count,
-            0,
-        ) != 0
+        let motion = if chain.flow.is_some() {
+            vk::Format::R16G16_SFLOAT
+        } else {
+            motion_format()
+        };
+        if crate::fg_pause::configure(&api, false, false, chain.extent, chain.count, motion, 0)
+            .is_err()
         {
             std::process::abort()
         }
@@ -479,6 +780,8 @@ pub(super) unsafe fn after_destroy(handle: vk::Device, swapchain: vk::SwapchainK
             std::process::abort()
         }
         drop(chain.sr.take());
+        #[cfg(feature = "native-nr")]
+        drop(chain.nr.take());
         crate::live::sr(json!({"active":false,"reason":"waiting"}));
         drop(chain.flow.take());
         if let Some(resources) = chain.resources {

@@ -1,4 +1,51 @@
 //! Eligibility for the bounded diagnostic. A completed stop is terminal for this chain.
+/// All temporal consumers must start a new history at a presentation boundary,
+/// including SR/NR that were already running during FG warmup or in background.
+#[derive(Default)]
+pub(super) struct TemporalBoundary {
+    previous: Option<(bool, bool)>,
+}
+impl TemporalBoundary {
+    pub(super) fn next(&mut self, foreground: bool, fg_on: bool) -> bool {
+        let current = (foreground, fg_on);
+        let reset = self.previous != Some(current);
+        self.previous = Some(current);
+        reset
+    }
+}
+
+#[cfg(test)]
+mod temporal_tests {
+    use super::TemporalBoundary;
+
+    #[test]
+    fn warmup_history_is_retired_when_fg_starts() {
+        let mut history = TemporalBoundary::default();
+        assert!(history.next(true, false));
+        for _ in 0..300 {
+            assert!(!history.next(true, false));
+        }
+        assert!(history.next(true, true));
+        for _ in 0..300 {
+            assert!(!history.next(true, true));
+        }
+    }
+
+    #[test]
+    fn focus_and_live_fg_switches_reset_once() {
+        let mut history = TemporalBoundary::default();
+        for state in [(true, true), (false, false), (true, true), (true, false)] {
+            assert!(history.next(state.0, state.1));
+            assert!(!history.next(state.0, state.1));
+        }
+        // NR/SR-only sessions need the same focus recovery without FG running.
+        assert!(history.next(false, false));
+        assert!(!history.next(false, false));
+        assert!(history.next(true, false));
+        assert!(!history.next(true, false));
+    }
+}
+
 // Reject ambiguous fractional viewports instead of rounding into the black bars.
 pub(super) fn content_region(viewport: [f32; 4], size: [u32; 2]) -> Option<[u32; 4]> {
     if viewport

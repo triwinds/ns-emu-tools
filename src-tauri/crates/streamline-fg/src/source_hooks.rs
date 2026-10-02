@@ -1,5 +1,11 @@
 // Each online hook consumes native Vulkan values. The diagnostic JSON expression
 // in hook! is evaluated only when the offline recorder is selected.
+macro_rules! proxy_record {
+    (vkGetSwapchainImagesKHR,$d:expr,$h:ident,$r:ident,$s:ident,$n:ident,$o:ident) => {
+        if ($r==vk::Result::SUCCESS||$r==vk::Result::INCOMPLETE)&&!$o.is_null(){crate::present_layout::images($d,$s.as_raw(),items($o,*$n));}
+    };
+    ($name:ident,$($arg:tt)*) => {};
+}
 macro_rules! online_record {
     (@model $body:expr) => { crate::source_auto::update($body) };
     (vkCmdBindPipeline,$d:expr,$h:ident,$r:ident,$b:ident,$p:ident) => {
@@ -50,13 +56,15 @@ macro_rules! online_record {
             let stages=items(info.p_stages,info.stage_count);
             let known=stages.len()==2&&[(vk::ShaderStageFlags::VERTEX,1),(vk::ShaderStageFlags::FRAGMENT,2)].iter().all(|(stage,hash)|
                 stages.iter().any(|s|s.stage==*stage&&m.shaders.get(&($d,s.module.as_raw()))==Some(hash)&&!s.p_name.is_null()&&CStr::from_ptr(s.p_name)==c"main"));
-            m.pipelines.insert(($d,p.as_raw()),known);
+            m.pipelines.insert(($d,p.as_raw()),crate::source_model::Known { valid: known, generation: m.serial });
         }});}
     };
     (vkCreateRenderPass,$d:expr,$h:ident,$r:ident,$i:ident,$a:ident,$o:ident) => {
         if $r==vk::Result::SUCCESS {online_record!(@model |m|{let a=items((*$i).p_attachments,(*$i).attachment_count);
-            m.renderpasses.insert(($d,(*$o).as_raw()),a.len()==1&&a[0].initial_layout==vk::ImageLayout::GENERAL&&a[0].final_layout==vk::ImageLayout::GENERAL);});}
+            m.renderpasses.insert(($d,(*$o).as_raw()),crate::source_model::Known { valid: a.len()==1&&a[0].initial_layout==vk::ImageLayout::GENERAL&&a[0].final_layout==vk::ImageLayout::GENERAL, generation: m.serial });});}
     };
+    (vkDestroyPipeline,$d:expr,$h:ident,$r:ident,$p:ident,$a:ident) => {online_record!(@model |m|{m.pipelines.remove(&($d,$p.as_raw()));})};
+    (vkDestroyRenderPass,$d:expr,$h:ident,$r:ident,$p:ident,$a:ident) => {online_record!(@model |m|{m.renderpasses.remove(&($d,$p.as_raw()));})};
     (vkUpdateDescriptorSets,$d:expr,$h:ident,$r:ident,$n:ident,$w:ident,$c:ident,$copies:ident) => {
         crate::scale_probe::online_writes($d,items($w,$n),$c);
     };

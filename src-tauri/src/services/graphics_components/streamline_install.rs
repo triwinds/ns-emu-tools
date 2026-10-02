@@ -1,4 +1,4 @@
-//! Local, pinned experimental package. Each launch uses a private snapshot.
+//! Pinned experimental package from the managed download cache. Each launch uses a private snapshot.
 use super::streamline_fg::{file_digest, target_policy};
 use crate::{config::effective_config_dir, models::graphics_components::GraphicsApi};
 use serde::{Deserialize, Serialize};
@@ -9,8 +9,8 @@ use std::{
     process::{Command, Stdio},
     sync::Mutex,
 };
-static OPERATION: Mutex<()> = Mutex::new(());
-fn lock_store() -> Result<fs::File, String> {
+pub(super) static OPERATION: Mutex<()> = Mutex::new(());
+pub(super) fn lock_store() -> Result<fs::File, String> {
     safe_dir(&root())?;
     let path = root().join(".operation.lock");
     if path.exists() {
@@ -27,15 +27,35 @@ fn lock_store() -> Result<fs::File, String> {
         .map_err(|_| "另一个组件操作正在进行，请稍后重试".to_owned())?;
     Ok(file)
 }
-#[derive(Deserialize)]
-struct Package {
-    version: String,
-    files: Vec<Artifact>,
+#[derive(Clone, Deserialize, Serialize)]
+pub(super) struct Package {
+    pub version: String,
+    pub files: Vec<Artifact>,
+    #[serde(default)]
+    pub download: Option<super::runtime_package::Asset>,
+    #[serde(default)]
+    pub parts: Vec<PackagePart>,
+    #[serde(default)]
+    pub native_nr: bool,
+    #[serde(default)]
+    pub schema_version: u32,
+    #[serde(default)]
+    pub launcher_protocol: u32,
 }
-#[derive(Deserialize)]
-struct Artifact {
-    name: String,
-    sha256: String,
+#[derive(Clone, Deserialize, Serialize)]
+pub(super) struct PackagePart {
+    pub download: super::runtime_package::Asset,
+    pub files: Vec<String>,
+}
+impl Package {
+    pub(super) fn online(&self) -> bool {
+        self.download.is_some() || !self.parts.is_empty()
+    }
+}
+#[derive(Clone, Deserialize, Serialize)]
+pub(super) struct Artifact {
+    pub name: String,
+    pub sha256: String,
 }
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Receipt {
@@ -49,10 +69,10 @@ pub struct Operation {
     pub message: String,
     pub session: Option<PathBuf>,
 }
-fn package() -> Package {
+pub(super) fn package() -> Package {
     serde_json::from_str(include_str!("streamline-package.json")).expect("embedded package")
 }
-fn root() -> PathBuf {
+pub(super) fn root() -> PathBuf {
     effective_config_dir()
         .join("graphics")
         .join("streamline-fg")
@@ -66,7 +86,21 @@ fn key(exe: &Path) -> String {
 fn destination(base: &Path, exe: &Path) -> PathBuf {
     base.join(key(exe)).join(package().version)
 }
-fn plain(path: &Path, directory: bool) -> Result<(), String> {
+fn selected_at(base: &Path, exe: &Path) -> Result<(PathBuf, Package), String> {
+    let pointer = base.join(key(exe)).join("current-package.json");
+    super::runtime_package::safe_path(&pointer)?;
+    if !pointer.exists() {
+        return Ok((destination(base, exe), package()));
+    }
+    let bytes = read_live_json(&pointer)?;
+    let package: Package = serde_json::from_value(bytes).map_err(|e| e.to_string())?;
+    super::streamline_update::validate_selected(&package)?;
+    Ok((base.join(key(exe)).join(&package.version), package))
+}
+pub(super) fn installed_package(exe: &Path) -> Result<Package, String> {
+    selected_at(&root(), exe).map(|(_, p)| p)
+}
+pub(super) fn plain(path: &Path, directory: bool) -> Result<(), String> {
     let m = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     #[cfg(windows)]
     {
@@ -80,7 +114,7 @@ fn plain(path: &Path, directory: bool) -> Result<(), String> {
     }
     Ok(())
 }
-fn safe_dir(path: &Path) -> Result<(), String> {
+pub(super) fn safe_dir(path: &Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         if !parent.as_os_str().is_empty() {
             safe_dir(parent)?;
@@ -91,9 +125,12 @@ fn safe_dir(path: &Path) -> Result<(), String> {
     }
     plain(path, true)
 }
-fn verify(dir: &Path) -> Result<(), String> {
+pub(super) fn verify(dir: &Path) -> Result<(), String> {
+    verify_artifacts(dir, &package().files)
+}
+pub(super) fn verify_artifacts(dir: &Path, files: &[Artifact]) -> Result<(), String> {
     plain(dir, true)?;
-    for f in package().files {
+    for f in files {
         let path = dir.join(&f.name);
         plain(&path, false).map_err(|e| format!("组件文件不可用 {}：{e}", path.display()))?;
         if file_digest(&path)? != f.sha256 {
@@ -102,7 +139,10 @@ fn verify(dir: &Path) -> Result<(), String> {
     }
     Ok(())
 }
-fn source() -> PathBuf {
+pub(super) fn source() -> PathBuf {
+    if package().online() {
+        return super::streamline_download::cached_source();
+    }
     if cfg!(debug_assertions) {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/streamline-fg-package")
     } else {
@@ -114,22 +154,45 @@ fn source() -> PathBuf {
     }
 }
 fn package_availability_at(path: &Path) -> Result<(), String> {
-    verify(path).map_err(|error| format!("组件包未就绪：{}。{error}。请将与此工具版本配套的 streamline-fg-package 文件夹放到工具 EXE 同级目录，然后重新检查。", path.display()))
+    verify(path).map_err(|error| {
+        format!(
+            "组件包未就绪：{}。{error}。请点击“下载并安装”，工具将自动下载并校验配套组件。",
+            path.display()
+        )
+    })
 }
 pub(super) fn availability() -> Result<(), String> {
     package_availability_at(&source())
 }
-pub(super) fn planned(exe: &Path) -> PathBuf {
-    destination(&root(), exe)
+pub(super) fn native_bridge() -> Result<PathBuf, String> {
+    if !package().native_nr {
+        return Err("当前组件包未包含原生 NR，请更新画面增强组件包".into());
+    }
+    availability()?;
+    let bridge = source().join("nvngx.dll");
+    plain(&bridge, false)?;
+    Ok(bridge)
 }
-fn receipt(exe: &Path) -> Result<Receipt, String> {
+pub(super) fn planned(exe: &Path) -> PathBuf {
+    selected_at(&root(), exe)
+        .map(|(p, _)| p)
+        .unwrap_or_else(|_| destination(&root(), exe))
+}
+pub(super) fn planned_package(exe: &Path, package: &Package) -> PathBuf {
+    root().join(key(exe)).join(&package.version)
+}
+fn receipt_for(exe: &Path, package: &Package) -> Result<Receipt, String> {
     Ok(Receipt {
         executable: exe.to_owned(),
         target_sha256: file_digest(exe)?,
-        version: package().version,
+        version: package.version.clone(),
     })
 }
+#[cfg(test)]
 fn owned(dir: &Path, exe: &Path, current: bool) -> Result<(), String> {
+    owned_for(dir, exe, current, &package())
+}
+fn owned_for(dir: &Path, exe: &Path, current: bool, package: &Package) -> Result<(), String> {
     let mut ancestor = Some(dir);
     while let Some(path) = ancestor {
         plain(path, true)?;
@@ -139,25 +202,27 @@ fn owned(dir: &Path, exe: &Path, current: bool) -> Result<(), String> {
     plain(&record, false)?;
     let r: Receipt = serde_json::from_slice(&fs::read(record).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
-    if r.executable != exe || r.version != package().version {
+    if r.executable != exe || r.version != package.version {
         return Err("安装记录不属于当前目标".into());
     }
-    if current && r != receipt(exe)? {
+    if current && r != receipt_for(exe, package)? {
         return Err("模拟器已更新，请卸载组件后重新检测、安装".into());
     }
-    verify(dir)
+    verify_artifacts(dir, &package.files)
 }
 pub(super) fn state(exe: &Path) -> &'static str {
-    let dir = planned(exe);
+    let Ok((dir, package)) = selected_at(&root(), exe) else {
+        return "damaged";
+    };
     if !dir.exists() {
         "unmanaged"
-    } else if owned(&dir, exe, true).is_ok() {
+    } else if owned_for(&dir, exe, true, &package).is_ok() {
         "installed"
     } else {
         "damaged"
     }
 }
-fn authorize(
+pub(crate) fn authorize(
     exe: &Path,
     api: GraphicsApi,
     consent: bool,
@@ -178,20 +243,54 @@ fn authorize(
     target_policy::classify(&hash, true).authorize(consent)?;
     Ok(exe)
 }
-fn copy_package(from: &Path, to: &Path) -> Result<(), String> {
-    verify(from)?;
-    for f in package().files {
+fn copy_package_for(from: &Path, to: &Path, package: &Package) -> Result<(), String> {
+    verify_artifacts(from, &package.files)?;
+    for f in &package.files {
         fs::copy(from.join(&f.name), to.join(&f.name)).map_err(|e| e.to_string())?;
     }
-    verify(to)
+    verify_artifacts(to, &package.files)
 }
-fn install_at(base: &Path, src: &Path, exe: &Path, expected: &str) -> Result<(), String> {
+#[cfg(test)]
+pub(super) fn install_at(
+    base: &Path,
+    src: &Path,
+    exe: &Path,
+    expected: &str,
+) -> Result<(), String> {
+    install_package_at(base, src, exe, expected, &package(), false)
+}
+#[cfg(test)]
+pub(super) fn install_release_at(
+    base: &Path,
+    src: &Path,
+    exe: &Path,
+    expected: &str,
+    package: &Package,
+) -> Result<(), String> {
+    install_package_at(base, src, exe, expected, package, true)
+}
+fn install_package_at(
+    base: &Path,
+    src: &Path,
+    exe: &Path,
+    expected: &str,
+    package: &Package,
+    select: bool,
+) -> Result<(), String> {
+    super::streamline_update::validate_selected(package)?;
     if file_digest(exe)? != expected {
         return Err("主程序已改变，请重新检测".into());
     }
-    let dest = destination(base, exe);
+    let dest = base.join(key(exe)).join(&package.version);
     if dest.exists() {
-        return owned(&dest, exe, true);
+        owned_for(&dest, exe, true, package)?;
+        if select {
+            atomic_json(
+                &base.join(key(exe)).join("current-package.json"),
+                &serde_json::to_value(package).map_err(|e| e.to_string())?,
+            )?;
+        }
+        return Ok(());
     }
     let parent = dest.parent().ok_or("无安装目录")?;
     safe_dir(parent)?;
@@ -199,16 +298,22 @@ fn install_at(base: &Path, src: &Path, exe: &Path, expected: &str) -> Result<(),
         .prefix(".staging-")
         .tempdir_in(parent)
         .map_err(|e| e.to_string())?;
-    copy_package(src, stage.path())?;
+    copy_package_for(src, stage.path(), package)?;
     if file_digest(exe)? != expected {
         return Err("安装期间主程序发生变化".into());
     }
     fs::write(
         stage.path().join("installation.json"),
-        serde_json::to_vec_pretty(&receipt(exe)?).map_err(|e| e.to_string())?,
+        serde_json::to_vec_pretty(&receipt_for(exe, package)?).map_err(|e| e.to_string())?,
     )
     .map_err(|e| e.to_string())?;
     fs::rename(stage.path(), &dest).map_err(|e| e.to_string())?;
+    if select {
+        atomic_json(
+            &base.join(key(exe)).join("current-package.json"),
+            &serde_json::to_value(package).map_err(|e| e.to_string())?,
+        )?;
+    }
     Ok(())
 }
 pub fn install(
@@ -217,22 +322,49 @@ pub fn install(
     consent: bool,
     expected: String,
 ) -> Result<Operation, String> {
+    install_package(exe, api, consent, expected, source(), package())
+}
+pub async fn install_latest(
+    exe: PathBuf,
+    api: GraphicsApi,
+    consent: bool,
+    expected: String,
+    reporter: crate::services::installer::InstallReporter,
+) -> Result<Operation, String> {
+    let canonical = exe.canonicalize().map_err(|e| e.to_string())?;
+    let package = super::streamline_update::candidate_for(&canonical);
+    let source = super::streamline_download::ensure_package(&package, reporter).await?;
+    tauri::async_runtime::spawn_blocking(move || {
+        super::native_nr::import_package(&source, &package)?;
+        install_package(exe, api, consent, expected, source, package)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+pub(super) fn install_package(
+    exe: PathBuf,
+    api: GraphicsApi,
+    consent: bool,
+    expected: String,
+    source: PathBuf,
+    package: Package,
+) -> Result<Operation, String> {
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
     let exe = authorize(&exe, api, consent, &expected)?;
-    install_at(&root(), &source(), &exe, &expected)?;
+    install_package_at(&root(), &source, &exe, &expected, &package, true)?;
     Ok(Operation {
-        message: "组件已安装。请通过“以 FG 启动”打开模拟器。".into(),
+        message: "组件已安装。请通过“以画面增强启动”打开模拟器。".into(),
         session: None,
     })
 }
-fn uninstall_at(base: &Path, exe: &Path) -> Result<(), String> {
-    let dir = destination(base, exe);
+pub(super) fn uninstall_at(base: &Path, exe: &Path) -> Result<(), String> {
+    let (dir, package) = selected_at(base, exe)?;
     if !dir.exists() {
         return Ok(());
     }
-    owned(&dir, exe, false)?;
-    let mut names: Vec<String> = package().files.into_iter().map(|f| f.name).collect();
+    owned_for(&dir, exe, false, &package)?;
+    let mut names: Vec<String> = package.files.iter().map(|f| f.name.clone()).collect();
     names.push("installation.json".into());
     for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
         let e = entry.map_err(|e| e.to_string())?;
@@ -245,6 +377,12 @@ fn uninstall_at(base: &Path, exe: &Path) -> Result<(), String> {
         fs::remove_file(dir.join(name)).map_err(|e| e.to_string())?;
     }
     fs::remove_dir(dir).map_err(|e| e.to_string())?;
+    // Keep the selected version after uninstall so a retained older version is
+    // never silently reactivated by the legacy fallback.
+    atomic_json(
+        &base.join(key(exe)).join("current-package.json"),
+        &serde_json::to_value(package).map_err(|e| e.to_string())?,
+    )?;
     Ok(())
 }
 pub fn uninstall(exe: PathBuf) -> Result<Operation, String> {
@@ -253,7 +391,7 @@ pub fn uninstall(exe: PathBuf) -> Result<Operation, String> {
     let exe = exe.canonicalize().map_err(|e| e.to_string())?;
     uninstall_at(&root(), &exe)?;
     Ok(Operation {
-        message: "已卸载组件；当前游戏会话和诊断记录保留，普通启动不加载 FG。".into(),
+        message: "已卸载组件；当前游戏会话和诊断记录保留，普通启动不加载画面增强图层。".into(),
         session: None,
     })
 }
@@ -272,8 +410,20 @@ pub fn launch(
             return Err("游戏路径无效".into());
         }
     }
-    let installed = planned(&exe);
-    owned(&installed, &exe, true)?;
+    let (installed, package) = selected_at(&root(), &exe)?;
+    owned_for(&installed, &exe, true, &package)?;
+    let graphics_settings = crate::config::CONFIG.read().setting.other.clone();
+    if graphics_settings.streamline_nr_intensity > 100 {
+        return Err("NR 强度必须为 0～100".into());
+    }
+    let nr_runtime = match super::native_nr::current_runtime() {
+        Ok(runtime) => runtime,
+        Err(error) if graphics_settings.streamline_nr => return Err(error),
+        Err(_) => None,
+    };
+    if graphics_settings.streamline_nr && nr_runtime.is_none() {
+        return Err("请先下载并安装原生 NR 组件，再启用神经渲染".into());
+    }
     let sessions = root().join("sessions");
     safe_dir(&sessions)?;
     let stage = tempfile::Builder::new()
@@ -282,7 +432,7 @@ pub fn launch(
         .map_err(|e| e.to_string())?;
     let bundle = stage.path().join("package");
     fs::create_dir(&bundle).map_err(|e| e.to_string())?;
-    copy_package(&installed, &bundle)?;
+    copy_package_for(&installed, &bundle, &package)?;
     let mut cmd = Command::new(bundle.join("streamline-layer-probe.exe"));
     // Diagnostic flags must never leak into a normal game launch from the parent.
     for name in [
@@ -291,14 +441,22 @@ pub fn launch(
         "NS_STREAMLINE_SOURCE_MEASURE",
         "NS_STREAMLINE_SOURCE_TRACK_ONLY",
         "NS_STREAMLINE_SOURCE_BENCH_OFF",
+        "NS_STREAMLINE_NR_TIMING",
+        "NS_STREAMLINE_NR_READBACK",
+        "NS_STREAMLINE_NR_VALIDATION",
+        "NS_STREAMLINE_SDK_VALIDATION",
+        "NS_STREAMLINE_SDK_LAYOUT_TRACE",
+        "NS_STREAMLINE_NR_GPU_HANDOFF",
+        "NS_STREAMLINE_DEFER_PRESENT",
+        "NS_STREAMLINE_SDK_OUTPUT_INIT",
+        "NS_STREAMLINE_SDK_TRANSFER_ACCESS",
     ] {
         cmd.env_remove(name);
     }
     cmd.env("NS_STREAMLINE_TRACE_VERBOSE", "0");
     cmd.env("NS_STREAMLINE_TRACE_FRAMES", "0");
     cmd.arg("--target-probe")
-        .arg("--fg")
-        .arg("--reference-params")
+        .arg("--graphics-launch")
         .arg("--expected-target-sha256")
         .arg(&expected)
         .arg("--target")
@@ -309,7 +467,24 @@ pub fn launch(
         .arg(&bundle)
         .arg("--session")
         .arg(stage.path().join("run"));
-    let graphics_settings = crate::config::CONFIG.read().setting.other.clone();
+    if graphics_settings.streamline_fg {
+        cmd.args(["--fg", "--reference-params"]);
+    }
+    if let Some(runtime) = nr_runtime {
+        if !package.native_nr {
+            return Err("当前安装未包含 NR 调用桥，请更新画面增强组件".into());
+        }
+        cmd.arg("--native-nr")
+            .arg("--nr-runtime")
+            .arg(runtime)
+            .arg("--nr-bridge")
+            .arg(bundle.join("nvngx.dll"))
+            .arg("--nr-intensity")
+            .arg((f32::from(graphics_settings.streamline_nr_intensity) / 100.0).to_string());
+        if !graphics_settings.streamline_nr {
+            cmd.arg("--nr-initial-off");
+        }
+    }
     cmd.arg("--sr-mode")
         .arg(if graphics_settings.streamline_sr {
             graphics_settings.streamline_sr_mode.as_str()
@@ -361,17 +536,85 @@ pub fn launch(
     std::thread::spawn(move || {
         let _ = child.wait();
     });
-    Ok(Operation{message:"已发出 FG 启动请求，请在模拟器中打开游戏。实际 FG 状态由运行时检查；失焦时暂停 FG，回到前台可恢复；调整窗口仍可能使本次会话停用 FG。".into(),session:Some(session)})
+    Ok(Operation{message:"画面增强专用启动已就绪。NR、SR 和 FG 独立控制；NR 使用合成深度和硬件光流，未取得有效运动时暂停。失焦会暂停 FG，窗口操作可能停用本次 FG。".into(),session:Some(session)})
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn upgrades_select_only_after_verification_and_uninstall_never_reactivates_old_versions() {
+        let temp = tempfile::tempdir().unwrap();
+        let base = temp.path().join("managed");
+        let source = temp.path().join("source");
+        fs::create_dir(&source).unwrap();
+        let exe = temp.path().join("test.exe");
+        fs::write(&exe, b"unchanged target").unwrap();
+        let expected = file_digest(&exe).unwrap();
+        let make_package = |version: &str, bytes: &[u8]| Package {
+            version: version.into(),
+            files: vec![Artifact {
+                name: "layer.txt".into(),
+                sha256: super::super::runtime_package::hash(bytes),
+            }],
+            download: None,
+            parts: vec![],
+            native_nr: false,
+            schema_version: 0,
+            launcher_protocol: 0,
+        };
+        let old = make_package("local-old", b"first release");
+        fs::write(source.join("layer.txt"), b"first release").unwrap();
+        install_package_at(&base, &source, &exe, &expected, &old, true).unwrap();
+        let (old_dir, saved) = selected_at(&base, &exe).unwrap();
+        assert_eq!(saved.version, old.version);
+        let new = make_package("local-new", b"second release");
+        assert!(install_package_at(&base, &source, &exe, &expected, &new, true).is_err());
+        assert_eq!(selected_at(&base, &exe).unwrap().1.version, old.version);
+        owned_for(&old_dir, &exe, true, &old).unwrap();
+        fs::write(source.join("layer.txt"), b"second release").unwrap();
+        install_package_at(&base, &source, &exe, &expected, &new, true).unwrap();
+        // Selection comes from disk, independent of the network candidate or embedded version.
+        let (new_dir, saved) = selected_at(&base, &exe).unwrap();
+        assert_eq!(saved.version, new.version);
+        owned_for(&new_dir, &exe, true, &saved).unwrap();
+        assert_eq!(
+            fs::read(old_dir.join("layer.txt")).unwrap(),
+            b"first release"
+        );
+        fs::write(new_dir.join("layer.txt"), b"tampered").unwrap();
+        assert!(uninstall_at(&base, &exe).is_err());
+        fs::copy(source.join("layer.txt"), new_dir.join("layer.txt")).unwrap();
+        uninstall_at(&base, &exe).unwrap();
+        assert!(!selected_at(&base, &exe).unwrap().0.exists());
+        assert!(old_dir.exists());
+    }
+    #[test]
+    #[ignore = "Explicit local package selection; target, hash and store supplied by caller"]
+    fn local_package_install() {
+        let exe = PathBuf::from(std::env::var_os("FG_SMOKE_TARGET").expect("FG_SMOKE_TARGET"));
+        let expected = std::env::var("FG_SMOKE_TARGET_SHA256").expect("FG_SMOKE_TARGET_SHA256");
+        let base = PathBuf::from(std::env::var_os("FG_INSTALL_ROOT").expect("FG_INSTALL_ROOT"));
+        let exe = authorize(&exe, GraphicsApi::Vulkan, false, &expected).unwrap();
+        let src = source();
+        install_package_at(&base, &src, &exe, &expected, &package(), true).unwrap();
+        let (selected, package) = selected_at(&base, &exe).unwrap();
+        owned_for(&selected, &exe, true, &package).unwrap();
+        println!("FG_INSTALLED={}", selected.display());
+    }
     #[test]
     #[ignore = "Explicit local GPU smoke; launches the game named in FG_SMOKE_GAME"]
     fn local_game_launch() {
         let exe = PathBuf::from(std::env::var_os("FG_SMOKE_TARGET").expect("FG_SMOKE_TARGET"));
         let game = std::env::var_os("FG_SMOKE_GAME").map(PathBuf::from);
         let expected = file_digest(&exe).unwrap();
+        if let Some(runtime) = std::env::var_os("FG_SMOKE_NR_RUNTIME") {
+            let component = super::super::native_nr::import(PathBuf::from(runtime)).unwrap();
+            assert!(component.installed && component.package_ready);
+            let mut config = crate::config::CONFIG.write();
+            config.setting.other.streamline_fg = false;
+            config.setting.other.streamline_sr = false;
+            config.setting.other.streamline_nr = false;
+        }
         install(exe.clone(), GraphicsApi::Vulkan, false, expected.clone()).unwrap();
         let result = launch(exe, GraphicsApi::Vulkan, false, expected, game).unwrap();
         println!("FG_SMOKE_SESSION={}", result.session.unwrap().display());
@@ -381,7 +624,12 @@ mod tests {
     fn local_live_control() {
         let exe = PathBuf::from(std::env::var_os("FG_SMOKE_TARGET").expect("FG_SMOKE_TARGET"));
         let enabled = std::env::var("FG_SMOKE_ENABLED").ok().map(|v| v == "1");
-        let result = live(exe, enabled, None, None, None).unwrap();
+        let nr_enabled = std::env::var("FG_SMOKE_NR_ENABLED").ok().map(|v| v == "1");
+        let nr_intensity = std::env::var("FG_SMOKE_NR_INTENSITY")
+            .ok()
+            .map(|v| v.parse().unwrap());
+        let sr_mode = std::env::var("FG_SMOKE_SR_MODE").ok();
+        let result = live(exe, enabled, sr_mode, None, None, nr_enabled, nr_intensity).unwrap();
         println!("FG_LIVE={result}");
         assert_eq!(result["connected"], true);
     }
@@ -394,7 +642,7 @@ mod tests {
         fs::create_dir(&absent).unwrap();
         let error = package_availability_at(&absent).unwrap_err();
         assert!(error.contains(&package().files[0].name));
-        assert!(error.contains("重新检查"));
+        assert!(error.contains("自动下载"));
     }
     #[test]
     fn live_snapshots_replace_atomically_and_reject_oversize_records() {
@@ -442,7 +690,7 @@ mod tests {
 }
 
 // Only toolbox-created sessions can be controlled; the frontend never supplies a file path.
-fn atomic_json(path: &Path, value: &serde_json::Value) -> Result<(), String> {
+pub(super) fn atomic_json(path: &Path, value: &serde_json::Value) -> Result<(), String> {
     use std::io::Write;
     if path.exists() {
         plain(path, false)?;
@@ -467,6 +715,8 @@ pub fn live(
     sr_mode: Option<String>,
     sr_scale: Option<u16>,
     sr_preset: Option<String>,
+    nr_enabled: Option<bool>,
+    nr_intensity: Option<f32>,
 ) -> Result<serde_json::Value, String> {
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
@@ -509,6 +759,12 @@ pub fn live(
     if !connected {
         v["active"] = false.into();
         v["fresh"] = false.into();
+        if v["nr"].is_object() {
+            v["nr"]["active"] = false.into();
+        }
+        if v["sr"].is_object() {
+            v["sr"]["active"] = false.into();
+        }
     }
     if sr_scale.is_some_and(|v| !(50..=200).contains(&v)) {
         return Err("SR 倍率必须为 0.5～2.0".into());
@@ -519,7 +775,16 @@ pub fn live(
     {
         return Err("无效的 SR 模型预设".into());
     }
-    if enabled.is_some() || sr_mode.is_some() || sr_scale.is_some() || sr_preset.is_some() {
+    if nr_intensity.is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v)) {
+        return Err("NR 强度必须为 0～1".into());
+    }
+    if enabled.is_some()
+        || sr_mode.is_some()
+        || sr_scale.is_some()
+        || sr_preset.is_some()
+        || nr_enabled.is_some()
+        || nr_intensity.is_some()
+    {
         if !connected {
             return Err("游戏未连接，请通过工具箱重新启动游戏".into());
         }
@@ -571,6 +836,30 @@ pub fn live(
             control["enabled"] = on.into();
             control["revision"] = revision.into();
             v["sentRevision"] = revision.into();
+        }
+        if nr_enabled.is_some() || nr_intensity.is_some() {
+            if v["nrLiveSupported"] != true {
+                return Err("当前会话未准备原生 NR；请下载并安装 NR 组件后重新专用启动".into());
+            }
+            let revision = now.max(
+                control["nrRevision"]
+                    .as_u64()
+                    .unwrap_or(0)
+                    .saturating_add(1),
+            );
+            let on = nr_enabled.map(serde_json::Value::from).unwrap_or_else(|| {
+                control
+                    .get("nrEnabled")
+                    .cloned()
+                    .or_else(|| v["nr"]["requested"].as_bool().map(serde_json::Value::from))
+                    .unwrap_or(false.into())
+            });
+            control["nrEnabled"] = on;
+            if let Some(intensity) = nr_intensity {
+                control["nrIntensity"] = intensity.into();
+            }
+            control["nrRevision"] = revision.into();
+            v["sentNrRevision"] = revision.into();
         }
         atomic_json(&command, &control)?;
     }

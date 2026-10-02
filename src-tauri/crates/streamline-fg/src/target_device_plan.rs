@@ -8,7 +8,13 @@ pub(super) struct FeatureChain {
     head: *const c_void,
 }
 impl FeatureChain {
-    pub unsafe fn for_target(mut node: *const c_void) -> Result<Self, &'static str> {
+    pub unsafe fn for_target(node: *const c_void) -> Result<Self, &'static str> {
+        Self::for_target_with_nr(node, false)
+    }
+    pub unsafe fn for_target_with_nr(
+        mut node: *const c_void,
+        nr: bool,
+    ) -> Result<Self, &'static str> {
         let mut result = Self {
             storage: Vec::new(),
             head: std::ptr::null(),
@@ -59,7 +65,10 @@ impl FeatureChain {
         if !saw12 {
             return Err("frozen target Vulkan 1.2 features missing");
         }
-        let sync = vk::PhysicalDeviceVulkan13Features::default().synchronization2(true);
+        let sync = vk::PhysicalDeviceVulkan13Features::default()
+            .synchronization2(true)
+            .maintenance4(nr)
+            .private_data(nr);
         let maintenance = vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT::default()
             .swapchain_maintenance1(true);
         result.prepend_copy(&sync);
@@ -163,6 +172,22 @@ mod tests {
                 .p_next
                 .cast::<vk::PhysicalDeviceVulkan13Features>();
             assert_eq!(thirteen.synchronization2, vk::TRUE);
+            assert_eq!(thirteen.maintenance4, vk::FALSE);
+            assert_eq!(thirteen.private_data, vk::FALSE);
+            let nr = FeatureChain::for_target_with_nr(
+                (&twelve as *const vk::PhysicalDeviceVulkan12Features).cast(),
+                true,
+            )
+            .unwrap();
+            let nr_maintenance = &*nr
+                .head()
+                .cast::<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
+            let nr_thirteen = &*nr_maintenance
+                .p_next
+                .cast::<vk::PhysicalDeviceVulkan13Features>();
+            assert_eq!(nr_thirteen.maintenance4, vk::TRUE);
+            assert_eq!(nr_thirteen.private_data, vk::TRUE);
+            assert_eq!(twelve.p_next, saved);
             let copy = &*thirteen.p_next.cast::<vk::PhysicalDeviceVulkan12Features>();
             assert_eq!(copy.timeline_semaphore, vk::TRUE);
             assert_eq!(copy.buffer_device_address, vk::TRUE);

@@ -4,10 +4,35 @@ mod abi;
 mod capture;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod live;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_abi;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_api;
+pub mod nr_history;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_layout;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_package;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_runtime;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_validation;
+#[cfg(all(windows, feature = "native-nr"))]
+mod target_nr;
+#[cfg(all(windows, feature = "native-nr"))]
+#[no_mangle]
+pub extern "C" fn nrLayerAbi() -> u64 {
+    0x0001_0000_0000_0001
+}
+mod present_layout;
+mod queue_sync;
 mod route_objects;
 mod scale_copy;
 mod scale_model;
 mod scale_probe;
+mod sdk_layout_trace;
+mod sdk_output_layout;
+mod sdk_transfer_access;
 mod source_auto;
 mod source_model;
 #[cfg(any(test, all(windows, feature = "sdk-bridge")))]
@@ -20,6 +45,8 @@ mod target_fg_gate;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_runtime;
 mod trace;
+#[cfg(any(test, all(windows, feature = "native-nr")))]
+mod validation_context;
 use abi::*;
 use ash::vk::{self, Handle};
 use serde_json::json;
@@ -120,7 +147,20 @@ pub unsafe extern "system" fn vkCreateInstance(
     let result = if target_runtime::enabled() {
         target_runtime::create_instance(next, info, alloc, output)
     } else {
-        next(info, alloc, output)
+        #[cfg(feature = "native-nr")]
+        let result = if nr_validation::enabled() {
+            let enables = [vk::ValidationFeatureEnableEXT::SYNCHRONIZATION_VALIDATION];
+            let mut validation =
+                vk::ValidationFeaturesEXT::default().enabled_validation_features(&enables);
+            let mut callback = nr_validation::create_info();
+            let copy = (*info).push_next(&mut validation).push_next(&mut callback);
+            next(&copy, alloc, output)
+        } else {
+            next(info, alloc, output)
+        };
+        #[cfg(not(feature = "native-nr"))]
+        let result = next(info, alloc, output);
+        result
     };
     #[cfg(not(all(windows, feature = "sdk-bridge")))]
     let result = next(info, alloc, output);
@@ -134,6 +174,12 @@ pub unsafe extern "system" fn vkCreateInstance(
                 physical_gpa,
             },
         );
+        #[cfg(all(windows, feature = "native-nr"))]
+        if nr_validation::enabled() {
+            if nr_validation::created(*output, gipa).is_err() {
+                std::process::abort();
+            }
+        }
     }
     trace::event!(
         "vkCreateInstance",
@@ -153,8 +199,16 @@ pub unsafe extern "system" fn vkDestroyInstance(
     let k = key(handle);
     let next: vk::PFN_vkDestroyInstance =
         std::mem::transmute((dispatch.gipa)(handle, c"vkDestroyInstance".as_ptr()).unwrap());
+    #[cfg(all(windows, feature = "native-nr"))]
+    if nr_validation::enabled() {
+        nr_validation::before_destroy(handle);
+    }
     next(handle, alloc);
     state().instances.remove(&k);
+    #[cfg(all(windows, feature = "native-nr"))]
+    if nr_validation::enabled() {
+        nr_validation::report(state().instances.is_empty());
+    }
     trace::event!(
         "vkDestroyInstance",
         json!({"remaining_instances": state().instances.len()}),
@@ -256,6 +310,11 @@ pub unsafe extern "system" fn vkDestroyDevice(
     };
     let k = key(handle);
     #[cfg(all(windows, feature = "sdk-bridge"))]
+    target_fg::drain_device(handle);
+    if route_objects::drain_device(handle).is_err() {
+        std::process::abort();
+    }
+    #[cfg(all(windows, feature = "sdk-bridge"))]
     if target_runtime::enabled() {
         target_runtime::destroy_device(handle);
     }
@@ -263,6 +322,11 @@ pub unsafe extern "system" fn vkDestroyDevice(
         std::mem::transmute((dispatch.gdpa)(handle, c"vkDestroyDevice".as_ptr()).unwrap());
     next(handle, alloc);
     state().devices.remove(&k);
+    queue_sync::retired(handle);
+    present_layout::retired_device(handle);
+    sdk_layout_trace::retired_device(handle);
+    sdk_output_layout::retired_device(handle);
+    sdk_transfer_access::retired_device(handle);
     trace::event!(
         "vkDestroyDevice",
         json!({"remaining_devices": state().devices.len()}),
@@ -280,9 +344,14 @@ macro_rules! device_hook {
             let name = concat!(stringify!($name), "\0");
             let Some(next) = (d.gdpa)(d.handle, name.as_ptr().cast()) else { return $failure; };
             #[cfg(all(windows,feature="sdk-bridge"))]
-            let next=if target_runtime::enabled(){target_runtime::device_proc(d.handle,CStr::from_bytes_with_nul_unchecked(name.as_bytes())).unwrap_or(next)}else{next};
+            let next=if target_runtime::enabled(){target_runtime::device_proc(d.handle,CStr::from_bytes_with_nul_unchecked(name.as_bytes())).or_else(||queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(name.as_bytes()))).unwrap_or(next)}else{queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(name.as_bytes())).unwrap_or(next)};
+            #[cfg(not(all(windows,feature="sdk-bridge")))]
+            let next=queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(name.as_bytes())).unwrap_or(next);
             let next: vk::$pfn = std::mem::transmute(next);
             trace::event!(stringify!($name), json!({"next": next as usize, "hook": $name as *const () as usize, "object": $first.as_raw()}));
+            #[cfg(all(windows,feature="native-nr"))]
+            { return validation_context::application(stringify!($name), || next($first, $($arg),*)); }
+            #[cfg(not(all(windows,feature="native-nr")))]
             next($first, $($arg),*)
         }
     };
@@ -305,6 +374,9 @@ unsafe fn device_intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
     macro_rules! pick { ($($f:ident),*) => { match name.to_bytes() { $(s if s == stringify!($f).as_bytes() => return Some(std::mem::transmute($f as *const ())),)* _ => {} } }; }
     if let Some(hook) = scale_probe::intercept(name) {
         return Some(hook);
+    }
+    if name == c"vkQueueBindSparse" {
+        return queue_sync::intercept(name);
     }
     pick!(
         vkGetDeviceProcAddr,
@@ -556,11 +628,17 @@ pub unsafe extern "system" fn vkCreateSwapchainKHR(
 mod fg_api;
 
 #[cfg(all(windows, feature = "sdk-bridge"))]
+mod fg_pause;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod frame_capture;
+#[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_fg;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_nvof;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_sr;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_sr_motion;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_window;
 
@@ -622,6 +700,8 @@ pub unsafe extern "system" fn vkDestroySwapchainKHR(
     }
     let next: vk::PFN_vkDestroySwapchainKHR = std::mem::transmute(address);
     next(handle, swapchain, alloc);
+    source_auto::retire_swapchain(handle.as_raw(), swapchain.as_raw());
+    present_layout::retired(handle, swapchain);
     #[cfg(all(windows, feature = "sdk-bridge"))]
     if target_fg::enabled() {
         target_fg::after_destroy(handle, swapchain);

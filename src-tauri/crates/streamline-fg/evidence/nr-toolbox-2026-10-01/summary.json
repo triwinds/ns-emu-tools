@@ -1,0 +1,4234 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-01",
+  "experimental": true,
+  "strict_acceptance_passed": false,
+  "scope": {
+    "frontend_authorized": true,
+    "emulator_source_modified": false,
+    "user_toolbox_configuration_used": false,
+    "visual_feedback_received_this_run": false,
+    "fg_actual_execution_observed_this_run": false
+  },
+  "package": {
+    "files": [
+      {
+        "sha256": "27e92ecd64770cc4b84132b742ac066ca86c20ef2658befa813fc9b820bed980",
+        "name": "streamline-layer-probe.exe"
+      },
+      {
+        "sha256": "5defa18792b15db81cb42b31a6735ab16626476f88a5986664bf5a7343daf6e3",
+        "name": "streamline_probe_layer.dll"
+      },
+      {
+        "sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc",
+        "name": "nvngx.dll"
+      },
+      {
+        "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+        "name": "sl.interposer.dll"
+      },
+      {
+        "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+        "name": "sl.common.dll"
+      },
+      {
+        "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+        "name": "sl.dlss_g.dll"
+      },
+      {
+        "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced",
+        "name": "sl.reflex.dll"
+      },
+      {
+        "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+        "name": "sl.pcl.dll"
+      },
+      {
+        "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+        "name": "nvngx_dlssg.dll"
+      },
+      {
+        "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+        "name": "NvLowLatencyVk.dll"
+      },
+      {
+        "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c",
+        "name": "sl.dlss.dll"
+      },
+      {
+        "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e",
+        "name": "nvngx_dlss.dll"
+      }
+    ],
+    "version": "local-27e92ecd6477-5defa18792b1",
+    "native_nr": true
+  },
+  "toolbox": {
+    "path": "D:/py/ns-emu-tools/src-tauri/target/release/NsEmuTools.exe",
+    "sha256": "db5245a0ae1b2e2b7a7f64aa2dc92b2d570be9a3a788a7b3c425b9a815b541a1"
+  },
+  "bridge_audit": {
+    "old_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+    "new_sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc",
+    "sections": {
+      ".text": {
+        "identical": true,
+        "new_sha256": "e40e3745a4cb4411ccf2d4174c4ee9828d3d32bc06377d83d3e8715fb1f05e04"
+      },
+      ".rdata": {
+        "identical": false,
+        "new_sha256": "714b2795e01552fa04c1d8453b92953fb32ffc3327798623f4218585def43571"
+      },
+      ".data": {
+        "identical": true,
+        "new_sha256": "ea4086c43ea348dfe5ffceeb49f92f7ae87ab04c1d5d7e8f3c0aaf3a57645d07"
+      },
+      ".pdata": {
+        "identical": true,
+        "new_sha256": "c667476217784f92b413a08d4bd6bb76c0592d9dc66e76fe94f3e1688908dd83"
+      },
+      ".reloc": {
+        "identical": true,
+        "new_sha256": "0f03e4943abf3c3c047396c3da192b789c5109896f7ba0c588d39f96375e1be2"
+      }
+    },
+    "abi": "0x0001004000480038",
+    "invoke_call_rva": "0x10d0",
+    "return_continuation_rva": "0x10d3",
+    "post_call_result_store_rva": "0x10e2",
+    "tail_call": false
+  },
+  "runs": [
+    {
+      "path": "D:/py/ns-emu-tools/src-tauri/target/nr-toolbox-smoke-001/graphics/streamline-fg/sessions/game-5D06fy/run",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": false,
+        "game": "D:\\game\\yuzu_game\\totk\\TOTK [0100F2C0115B6000][v0].xci",
+        "graphics_launch": true,
+        "layer_only": false,
+        "layer_sha256": "b6cbb4a50fef1331edfd848e3de1fbb55af598eb9331695ea5070c91e6b12923",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_available": true,
+        "nr_files": {
+          "bridge_sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": false,
+        "nr_requested": false,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "off",
+        "sr_preset": "default",
+        "sr_scale": null
+      },
+      "exit": {
+        "graphics_launch": true,
+        "strict_acceptance_run": false,
+        "target_exit_code": 0,
+        "target_success": true,
+        "validation_requested": false
+      },
+      "raw_hashes": {
+        "layer.jsonl": "e104d9c3dc7b2dd8739f6fe572cee5e8999c627ee253c2428f99eac7482d2f1c",
+        "target-inputs.json": "a958808b2bbbd07ce2710661137b9d151d766d9b667a3ffb671cac3f490675ad",
+        "target-command.json": "8b74d966958d88307be17dad3cda625e97901efbfa7dc8960ca204c9d481acb0",
+        "launch-result.json": "0f1901923d3e4b2e1d49a03e824c7d75b00202a5a527b03e642a8122b6276349",
+        "telemetry.json": "5aa27a883eceb40a1f552cf2e7c44dd2266d1c6ba954cef145fd4cfc94a6edd6"
+      },
+      "events": {
+        "negotiate": 3,
+        "instance_request": 3,
+        "vkCreateInstance": 3,
+        "vkDestroyInstance": 3,
+        "target_sdk_requirements": 1,
+        "vkCreateWin32SurfaceKHR": 1,
+        "device_request": 1,
+        "target_device_plan": 1,
+        "vkCreateDevice": 1,
+        "gdpa": 59,
+        "route_gdpa": 1479,
+        "layout_probe_installed": 1,
+        "route_gipa": 102,
+        "target_nr_ngx": 74,
+        "target_nr_core_init": 1,
+        "target_nr_capability_parameters": 1,
+        "target_nr_snippet_init": 1,
+        "target_nr_runtime_ready": 1,
+        "target_sdk_ready": 1,
+        "vkCreateSwapchainKHR": 2,
+        "route_loader_data": 35,
+        "target_proxy_swapchain": 2,
+        "proxy_present_images": 2,
+        "target_fg_window_guard_rearmed": 2,
+        "target_fg_retired": 2,
+        "vkDestroySwapchainKHR": 2,
+        "route_present_submitted": 16477,
+        "target_fg_region": 2,
+        "target_nvof_ready": 1,
+        "target_nr_allocate_parameters": 1,
+        "target_nr_populate_parameters": 1,
+        "target_nr_ready": 1,
+        "layout_probe_transition": 2,
+        "target_nr_create_feature": 1,
+        "target_nr_release_feature": 1,
+        "target_nr_destroy_parameters": 1,
+        "vkDestroySurfaceKHR": 1,
+        "target_nr_snippet_shutdown": 1,
+        "target_nr_destroy_capabilities": 1,
+        "target_nr_core_deferred": 1,
+        "target_sdk_shutdown": 1,
+        "sdk_transfer_access_summary": 1,
+        "vkDestroyDevice": 1
+      },
+      "failure_events": [],
+      "shutdown": [
+        {
+          "details": {
+            "on_frames": 0,
+            "swapchain": 4284989990096
+          },
+          "elapsed_us": 12496175,
+          "event": "target_fg_retired",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "on_frames": 0,
+            "swapchain": 4285201739472
+          },
+          "elapsed_us": 563959155,
+          "event": "target_fg_retired",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "elapsed_us": 564104102,
+          "event": "target_nr_snippet_shutdown",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "result": 0
+          },
+          "elapsed_us": 564288916,
+          "event": "target_sdk_shutdown",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        }
+      ]
+    },
+    {
+      "path": "D:/py/ns-emu-tools/src-tauri/target/nr-toolbox-smoke-001/graphics/streamline-fg/sessions/game-akvBAT/run",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": false,
+        "game": "D:\\game\\yuzu_game\\totk\\TOTK [0100F2C0115B6000][v0].xci",
+        "graphics_launch": true,
+        "layer_only": false,
+        "layer_sha256": "5defa18792b15db81cb42b31a6735ab16626476f88a5986664bf5a7343daf6e3",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_available": true,
+        "nr_files": {
+          "bridge_sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": false,
+        "nr_requested": false,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "off",
+        "sr_preset": "default",
+        "sr_scale": null
+      },
+      "exit": {
+        "graphics_launch": true,
+        "strict_acceptance_run": false,
+        "target_exit_code": 0,
+        "target_success": true,
+        "validation_requested": false
+      },
+      "raw_hashes": {
+        "layer.jsonl": "7341919ccf0e393fd58cd3bce53d70518827fff1817c8afdbdb08979918c679f",
+        "target-inputs.json": "4e746af02ab734a582b2b8a4a55344accf67e45a550c78ed40802cac34fd7f0d",
+        "target-command.json": "8b74d966958d88307be17dad3cda625e97901efbfa7dc8960ca204c9d481acb0",
+        "launch-result.json": "0f1901923d3e4b2e1d49a03e824c7d75b00202a5a527b03e642a8122b6276349",
+        "telemetry.json": "dd71045fdcb86400e1f27e472780ace13afaaa4b79b7751bb695b505bcec1a1e"
+      },
+      "events": {
+        "negotiate": 3,
+        "instance_request": 3,
+        "vkCreateInstance": 3,
+        "vkDestroyInstance": 3,
+        "target_sdk_requirements": 1,
+        "vkCreateWin32SurfaceKHR": 1,
+        "device_request": 1,
+        "target_device_plan": 1,
+        "vkCreateDevice": 1,
+        "gdpa": 59,
+        "route_gdpa": 1479,
+        "layout_probe_installed": 1,
+        "route_gipa": 102,
+        "target_nr_ngx": 1183,
+        "target_nr_core_init": 1,
+        "target_nr_capability_parameters": 1,
+        "target_nr_snippet_init": 1,
+        "target_nr_runtime_ready": 1,
+        "target_sdk_ready": 1,
+        "vkCreateSwapchainKHR": 2,
+        "route_loader_data": 38,
+        "target_proxy_swapchain": 2,
+        "proxy_present_images": 2,
+        "target_fg_window_guard_rearmed": 2,
+        "target_fg_retired": 2,
+        "vkDestroySwapchainKHR": 2,
+        "route_present_submitted": 4449,
+        "target_fg_region": 2,
+        "target_nvof_ready": 1,
+        "target_nr_allocate_parameters": 1,
+        "target_nr_populate_parameters": 1,
+        "target_nr_ready": 1,
+        "layout_probe_transition": 14,
+        "target_nr_create_feature": 1,
+        "target_sr_ready": 3,
+        "sr_exposure_clear_dependency": 6,
+        "target_sr_completion": 244,
+        "target_nr_release_feature": 1,
+        "target_nr_destroy_parameters": 1,
+        "vkDestroySurfaceKHR": 1,
+        "target_nr_snippet_shutdown": 1,
+        "target_nr_destroy_capabilities": 1,
+        "target_nr_core_deferred": 1,
+        "target_sdk_shutdown": 1,
+        "sdk_transfer_access_summary": 1,
+        "vkDestroyDevice": 1
+      },
+      "failure_events": [],
+      "shutdown": [
+        {
+          "details": {
+            "on_frames": 0,
+            "swapchain": 4813271688400
+          },
+          "elapsed_us": 13684941,
+          "event": "target_fg_retired",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "on_frames": 0,
+            "swapchain": 4813300382928
+          },
+          "elapsed_us": 164097972,
+          "event": "target_fg_retired",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "elapsed_us": 164231535,
+          "event": "target_nr_snippet_shutdown",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "result": 0
+          },
+          "elapsed_us": 164365452,
+          "event": "target_sdk_shutdown",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        }
+      ]
+    },
+    {
+      "path": "D:/py/ns-emu-tools/src-tauri/target/nr-toolbox-smoke-002/graphics/streamline-fg/sessions/game-g2QNre/run",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "VK_LAYER_reshade",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": false,
+        "game": "D:\\game\\yuzu_game\\totk\\TOTK [0100F2C0115B6000][v0].xci",
+        "graphics_launch": true,
+        "layer_only": false,
+        "layer_sha256": "5defa18792b15db81cb42b31a6735ab16626476f88a5986664bf5a7343daf6e3",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_available": false,
+        "nr_files": null,
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": false,
+        "nr_requested": false,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": true,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "graphics_launch": true,
+        "strict_acceptance_run": false,
+        "target_exit_code": 0,
+        "target_success": true,
+        "validation_requested": false
+      },
+      "raw_hashes": {
+        "layer.jsonl": "ff25c51e829c2c14b15b1cb649d25b5bb1b661d0052bd780666a576ee1963b2c",
+        "target-inputs.json": "eba20dd6c1f15041532caeb6e7455ba656bd543638f4a0800730dd7cb91e8b14",
+        "target-command.json": "8b74d966958d88307be17dad3cda625e97901efbfa7dc8960ca204c9d481acb0",
+        "launch-result.json": "0f1901923d3e4b2e1d49a03e824c7d75b00202a5a527b03e642a8122b6276349",
+        "telemetry.json": "ef0adff01c0c3be85bed974d32b3ad8a98a54c005740fde3ab9bc0a41694c25f"
+      },
+      "events": {
+        "negotiate": 3,
+        "instance_request": 3,
+        "vkCreateInstance": 3,
+        "vkDestroyInstance": 3,
+        "target_sdk_requirements": 1,
+        "vkCreateWin32SurfaceKHR": 1,
+        "device_request": 1,
+        "target_device_plan": 1,
+        "vkCreateDevice": 1,
+        "gdpa": 58,
+        "route_gipa": 96,
+        "route_gdpa": 1244,
+        "target_sdk_ready": 1,
+        "vkCreateSwapchainKHR": 2,
+        "route_loader_data": 34,
+        "target_proxy_swapchain": 2,
+        "proxy_present_images": 2,
+        "target_fg_window_guard_rearmed": 2,
+        "target_fg_retired": 2,
+        "vkDestroySwapchainKHR": 2,
+        "target_nvof_ready": 1,
+        "target_sr_ready": 1,
+        "route_present_submitted": 8226,
+        "target_fg_region": 2,
+        "vkDestroySurfaceKHR": 1,
+        "target_sdk_shutdown": 1,
+        "sdk_transfer_access_summary": 1,
+        "vkDestroyDevice": 1
+      },
+      "failure_events": [],
+      "shutdown": [
+        {
+          "details": {
+            "on_frames": 0,
+            "swapchain": 4497516487888
+          },
+          "elapsed_us": 11633697,
+          "event": "target_fg_retired",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "on_frames": 0,
+            "swapchain": 4497862318800
+          },
+          "elapsed_us": 287776527,
+          "event": "target_fg_retired",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        },
+        {
+          "details": {
+            "result": 0
+          },
+          "elapsed_us": 287954893,
+          "event": "target_sdk_shutdown",
+          "phase": 0,
+          "thread": "ThreadId(3)"
+        }
+      ]
+    }
+  ],
+  "first_run_control_failure": {
+    "phase": "nr100",
+    "failure": "SR off status dropped completed acknowledgement before publication",
+    "raw_partial_phases_path": "D:/py/ns-emu-tools/src-tauri/target/nr-toolbox-smoke-001/roundtrip.json",
+    "raw_partial_phases_sha256": "dd169d8c5ff5833cd5958ef9e90c0c18976d4b4b5795a45f385fb0444280a063"
+  },
+  "corrected_phases": [
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 25.810663298308924,
+              "presentFps": 25.810663298308924,
+              "time": 1790853699339
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853699339
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 30.767819877639358,
+              "presentFps": 30.767819877639358,
+              "time": 1790853700347
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853700347
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 29.79615260159147,
+              "presentFps": 29.79615260159147,
+              "time": 1790853701354
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853701354
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 29.772218709100414,
+              "presentFps": 29.772218709100414,
+              "time": 1790853702361
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853702361
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 29.750040162554217,
+              "presentFps": 29.750040162554217,
+              "time": 1790853703370
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853703370
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 30.764253525236118,
+              "presentFps": 30.764253525236118,
+              "time": 1790853704377
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853704377
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 29.799180343745462,
+              "presentFps": 29.799180343745462,
+              "time": 1790853705384
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853705384
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853698511,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853698511,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853698511,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853698511,
+          "samples": [
+            {
+              "appFps": 29.79378233556439,
+              "presentFps": 29.79378233556439,
+              "time": 1790853706391
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853698511,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853706391
+        }
+      ],
+      "control": {
+        "enabled": false,
+        "nrEnabled": true,
+        "nrIntensity": 0.5,
+        "nrRevision": 1790853698511,
+        "revision": 1790853698511,
+        "srMode": "off",
+        "srRevision": 1790853698511
+      },
+      "confirmed": true,
+      "name": "nr50"
+    },
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 29.80901661147196,
+              "presentFps": 29.80901661147196,
+              "time": 1790853707397
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853707397
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 29.766118675729196,
+              "presentFps": 29.766118675729196,
+              "time": 1790853708405
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853708405
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 30.77271579838471,
+              "presentFps": 30.77271579838471,
+              "time": 1790853709413
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853709413
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 29.793498284043466,
+              "presentFps": 29.793498284043466,
+              "time": 1790853710420
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853710420
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 29.789711447918002,
+              "presentFps": 29.789711447918002,
+              "time": 1790853711427
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853711427
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 29.75875175130254,
+              "presentFps": 29.75875175130254,
+              "time": 1790853712435
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853712435
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 29.780780695224383,
+              "presentFps": 29.780780695224383,
+              "time": 1790853713442
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853713442
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853706708,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853706708,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853706708,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853706708,
+          "samples": [
+            {
+              "appFps": 30.808356617659847,
+              "presentFps": 30.808356617659847,
+              "time": 1790853714448
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853706708,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853714448
+        }
+      ],
+      "control": {
+        "enabled": false,
+        "nrEnabled": true,
+        "nrIntensity": 0.0,
+        "nrRevision": 1790853706708,
+        "revision": 1790853706708,
+        "srMode": "off",
+        "srRevision": 1790853706708
+      },
+      "confirmed": true,
+      "name": "nr0"
+    },
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.73251735412707,
+              "presentFps": 29.73251735412707,
+              "time": 1790853715457
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853715457
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.80451812651183,
+              "presentFps": 29.80451812651183,
+              "time": 1790853716464
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853716464
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.794252807810384,
+              "presentFps": 29.794252807810384,
+              "time": 1790853717471
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853717471
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 30.75010923728322,
+              "presentFps": 30.75010923728322,
+              "time": 1790853718479
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853718479
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.80540646228901,
+              "presentFps": 29.80540646228901,
+              "time": 1790853719485
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853719485
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.75933329570431,
+              "presentFps": 29.75933329570431,
+              "time": 1790853720494
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853720494
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.790270537362858,
+              "presentFps": 29.790270537362858,
+              "time": 1790853721501
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853721501
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853714838,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853714838,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853714838,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853714838,
+          "samples": [
+            {
+              "appFps": 29.778820786490417,
+              "presentFps": 29.778820786490417,
+              "time": 1790853722508
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853714838,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853722508
+        }
+      ],
+      "control": {
+        "enabled": false,
+        "nrEnabled": true,
+        "nrIntensity": 1.0,
+        "nrRevision": 1790853714838,
+        "revision": 1790853714838,
+        "srMode": "off",
+        "srRevision": 1790853714838
+      },
+      "confirmed": true,
+      "name": "nr100"
+    },
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 30.75688222445678,
+              "presentFps": 30.75688222445678,
+              "time": 1790853723516
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853723516
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 29.79802304022872,
+              "presentFps": 29.79802304022872,
+              "time": 1790853724523
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853724523
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 29.777218760124256,
+              "presentFps": 29.777218760124256,
+              "time": 1790853725530
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853725530
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 29.81250616746221,
+              "presentFps": 29.81250616746221,
+              "time": 1790853726536
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853726536
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 30.75590575398351,
+              "presentFps": 30.75590575398351,
+              "time": 1790853727544
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853727544
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 29.79330004296194,
+              "presentFps": 29.79330004296194,
+              "time": 1790853728551
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853728551
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 29.778507461501352,
+              "presentFps": 29.778507461501352,
+              "time": 1790853729559
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853729559
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853722987,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853722987,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853722987,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853722987,
+          "samples": [
+            {
+              "appFps": 29.764783796051702,
+              "presentFps": 29.764783796051702,
+              "time": 1790853730567
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853722987,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "native_source"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853730567
+        }
+      ],
+      "control": {
+        "enabled": false,
+        "nrEnabled": false,
+        "nrIntensity": 1.0,
+        "nrRevision": 1790853722987,
+        "revision": 1790853722987,
+        "srMode": "dlaa",
+        "srRevision": 1790853722987
+      },
+      "confirmed": true,
+      "name": "dlaa-only"
+    },
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 30.784942548345764,
+              "presentFps": 29.791879885495902,
+              "time": 1790853731574
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853731574
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 29.75881374226308,
+              "presentFps": 29.75881374226308,
+              "time": 1790853732582
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853732582
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 29.787918953427283,
+              "presentFps": 29.787918953427283,
+              "time": 1790853733589
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853733589
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 29.802075476140306,
+              "presentFps": 29.802075476140306,
+              "time": 1790853734596
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853734596
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 29.79354562558749,
+              "presentFps": 30.786663813107072,
+              "time": 1790853735602
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853735602
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 30.796157156167613,
+              "presentFps": 29.80273273177511,
+              "time": 1790853736609
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853736609
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 29.74577771079469,
+              "presentFps": 29.74577771079469,
+              "time": 1790853737618
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853737618
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853731154,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853731154,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853731154,
+          "samples": [
+            {
+              "appFps": 29.805187334543955,
+              "presentFps": 29.805187334543955,
+              "time": 1790853738624
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853731154,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853738624
+        }
+      ],
+      "control": {
+        "enabled": false,
+        "nrEnabled": true,
+        "nrIntensity": 0.5,
+        "nrRevision": 1790853731154,
+        "revision": 1790853731154,
+        "srMode": "dlaa",
+        "srRevision": 1790853731154
+      },
+      "confirmed": true,
+      "name": "nr-dlaa"
+    },
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 29.78789529157633,
+              "presentFps": 30.780825134628873,
+              "time": 1790853739631
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853739631
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 29.789238161086498,
+              "presentFps": 29.789238161086498,
+              "time": 1790853740638
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853740638
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 29.766910209603697,
+              "presentFps": 29.766910209603697,
+              "time": 1790853741646
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853741646
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 30.76209823707377,
+              "presentFps": 30.76209823707377,
+              "time": 1790853742654
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853742654
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 29.796131886022643,
+              "presentFps": 29.796131886022643,
+              "time": 1790853743661
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853743661
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 29.77753796933866,
+              "presentFps": 29.77753796933866,
+              "time": 1790853744668
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853744668
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 29.780269261282555,
+              "presentFps": 29.780269261282555,
+              "time": 1790853745676
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853745676
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853739299,
+          "fresh": true,
+          "nr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 1790853739299,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 3,
+            "sourcePathCount": 3
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": true,
+          "revision": 1790853739299,
+          "samples": [
+            {
+              "appFps": 30.790626816709057,
+              "presentFps": 30.790626816709057,
+              "time": 1790853746682
+            }
+          ],
+          "sr": {
+            "active": true,
+            "appliedRevision": 1790853739299,
+            "colorImage": 4813961926352,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              2880,
+              1620
+            ],
+            "scale": 150,
+            "source": "nr_output"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853746682
+        }
+      ],
+      "control": {
+        "enabled": true,
+        "nrEnabled": true,
+        "nrIntensity": 1.0,
+        "nrRevision": 1790853739299,
+        "revision": 1790853739299,
+        "srMode": "dlaa",
+        "srRevision": 1790853739299
+      },
+      "confirmed": true,
+      "name": "nr-dlaa-fg"
+    },
+    {
+      "snapshots": [
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 29.76199333926589,
+              "presentFps": 29.76199333926589,
+              "time": 1790853747690
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853747690
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 29.781227105681662,
+              "presentFps": 29.781227105681662,
+              "time": 1790853748698
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853748698
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 30.772706634258043,
+              "presentFps": 30.772706634258043,
+              "time": 1790853749705
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853749705
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 29.785322289597723,
+              "presentFps": 29.785322289597723,
+              "time": 1790853750712
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853750712
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 29.755838467455295,
+              "presentFps": 29.755838467455295,
+              "time": 1790853751721
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853751721
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 29.774089098961625,
+              "presentFps": 29.774089098961625,
+              "time": 1790853752728
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853752728
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 30.793287738738623,
+              "presentFps": 30.793287738738623,
+              "time": 1790853753735
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853753735
+        },
+        {
+          "active": false,
+          "appliedRevision": 1790853747475,
+          "fresh": true,
+          "nr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "depth": "synthetic_constant",
+            "historyUpdate": null,
+            "input": [
+              2560,
+              1335
+            ],
+            "intensity": 1.0,
+            "motionValid": false,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 1790853747475,
+            "source": "present_source",
+            "sourceGeneration": null,
+            "sourceGroupSize": null,
+            "sourceIdentity": 4813300382928,
+            "sourcePathCount": null
+          },
+          "nrLiveSupported": true,
+          "protocol": 1,
+          "reason": "background",
+          "requested": false,
+          "revision": 1790853747475,
+          "samples": [
+            {
+              "appFps": 29.7520700498605,
+              "presentFps": 29.7520700498605,
+              "time": 1790853754743
+            }
+          ],
+          "sr": {
+            "active": false,
+            "appliedRevision": 1790853747475,
+            "mode": 0,
+            "preset": "default",
+            "reason": "已关闭"
+          },
+          "srLiveSupported": true,
+          "srPresetSupported": true,
+          "srScaleBasis": "source_output",
+          "srScaleSupported": true,
+          "updatedAt": 1790853754743
+        }
+      ],
+      "control": {
+        "enabled": false,
+        "nrEnabled": false,
+        "nrIntensity": 1.0,
+        "nrRevision": 1790853747475,
+        "revision": 1790853747475,
+        "srMode": "off",
+        "srRevision": 1790853747475
+      },
+      "confirmed": true,
+      "name": "all-off"
+    }
+  ],
+  "corrected_summary": [
+    {
+      "name": "nr50",
+      "confirmed": true,
+      "nr_active_samples": 8,
+      "sr_active_samples": 0,
+      "fg_active_samples": 0
+    },
+    {
+      "name": "nr0",
+      "confirmed": true,
+      "nr_active_samples": 8,
+      "sr_active_samples": 0,
+      "fg_active_samples": 0
+    },
+    {
+      "name": "nr100",
+      "confirmed": true,
+      "nr_active_samples": 8,
+      "sr_active_samples": 0,
+      "fg_active_samples": 0
+    },
+    {
+      "name": "dlaa-only",
+      "confirmed": true,
+      "nr_active_samples": 0,
+      "sr_active_samples": 8,
+      "fg_active_samples": 0
+    },
+    {
+      "name": "nr-dlaa",
+      "confirmed": true,
+      "nr_active_samples": 8,
+      "sr_active_samples": 8,
+      "fg_active_samples": 0
+    },
+    {
+      "name": "nr-dlaa-fg",
+      "confirmed": true,
+      "nr_active_samples": 8,
+      "sr_active_samples": 8,
+      "fg_active_samples": 0
+    },
+    {
+      "name": "all-off",
+      "confirmed": true,
+      "nr_active_samples": 0,
+      "sr_active_samples": 0,
+      "fg_active_samples": 0
+    }
+  ],
+  "sr_only_without_nr": {
+    "active": false,
+    "appliedRevision": 0,
+    "fresh": true,
+    "nr": {
+      "active": false,
+      "appliedRevision": 0,
+      "depth": "synthetic_constant",
+      "historyUpdate": "continuous",
+      "input": [
+        1920,
+        1080
+      ],
+      "intensity": 1.0,
+      "motionValid": true,
+      "pendingFgReset": true,
+      "pendingSrReset": false,
+      "reason": "disabled",
+      "requested": false,
+      "reset": false,
+      "resetReason": "Disabled",
+      "revision": 0,
+      "source": "native_source",
+      "sourceGeneration": 7563,
+      "sourceGroupSize": 2,
+      "sourceIdentity": 3,
+      "sourcePathCount": 3
+    },
+    "nrLiveSupported": false,
+    "protocol": 1,
+    "reason": "background",
+    "requested": false,
+    "revision": 0,
+    "samples": [
+      {
+        "appFps": 29.847907005064993,
+        "presentFps": 29.847907005064993,
+        "time": 1790854072646
+      }
+    ],
+    "sr": {
+      "active": true,
+      "appliedRevision": 0,
+      "colorImage": null,
+      "fallbackReason": null,
+      "input": [
+        1920,
+        1080
+      ],
+      "mode": 6,
+      "motion": true,
+      "original_input": [
+        1920,
+        1080
+      ],
+      "output": [
+        2560,
+        1335
+      ],
+      "preset": "default",
+      "processing_output": [
+        1920,
+        1080
+      ],
+      "scale": 100,
+      "source": "native_source"
+    },
+    "srLiveSupported": true,
+    "srPresetSupported": true,
+    "srScaleBasis": "source_output",
+    "srScaleSupported": true,
+    "updatedAt": 1790854072646
+  },
+  "nr_unprepared_error": {
+    "path": "D:/py/ns-emu-tools/src-tauri/target/nr-toolbox-smoke-002/unprepared-nr-rejected.txt",
+    "sha256": "cd0c882239c9d5270510cdfc9afbf678c85c5acf3cfd00d3b4fb47b6c041c2bd",
+    "expected_error": "当前会话未准备原生 NR；请导入运行库后重新专用启动"
+  },
+  "checks": {
+    "rust_format": "passed",
+    "application_host_and_windows": "passed, no compiler warnings",
+    "layer_all_features_all_targets_host_and_windows": "passed, no compiler warnings",
+    "bridge_host_and_windows": "passed, no compiler warnings",
+    "frontend_typecheck_and_build": "passed",
+    "modified_ui_types_util_lint": "passed; utils/tauri.ts has three pre-existing no-explicit-any errors",
+    "component_config_install_unit_tests": "passed",
+    "layer_all_features_tests": "passed; hardware NVOF test ignored",
+    "package_adjacent_to_release_exe": "exact hashes verified"
+  },
+  "corrected_phases_raw": {
+    "path": "D:/py/ns-emu-tools/src-tauri/target/nr-toolbox-smoke-001/roundtrip-fixed.json",
+    "sha256": "548359f2da566b4ca59caf538c4c21bd7b1c228042a43bedab16e0828fe77e68"
+  }
+}

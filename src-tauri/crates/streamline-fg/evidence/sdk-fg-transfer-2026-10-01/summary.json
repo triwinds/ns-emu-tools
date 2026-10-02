@@ -1,0 +1,1830 @@
+{
+  "date": "2026-10-01",
+  "timezone": "Asia/Shanghai",
+  "sdk_version": "2.12.0 downstream-v3",
+  "same_tested_layer_and_host": true,
+  "current_layer_matches_test": true,
+  "source_contract": "SDK downstream vkCreateImage/vkCreateBuffer + successful bind + exact FG/NGX debug name; shader-only ALL_COMMANDS access masks; compatible transfer usage, ignored queue families, no pNext; image GENERAL destination and GENERAL/UNDEFINED source.",
+  "shader_access": 96,
+  "transfer_read_access": 2048,
+  "transfer_write_access": 4096,
+  "extra_gpu_commands": 0,
+  "extra_submissions": 0,
+  "extra_cpu_waits": 0,
+  "comparison_environment": [
+    "NS_STREAMLINE_SDK_LAYOUT_TRACE=1",
+    "NS_STREAMLINE_SDK_OUTPUT_INIT=1",
+    "NS_STREAMLINE_SDK_TRANSFER_ACCESS=1 (003) / 0 (004)"
+  ],
+  "reproduction_command": "streamline-fg-diagnostics --sdk-fg --layer <tested DLL> --interposer <pinned runtime/sl.interposer.dll> --session <new absolute directory> --validation-dir <VVL 1.4.363.0/Bin>",
+  "sdk_only_strict_validation_passed": true,
+  "formal_image_quality_verified": false,
+  "performance_comparison": false,
+  "vulkan_warnings_distinct_from_sdk_text_warnings": true,
+  "legacy_report_field": "Raw sdk-device-result.json in 003 incorrectly says validation_layer_enabled=false; nr-validation-result.json and the unfiltered callback log confirm enabled core/synchronization validation. Diagnostic reporting source corrected afterward; preserved raw reports are unchanged.",
+  "known_emulator_errors_out_of_scope": true,
+  "tests_passed": 139,
+  "hardware_test_ignored": 1,
+  "primary_spec": "https://docs.vulkan.org/spec/latest/chapters/synchronization.html#synchronization-access-types",
+  "sessions": [
+    {
+      "adapter_summary": [
+        {
+          "details": {
+            "adapted_barriers": 12466,
+            "device": 2405596922064,
+            "extra_commands": 0,
+            "extra_cpu_waits": 0,
+            "extra_submissions": 0
+          },
+          "elapsed_us": 21086838,
+          "event": "sdk_transfer_access_summary",
+          "phase": 9,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "nr_requested": false,
+      "emulator_running": false,
+      "buffer_ownership_samples": [],
+      "reports": {
+        "inputs.json": {
+          "child_disable": "~implicit~",
+          "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-001\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+          "fg_enabled": false,
+          "host_sha256": "e1531e4a70bcd81b2e4e6efce4612806da81c7c6a29a193e7b0ffb8093ce1207",
+          "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "layer_sha256": "2e2ebfd7b0c2324d20ac1382423a6e9c0cdd360747a5f92095ac215b52f180a4",
+          "loader": "C:\\Windows\\System32/vulkan-1.dll",
+          "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+          "parent_environment": {
+            "VK_ADD_LAYER_PATH": null,
+            "VK_INSTANCE_LAYERS": null,
+            "VK_LAYER_PATH": null,
+            "VK_LOADER_LAYERS_ALLOW": null,
+            "VK_LOADER_LAYERS_DISABLE": null,
+            "VK_LOADER_LAYERS_ENABLE": null
+          },
+          "requested_fg_experiment": true,
+          "requested_idle_capture": false,
+          "requested_sdk_device_probe": true,
+          "requested_sdk_requirements": true,
+          "requested_sdk_route": true,
+          "requested_sr_experiment": false,
+          "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+          "sdk_initialized_at_launch": false,
+          "sdk_layout_trace": true,
+          "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+          "staged_binary_hashes": {
+            "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+            "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+            "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+            "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+            "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+            "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+            "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+          },
+          "validation_files": {
+            "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+            "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+          }
+        },
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 10,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": false,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 600,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 415,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 1015,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "fg-route-verification.json": {
+          "all_native_present_fences_completed": true,
+          "display_effect_verified": false,
+          "host_frames": 600,
+          "native_presents": 1014,
+          "sdk_owned_present_worker_observed": true,
+          "sdk_reported_presented": 1015,
+          "worker_native_presents": 829
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        }
+      },
+      "initial_layout_adapter": true,
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-001",
+      "launcher_exit_code": 1,
+      "buffer_transfer_adapter": false,
+      "raw_file_sha256": {
+        "inputs.json": "98e98aac08f41ca5bd4e2590dd009797309862f7bcbbb2990d6887bb9824fc5c",
+        "nr-validation-result.json": "644df2ba2694e5987cefc6a1fec9e8ea19ba601d693eec2d30ec8ae22eb40cf5",
+        "fg-result.json": "b0f6428b489659cd5200575e2abdec81f4adb60cbd991c0f2b3308b192755e2d",
+        "fg-route-verification.json": "a90f743b4ce3ed9b8063e7571968a4f2a8fb61deaa707d6c36b331ead27c1bb3",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "nr-validation.jsonl": "4058f79846ba60042dfb6ebc75bb0400c240be2fbd68530a3e52d458a285493b",
+        "layer.jsonl": "9b940e68fe814c3b88538434de5ee90a78994ee9a69c64d0ab4590a8fe34f57f",
+        "sl.log": "8bee751d76efc75c7cac33fa0c8a236c50558e9e1c341c65df0871c2327c8207",
+        "sdk-device.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sdk-device.stderr.log": "8e1f8a484d006bcf7603931042c16584b33ee7c2dbb302f83f797fd389a47b31"
+      },
+      "image_access_samples": [
+        {
+          "details": {
+            "command": 2405598607568,
+            "device": 2405596922064,
+            "dst_access": 6240,
+            "image": 821335185949419,
+            "layout_unchanged": true,
+            "new_layout": 1,
+            "old_layout": 0,
+            "original_dst_access": 96,
+            "original_src_access": 0,
+            "sdk_created_bound_named_image": true,
+            "src_access": 0
+          },
+          "elapsed_us": 5005009,
+          "event": "sdk_transfer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 2405598607568,
+            "device": 2405596922064,
+            "dst_access": 6240,
+            "image": 818036651066088,
+            "layout_unchanged": true,
+            "new_layout": 1,
+            "old_layout": 0,
+            "original_dst_access": 96,
+            "original_src_access": 0,
+            "sdk_created_bound_named_image": true,
+            "src_access": 0
+          },
+          "elapsed_us": 5005101,
+          "event": "sdk_transfer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 2405598607568,
+            "device": 2405596922064,
+            "dst_access": 6240,
+            "image": 330952999960877,
+            "layout_unchanged": true,
+            "new_layout": 1,
+            "old_layout": 0,
+            "original_dst_access": 96,
+            "original_src_access": 96,
+            "sdk_created_bound_named_image": true,
+            "src_access": 6240
+          },
+          "elapsed_us": 5007742,
+          "event": "sdk_transfer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "trace_event_counts": [
+        {
+          "count": 37,
+          "event": "sdk_output_layout_named"
+        },
+        {
+          "count": 227,
+          "event": "sdk_transfer_access"
+        },
+        {
+          "count": 1,
+          "event": "sdk_transfer_access_summary"
+        }
+      ],
+      "child_exit_code": "1",
+      "image_transfer_adapter": true,
+      "buffer_access_samples": [],
+      "note": "Image-only adapter; exposed buffer fill WAW hidden by the default per-ID duplicate limit.",
+      "validation_message_groups": [
+        {
+          "id": 1544472022,
+          "first_message": "vkCmdFillBuffer(): WRITE_AFTER_WRITE hazard detected. vkCmdFillBuffer writes to dstBuffer VkBuffer 0x1160000000116[nv.ngx.dlssg.resource], which was previously written by another vkCmdFillBuffer[nv.ngx.dlssg.Evaluate] command. \nNo sufficient synchronization is present to ensure that a write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_CLEAR_BIT does not conflict with a prior write of the same type at the same stage.\nBuffer access region: {\n  offset = 0\n  size = 2048000\n}\n",
+          "reported_count": 10,
+          "severity": 4096
+        }
+      ]
+    },
+    {
+      "adapter_summary": [],
+      "nr_requested": false,
+      "emulator_running": false,
+      "buffer_ownership_samples": [],
+      "reports": {
+        "inputs.json": {
+          "child_disable": "~implicit~",
+          "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-002\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+          "fg_enabled": false,
+          "host_sha256": "4506ccfa688f60a8d5b85c2be2122a3800dfcce26212b3247196716c1dd7836a",
+          "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "layer_sha256": "6eb484c65a039b7ae051bf2b78d307cf2f9ca3718c80491b17aa389dd5768550",
+          "loader": "C:\\Windows\\System32/vulkan-1.dll",
+          "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+          "parent_environment": {
+            "VK_ADD_LAYER_PATH": null,
+            "VK_INSTANCE_LAYERS": null,
+            "VK_LAYER_PATH": null,
+            "VK_LOADER_LAYERS_ALLOW": null,
+            "VK_LOADER_LAYERS_DISABLE": null,
+            "VK_LOADER_LAYERS_ENABLE": null
+          },
+          "requested_fg_experiment": true,
+          "requested_idle_capture": false,
+          "requested_sdk_device_probe": true,
+          "requested_sdk_requirements": true,
+          "requested_sdk_route": true,
+          "requested_sr_experiment": false,
+          "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+          "sdk_initialized_at_launch": false,
+          "sdk_layout_trace": true,
+          "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+          "staged_binary_hashes": {
+            "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+            "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+            "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+            "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+            "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+            "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+            "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+          },
+          "validation_files": {
+            "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+            "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+          }
+        },
+        "fg-failure.json": {
+          "error": "diagnostic window never became foreground; no active FG sample",
+          "fg_verified": false
+        }
+      },
+      "initial_layout_adapter": true,
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-002",
+      "launcher_exit_code": 1,
+      "buffer_transfer_adapter": true,
+      "raw_file_sha256": {
+        "inputs.json": "b0b80b3bfe1408da4fc96c06452f8a94b6d2706e2c7bf8c778c9785afebb643d",
+        "fg-failure.json": "7fa14abfebe412d39505013f71e6839d0966116b6806c17961b0711b4961ff85",
+        "nr-validation.jsonl": "f951e2f4819cfde4d2e159761508c14103a75fe3f580c160e726388fcbe68359",
+        "layer.jsonl": "70b6081859e095bfa4e30f414a03591706f46bc7d32111c7e59493777962180f",
+        "sl.log": "14e54de794bc9859e0bafef197171e32a284436a5fb1bc8091f8b65ec6ad4a41",
+        "sdk-device.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sdk-device.stderr.log": "dfce4ac63b38250f1251d067b28b1b6b0dfa43a38ced33af3ea4f0de7602ae69"
+      },
+      "image_access_samples": [],
+      "trace_event_counts": [
+        {
+          "count": 3,
+          "event": "sdk_output_layout_named"
+        }
+      ],
+      "child_exit_code": "0xc0000409",
+      "image_transfer_adapter": true,
+      "buffer_access_samples": [],
+      "note": "Foreground wait timed out; no active FG sample, no complete validation result; retained as failure.",
+      "validation_message_groups": []
+    },
+    {
+      "adapter_summary": [
+        {
+          "details": {
+            "adapted_barriers": 75405,
+            "device": 2570545397968,
+            "extra_commands": 0,
+            "extra_cpu_waits": 0,
+            "extra_submissions": 0
+          },
+          "elapsed_us": 94381334,
+          "event": "sdk_transfer_access_summary",
+          "phase": 9,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "nr_requested": false,
+      "emulator_running": false,
+      "buffer_ownership_samples": [
+        {
+          "details": {
+            "bound": true,
+            "buffer": 277076930199804,
+            "creation": {
+              "flags": 0,
+              "has_pnext": false,
+              "size": 160,
+              "usage": 131122
+            },
+            "device": 2570545397968,
+            "name": "nv.ngx.dlssg.resource",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 278176441827581,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 75159338,
+          "event": "sdk_buffer_transfer_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "buffer": 305664232522006,
+            "creation": {
+              "flags": 0,
+              "has_pnext": false,
+              "size": 2048000,
+              "usage": 131122
+            },
+            "device": 2570545397968,
+            "name": "nv.ngx.dlssg.resource",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 306763744149783,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 75161001,
+          "event": "sdk_buffer_transfer_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "buffer": 307863255777560,
+            "creation": {
+              "flags": 0,
+              "has_pnext": false,
+              "size": 2048000,
+              "usage": 131122
+            },
+            "device": 2570545397968,
+            "name": "nv.ngx.dlssg.resource",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 308962767405337,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 75161283,
+          "event": "sdk_buffer_transfer_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "reports": {
+        "inputs.json": {
+          "child_disable": "~implicit~",
+          "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-003\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+          "fg_enabled": false,
+          "host_sha256": "429047f4ca0b2f604ead98d878ceb281e949ee911589c2ba6e398caa6d3eddf9",
+          "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "layer_sha256": "6eb484c65a039b7ae051bf2b78d307cf2f9ca3718c80491b17aa389dd5768550",
+          "loader": "C:\\Windows\\System32/vulkan-1.dll",
+          "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+          "parent_environment": {
+            "VK_ADD_LAYER_PATH": null,
+            "VK_INSTANCE_LAYERS": null,
+            "VK_LAYER_PATH": null,
+            "VK_LOADER_LAYERS_ALLOW": null,
+            "VK_LOADER_LAYERS_DISABLE": null,
+            "VK_LOADER_LAYERS_ENABLE": null
+          },
+          "requested_fg_experiment": true,
+          "requested_idle_capture": false,
+          "requested_sdk_device_probe": true,
+          "requested_sdk_requirements": true,
+          "requested_sdk_route": true,
+          "requested_sr_experiment": false,
+          "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+          "sdk_initialized_at_launch": false,
+          "sdk_layout_trace": true,
+          "sdk_output_init": true,
+          "sdk_transfer_access": true,
+          "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+          "staged_binary_hashes": {
+            "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+            "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+            "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+            "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+            "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+            "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+            "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+          },
+          "validation_files": {
+            "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+            "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+          }
+        },
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 0,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": true,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 600,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 599,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 1199,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "fg-route-verification.json": {
+          "all_native_present_fences_completed": true,
+          "display_effect_verified": false,
+          "host_frames": 600,
+          "native_presents": 1198,
+          "sdk_owned_present_worker_observed": true,
+          "sdk_reported_presented": 1199,
+          "worker_native_presents": 1197
+        },
+        "sdk-device-result.json": {
+          "dispatch_live_objects": 0,
+          "experiment_passed": true,
+          "fg_enabled": false,
+          "fg_experiment_run": true,
+          "initialized_sdk_idle_reenters_layer": false,
+          "p0_passed": false,
+          "sdk_initialized": true,
+          "sdk_runtime_warnings_and_errors": [
+            "[18-08-54][streamline][warn][tid:35612][0s:002ms:272us]sl.cpp:229[operator ()] Seems like some DX/VK APIs were invoked before slInit()!!! This may result in incorrect behaviour.",
+            "[18-08-56][streamline][warn][tid:35612][1s:485ms:072us]pluginManager.cpp:1241[processPluginHooks] Hook sl.common:Vulkan:CmdBindPipeline is NOT supported, plugin will not function properly",
+            "[18-08-56][streamline][warn][tid:35612][1s:485ms:088us]pluginManager.cpp:1241[processPluginHooks] Hook sl.common:Vulkan:CmdBindDescriptorSets is NOT supported, plugin will not function properly",
+            "[18-08-56][streamline][warn][tid:35612][1s:485ms:103us]pluginManager.cpp:1241[processPluginHooks] Hook sl.common:Vulkan:BeginCommandBuffer is NOT supported, plugin will not function properly",
+            "[18-08-56][streamline][warn][tid:35612][1s:512ms:328us]dlss_gEntry.cpp:1130[slGetData] slDLSSGGetState must be synchronized with the present thread, if not already, especially if using DLSS-G inputs-processing completion fence and value!",
+            "[18-08-56][streamline][warn][tid:35612][1s:526ms:911us]dlss_gEntry.cpp:1130[slGetData] slDLSSGGetState must be synchronized with the present thread, if not already, especially if using DLSS-G inputs-processing completion fence and value!",
+            "[18-08-56][streamline][warn][tid:35612][1s:714ms:031us]dlss_gEntry.cpp:1130[slGetData] slDLSSGGetState must be synchronized with the present thread, if not already, especially if using DLSS-G inputs-processing completion fence and value!",
+            "[18-10-10][streamline][warn][tid:35612][75s:869ms:251us]commonEntry.cpp:504[validateCommonConstants] Value consts.motionVectorsInvalidValue should not be left as invalid",
+            "[18-10-10][streamline][warn][tid:35612][75s:869ms:625us]defines.h:318[set] Repeated slDLSSGSetOptions() call for the frame 1. A redundant call or a race condition with Present().",
+            "[18-10-10][streamline][warn][tid:35612][75s:870ms:306us]vulkan.cpp:3688[setAsyncFrameMarker] Vulkan setAsyncFrameMarker is not implemented!",
+            "[18-10-10][streamline][warn][tid:35612][75s:937ms:302us]rsync.cpp:944[updateRunningState] RSYNC: RSync will not run because it was not initialized. This is probably not a big deal (e.g., feature is only supported on DX12)."
+          ],
+          "sdk_swapchain_lifecycle_verified": true,
+          "set_vulkan_succeeded": true,
+          "validation_layer_enabled": false
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        },
+        "sdk-route-result.json": {
+          "fg_enabled": false,
+          "host_command_lifecycle_verified": false,
+          "host_sdk_swapchain_lifecycle_verified": false,
+          "idle_routing_verified": true,
+          "main_idle_reentries": 0,
+          "p0_passed": false,
+          "runtime_routing_verified": false,
+          "sdk_owned_worker_tested": false,
+          "worker_idle_reentries": 0
+        }
+      },
+      "initial_layout_adapter": true,
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-003",
+      "launcher_exit_code": 0,
+      "buffer_transfer_adapter": true,
+      "raw_file_sha256": {
+        "inputs.json": "d2cffdf61a1bef46fbe217a3a23dca1c4a4a5ded02450cd0dc1362ca3a1a5e5a",
+        "nr-validation-result.json": "ca0dfd1f600161707815ebca4d81ce035c8d6ab5288feb36d81b8220a5ce50db",
+        "fg-result.json": "1a17de76127ba66c618ee1775d0bc60ed11cab62f140f15d3104a005a55ba19d",
+        "fg-route-verification.json": "deb3b1ed641ff07a6d488e8f5f138184193c0a19798da8c0f0fb822d100d164f",
+        "sdk-device-result.json": "26f6f63449980e4ffc6538ece42349f8bdeba3681104c1f5c9845e85b4d41379",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "sdk-route-result.json": "28812a67221dff9e15b03a39247a3391a85b4c8e9169f073cd6874bb927658d2",
+        "nr-validation.jsonl": "745ec1ce4532f6323595f2e2ab44f4922612e735e07e8f45fd8f16a52371f8b4",
+        "layer.jsonl": "1fba6f8bb94254405fbe217d3012f9aa0ed442b6fe0899937b92a3278b01c7fc",
+        "sl.log": "520280c8e2fca32335f1af74f0bead51400e67be7ab52b392bdec206244eaa63",
+        "sdk-device.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sdk-device.stderr.log": "2bf2e46d9bbf81d0f8942f4fc6809e203666a6d89b42ea6342c192a4378b1a8d"
+      },
+      "image_access_samples": [
+        {
+          "details": {
+            "command": 2570547083472,
+            "device": 2570545397968,
+            "dst_access": 6240,
+            "image": 821335185949419,
+            "layout_unchanged": true,
+            "new_layout": 1,
+            "old_layout": 0,
+            "original_dst_access": 96,
+            "original_src_access": 0,
+            "sdk_created_bound_named_image": true,
+            "src_access": 0
+          },
+          "elapsed_us": 75208197,
+          "event": "sdk_transfer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 2570547083472,
+            "device": 2570545397968,
+            "dst_access": 6240,
+            "image": 818036651066088,
+            "layout_unchanged": true,
+            "new_layout": 1,
+            "old_layout": 0,
+            "original_dst_access": 96,
+            "original_src_access": 0,
+            "sdk_created_bound_named_image": true,
+            "src_access": 0
+          },
+          "elapsed_us": 75208295,
+          "event": "sdk_transfer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "command": 2570547083472,
+            "device": 2570545397968,
+            "dst_access": 6240,
+            "image": 330952999960877,
+            "layout_unchanged": true,
+            "new_layout": 1,
+            "old_layout": 0,
+            "original_dst_access": 96,
+            "original_src_access": 96,
+            "sdk_created_bound_named_image": true,
+            "src_access": 6240
+          },
+          "elapsed_us": 75211001,
+          "event": "sdk_transfer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "trace_event_counts": [
+        {
+          "count": 175,
+          "event": "sdk_buffer_transfer_named"
+        },
+        {
+          "count": 37,
+          "event": "sdk_output_layout_named"
+        },
+        {
+          "count": 227,
+          "event": "sdk_transfer_access"
+        },
+        {
+          "count": 1,
+          "event": "sdk_transfer_access_summary"
+        },
+        {
+          "count": 320,
+          "event": "sdk_transfer_buffer_access"
+        }
+      ],
+      "child_exit_code": "0",
+      "image_transfer_adapter": true,
+      "buffer_access_samples": [
+        {
+          "details": {
+            "buffer": 305664232522006,
+            "command": 2570547083472,
+            "device": 2570545397968,
+            "dst_access": 4192,
+            "offset": 0,
+            "original_dst_access": 96,
+            "original_src_access": 96,
+            "sdk_created_bound_named_buffer": true,
+            "size": 18446744073709551615,
+            "src_access": 4192
+          },
+          "elapsed_us": 75211593,
+          "event": "sdk_transfer_buffer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "buffer": 305664232522006,
+            "command": 2570547083472,
+            "device": 2570545397968,
+            "dst_access": 4192,
+            "offset": 0,
+            "original_dst_access": 96,
+            "original_src_access": 96,
+            "sdk_created_bound_named_buffer": true,
+            "size": 18446744073709551615,
+            "src_access": 4192
+          },
+          "elapsed_us": 75211663,
+          "event": "sdk_transfer_buffer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        },
+        {
+          "details": {
+            "buffer": 310062279033114,
+            "command": 2570547083472,
+            "device": 2570545397968,
+            "dst_access": 4192,
+            "offset": 0,
+            "original_dst_access": 96,
+            "original_src_access": 96,
+            "sdk_created_bound_named_buffer": true,
+            "size": 18446744073709551615,
+            "src_access": 4192
+          },
+          "elapsed_us": 75211738,
+          "event": "sdk_transfer_buffer_access",
+          "phase": 0,
+          "thread": "ThreadId(2)"
+        }
+      ],
+      "note": "Image and buffer access adapter on; active FG; core and synchronization validation passed.",
+      "validation_message_groups": []
+    },
+    {
+      "adapter_summary": [],
+      "nr_requested": false,
+      "emulator_running": false,
+      "buffer_ownership_samples": [
+        {
+          "details": {
+            "bound": true,
+            "buffer": 277076930199804,
+            "creation": {
+              "flags": 0,
+              "has_pnext": false,
+              "size": 160,
+              "usage": 131122
+            },
+            "device": 2048719716560,
+            "name": "nv.ngx.dlssg.resource",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 278176441827581,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 33165040,
+          "event": "sdk_buffer_transfer_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "buffer": 305664232522006,
+            "creation": {
+              "flags": 0,
+              "has_pnext": false,
+              "size": 2048000,
+              "usage": 131122
+            },
+            "device": 2048719716560,
+            "name": "nv.ngx.dlssg.resource",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 306763744149783,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 33167580,
+          "event": "sdk_buffer_transfer_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "bound": true,
+            "buffer": 307863255777560,
+            "creation": {
+              "flags": 0,
+              "has_pnext": false,
+              "size": 2048000,
+              "usage": 131122
+            },
+            "device": 2048719716560,
+            "name": "nv.ngx.dlssg.resource",
+            "previous_calls": [
+              {
+                "kind": "bind",
+                "memory": 308962767405337,
+                "offset": 0
+              }
+            ]
+          },
+          "elapsed_us": 33167927,
+          "event": "sdk_buffer_transfer_named",
+          "phase": 19,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "reports": {
+        "inputs.json": {
+          "child_disable": "~implicit~",
+          "child_layer_path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-004\\manifests;D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+          "fg_enabled": false,
+          "host_sha256": "429047f4ca0b2f604ead98d878ceb281e949ee911589c2ba6e398caa6d3eddf9",
+          "interposer_sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+          "layer_sha256": "6eb484c65a039b7ae051bf2b78d307cf2f9ca3718c80491b17aa389dd5768550",
+          "loader": "C:\\Windows\\System32/vulkan-1.dll",
+          "loader_sha256": "cd63989744d15fe13972511d3afb7bbc171c7c72fe9c479b4909595a2f9d6efb",
+          "parent_environment": {
+            "VK_ADD_LAYER_PATH": null,
+            "VK_INSTANCE_LAYERS": null,
+            "VK_LAYER_PATH": null,
+            "VK_LOADER_LAYERS_ALLOW": null,
+            "VK_LOADER_LAYERS_DISABLE": null,
+            "VK_LOADER_LAYERS_ENABLE": null
+          },
+          "requested_fg_experiment": true,
+          "requested_idle_capture": false,
+          "requested_sdk_device_probe": true,
+          "requested_sdk_requirements": true,
+          "requested_sdk_route": true,
+          "requested_sr_experiment": false,
+          "sdk_header_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+          "sdk_initialized_at_launch": false,
+          "sdk_layout_trace": true,
+          "sdk_output_init": true,
+          "sdk_transfer_access": false,
+          "source_interposer": "\\\\?\\D:\\py\\ns-emu-tools\\src-tauri\\target\\release\\streamline-fg-package\\sl.interposer.dll",
+          "staged_binary_hashes": {
+            "NvLowLatencyVk.dll": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+            "nvngx_dlssg.dll": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+            "sl.common.dll": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+            "sl.dlss_g.dll": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+            "sl.interposer.dll": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+            "sl.pcl.dll": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+            "sl.reflex.dll": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+          },
+          "validation_files": {
+            "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+            "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+          }
+        },
+        "nr-validation-result.json": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 20,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 0,
+          "validation_passed": false,
+          "warnings": 0
+        },
+        "fg-result.json": {
+          "application_frames": 600,
+          "display_effect_verified": false,
+          "game_integration_verified": false,
+          "height": 800,
+          "input_completion_wait_count": 600,
+          "input_completion_waited": true,
+          "maximum_input_completion_value": 77,
+          "requested_multiplier": 2,
+          "sdk_reported_presented": 677,
+          "sdk_reports_extra_frames": true,
+          "shutdown_fg_off": true,
+          "width": 1280
+        },
+        "fg-route-verification.json": {
+          "all_native_present_fences_completed": true,
+          "display_effect_verified": false,
+          "host_frames": 600,
+          "native_presents": 676,
+          "sdk_owned_present_worker_observed": true,
+          "sdk_reported_presented": 677,
+          "worker_native_presents": 153
+        },
+        "sdk-shutdown.json": {
+          "result": 0
+        }
+      },
+      "initial_layout_adapter": true,
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\sdk-fg-transfer-validation-004",
+      "launcher_exit_code": 1,
+      "buffer_transfer_adapter": false,
+      "raw_file_sha256": {
+        "inputs.json": "afb515c29d62586fc7bd1c41dffcbfb242d2e3c84d9b3f4629be64c58763d399",
+        "nr-validation-result.json": "72257ef8d69670934d598831f3069f4fb2dafb725be4aea2c50176e0e57cad7e",
+        "fg-result.json": "e075b6ac08464eed314ba7adc3b71ff96433cebc3d01a5f5e6beac165b69b5c3",
+        "fg-route-verification.json": "9b3a4acb15bdc5b98a71e15d3d90dea03d9b3b5dd1975341bf790ef81040abf2",
+        "sdk-shutdown.json": "f6d2bb862d6134e4d982b35339a5f57b261b636f0dd4b5ca819197ce4e1aa064",
+        "nr-validation.jsonl": "13255ee3b66d060d5c70a89d3888ef4bcd32e1050fb2f26fbbe1440a0ccc427b",
+        "layer.jsonl": "da46c380ed6ce83520c04d638283fa468e0ada21fcf0e732c46f638e7ae74096",
+        "sl.log": "cd60000c4e26b61347cba0f2337a08b7b1349c6912f30eae6dbc711bdf295343",
+        "sdk-device.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sdk-device.stderr.log": "c07c3bf9f133a7612f97ae722e5012ce2d259e17108a1a31db395d4c159fc237"
+      },
+      "image_access_samples": [],
+      "trace_event_counts": [
+        {
+          "count": 175,
+          "event": "sdk_buffer_transfer_named"
+        },
+        {
+          "count": 37,
+          "event": "sdk_output_layout_named"
+        }
+      ],
+      "child_exit_code": "1",
+      "image_transfer_adapter": false,
+      "buffer_access_samples": [],
+      "note": "Same tested layer and host as 003; transfer adapter disabled, initial-layout adapter still enabled.",
+      "validation_message_groups": [
+        {
+          "id": -455515022,
+          "first_message": "vkCmdCopyImage(): READ_AFTER_WRITE hazard detected. vkCmdCopyImage reads VkImage 0x5c000000005c[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_READ_BIT accesses at VK_PIPELINE_STAGE_2_COPY_BIT.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 1280, height = 800, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, baseArrayLayer = 0, layerCount = 1}\n}\n",
+          "reported_count": 10,
+          "severity": 4096
+        },
+        {
+          "id": 1544472022,
+          "first_message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x12d000000012d[nv.ngx.dlssg.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlssg.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n",
+          "reported_count": 10,
+          "severity": 4096
+        }
+      ]
+    }
+  ],
+  "game_followup": {
+    "validation_message_groups": [
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdCopyBuffer(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/copies.html#VUID-vkCmdCopyBuffer-commandBuffer-recording)",
+        "id": -2063277991
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdBindVertexBuffers2EXT(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers2-commandBuffer-recording)",
+        "id": -2017440641
+      },
+      {
+        "reported_count": 10,
+        "severity": 256,
+        "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 2], but there is no VkSubpassDescription::pColorAttachments[2] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput",
+        "id": -1744492148
+      },
+      {
+        "reported_count": 10,
+        "severity": 256,
+        "first_message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x369a000000369a) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+        "id": -1693624763
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdEndRenderPass(): query 0 from VkQueryPool 0x1490000000149 was begun in subpass 0 but never ended.\nThe Vulkan spec states: If vkCmdBeginQuery* was called within a subpass of the render pass, the corresponding vkCmdEndQuery* must have been called subsequently within the same subpass (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-None-07004)",
+        "id": -1551140702
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdBindDescriptorSets(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdBindDescriptorSets-commandBuffer-recording)",
+        "id": -962408748
+      },
+      {
+        "reported_count": 10,
+        "severity": 256,
+        "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 1 not consumed by vertex shader.",
+        "id": -937765618
+      },
+      {
+        "reported_count": 4,
+        "severity": 4096,
+        "first_message": "vkCmdSetBlendConstants(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/framebuffer.html#VUID-vkCmdSetBlendConstants-commandBuffer-recording)",
+        "id": -619758366
+      },
+      {
+        "reported_count": 3,
+        "severity": 4096,
+        "first_message": "vkEndCommandBuffer(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/cmdbuffers.html#VUID-vkEndCommandBuffer-commandBuffer-00059)",
+        "id": -543181122
+      },
+      {
+        "reported_count": 9,
+        "severity": 4096,
+        "first_message": "vkDestroyBuffer(): can't be called on VkBuffer 0x630f000000630f that is currently in use by VkDescriptorSet 0x56e700000056e7 which is in use by VkCommandBuffer 0x4a8a9d7e0d0\nThe Vulkan spec states: All submitted commands that refer to buffer, either directly or via a VkBufferView, must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyBuffer-buffer-00922)",
+        "id": -464217071
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] READ_AFTER_WRITE hazard detected. vkCmdBeginRenderPass (from VkCommandBuffer 0x4a8a9d7e0d0 submitted on the current VkQueue 0x4a8a90914d0) reads the color aspect of attachment 0 (VkImageView 0x30f500000030f5) in subpass 0 of VkRenderPass 0x30fb00000030fb (loadOp VK_ATTACHMENT_LOAD_OP_LOAD), which was previously written by vkCmdCopyBufferToImage (from VkCommandBuffer 0x4a8a9d818d0 submitted on VkQueue 0x4a8a90914d0). \nNo sufficient synchronization is present to ensure that a read (VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT) at VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT does not conflict with a prior write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_COPY_BIT.",
+        "id": -455515022
+      },
+      {
+        "reported_count": 1,
+        "severity": 4096,
+        "first_message": "vkCmdDrawIndexed(): VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT state is dynamic, but the command buffer never called vkCmdSetAttachmentFeedbackLoopEnableEXT\nVkPipelineRasterizationStateCreateInfo::rasterizerDiscardEnable was VK_FALSE in the last bound graphics pipeline.\nThe Vulkan spec states: If a shader object is bound to the VK_SHADER_STAGE_FRAGMENT_BIT stage or a graphics pipeline is bound which was created with the VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT dynamic state enabled, and the current value of rasterizerDiscardEnable is VK_FALSE, then vkCmdSetAttachmentFeedbackLoopEnableEXT must have been called and not subsequently invalidated in the current command buffer prior to this drawing command (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-08877)",
+        "id": -379806493
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdBindPipeline(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-vkCmdBindPipeline-commandBuffer-recording)",
+        "id": -365328357
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdEndRenderPass(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-commandBuffer-recording)",
+        "id": -308264800
+      },
+      {
+        "reported_count": 4,
+        "severity": 4096,
+        "first_message": "vkCmdSetViewport(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/vertexpostproc.html#VUID-vkCmdSetViewport-commandBuffer-recording)",
+        "id": -143113596
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pRasterizationState->lineWidth is 4.500000, but the line width state is static (pCreateInfos[0].pDynamicState->pDynamicStates does not contain VK_DYNAMIC_STATE_LINE_WIDTH) and wideLines feature was not enabled.\nThe Vulkan spec states: If the pipeline requires pre-rasterization shader state, and the wideLines feature is not enabled, and no element of the pDynamicStates member of pDynamicState is VK_DYNAMIC_STATE_LINE_WIDTH, the lineWidth member of pRasterizationState must be 1.0 (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749)",
+        "id": 28428915
+      },
+      {
+        "reported_count": 4,
+        "severity": 4096,
+        "first_message": "vkCmdSetScissor(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fragops.html#VUID-vkCmdSetScissor-commandBuffer-recording)",
+        "id": 99965422
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdUpdateBuffer(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdUpdateBuffer-commandBuffer-recording)",
+        "id": 102835677
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdPushDescriptorSetWithTemplateKHR(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording)",
+        "id": 218230825
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdEndQuery(): query (0) was started outside a renderpass.\nThe Vulkan spec states: If called within a subpass of a render pass instance, the corresponding vkCmdBeginQuery* command must have been called previously within the same subpass (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-None-07007)",
+        "id": 522653285
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdPipelineBarrier(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/synchronization.html#VUID-vkCmdPipelineBarrier-commandBuffer-recording)",
+        "id": 908748201
+      },
+      {
+        "reported_count": 1,
+        "severity": 4096,
+        "first_message": "vkWaitForFences(): THREADING ERROR : object of type VkFence is simultaneously used in current thread 22464 \"GPU.MainThread\" (vkWaitForFences) and thread 42452 \"GUI.RenderThread\" (vkQueueSubmit)",
+        "id": 1010413496
+      },
+      {
+        "reported_count": 1,
+        "severity": 4096,
+        "first_message": "vkDestroyDevice(): VkDevice 0x4a8a93300d0 has 26 leaked objects that have not been destroyed.\n(Only printing the first 10 objects, but can be increased by raising the VK_LAYER_DUPLICATE_MESSAGE_LIMIT/'duplicate_message_limit' setting value)\nVkImage 0x99aa00000099aa, VkImage 0xaac4000000aac4, VkImage 0x5f9b0000005f9b, VkImage 0x6d9e0000006d9e, VkImage 0x98580000009858, VkImage 0x55540000005554, VkImageView 0x6da30000006da3, VkImageView 0x985b000000985b, VkImageView 0x5fa00000005fa0, VkImageView 0xaac7000000aac7\nThe Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)",
+        "id": 1215490720
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdBeginRenderPass(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdBeginRenderPass-commandBuffer-recording)",
+        "id": 1284016627
+      },
+      {
+        "reported_count": 2,
+        "severity": 4096,
+        "first_message": "vkCmdClearAttachments(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdClearAttachments-commandBuffer-recording)",
+        "id": 1355105800
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdBindIndexBuffer(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-commandBuffer-recording)",
+        "id": 1355467935
+      },
+      {
+        "reported_count": 5,
+        "severity": 4096,
+        "first_message": "vkCmdDrawIndexed(): the combined image sampler descriptor [VkDescriptorSet 0x534a000000534a, Set 2, Binding 135, Index 0, variable \"fp_t_tcb_14\"] has VkImageView 0xb7bb000000b7bb with format of VK_FORMAT_R32_SFLOAT which doesn't support VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT.\n(supported features: VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT|VK_FORMAT_FEATURE_2_BLIT_SRC_BIT|VK_FORMAT_FEATURE_2_BLIT_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT|VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT|VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT|VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT|VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR).\nThe Vulkan spec states: If a VkImageView is sampled with depth comparison, the image view's format features must contain VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-06479)",
+        "id": 1397510317
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] WRITE_AFTER_WRITE hazard detected. vkCmdCopyImage (from VkCommandBuffer 0x4a8a9d930d0 submitted on the current VkQueue 0x4a8a90914d0[nv.sl.dlss_g.cmdQ.game]) writes to VkImage 0x36af00000036af, which was previously written by vkCmdCopyBufferToImage (from VkCommandBuffer 0x4a8a9d8f8d0 submitted on VkQueue 0x4a8a90914d0[nv.sl.dlss_g.cmdQ.game]). \nNo sufficient synchronization is present to ensure that a write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_COPY_BIT does not conflict with a prior write of the same type at the same stage.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 16, height = 16, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 1, baseArrayLayer = 0, layerCount = 1}\n}\n",
+        "id": 1544472022
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCmdDrawIndexed(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-commandBuffer-recording)",
+        "id": 1602651847
+      },
+      {
+        "reported_count": 1,
+        "severity": 4096,
+        "first_message": "vkCmdSetDepthBias(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/primsrast.html#VUID-vkCmdSetDepthBias-commandBuffer-recording)",
+        "id": 1635651583
+      },
+      {
+        "reported_count": 1,
+        "severity": 4096,
+        "first_message": "vkDestroyImageView(): can't be called on VkImageView 0x4e5c0000004e5c that is currently in use by VkDescriptorSet 0x4e620000004e62 which is in use by VkCommandBuffer 0x4a8a9d850d0\nThe Vulkan spec states: All submitted commands that refer to imageView must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyImageView-imageView-01026)",
+        "id": 1672225264
+      },
+      {
+        "reported_count": 9,
+        "severity": 4096,
+        "first_message": "vkCmdEndQuery(): was called in VkCommandBuffer 0x4a8a9d7e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x63090000006309 was destroyed\n   which was used by VkDescriptorSet 0x56e700000056e7\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-commandBuffer-recording)",
+        "id": 1820876487
+      },
+      {
+        "reported_count": 10,
+        "severity": 4096,
+        "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pStages[0] shader [VK_SHADER_STAGE_VERTEX_BIT] has a ClipDistance BuiltIn array size of 8 and a CullDistance BuiltIn array size of 1 which sum to 9 and exceed maxCombinedClipAndCullDistances of 8.\nThe Vulkan spec states: If VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances is not zero, then any entry point interface variable declared with the ClipDistance BuiltIn and CullDistance BuiltIn decoration must not have array sizes which sum to more than VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710)",
+        "id": 2136492404
+      }
+    ],
+    "target_exit_code": 0,
+    "known_emulator_errors_out_of_scope": true,
+    "raw_file_sha256": {
+      "target-inputs.json": "0c2534d12c4c55cd6f88f89dcca3a079412474dbcdd7ecf6e4a2d454845738ba",
+      "target-result.json": "128426df461df0519a5278e798dfcb85d389691cf21e2d6ea051b542b1e276ca",
+      "target-exit.json": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274",
+      "nr-validation-result.json": "453ad8e46cc75cc4fe1f75771541c9acf2076b620916d9f8c2f8053bd3ecfc8f",
+      "closed-off-telemetry.json": "f42de2c750b7f8b2a99b18f4f1b35d5cb5c42fef86080a76e0a6711397874458",
+      "control.json": "e4876eb7596f4381512db82439cd3429453bc2c6ba45a94dfeff9633be90c632",
+      "nr-validation.jsonl": "78b36d63f270d011bdc0ec1e5165ebf4c639c49b63e3710549dd56778db51fcb",
+      "layer.jsonl": "06505f8494ffcd7947bcd610bfe817c5dc26bc8cd248cc5154acd534b8d4d3f7"
+    },
+    "first_active_chain": {
+      "details": {
+        "color_source": "sr_output",
+        "composition_version": 1,
+        "fg_control_requested": true,
+        "fg_region": [
+          93,
+          0,
+          2374,
+          1335
+        ],
+        "fg_revision": 0,
+        "frame": 214,
+        "history_reset": false,
+        "input_wait_completed": true,
+        "nr_evaluated": true,
+        "off_reason": null,
+        "on_frames": 2,
+        "present_markers_only": true,
+        "present_waits": [],
+        "reflex_frame_limit_us": 0,
+        "requested_on": true,
+        "sleep_frame_limit_us": 0,
+        "source_error": null,
+        "sr_evaluated": true,
+        "sr_mode": 6,
+        "sr_revision": 0,
+        "state": {
+          "fence": 185817465094313,
+          "maximum": 5,
+          "minimum": 100,
+          "presented": 2,
+          "status": 0,
+          "value": 214
+        },
+        "swapchain": 13796671905345796,
+        "tail_deferred": false,
+        "timing_us": {
+          "begin_and_reflex_sleep": 110,
+          "input_wait": 6832,
+          "options": 15,
+          "proxy_present": 1852,
+          "retire_previous": 0
+        },
+        "window_stop_reason": -1
+      },
+      "elapsed_us": 26080762,
+      "event": "target_fg_frame",
+      "phase": 0,
+      "thread": "ThreadId(1)"
+    },
+    "launcher_exit_code": 1,
+    "last_active_chain": {
+      "details": {
+        "color_source": "sr_output",
+        "composition_version": 1,
+        "fg_control_requested": true,
+        "fg_region": [
+          93,
+          0,
+          2374,
+          1335
+        ],
+        "fg_revision": 0,
+        "frame": 743,
+        "history_reset": false,
+        "input_wait_completed": true,
+        "nr_evaluated": true,
+        "off_reason": null,
+        "on_frames": 531,
+        "present_markers_only": true,
+        "present_waits": [],
+        "reflex_frame_limit_us": 0,
+        "requested_on": true,
+        "sleep_frame_limit_us": 0,
+        "source_error": null,
+        "sr_evaluated": true,
+        "sr_mode": 6,
+        "sr_revision": 0,
+        "state": {
+          "fence": 185817465094313,
+          "maximum": 5,
+          "minimum": 100,
+          "presented": 2,
+          "status": 0,
+          "value": 743
+        },
+        "swapchain": 13796671905345796,
+        "tail_deferred": false,
+        "timing_us": {
+          "begin_and_reflex_sleep": 343,
+          "input_wait": 4155,
+          "options": 14,
+          "proxy_present": 283,
+          "retire_previous": 1
+        },
+        "window_stop_reason": -1
+      },
+      "elapsed_us": 56343687,
+      "event": "target_fg_frame",
+      "phase": 0,
+      "thread": "ThreadId(1)"
+    },
+    "message_limit_caveat": "Game RAW/WAW IDs also reached the default per-ID duplicate limit. Absence of SDK text is not proof of zero SDK errors in this combined session.",
+    "adapter_trace_counts": [
+      {
+        "event": "sdk_transfer_access",
+        "count": 227
+      },
+      {
+        "event": "sdk_transfer_buffer_access",
+        "count": 320
+      }
+    ],
+    "strict_validation_passed": false,
+    "layer_sha256": "6eb484c65a039b7ae051bf2b78d307cf2f9ca3718c80491b17aa389dd5768550",
+    "nr_toggle_followup_failure": "Phase nr-sr-fg not active: FG background, NR active; stopped before NR off/resume transitions.",
+    "user_feedback": "已就位，画面正常",
+    "nr_toggle_followup_completed": false,
+    "reports": {
+      "target-inputs.json": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": true,
+        "fg_requested": true,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "6eb484c65a039b7ae051bf2b78d307cf2f9ca3718c80491b17aa389dd5768550",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "nr_validation_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "target-result.json": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "combinations": {
+            "all_combinations_observed": false,
+            "checked": true,
+            "combinations": [
+              {
+                "fg": false,
+                "frames": 198,
+                "nr": false,
+                "sr": false
+              },
+              {
+                "fg": false,
+                "frames": 0,
+                "nr": true,
+                "sr": false
+              },
+              {
+                "fg": false,
+                "frames": 0,
+                "nr": false,
+                "sr": true
+              },
+              {
+                "fg": false,
+                "frames": 0,
+                "nr": true,
+                "sr": true
+              },
+              {
+                "fg": true,
+                "frames": 0,
+                "nr": false,
+                "sr": false
+              },
+              {
+                "fg": true,
+                "frames": 0,
+                "nr": true,
+                "sr": false
+              },
+              {
+                "fg": true,
+                "frames": 0,
+                "nr": false,
+                "sr": true
+              },
+              {
+                "fg": true,
+                "frames": 528,
+                "nr": true,
+                "sr": true
+              }
+            ],
+            "fg_enabled_frames": 531,
+            "fg_reset_checks": 8,
+            "inactive_requested_frames": 2587,
+            "invalid_frames": [],
+            "nr_control_transitions": [
+              {
+                "enabled_changed": true,
+                "fg_continuous": false,
+                "fg_generated_on_transition": false,
+                "frame": 3116,
+                "reset_valid": true,
+                "sr_continuous": false,
+                "strength_changed": false
+              }
+            ],
+            "safe_failure_tested": false,
+            "sr_reset_checks": 19,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "count_matches": true,
+          "evaluate_successes": 3107,
+          "execution_verified": true,
+          "fg_requested_frames": 531,
+          "longest_consecutive_evaluations": 1948,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 3107,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 198,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 3,
+          "readbacks_valid": true,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 2,
+            "SourceChanged": 9
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 3096,
+            "logical_identities": 9,
+            "longest_without_reset": 1946,
+            "physical_rotations_without_reset": 3096,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 8
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 3313,
+          "bounded_activation_verified": true,
+          "clean_shutdown": true,
+          "input_timeline_advances": 529,
+          "latency_verified": false,
+          "maximum_input_completion": 743,
+          "native_present_fences_completed": true,
+          "native_presents": 3835,
+          "native_worker_presents": 1052,
+          "p4_passed": false,
+          "requested_on_frames": 531,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 530,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 214,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": true,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 215,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "target-exit.json": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "nr-validation-result.json": {
+        "complete": true,
+        "core_validation": true,
+        "errors": 215,
+        "game_integration_accepted": false,
+        "log_failed": false,
+        "synchronization_validation": true,
+        "unreviewed_warnings": 30,
+        "validation_passed": false,
+        "warnings": 30
+      },
+      "closed-off-telemetry.json": {
+        "active": false,
+        "appliedRevision": 4,
+        "fresh": true,
+        "nr": {
+          "active": false,
+          "appliedRevision": 4,
+          "depth": "synthetic_constant",
+          "historyUpdate": "continuous",
+          "input": [
+            1920,
+            1080
+          ],
+          "intensity": 1.0,
+          "motionValid": false,
+          "pendingFgReset": true,
+          "pendingSrReset": true,
+          "reason": "disabled",
+          "requested": false,
+          "reset": false,
+          "resetReason": "Disabled",
+          "revision": 4,
+          "source": "native_source",
+          "sourceGeneration": 7563,
+          "sourceGroupSize": 2,
+          "sourceIdentity": 12,
+          "sourcePathCount": 3
+        },
+        "nrLiveSupported": true,
+        "protocol": 1,
+        "reason": "background",
+        "requested": false,
+        "revision": 4,
+        "samples": [
+          {
+            "appFps": 7.9408084199568005,
+            "presentFps": 7.9408084199568005,
+            "time": 1790849956978
+          },
+          {
+            "appFps": 6.954194805077397,
+            "presentFps": 6.954194805077397,
+            "time": 1790849957984
+          },
+          {
+            "appFps": 7.94230629285805,
+            "presentFps": 7.94230629285805,
+            "time": 1790849958992
+          },
+          {
+            "appFps": 7.94554520593115,
+            "presentFps": 7.94554520593115,
+            "time": 1790849959998
+          },
+          {
+            "appFps": 6.948170814625384,
+            "presentFps": 6.948170814625384,
+            "time": 1790849961006
+          },
+          {
+            "appFps": 7.939932032196821,
+            "presentFps": 7.939932032196821,
+            "time": 1790849962013
+          },
+          {
+            "appFps": 6.952532281103991,
+            "presentFps": 6.952532281103991,
+            "time": 1790849963020
+          },
+          {
+            "appFps": 6.952439750157125,
+            "presentFps": 6.952439750157125,
+            "time": 1790849964027
+          },
+          {
+            "appFps": 7.946847510426512,
+            "presentFps": 7.946847510426512,
+            "time": 1790849965034
+          },
+          {
+            "appFps": 7.949360190776695,
+            "presentFps": 7.949360190776695,
+            "time": 1790849966040
+          },
+          {
+            "appFps": 6.952490849032222,
+            "presentFps": 6.952490849032222,
+            "time": 1790849967047
+          },
+          {
+            "appFps": 7.938371248648244,
+            "presentFps": 7.938371248648244,
+            "time": 1790849968055
+          },
+          {
+            "appFps": 6.948006676438872,
+            "presentFps": 6.948006676438872,
+            "time": 1790849969062
+          },
+          {
+            "appFps": 7.942183288316046,
+            "presentFps": 7.942183288316046,
+            "time": 1790849970070
+          },
+          {
+            "appFps": 6.94661526171373,
+            "presentFps": 6.94661526171373,
+            "time": 1790849971077
+          },
+          {
+            "appFps": 6.949687735637849,
+            "presentFps": 6.949687735637849,
+            "time": 1790849972084
+          },
+          {
+            "appFps": 7.94606528725622,
+            "presentFps": 7.94606528725622,
+            "time": 1790849973091
+          },
+          {
+            "appFps": 6.953272617356839,
+            "presentFps": 6.953272617356839,
+            "time": 1790849974098
+          },
+          {
+            "appFps": 7.941751225635576,
+            "presentFps": 7.941751225635576,
+            "time": 1790849975105
+          },
+          {
+            "appFps": 6.952327887674219,
+            "presentFps": 6.952327887674219,
+            "time": 1790849976112
+          },
+          {
+            "appFps": 7.950913445660526,
+            "presentFps": 7.950913445660526,
+            "time": 1790849977118
+          },
+          {
+            "appFps": 6.948392896280744,
+            "presentFps": 6.948392896280744,
+            "time": 1790849978126
+          },
+          {
+            "appFps": 6.955909273479125,
+            "presentFps": 6.955909273479125,
+            "time": 1790849979132
+          },
+          {
+            "appFps": 7.943447420434954,
+            "presentFps": 7.943447420434954,
+            "time": 1790849980139
+          },
+          {
+            "appFps": 6.9446580202367345,
+            "presentFps": 6.9446580202367345,
+            "time": 1790849981147
+          },
+          {
+            "appFps": 7.941852929590708,
+            "presentFps": 7.941852929590708,
+            "time": 1790849982154
+          },
+          {
+            "appFps": 7.944692230567681,
+            "presentFps": 7.944692230567681,
+            "time": 1790849983161
+          },
+          {
+            "appFps": 6.944838536472507,
+            "presentFps": 6.944838536472507,
+            "time": 1790849984169
+          },
+          {
+            "appFps": 6.948302544577579,
+            "presentFps": 6.948302544577579,
+            "time": 1790849985177
+          },
+          {
+            "appFps": 7.950153333613577,
+            "presentFps": 7.950153333613577,
+            "time": 1790849986183
+          },
+          {
+            "appFps": 6.944769636038513,
+            "presentFps": 6.944769636038513,
+            "time": 1790849987191
+          },
+          {
+            "appFps": 7.946104749923172,
+            "presentFps": 7.946104749923172,
+            "time": 1790849988198
+          },
+          {
+            "appFps": 6.951737561975981,
+            "presentFps": 6.951737561975981,
+            "time": 1790849989205
+          },
+          {
+            "appFps": 7.940865171156912,
+            "presentFps": 7.940865171156912,
+            "time": 1790849990212
+          },
+          {
+            "appFps": 6.956518282475388,
+            "presentFps": 6.956518282475388,
+            "time": 1790849991218
+          },
+          {
+            "appFps": 5.951527191635009,
+            "presentFps": 5.951527191635009,
+            "time": 1790849992227
+          },
+          {
+            "appFps": 6.950122446264384,
+            "presentFps": 6.950122446264384,
+            "time": 1790849993234
+          },
+          {
+            "appFps": 7.937077232821363,
+            "presentFps": 7.937077232821363,
+            "time": 1790849994242
+          },
+          {
+            "appFps": 7.944908416061348,
+            "presentFps": 7.944908416061348,
+            "time": 1790849995249
+          },
+          {
+            "appFps": 8.938742795621605,
+            "presentFps": 8.938742795621605,
+            "time": 1790849996256
+          },
+          {
+            "appFps": 8.938008653382733,
+            "presentFps": 8.938008653382733,
+            "time": 1790849997262
+          },
+          {
+            "appFps": 8.946370089859329,
+            "presentFps": 8.946370089859329,
+            "time": 1790849998268
+          },
+          {
+            "appFps": 7.942068172132017,
+            "presentFps": 7.942068172132017,
+            "time": 1790849999276
+          },
+          {
+            "appFps": 8.938446283513215,
+            "presentFps": 8.938446283513215,
+            "time": 1790850000283
+          },
+          {
+            "appFps": 7.947043287644125,
+            "presentFps": 7.947043287644125,
+            "time": 1790850001289
+          },
+          {
+            "appFps": 8.937476985996762,
+            "presentFps": 8.937476985996762,
+            "time": 1790850002296
+          },
+          {
+            "appFps": 7.9439041210492105,
+            "presentFps": 7.9439041210492105,
+            "time": 1790850003303
+          },
+          {
+            "appFps": 8.936016335832175,
+            "presentFps": 8.936016335832175,
+            "time": 1790850004311
+          },
+          {
+            "appFps": 8.931051390162803,
+            "presentFps": 8.931051390162803,
+            "time": 1790850005318
+          },
+          {
+            "appFps": 7.942504212009265,
+            "presentFps": 7.942504212009265,
+            "time": 1790850006325
+          },
+          {
+            "appFps": 7.941312115206204,
+            "presentFps": 7.941312115206204,
+            "time": 1790850007333
+          },
+          {
+            "appFps": 8.930611825300959,
+            "presentFps": 8.930611825300959,
+            "time": 1790850008341
+          },
+          {
+            "appFps": 7.946972238345194,
+            "presentFps": 7.946972238345194,
+            "time": 1790850009347
+          },
+          {
+            "appFps": 8.941677017485747,
+            "presentFps": 8.941677017485747,
+            "time": 1790850010354
+          },
+          {
+            "appFps": 7.95159071572268,
+            "presentFps": 7.95159071572268,
+            "time": 1790850011360
+          },
+          {
+            "appFps": 8.939680400465896,
+            "presentFps": 8.939680400465896,
+            "time": 1790850012367
+          },
+          {
+            "appFps": 7.944721422812215,
+            "presentFps": 7.944721422812215,
+            "time": 1790850013374
+          },
+          {
+            "appFps": 8.935325222506973,
+            "presentFps": 8.935325222506973,
+            "time": 1790850014381
+          },
+          {
+            "appFps": 7.943788166178488,
+            "presentFps": 7.943788166178488,
+            "time": 1790850015388
+          },
+          {
+            "appFps": 7.949891831784265,
+            "presentFps": 7.949891831784265,
+            "time": 1790850016394
+          }
+        ],
+        "sourceMeasurement": {
+          "category_ns": [
+            1547646200,
+            465039900,
+            1852160700,
+            172638600,
+            831372600
+          ],
+          "observer_calls": 38563799,
+          "observer_ns": 4868858000,
+          "stopped": false
+        },
+        "sr": {
+          "active": false,
+          "appliedRevision": 4,
+          "mode": 0,
+          "preset": "default",
+          "reason": "已关闭"
+        },
+        "srLiveSupported": true,
+        "srPresetSupported": true,
+        "srScaleBasis": "source_output",
+        "srScaleSupported": true,
+        "updatedAt": 1790850016394
+      },
+      "control.json": {
+        "srMode": "off",
+        "nrIntensity": 1.0,
+        "enabled": false,
+        "nrRevision": 4,
+        "srRevision": 4,
+        "nrEnabled": false,
+        "sourceTrackingStop": false,
+        "srScale": 100,
+        "revision": 4
+      }
+    },
+    "all_functions_off_applied_before_close": true,
+    "adapter_summaries": [
+      {
+        "details": {
+          "adapted_barriers": 68158,
+          "device": 5122439708880,
+          "extra_commands": 0,
+          "extra_cpu_waits": 0,
+          "extra_submissions": 0
+        },
+        "elapsed_us": 412460988,
+        "event": "sdk_transfer_access_summary",
+        "phase": 0,
+        "thread": "ThreadId(5)"
+      }
+    ],
+    "new_sdk_errors_in_game_excluded_by_log": false,
+    "active_nr_sr_fg_frames": 528,
+    "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-sdk-transfer-validation-001"
+  },
+  "current_diagnostic_host_sha256": "2f0cb412c3411692531f74fb2d7a7bef5947e1bb22f402cd056a23aff33da299"
+}

@@ -10,6 +10,7 @@ extern "C" int32_t probe_sr_options(const ProbeFGApi* api, uint32_t width,
         options.outputWidth = width; options.outputHeight = height;
         options.colorBuffersHDR = sl::eFalse;
         options.useAutoExposure = sl::eTrue;
+        options.preExposure = options.exposureScale = 1.0f;
         sl::DLSSOptimalSettings settings;
         auto r = fgFunction<PFun_slDLSSGetOptimalSettings>(api, sl::kFeatureDLSS,
             "slDLSSGetOptimalSettings")(options, settings);
@@ -94,37 +95,31 @@ extern "C" int32_t target_sr_options(const ProbeFGApi* api, uint32_t width,
         options.outputWidth = width; options.outputHeight = height;
         options.colorBuffersHDR = sl::eFalse;
         options.useAutoExposure = sl::eTrue;
-        // The requested dimensions are explicit. Select a supported dynamic range;
-        // never silently replace the slider value with a preset's optimal size.
-        bool supported = false;
-        const uint32_t modes[] = {mode, 6, 3, 2, 1};
-        for (auto candidate : modes) {
-            options.mode = static_cast<sl::DLSSMode>(candidate);
-            sl::DLSSOptimalSettings settings;
-            auto r = fgFunction<PFun_slDLSSGetOptimalSettings>(api, sl::kFeatureDLSS,
-                "slDLSSGetOptimalSettings")(options, settings);
-            if (r != sl::Result::eOk) continue;
-            if ((inputSize[0] == settings.optimalRenderWidth && inputSize[1] == settings.optimalRenderHeight) ||
-                (inputSize[0] >= settings.renderWidthMin && inputSize[0] <= settings.renderWidthMax &&
-                 inputSize[1] >= settings.renderHeightMin && inputSize[1] <= settings.renderHeightMax)) {
-                supported = true;
-                break;
-            }
-        }
-        if (!supported) return -1002;
+        options.preExposure = options.exposureScale = 1.0f;
+        // Keep the requested mode and explicit dimensions. An unsupported ratio
+        // is an error; never silently substitute another mode.
+        sl::DLSSOptimalSettings settings;
+        auto r = fgFunction<PFun_slDLSSGetOptimalSettings>(api, sl::kFeatureDLSS,
+            "slDLSSGetOptimalSettings")(options, settings);
+        if (r != sl::Result::eOk) return int32_t(r);
+        if (!((inputSize[0] == settings.optimalRenderWidth && inputSize[1] == settings.optimalRenderHeight) ||
+            (inputSize[0] >= settings.renderWidthMin && inputSize[0] <= settings.renderWidthMax &&
+             inputSize[1] >= settings.renderHeightMin && inputSize[1] <= settings.renderHeightMax))) return -1002;
         return int32_t(fgFunction<PFun_slDLSSSetOptions>(api, sl::kFeatureDLSS,
             "slDLSSSetOptions")(sl::ViewportHandle(1), options));
     } catch (int r) { return r ? r : -1001; } catch (...) { return -1001; }
 }
 extern "C" int32_t target_sr_evaluate(const ProbeFGApi* api, void* evaluate,
-    uint64_t command, uint64_t token, uint32_t reset, float motionScaleX, float motionScaleY,
+    uint64_t command, uint64_t token, uint32_t reset,
     const ProbeFGResource* inputs) noexcept {
     if (!api || !api->token || !api->constants || !api->tags || !evaluate || !command || !inputs) return -1000;
     try {
         auto* frame = reinterpret_cast<sl::FrameToken*>(token);
         if (!frame) return -1000;
         auto r = sl::Result::eOk;
-        // Present-source path: estimated UV motion or zero motion, constant depth, zero jitter.
+        if (inputs[3].format != VK_FORMAT_R16G16_SFLOAT || !inputs[3].width || !inputs[3].height ||
+            inputs[3].width != inputs[0].width || inputs[3].height != inputs[0].height) return -1000;
+        // Raw FP16 current-to-previous SR input pixels, zero depth and zero jitter.
         sl::Constants constants;
         sl::float4x4 identity;
         for (uint32_t i=0; i<4; ++i) identity.setRow(i,
@@ -132,7 +127,8 @@ extern "C" int32_t target_sr_evaluate(const ProbeFGApi* api, void* evaluate,
         constants.cameraViewToClip = constants.clipToCameraView = constants.clipToLensClip =
             constants.clipToPrevClip = constants.prevClipToClip = identity;
         constants.jitterOffset = constants.cameraPinholeOffset = {0,0};
-        constants.mvecScale = {motionScaleX,motionScaleY};
+        // Streamline normalizes pixels and converts back to NGX pixel units.
+        constants.mvecScale = {1.0f/float(inputs[3].width),1.0f/float(inputs[3].height)};
         constants.cameraPos = {0,0,0}; constants.cameraUp = {0,1,0};
         constants.cameraRight = {1,0,0}; constants.cameraFwd = {0,0,1};
         constants.cameraNear = 0.1f; constants.cameraFar = 1000.0f;

@@ -1,0 +1,2551 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-01",
+  "scope": "Opt-in native Vulkan NR emulator execution and NR-to-DLAA evidence; P1/P2 unaccepted",
+  "baseline_git_commit": "5916ea3e043eb91de1dda4c30736c8b02be81df9",
+  "hardware": {
+    "gpu": "RTX 5070 Ti Laptop",
+    "driver": "610.88",
+    "streamline": "2.12.0",
+    "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+    "validation_layer": "1.4.363.0"
+  },
+  "p1_passed": false,
+  "p2_passed": false,
+  "synthetic_depth": true,
+  "user_motion_scene_feedback": "User entered a moving scene and reported the picture looked normal; this is not temporal quality acceptance",
+  "sessions": [
+    {
+      "name": "nr-p1-native-001",
+      "local_raw_session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p1-native-001",
+      "elapsed_trace_seconds": 173.358827,
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "c2f7dd057ae7b4a77139131d4fd15c1d1f60d3cc8d4e971c776721dc930ea387",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "off",
+        "sr_preset": "default",
+        "sr_scale": null
+      },
+      "result": {
+        "nr": {
+          "clean_nr_shutdown": false,
+          "count_matches": false,
+          "evaluate_successes": 0,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 0,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 0,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 0,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_reasons": {},
+          "submissions_fenced": false,
+          "synthetic_depth": true,
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 3196
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 3196,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 3196,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 189,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": false,
+          "core_validation": true,
+          "errors": 192,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "evaluate_output_counts": {},
+      "longest_consecutive_by_output": {
+        "swapchain": 0,
+        "SR": 0
+      },
+      "control_revision_frames": {
+        "0": {
+          "frames": 3196,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 3196,
+          "intensity_values": [
+            1.0
+          ]
+        }
+      },
+      "readbacks": [],
+      "validation_error_ids": {
+        "VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710": 10,
+        "VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749": 10,
+        "VUID-vkCmdDrawIndexed-None-08877": 1,
+        "-455515022": 10,
+        "1544472022": 10,
+        "VUID-vkCmdDraw-None-09600": 10,
+        "VUID-vkDestroyBuffer-buffer-00922": 9,
+        "VUID-vkCmdEndRenderPass-commandBuffer-recording": 4,
+        "VUID-vkCmdPipelineBarrier-commandBuffer-recording": 10,
+        "VUID-vkCmdCopyBuffer-commandBuffer-recording": 3,
+        "VUID-vkCmdEndQuery-commandBuffer-recording": 6,
+        "VUID-vkEndCommandBuffer-commandBuffer-00059": 2,
+        "VUID-vkCmdBindVertexBuffers2-commandBuffer-recording": 10,
+        "VUID-vkCmdSetBlendConstants-commandBuffer-recording": 2,
+        "VUID-vkCmdSetScissor-commandBuffer-recording": 2,
+        "VUID-vkCmdSetViewport-commandBuffer-recording": 2,
+        "VUID-vkCmdBindIndexBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindPipeline-commandBuffer-recording": 10,
+        "VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording": 10,
+        "VUID-vkCmdBindDescriptorSets-commandBuffer-recording": 10,
+        "VUID-vkCmdBeginRenderPass-commandBuffer-recording": 3,
+        "VUID-vkCmdDrawIndexed-commandBuffer-recording": 10,
+        "VUID-vkCmdClearAttachments-commandBuffer-recording": 1,
+        "VUID-vkDestroyImageView-imageView-01026": 7,
+        "VUID-vkCmdDrawIndexed-None-06479": 5,
+        "VUID-vkCmdEndQuery-None-07007": 10,
+        "VUID-vkCmdEndRenderPass-None-07004": 10,
+        "1010413496": 2,
+        "VUID-vkCreateInstance-ppEnabledExtensionNames-01388": 2,
+        "VUID-vkDestroyDevice-device-05137": 1
+      },
+      "surface_dependency_errors": 2,
+      "messages_naming_dlssnr_errors": 0,
+      "original_file_digests": {
+        "target-inputs.json": {
+          "sha256": "6776b3617974ed591d01ed4b3210e655c423935a2741371b7259f1e2bbfc4aa5",
+          "bytes": 1566
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "layer.jsonl": {
+          "sha256": "afc7cedf2bc867826d04560d67aeec54af4887c026e7809bbe01fd75caf9c8cf",
+          "bytes": 4663355
+        },
+        "nr-validation.jsonl": {
+          "sha256": "4a447106f378c6f5a98cc81fb80ce138dc317dd0ff14e437671602d3303f49b8",
+          "bytes": 139178
+        },
+        "nr-validation-result.json": {
+          "sha256": "abe199994bc9c57ab79d1428eead56113ec10b1bc5c166d4c806585479e24dd8",
+          "bytes": 222
+        },
+        "target-result.json": {
+          "sha256": "11f0f15d5eca2e0835f44ea9f7d8b301e494caf6d5d31a1b9f055ed1cd67ad0f",
+          "bytes": 1740
+        },
+        "target.stderr.log": {
+          "sha256": "b392570681429fcecbe12be8090fed9b61d62ac6bb7652fd7a3d81b6f4e9da0e",
+          "bytes": 81487
+        },
+        "target.stdout.log": {
+          "sha256": "e627ea793335236c65d518377584524db86b160fe93063dcd2fa8069a3f52b77",
+          "bytes": 25877
+        },
+        "runtime/sl.log": {
+          "sha256": "2ced8eebd5dd1e59c14d3d24e3adf4720f6be00400f403e59f026fcc591954a6",
+          "bytes": 163999
+        }
+      },
+      "unreviewed_warning_sha256_counts": {
+        "9c5812734252dcbd6b4e03455993ad5a1ebd26a65c4a32ff51f064c2c8bbd776": 1,
+        "3b40308ef5df6e91935817fcf28c79a7ce166b0c0a46cd6548230add99a310e6": 1,
+        "889a20353e6c235e5eff4174cfdc498d4d41bbee7e63ee801b9e358204f189f4": 1,
+        "f5d50c8d0593863d7f3c9d864bc3933a65e45024397ab796c9f05071cd924265": 1,
+        "0af6fd98744810714d8674041ebe757122af363bd9317d23d25d84d52c885b94": 1,
+        "b9f0425ed67a72a48c877cd60ae10efada7a8e65f05c71500cfcfaab56cb0c92": 1,
+        "7fdbed22670847b3a91bf7aa1660f270a4b409ac280404cdba51e09f927741a0": 1,
+        "e2a5e0850a39227004930b3a2cf0b8fafdb1d9f51fc4b077cfb33f991c9762d3": 1,
+        "2f43a0dd7560332fa9ab845e5374ff297a7036c5b3e435fd5465d58a67da3cae": 1,
+        "9de7f3c7561436cfff8c0b6f73877c4888c7a557012c857ddf23756cb75dbf1e": 1,
+        "cfffda05c47e80f37f1fac427f9f0b9c87acc2b5519e5f9c66b0b242b2509ae0": 1,
+        "728bfe03396bb102c8b70f6613e4c48565fc0b4e8a65f43275d8347923a34320": 8,
+        "ebf985f79675a9a4edcfa78f6686792ff3316c7de01ca52b0505017d1ebbb5f1": 1,
+        "7a0f772393b77cb6fdb2a6603582c40fa501b02a675f617eb414d3e67885d7df": 1,
+        "dac9ad54fd9416b140ada4c31a2102ddf729b8f3a3899044090f97fe61793c70": 8,
+        "465cac086df812a8c6ac6e40bb95dff5114330b0c6a648a79c5194b57ed2f4f2": 1
+      }
+    },
+    {
+      "name": "nr-p1-native-002",
+      "local_raw_session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p1-native-002",
+      "elapsed_trace_seconds": 467.655408,
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "08a374b1416a8a09ca027a23b8f45ed8cdf78e2e59e9f7dfba55d2529ed56faf",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "off",
+        "sr_preset": "default",
+        "sr_scale": null
+      },
+      "result": {
+        "nr": {
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 3521,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 2439,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 0,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 112,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 3,
+          "readbacks_valid": true,
+          "reset_reasons": {
+            "SourceChanged": 3521
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 8
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 3641,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 3641,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 99,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": false,
+          "core_validation": true,
+          "errors": 100,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "evaluate_output_counts": {
+        "swapchain": 3521
+      },
+      "longest_consecutive_by_output": {
+        "swapchain": 2439,
+        "SR": 0
+      },
+      "control_revision_frames": {
+        "0": {
+          "frames": 3079,
+          "evaluated": 3072,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 7,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "1": {
+          "frames": 112,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "2": {
+          "frames": 450,
+          "evaluated": 449,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 1,
+          "intensity_values": [
+            0.0
+          ]
+        }
+      },
+      "readbacks": [
+        {
+          "capture": 0,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 1,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 2,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        }
+      ],
+      "validation_error_ids": {
+        "VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710": 10,
+        "VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749": 10,
+        "VUID-vkCmdDrawIndexed-None-08877": 1,
+        "-455515022": 10,
+        "1544472022": 10,
+        "VUID-vkCmdDraw-None-09600": 10,
+        "VUID-vkCmdEndRenderPass-commandBuffer-recording": 3,
+        "VUID-vkCmdEndQuery-commandBuffer-recording": 9,
+        "VUID-vkEndCommandBuffer-commandBuffer-00059": 3,
+        "VUID-vkDestroyBuffer-buffer-00922": 6,
+        "VUID-vkCmdDrawIndexed-None-06479": 6,
+        "VUID-vkCmdEndQuery-None-07007": 10,
+        "VUID-vkCmdEndRenderPass-None-07004": 10,
+        "VUID-vkDestroyImageView-imageView-01026": 1,
+        "VUID-vkDestroyDevice-device-05137": 1
+      },
+      "surface_dependency_errors": 0,
+      "messages_naming_dlssnr_errors": 0,
+      "original_file_digests": {
+        "target-inputs.json": {
+          "sha256": "e2a4db0a0b304f741af5d16e6fefcf40054221ecffddc76ffb348cc6e5872471",
+          "bytes": 1566
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "layer.jsonl": {
+          "sha256": "295ab6f73a5ed682bd8beb4c7971f51f73eb07fa64c7da60f59e2c2ea49a65b4",
+          "bytes": 7243091
+        },
+        "nr-validation.jsonl": {
+          "sha256": "8929155f403b9602e20fe834e5a65b59cddc4346ebc41d8582f877e243e3c7f6",
+          "bytes": 88299
+        },
+        "nr-validation-result.json": {
+          "sha256": "b764335d58491ea5009ddc6eea7c9e9cae3421e6dabab7dae4b4ebce8642e3d9",
+          "bytes": 222
+        },
+        "target-result.json": {
+          "sha256": "7334a115a4f2fd02720953294aaf2c4ea54fcf5cd5cd6118689fbd8aa773025f",
+          "bytes": 1771
+        },
+        "target.stderr.log": {
+          "sha256": "ee7bfffe04433b9130041bb198689c04f13f8171dd2b8dd7c8b64f8dd69af6fd",
+          "bytes": 75549
+        },
+        "target.stdout.log": {
+          "sha256": "4d5f890ff8d50a1f6980084519d532c009d678ed9edf64344ed488e1d80940ff",
+          "bytes": 24919
+        },
+        "runtime/sl.log": {
+          "sha256": "9b58d9c10412f78146cf63b7edfc05dcf76465a2ae1661d922a00721dd3634a5",
+          "bytes": 105733
+        },
+        "nr-controls-test.jsonl": {
+          "sha256": "c5d083f429c41574ee412084483a478c548c3eca878962a8a120983c9b5c5d18",
+          "bytes": 4358
+        }
+      },
+      "control_observations": [
+        {
+          "control": {
+            "nrRevision": 3,
+            "nrEnabled": false
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 4,
+            "nrEnabled": true
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 5,
+            "nrEnabled": false
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 6,
+            "nrEnabled": true
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 7,
+            "nrEnabled": false
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 8,
+            "nrEnabled": true
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 9,
+            "nrEnabled": false
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 10,
+            "nrEnabled": true
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 11,
+            "nrEnabled": false
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 12,
+            "nrEnabled": true
+          },
+          "matched": false,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 0.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": false,
+            "source": null,
+            "appliedRevision": 0,
+            "mode": 0
+          },
+          "fg_requested": false
+        }
+      ],
+      "unreviewed_warning_sha256_counts": {
+        "9c5812734252dcbd6b4e03455993ad5a1ebd26a65c4a32ff51f064c2c8bbd776": 1,
+        "3b40308ef5df6e91935817fcf28c79a7ce166b0c0a46cd6548230add99a310e6": 1,
+        "889a20353e6c235e5eff4174cfdc498d4d41bbee7e63ee801b9e358204f189f4": 1,
+        "f5d50c8d0593863d7f3c9d864bc3933a65e45024397ab796c9f05071cd924265": 1,
+        "0af6fd98744810714d8674041ebe757122af363bd9317d23d25d84d52c885b94": 1,
+        "b9f0425ed67a72a48c877cd60ae10efada7a8e65f05c71500cfcfaab56cb0c92": 1,
+        "7fdbed22670847b3a91bf7aa1660f270a4b409ac280404cdba51e09f927741a0": 1,
+        "e2a5e0850a39227004930b3a2cf0b8fafdb1d9f51fc4b077cfb33f991c9762d3": 1,
+        "2f43a0dd7560332fa9ab845e5374ff297a7036c5b3e435fd5465d58a67da3cae": 1,
+        "9de7f3c7561436cfff8c0b6f73877c4888c7a557012c857ddf23756cb75dbf1e": 1,
+        "cfffda05c47e80f37f1fac427f9f0b9c87acc2b5519e5f9c66b0b242b2509ae0": 1,
+        "728bfe03396bb102c8b70f6613e4c48565fc0b4e8a65f43275d8347923a34320": 8,
+        "ebf985f79675a9a4edcfa78f6686792ff3316c7de01ca52b0505017d1ebbb5f1": 1,
+        "f1f7352581581cebe3c4ed8a873d645f791bcce6018d4bf8ffa4b71b003e63c6": 1,
+        "72d5c965ada1019b0d9d12af36fe286d80b06cb1edcf857576cb1edbb6529e44": 8,
+        "f2b52ba627fd96bc61588341f90e16c964a21e1c4eab8a39fb35f3e222d5c323": 1
+      }
+    },
+    {
+      "name": "nr-p1-nr-sr-001",
+      "local_raw_session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p1-nr-sr-001",
+      "elapsed_trace_seconds": 666.564629,
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:\\game\\yuzu_game\\totk\\TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "1fa6a99af13698b32d7acfa09f10532f7783caf6afcd52a4fdc07fc9976ed3b8",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "result": {
+        "nr": {
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 5789,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 1479,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 2353,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 82,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 18,
+          "readbacks_valid": true,
+          "reset_reasons": {
+            "SourceChanged": 5789
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 24
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 5895,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 5895,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 244,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 247,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "evaluate_output_counts": {
+        "SR": 2353,
+        "swapchain": 3436
+      },
+      "longest_consecutive_by_output": {
+        "swapchain": 1479,
+        "SR": 778
+      },
+      "control_revision_frames": {
+        "0": {
+          "frames": 939,
+          "evaluated": 930,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 9,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "1": {
+          "frames": 13,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "2": {
+          "frames": 15,
+          "evaluated": 15,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "3": {
+          "frames": 17,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "4": {
+          "frames": 16,
+          "evaluated": 16,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "5": {
+          "frames": 18,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "6": {
+          "frames": 16,
+          "evaluated": 16,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "7": {
+          "frames": 17,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "8": {
+          "frames": 17,
+          "evaluated": 17,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "9": {
+          "frames": 17,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "10": {
+          "frames": 581,
+          "evaluated": 578,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 3,
+          "intensity_values": [
+            0.5
+          ]
+        },
+        "11": {
+          "frames": 757,
+          "evaluated": 754,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 3,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "12": {
+          "frames": 1484,
+          "evaluated": 1481,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 3,
+          "intensity_values": [
+            0.0
+          ]
+        },
+        "13": {
+          "frames": 1204,
+          "evaluated": 1201,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 3,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "14": {
+          "frames": 784,
+          "evaluated": 781,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 3,
+          "intensity_values": [
+            1.0
+          ]
+        }
+      },
+      "readbacks": [
+        {
+          "capture": 0,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-0.ppm",
+            "nr-output-1920-1080-0.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 1,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-1.ppm",
+            "nr-output-1920-1080-1.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 2,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-2.ppm",
+            "nr-output-1920-1080-2.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 3,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-3.ppm",
+            "nr-output-1920-1080-3.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.007088838272475074,
+          "output_sha256": "9c0248f2bea06b615d80bf35247399c279b081cfb0f2c2086ee180ffa95d41d3",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 4,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-4.ppm",
+            "nr-output-1920-1080-4.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.007120081810259122,
+          "output_sha256": "773d8ac89fa0dcddc76bcc2553e0ce55effb9da18e65ff29e52213df3ea562ae",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 5,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-5.ppm",
+            "nr-output-1920-1080-5.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.007020612592244072,
+          "output_sha256": "6d671efd99e4132e09cf877b0824ca0b45b6eefc9b255e43fb77c228638fb297",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 6,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-6.ppm",
+            "nr-output-1920-1080-6.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.02280753714395371,
+          "output_sha256": "f3a0bf16740dfb58f1960750acb1260ba14233de7ab517f9fb0389d220409ba9",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 7,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-7.ppm",
+            "nr-output-1920-1080-7.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.022432468441396916,
+          "output_sha256": "f34e4ca4485d032eb5798d79a131a44c44e0645aaeda491672ebff76ce54f28f",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 8,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-8.ppm",
+            "nr-output-1920-1080-8.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.022348807869014838,
+          "output_sha256": "e7f1cf4a8b93a27b6d6d9809e5f4a5471ee2c1cf12f3627b57aba7cc0048a011",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 9,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-9.ppm",
+            "nr-output-1920-1080-9.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.0,
+          "mean_absolute_input_difference": 0.0,
+          "output_sha256": "fdfa8ebcb94e54050646d91ac8c0d403c999c85c6bfcd1271a193f7d92b74239",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 10,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-10.ppm",
+            "nr-output-1920-1080-10.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.0,
+          "mean_absolute_input_difference": 0.0,
+          "output_sha256": "ea568c727266396d57856a8a55eaa917f54a77fd0c286861265d79335eed09cd",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 11,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-11.ppm",
+            "nr-output-1920-1080-11.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.0,
+          "mean_absolute_input_difference": 0.0,
+          "output_sha256": "01b22d80997d7cad7b5cf176a963a7452c6d345206cdcdfd0a9ec9b378928029",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 12,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-12.ppm",
+            "nr-output-1920-1080-12.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.024087326596828787,
+          "output_sha256": "5a64101978b0d7f4e3d41ea8f350cec95c5080f0ca489744488959c21e778a8a",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 13,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-13.ppm",
+            "nr-output-1920-1080-13.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.02405697909366328,
+          "output_sha256": "e2866c0f7be034315909b94b162559fb955db5f5beb2265fa22c73777bfba026",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 14,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-14.ppm",
+            "nr-output-1920-1080-14.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.02377919271572516,
+          "output_sha256": "ae4e57f031823ab34b44ad5922fd95fb0d680c7673683006f845e68a91795f9d",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 15,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-15.ppm",
+            "nr-output-1920-1080-15.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.014729993508260606,
+          "output_sha256": "5bf9b12e87703e1e0a952cfb296a5e5d0c992a9a968b3873c93fc53c09c8e24a",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 16,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-16.ppm",
+            "nr-output-1920-1080-16.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.014986785667694036,
+          "output_sha256": "2044eeb6b6e4266c95fda83016a8e64e0d8f1203160a57ba95e674266d854556",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 17,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-17.ppm",
+            "nr-output-1920-1080-17.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.01486028572220361,
+          "output_sha256": "c244c4954e194b0cd4f9b76093e255ea591552935c7a997005354b9eb9d5ae53",
+          "sentinel_pixels": 0
+        }
+      ],
+      "validation_error_ids": {
+        "VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710": 10,
+        "VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749": 10,
+        "VUID-vkCmdDrawIndexed-None-08877": 1,
+        "-455515022": 10,
+        "1544472022": 10,
+        "VUID-vkCmdDraw-None-09600": 10,
+        "-1604639890": 1,
+        "VUID-vkCmdEndRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdEndQuery-commandBuffer-recording": 10,
+        "VUID-vkEndCommandBuffer-commandBuffer-00059": 6,
+        "VUID-vkDestroyBuffer-buffer-00922": 10,
+        "VUID-vkCmdPipelineBarrier-commandBuffer-recording": 10,
+        "VUID-vkCmdCopyBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindVertexBuffers2-commandBuffer-recording": 10,
+        "VUID-vkCmdSetBlendConstants-commandBuffer-recording": 6,
+        "VUID-vkCmdSetScissor-commandBuffer-recording": 9,
+        "VUID-vkCmdSetViewport-commandBuffer-recording": 9,
+        "VUID-vkCmdBindIndexBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindPipeline-commandBuffer-recording": 10,
+        "VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording": 10,
+        "VUID-vkCmdBindDescriptorSets-commandBuffer-recording": 10,
+        "VUID-vkCmdBeginRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdDrawIndexed-commandBuffer-recording": 10,
+        "VUID-vkCmdClearAttachments-commandBuffer-recording": 4,
+        "VUID-vkCmdCopyImageToBuffer-commandBuffer-recording": 1,
+        "VUID-vkCmdUpdateBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdDrawIndexed-None-06479": 5,
+        "VUID-vkCmdCopyImage-commandBuffer-recording": 1,
+        "VUID-vkCmdEndQuery-None-07007": 10,
+        "VUID-vkCmdEndRenderPass-None-07004": 10,
+        "VUID-vkDestroyImageView-imageView-01026": 1,
+        "VUID-vkCreateInstance-ppEnabledExtensionNames-01388": 2,
+        "VUID-vkDestroyDevice-device-05137": 1
+      },
+      "surface_dependency_errors": 2,
+      "messages_naming_dlssnr_errors": 0,
+      "original_file_digests": {
+        "target-inputs.json": {
+          "sha256": "50cef62089b8daa3b5af8d3ae0ae2f59ddb16e5c8260afcfc605e80bdc0828bf",
+          "bytes": 1603
+        },
+        "target-command.json": {
+          "sha256": "8b74d966958d88307be17dad3cda625e97901efbfa7dc8960ca204c9d481acb0",
+          "bytes": 171
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "layer.jsonl": {
+          "sha256": "21ae67fc1bd7cd5a57270c67be0ccc7825e0603115e25d94ca635058ded9c5e7",
+          "bytes": 13675133
+        },
+        "nr-validation.jsonl": {
+          "sha256": "616dfbf5ac10fc87d595184ed306ad0869e9ba5b4d06039c8ea3d4605e18a951",
+          "bytes": 171872
+        },
+        "nr-validation-result.json": {
+          "sha256": "e575c7cc2b8324b35d5bcb02f252c066e387bffe49665a6dbf0fd7c9dc7b4cce",
+          "bytes": 242
+        },
+        "target-result.json": {
+          "sha256": "5e5a6790991b2dd8e6d0e71adca7276e9a9312be2792db1bd4ae2f4c4373e3d0",
+          "bytes": 1775
+        },
+        "target.stderr.log": {
+          "sha256": "22a34303de2677352858a955f91095147cb7fcfb8e2535af9452d9502f2bbc38",
+          "bytes": 97257
+        },
+        "target.stdout.log": {
+          "sha256": "b3d4096557f3a7c497c415377318875802e026cc8272a924a41446c8ea79487d",
+          "bytes": 25411
+        },
+        "runtime/sl.log": {
+          "sha256": "03bd3aed4c1af6458e89b19e2aa3081530c62d7150d5f68b8f0e43437d284b20",
+          "bytes": 200981
+        },
+        "nr-controls-test.jsonl": {
+          "sha256": "5f6d733a0497f140e21661a3cf92113e60358c5c95229775b1fdd496bcf8c9a5",
+          "bytes": 6037
+        },
+        "nr-motion-controls.jsonl": {
+          "sha256": "b1d81245bcf9e7468ce61dd626e1457cdf1b1db0b313a0f0c3e3c0783e2b5b59",
+          "bytes": 945
+        }
+      },
+      "control_observations": [
+        {
+          "control": {
+            "nrRevision": 1,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 1,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 2,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 3,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 3,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 4,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 4,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 5,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 5,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 6,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 6,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 7,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 7,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 8,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 8,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 9,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 9,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrRevision": 10,
+            "nrEnabled": true
+          },
+          "matched": false,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 9,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        }
+      ],
+      "unreviewed_warning_sha256_counts": {
+        "9c5812734252dcbd6b4e03455993ad5a1ebd26a65c4a32ff51f064c2c8bbd776": 1,
+        "3b40308ef5df6e91935817fcf28c79a7ce166b0c0a46cd6548230add99a310e6": 1,
+        "889a20353e6c235e5eff4174cfdc498d4d41bbee7e63ee801b9e358204f189f4": 1,
+        "f5d50c8d0593863d7f3c9d864bc3933a65e45024397ab796c9f05071cd924265": 1,
+        "0af6fd98744810714d8674041ebe757122af363bd9317d23d25d84d52c885b94": 1,
+        "b9f0425ed67a72a48c877cd60ae10efada7a8e65f05c71500cfcfaab56cb0c92": 1,
+        "7fdbed22670847b3a91bf7aa1660f270a4b409ac280404cdba51e09f927741a0": 1,
+        "e2a5e0850a39227004930b3a2cf0b8fafdb1d9f51fc4b077cfb33f991c9762d3": 1,
+        "2f43a0dd7560332fa9ab845e5374ff297a7036c5b3e435fd5465d58a67da3cae": 1,
+        "9de7f3c7561436cfff8c0b6f73877c4888c7a557012c857ddf23756cb75dbf1e": 1,
+        "cfffda05c47e80f37f1fac427f9f0b9c87acc2b5519e5f9c66b0b242b2509ae0": 1,
+        "728bfe03396bb102c8b70f6613e4c48565fc0b4e8a65f43275d8347923a34320": 8,
+        "ebf985f79675a9a4edcfa78f6686792ff3316c7de01ca52b0505017d1ebbb5f1": 1,
+        "1665263b326ce7951935fdcd3bf37c6048c352fad1a2d55088fe9e92781711c6": 1,
+        "dce8a7b47da18111edeeddb43353bef9e7b793ab79dc5c7f3678d588c865c38a": 8,
+        "9aa014c1fe1e0598e6a400fc4164a6bac15f7cc23fdd0dd0b670101a2f7edf1f": 1
+      }
+    },
+    {
+      "name": "nr-p1-final-001",
+      "local_raw_session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p1-final-001",
+      "elapsed_trace_seconds": 162.289057,
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:\\game\\yuzu_game\\totk\\TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "d8765f94d934a5064237e56d2b232b7ce181a5187bfc4c144f29549baba3db4b",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "result": {
+        "nr": {
+          "clean_nr_shutdown": false,
+          "count_matches": true,
+          "evaluate_successes": 1789,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 1239,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 1788,
+          "nr_to_sr_handoff_valid": false,
+          "off_frames": 35,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 3,
+          "readbacks_valid": true,
+          "reset_reasons": {
+            "SourceChanged": 1789
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 8
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": null,
+        "present_chain_error": "missing clean vkDestroyDevice",
+        "sdk_error_lines": 240,
+        "session_verified": false,
+        "target_exit": {
+          "code": -532462766,
+          "fg_requested": false,
+          "success": false
+        },
+        "validation": {
+          "complete": false,
+          "core_validation": true,
+          "errors": 240,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": false,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "evaluate_output_counts": {
+        "SR": 1789
+      },
+      "longest_consecutive_by_output": {
+        "swapchain": 0,
+        "SR": 1239
+      },
+      "control_revision_frames": {
+        "0": {
+          "frames": 1436,
+          "evaluated": 1428,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 8,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "1": {
+          "frames": 4,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "2": {
+          "frames": 8,
+          "evaluated": 8,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "3": {
+          "frames": 10,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "4": {
+          "frames": 6,
+          "evaluated": 6,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "5": {
+          "frames": 6,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "6": {
+          "frames": 8,
+          "evaluated": 8,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "7": {
+          "frames": 6,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "8": {
+          "frames": 7,
+          "evaluated": 7,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "9": {
+          "frames": 9,
+          "evaluated": 0,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        },
+        "10": {
+          "frames": 332,
+          "evaluated": 332,
+          "longest_consecutive_evaluations": 0,
+          "pauses": 0,
+          "intensity_values": [
+            1.0
+          ]
+        }
+      },
+      "readbacks": [
+        {
+          "capture": 0,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-0.ppm",
+            "nr-output-1920-1080-0.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 1,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-1.ppm",
+            "nr-output-1920-1080-1.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 2,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-2.ppm",
+            "nr-output-1920-1080-2.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        }
+      ],
+      "validation_error_ids": {
+        "VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710": 10,
+        "VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749": 10,
+        "VUID-vkCmdDrawIndexed-None-08877": 1,
+        "-455515022": 10,
+        "1544472022": 10,
+        "VUID-vkCmdDraw-None-09600": 10,
+        "VUID-vkDestroyBuffer-buffer-00922": 10,
+        "VUID-vkCmdPipelineBarrier-commandBuffer-recording": 10,
+        "VUID-vkCmdCopyBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindVertexBuffers2-commandBuffer-recording": 10,
+        "VUID-vkCmdSetBlendConstants-commandBuffer-recording": 4,
+        "VUID-vkCmdSetScissor-commandBuffer-recording": 9,
+        "VUID-vkCmdSetViewport-commandBuffer-recording": 9,
+        "VUID-vkCmdBindIndexBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindPipeline-commandBuffer-recording": 10,
+        "VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording": 10,
+        "VUID-vkCmdBindDescriptorSets-commandBuffer-recording": 10,
+        "VUID-vkCmdBeginRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdDrawIndexed-commandBuffer-recording": 10,
+        "VUID-vkCmdEndRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdUpdateBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdEndQuery-commandBuffer-recording": 10,
+        "VUID-vkEndCommandBuffer-commandBuffer-00059": 4,
+        "VUID-vkCmdCopyImageToBuffer-commandBuffer-recording": 1,
+        "VUID-vkCmdClearAttachments-commandBuffer-recording": 1,
+        "VUID-vkCmdDrawIndexed-None-06479": 10,
+        "VUID-vkCmdEndQuery-None-07007": 10,
+        "VUID-vkCmdEndRenderPass-None-07004": 10,
+        "VUID-vkDestroyImageView-imageView-01026": 1
+      },
+      "surface_dependency_errors": 0,
+      "messages_naming_dlssnr_errors": 0,
+      "original_file_digests": {
+        "target-inputs.json": {
+          "sha256": "291fe2ec179d8683e3ec5fc73b3954acb40f4209d2823bc077579904195503e8",
+          "bytes": 1603
+        },
+        "target-command.json": {
+          "sha256": "8b74d966958d88307be17dad3cda625e97901efbfa7dc8960ca204c9d481acb0",
+          "bytes": 171
+        },
+        "target-exit.json": {
+          "sha256": "8c13a51652716c7bca63026a69622570264b7e5089f41381d9b0735655b7e782",
+          "bytes": 70
+        },
+        "layer.jsonl": {
+          "sha256": "527ecee93fbead413962bab51f01e30993f35f5ea1d88be5ce5fca8667bee64e",
+          "bytes": 5291849
+        },
+        "nr-validation.jsonl": {
+          "sha256": "9cc5476deafdacb922318f1c93a27d25c5a5592655c180ff59fe91b488d64a92",
+          "bytes": 171857
+        },
+        "nr-validation-result.json": {
+          "sha256": "ca0dfd1f600161707815ebca4d81ce035c8d6ab5288feb36d81b8220a5ce50db",
+          "bytes": 237
+        },
+        "target-result.json": {
+          "sha256": "1a1b17e7c3fde948d8ab3b9ad78e903fd3182860ae2ba7e796806deff0d92893",
+          "bytes": 1298
+        },
+        "target.stderr.log": {
+          "sha256": "85a031575202929ba8df59b3e1553e8c1476ad595657921fa7ead7ec86b05606",
+          "bytes": 91532
+        },
+        "target.stdout.log": {
+          "sha256": "ce7f875434430c0a78cd764ad01bc0e0a82cb36f8eb6e7f2cc68b90f3a7db0f8",
+          "bytes": 26424
+        },
+        "runtime/sl.log": {
+          "sha256": "7fcab702cd3b128ed2de4ff8f2aefd6dd1f29be60770abb40e587cf061da4c7c",
+          "bytes": 194653
+        },
+        "nr-controls-test.jsonl": {
+          "sha256": "8a7c4581ca012d5cd5d269c7736dc8dfe54f2fd951ba8312532a9947f7bab8ac",
+          "bytes": 6523
+        }
+      },
+      "control_observations": [
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 1,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 1,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 2,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 2,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "nr_output",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 3,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 3,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 4,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 4,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "nr_output",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 5,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 5,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 6,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 6,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "nr_output",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 7,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 7,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 8,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 8,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "nr_output",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 9,
+            "nrEnabled": false
+          },
+          "matched": true,
+          "nr": {
+            "requested": false,
+            "active": false,
+            "appliedRevision": 9,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "disabled"
+          },
+          "sr": {
+            "active": true,
+            "source": "native_source",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        },
+        {
+          "control": {
+            "nrIntensity": 1.0,
+            "nrRevision": 10,
+            "nrEnabled": true
+          },
+          "matched": true,
+          "nr": {
+            "requested": true,
+            "active": true,
+            "appliedRevision": 10,
+            "intensity": 1.0,
+            "motionValid": true,
+            "reason": "active"
+          },
+          "sr": {
+            "active": true,
+            "source": "nr_output",
+            "appliedRevision": 0,
+            "mode": 6
+          },
+          "fg_requested": false
+        }
+      ],
+      "managed_exit_exception": "Unhandled exception. System.ObjectDisposedException: Cannot access a disposed object.\nObject name: 'Microsoft.Win32.SafeHandles.SafeWaitHandle'.\n   at System.Runtime.InteropServices.SafeHandle.DangerousAddRef(Boolean& success)\n   at Interop.Kernel32.SetEvent(SafeWaitHandle handle)\n   at System.Threading.EventWaitHandle.Set()\n   at Ryujinx.Ava.Systems.AppHost.<RenderLoop>b__125_1() in /workspace/projects/Ryubing/src/Ryujinx/Systems/AppHost.cs:line 1177\n   at Ryujinx.Ava.Systems.AppHost.<RenderLoop>b__125_1() in /workspace/projects/Ryubing/src/Ryujinx/Systems/AppHost.cs:line 1131\n   at System.Threading.Thread.StartCallback()\n",
+      "unreviewed_warning_sha256_counts": {
+        "9c5812734252dcbd6b4e03455993ad5a1ebd26a65c4a32ff51f064c2c8bbd776": 1,
+        "3b40308ef5df6e91935817fcf28c79a7ce166b0c0a46cd6548230add99a310e6": 1,
+        "889a20353e6c235e5eff4174cfdc498d4d41bbee7e63ee801b9e358204f189f4": 1,
+        "f5d50c8d0593863d7f3c9d864bc3933a65e45024397ab796c9f05071cd924265": 1,
+        "0af6fd98744810714d8674041ebe757122af363bd9317d23d25d84d52c885b94": 1,
+        "b9f0425ed67a72a48c877cd60ae10efada7a8e65f05c71500cfcfaab56cb0c92": 1,
+        "7fdbed22670847b3a91bf7aa1660f270a4b409ac280404cdba51e09f927741a0": 1,
+        "e2a5e0850a39227004930b3a2cf0b8fafdb1d9f51fc4b077cfb33f991c9762d3": 1,
+        "2f43a0dd7560332fa9ab845e5374ff297a7036c5b3e435fd5465d58a67da3cae": 1,
+        "9de7f3c7561436cfff8c0b6f73877c4888c7a557012c857ddf23756cb75dbf1e": 1,
+        "cfffda05c47e80f37f1fac427f9f0b9c87acc2b5519e5f9c66b0b242b2509ae0": 1,
+        "728bfe03396bb102c8b70f6613e4c48565fc0b4e8a65f43275d8347923a34320": 8,
+        "ebf985f79675a9a4edcfa78f6686792ff3316c7de01ca52b0505017d1ebbb5f1": 1,
+        "65f016967f4bbf1c62cbf36185ddc1991ced54fe61bdb6e41acbd457c77c5127": 1,
+        "ebf382f983f0f3fa520205dffdb3a79fb378d6fbcc4137ad8f958246a7cbe7e5": 8,
+        "846ed16b144cdcb74dc829fd57732ee4ba3e3726d823647dc636b6892b13abd3": 1
+      }
+    }
+  ],
+  "verification": {
+    "tests_passed": 100,
+    "dedicated_hardware_test_ignored": 1,
+    "cargo_fmt": true,
+    "main_app_host_check": "passed without warnings",
+    "main_app_windows_msvc_check": "passed without warnings",
+    "crate_all_features_all_targets_host_check": "passed without warnings",
+    "crate_all_features_all_targets_windows_msvc_check": "passed without warnings",
+    "crate_sdk_bridge_all_targets_check": "passed without warnings",
+    "crate_nr_diagnostics_all_targets_check": "passed without warnings"
+  },
+  "remaining_work": [
+    "Strict core and synchronization validation remains failing; baseline attribution not yet proven",
+    "Conservative NR resets on every physical source image rotation; establish logical producer/lifetime identity before relaxing",
+    "Managed AppHost SafeWaitHandle disposal exception on final window close; missing clean resource retirement",
+    "Resize, minimize, pause/recovery and real depth acceptance",
+    "All active FG combinations, safe-fallback GPU evidence and independent GPU/performance sampling"
+  ],
+  "final_rust_source_sha256": {
+    "src-tauri\\crates\\streamline-fg\\src\\launcher.rs": "ea7119746ccbe51aa8401d769587945445d30d797242b87c93c0f8e69bb1a7a9",
+    "src-tauri\\crates\\streamline-fg\\src\\lib.rs": "86a1bbd55c90b3e7737839fb7e9f16acdf1be85bce05d10e8b1fb807e8b7fc9f",
+    "src-tauri\\crates\\streamline-fg\\src\\live.rs": "229311dcb2df31788cd37b6fb2dae5a343266def35524bf4dad0d5cf75733c0b",
+    "src-tauri\\crates\\streamline-fg\\src\\main.rs": "e362d27461c2da0f616c59b0e6b4d603178142bc48cb2b28434703cbe8630ae7",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_abi.rs": "18de38fb05480d7e31218c31d6d043a994abfd516f91e821ba5169a029099e84",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_api.rs": "505f858d94eba28f2e63de74b9279b75ff280e2d083606a588448f10a08fecfd",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_history.rs": "b21f3d7ac9feebb81a038a59cdc4e59468d1ab81a5646b0a5dd2d97cb68d8115",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_layout.rs": "c162927ec605377905129645a31adb8790995739d602ae5ac89209abb85b4705",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_package.rs": "757ecca683ed8e542232382023b7bdde1859ebf09ee5c91f0e60a0ec5d1cc8d0",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_runtime.rs": "a1daa24a6cda5270487f10fbab10196be41035cbc7993d67b92fb50ca5f63506",
+    "src-tauri\\crates\\streamline-fg\\src\\nr_validation.rs": "21315590887e9609bb2d7d16628fcbb9131852ef3773d9b57e1529d8298cc9ef",
+    "src-tauri\\crates\\streamline-fg\\src\\session_verify.rs": "ee975279147d7406898828e57c9c62a2b7dca75b475695510c03de2c6cd91449",
+    "src-tauri\\crates\\streamline-fg\\src\\source_auto.rs": "b937a6fde7ff22d67295e9e01bdc9ed22e54535a064fbc4a44a31128a09765b6",
+    "src-tauri\\crates\\streamline-fg\\src\\source_model.rs": "aa472e619c93076b20666666cc98e402ce84ccaf1f081dfbeaa04e3af06dca94",
+    "src-tauri\\crates\\streamline-fg\\src\\target_device_plan.rs": "0ab3d1f03cae112f49c09d675143e58416cfe1fbcd206ba501500b2bb4d1bff8",
+    "src-tauri\\crates\\streamline-fg\\src\\target_fg.rs": "2acc83dd81eaf6eda6c8cb5332959e58394f6826ecf4113073a668b21614956e",
+    "src-tauri\\crates\\streamline-fg\\src\\target_nr.rs": "e3f680dd1f8d0e4824494c84a2a003828c4834d1c36607afd1cebbff3ad13aa3",
+    "src-tauri\\crates\\streamline-fg\\src\\target_runtime.rs": "bc17c573dbda80a45495b2f8c9e162ee5fdc89760aa6d3adbd6ed51c88d17c2e",
+    "src-tauri\\crates\\streamline-fg\\src\\target_sr.rs": "58532d47f9895955b2e44a265a7108ab15983e131d413405fa91d4a5089fae6f",
+    "src-tauri\\crates\\streamline-fg\\src\\trace.rs": "1e3772013981a33fc5b67a11141b95ef804bc6da7ae43ec3cfd606348d76a13b"
+  },
+  "unreviewed_warning_inventory": {
+    "9c5812734252dcbd6b4e03455993ad5a1ebd26a65c4a32ff51f064c2c8bbd776": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 1 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "3b40308ef5df6e91935817fcf28c79a7ce166b0c0a46cd6548230add99a310e6": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 2 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "889a20353e6c235e5eff4174cfdc498d4d41bbee7e63ee801b9e358204f189f4": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 3 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "f5d50c8d0593863d7f3c9d864bc3933a65e45024397ab796c9f05071cd924265": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 4 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "0af6fd98744810714d8674041ebe757122af363bd9317d23d25d84d52c885b94": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 5 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "b9f0425ed67a72a48c877cd60ae10efada7a8e65f05c71500cfcfaab56cb0c92": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 6 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "7fdbed22670847b3a91bf7aa1660f270a4b409ac280404cdba51e09f927741a0": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 7 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "e2a5e0850a39227004930b3a2cf0b8fafdb1d9f51fc4b077cfb33f991c9762d3": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 8 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "2f43a0dd7560332fa9ab845e5374ff297a7036c5b3e435fd5465d58a67da3cae": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 9 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "9de7f3c7561436cfff8c0b6f73877c4888c7a557012c857ddf23756cb75dbf1e": {
+      "severity": 256,
+      "type": 4,
+      "id_number": -937765618,
+      "message": "(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).\nvkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 10 not consumed by vertex shader.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "cfffda05c47e80f37f1fac427f9f0b9c87acc2b5519e5f9c66b0b242b2509ae0": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1744492148,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 2], but there is no VkSubpassDescription::pColorAttachments[2] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "728bfe03396bb102c8b70f6613e4c48565fc0b4e8a65f43275d8347923a34320": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1744492148,
+      "message": "vkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 0], but there is no VkSubpassDescription::pColorAttachments[0] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 8,
+        "nr-p1-native-002": 8,
+        "nr-p1-nr-sr-001": 8,
+        "nr-p1-final-001": 8
+      }
+    },
+    "ebf985f79675a9a4edcfa78f6686792ff3316c7de01ca52b0505017d1ebbb5f1": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1744492148,
+      "message": "(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).\nvkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 0], but there is no VkSubpassDescription::pColorAttachments[0] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1,
+        "nr-p1-native-002": 1,
+        "nr-p1-nr-sr-001": 1,
+        "nr-p1-final-001": 1
+      }
+    },
+    "7a0f772393b77cb6fdb2a6603582c40fa501b02a675f617eb414d3e67885d7df": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x34c600000034c6) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1
+      }
+    },
+    "dac9ad54fd9416b140ada4c31a2102ddf729b8f3a3899044090f97fe61793c70": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x34dc00000034dc) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 8
+      }
+    },
+    "465cac086df812a8c6ac6e40bb95dff5114330b0c6a648a79c5194b57ed2f4f2": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).\nvkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x34dc00000034dc) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-001": 1
+      }
+    },
+    "f1f7352581581cebe3c4ed8a873d645f791bcce6018d4bf8ffa4b71b003e63c6": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x35500000003550) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-002": 1
+      }
+    },
+    "72d5c965ada1019b0d9d12af36fe286d80b06cb1edcf857576cb1edbb6529e44": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x35660000003566) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-002": 8
+      }
+    },
+    "f2b52ba627fd96bc61588341f90e16c964a21e1c4eab8a39fb35f3e222d5c323": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).\nvkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x35660000003566) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-native-002": 1
+      }
+    },
+    "1665263b326ce7951935fdcd3bf37c6048c352fad1a2d55088fe9e92781711c6": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x36a900000036a9) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-nr-sr-001": 1
+      }
+    },
+    "dce8a7b47da18111edeeddb43353bef9e7b793ab79dc5c7f3678d588c865c38a": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x36be00000036be) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-nr-sr-001": 8
+      }
+    },
+    "9aa014c1fe1e0598e6a400fc4164a6bac15f7cc23fdd0dd0b670101a2f7edf1f": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).\nvkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x36be00000036be) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-nr-sr-001": 1
+      }
+    },
+    "65f016967f4bbf1c62cbf36185ddc1991ced54fe61bdb6e41acbd457c77c5127": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x368f000000368f) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-final-001": 1
+      }
+    },
+    "ebf382f983f0f3fa520205dffdb3a79fb378d6fbcc4137ad8f958246a7cbe7e5": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x36a500000036a5) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-final-001": 8
+      }
+    },
+    "846ed16b144cdcb74dc829fd57732ee4ba3e3726d823647dc636b6892b13abd3": {
+      "severity": 256,
+      "type": 2,
+      "id_number": -1693624763,
+      "message": "(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).\nvkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x36a500000036a5) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+      "review": "unreviewed; remains blocking",
+      "session_occurrences": {
+        "nr-p1-final-001": 1
+      }
+    }
+  },
+  "validation_message_count_note": "Counts are messages emitted by VVL; its default duplicate-message limit does not count every repeated occurrence. No acceptance is inferred from matching baseline categories."
+}

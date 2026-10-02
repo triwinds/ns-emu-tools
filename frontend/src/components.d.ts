@@ -13,6 +13,7 @@ declare module 'vue' {
     EmulatorRunningDialog: typeof import('./components/EmulatorRunningDialog.vue')['default']
     FaqGroup: typeof import('./components/FaqGroup.vue')['default']
     MarkdownContentBox: typeof import('./components/MarkdownContentBox.vue')['default']
+    NativeNrControls: typeof import('./components/NativeNrControls.vue')['default']
     NewVersionDialog: typeof import('./components/NewVersionDialog.vue')['default']
     OtherLinkItem: typeof import('./components/OtherLinkItem.vue')['default']
     ProgressDialog: typeof import('./components/ProgressDialog.vue')['default']

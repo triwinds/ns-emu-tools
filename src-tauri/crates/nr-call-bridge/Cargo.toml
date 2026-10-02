@@ -1,0 +1,17 @@
+[package]
+name = "nr-call-bridge"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0"
+
+[workspace]
+
+[lib]
+name = "nvngx"
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true

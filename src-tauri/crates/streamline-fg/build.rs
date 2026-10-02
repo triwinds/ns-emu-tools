@@ -2,6 +2,12 @@ use sha2::{Digest, Sha256};
 use std::{env, fs, path::PathBuf};
 
 fn main() {
+    if (env::var_os("CARGO_FEATURE_NR_DIAGNOSTICS").is_some()
+        || env::var_os("CARGO_FEATURE_NATIVE_NR").is_some())
+        && env::var("TARGET").unwrap() == "x86_64-pc-windows-msvc"
+    {
+        nr_sdk();
+    }
     println!("cargo:rerun-if-changed=shaders/motion.json");
     let shaders: serde_json::Value =
         serde_json::from_str(include_str!("shaders/motion.json")).unwrap();
@@ -71,6 +77,29 @@ fn main() {
         fs::create_dir_all(dest.parent().unwrap()).unwrap();
         fs::write(dest, normalized).unwrap();
     }
+    let fg_pause_abi = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("fg-pause-abi.cpp");
+    fs::write(
+        &fg_pause_abi,
+        r#"
+#include <cstddef>
+#include "sl_dlss_g.h"
+#include "sl_reflex.h"
+static_assert(sizeof(sl::BaseStructure) == 32);
+static_assert(sizeof(sl::ViewportHandle) == 40);
+static_assert(sizeof(sl::DLSSGOptions) == 120);
+static_assert(offsetof(sl::DLSSGOptions, mode) == 32);
+static_assert(offsetof(sl::DLSSGOptions, flags) == 40);
+static_assert(offsetof(sl::DLSSGOptions, onErrorCallback) == 96);
+static_assert(offsetof(sl::DLSSGOptions, queueParallelismMode) == 108);
+static_assert(offsetof(sl::DLSSGOptions, dynamicTargetFrameRate) == 116);
+static_assert(uint32_t(sl::DLSSGFlags::eRetainResourcesWhenOff) == 8);
+static_assert(sl::kFeatureReflex == 3);
+static_assert(sizeof(sl::ReflexOptions) == 48);
+static_assert(offsetof(sl::ReflexOptions, virtualKey) == 42);
+static_assert(offsetof(sl::ReflexOptions, idThread) == 44);
+"#,
+    )
+    .unwrap();
     cc::Build::new()
         .cpp(true)
         .std("c++17")
@@ -79,6 +108,32 @@ fn main() {
         .include(frozen)
         .include(vk_frozen)
         .file("bridge/query.cpp")
+        .file(fg_pause_abi)
         .warnings_into_errors(true)
         .compile("streamline_query_bridge");
+}
+
+fn nr_sdk() {
+    println!("cargo:rerun-if-env-changed=NGX_SDK_DIR");
+    println!("cargo:rerun-if-changed=sdk/nr-contract.json");
+    let root = env::var_os("NGX_SDK_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("../../target/streamline-sdk-v2.12.0/external/ngx-sdk"));
+    let contract: serde_json::Value =
+        serde_json::from_str(include_str!("sdk/nr-contract.json")).unwrap();
+    for artifact in contract["artifacts"].as_array().unwrap() {
+        let path = root.join(artifact["path"].as_str().unwrap());
+        println!("cargo:rerun-if-changed={}", path.display());
+        let bytes = fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        assert_eq!(
+            format!("{:x}", Sha256::digest(bytes)),
+            artifact["sha256"].as_str().unwrap(),
+            "NR SDK contract mismatch: {}",
+            path.display()
+        );
+    }
+    println!(
+        "cargo:rustc-link-search=native={}",
+        root.join("lib/Windows_x86_64").display()
+    );
 }

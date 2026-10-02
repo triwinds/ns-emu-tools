@@ -140,9 +140,30 @@ pub(super) unsafe fn run(
     let live = *layer.get::<unsafe extern "system" fn() -> u64>(b"probeLiveObjects\0")?;
     let route_requested = std::env::var("NS_STREAMLINE_PROBE_SDK_ROUTE").as_deref() == Ok("1");
     let capture_requested = std::env::var("NS_STREAMLINE_PROBE_IDLE_CAPTURE").as_deref() == Ok("1");
+    let validation_requested = std::env::var("NS_STREAMLINE_SDK_VALIDATION").as_deref() == Ok("1");
+    let isolated_fg =
+        validation_requested && std::env::var("NS_STREAMLINE_PROBE_FG").as_deref() == Ok("1");
+    if validation_requested {
+        let abi = *layer.get::<unsafe extern "C" fn() -> u64>(b"nrLayerAbi\0")?;
+        if abi() != 0x0001_0000_0000_0001 {
+            return Err("unsupported strict validation layer ABI".into());
+        }
+    }
     let capture = *layer.get::<Capture>(b"probeCaptureIdleNext\0")?;
     let entry = ash::Entry::load_from(&loader)?;
     let mut instance_ext = union(requirements, "instance_extensions")?;
+    if validation_requested
+        || std::env::var("NS_STREAMLINE_SDK_LAYOUT_TRACE").as_deref() == Ok("1")
+        || std::env::var("NS_STREAMLINE_SDK_OUTPUT_INIT").as_deref() != Ok("0")
+        || std::env::var("NS_STREAMLINE_SDK_TRANSFER_ACCESS").as_deref() != Ok("0")
+    {
+        if !instance_ext
+            .iter()
+            .any(|s| s.as_c_str() == ash::ext::debug_utils::NAME)
+        {
+            instance_ext.push(ash::ext::debug_utils::NAME.to_owned());
+        }
+    }
     if route_requested {
         for name in [
             ash::khr::surface::NAME,
@@ -165,7 +186,10 @@ pub(super) unsafe fn run(
         }
     }
     let ext: Vec<_> = instance_ext.iter().map(|s| s.as_ptr()).collect();
-    let layers = [c"VK_LAYER_NSEMU_streamline_probe".as_ptr()];
+    let mut layers = vec![c"VK_LAYER_NSEMU_streamline_probe".as_ptr()];
+    if validation_requested {
+        layers.push(c"VK_LAYER_KHRONOS_validation".as_ptr());
+    }
     phase(5);
     let instance = entry.create_instance(
         &vk::InstanceCreateInfo::default()
@@ -278,6 +302,12 @@ pub(super) unsafe fn run(
     maintenance.swapchain_maintenance1 = if route_requested { vk::TRUE } else { vk::FALSE };
     let mut features12 = vk::PhysicalDeviceVulkan12Features::default();
     let mut features13 = vk::PhysicalDeviceVulkan13Features::default();
+    if route_requested {
+        if available13.private_data != vk::TRUE {
+            return Err("SDK route requires privateData for its bookkeeping".into());
+        }
+        features13.private_data = vk::TRUE;
+    }
     // Fail closed on any new name rather than silently dropping an SDK requirement.
     for name in union(requirements, "features12")? {
         let (supported, enabled) = match name.to_str()? {
@@ -493,7 +523,32 @@ pub(super) unsafe fn run(
         return Ok(());
     }
     let gdpa = *sdk.get::<vk::PFN_vkGetDeviceProcAddr>(b"vkGetDeviceProcAddr\0")?;
-    if route_requested {
+    if isolated_fg {
+        let sdk_device = ash::Device::load_with(
+            |name| gdpa(device.handle(), name.as_ptr()).map_or(std::ptr::null(), |f| f as *const _),
+            device.handle(),
+        );
+        let sdk_gipa = *sdk.get::<vk::PFN_vkGetInstanceProcAddr>(b"vkGetInstanceProcAddr\0")?;
+        let sdk_entry = ash::Entry::from_parts_1_1(
+            ash::StaticFn {
+                get_instance_proc_addr: sdk_gipa,
+            },
+            entry.fp_v1_0().clone(),
+            entry.fp_v1_1().clone(),
+        );
+        let sdk_instance = ash::Instance::load(sdk_entry.static_fn(), context.instance.handle());
+        phase(19);
+        crate::sdk_fg::exercise(
+            session,
+            sdk,
+            &sdk_entry,
+            &sdk_instance,
+            sdk_physical,
+            &sdk_device,
+            family,
+        )?;
+    }
+    if route_requested && !isolated_fg {
         phase(15);
         let application = crate::sdk_commands::exercise(device, family)?;
         let sdk_device = ash::Device::load_with(
@@ -630,25 +685,27 @@ pub(super) unsafe fn run(
         .filter(|v| v["event"] == "vkDeviceWaitIdle" && v["phase"] == 8)
         .count();
     let sdk_log = std::fs::read_to_string(root_session.join("sl.log"))?;
-    if route_requested && sdk_log.lines().any(|line| line.contains("[error]")) {
-        return Err("SDK runtime error during swapchain experiment; inspect sl.log".into());
-    }
     if std::env::var("NS_STREAMLINE_PROBE_FG").as_deref() == Ok("1") {
         let report: Value =
             serde_json::from_slice(&std::fs::read(session.join("fg-result.json"))?)?;
         let verification = crate::sdk_fg::validate(&events, &report)?;
         write_json(&session.join("fg-route-verification.json"), &verification)?;
     }
+    if route_requested && sdk_log.lines().any(|line| line.contains("[error]")) {
+        return Err("SDK runtime error during swapchain experiment; inspect sl.log".into());
+    }
     if route_requested {
         validate_route_trace(&events)?;
-        crate::sdk_commands::validate(&events)?;
-        let swapchain_report: Value =
-            serde_json::from_slice(&std::fs::read(session.join("sdk-swapchain-calls.json"))?)?;
-        crate::sdk_swapchain::validate_report(&events, &swapchain_report)?;
+        if !isolated_fg {
+            crate::sdk_commands::validate(&events)?;
+            let swapchain_report: Value =
+                serde_json::from_slice(&std::fs::read(session.join("sdk-swapchain-calls.json"))?)?;
+            crate::sdk_swapchain::validate_report(&events, &swapchain_report)?;
+        }
         write_json(
             &session.join("sdk-route-result.json"),
             &json!({
-                "idle_routing_verified":true, "host_command_lifecycle_verified":true, "host_sdk_swapchain_lifecycle_verified":true, "main_idle_reentries":main_reentries,
+                "idle_routing_verified":true, "host_command_lifecycle_verified":!isolated_fg, "host_sdk_swapchain_lifecycle_verified":!isolated_fg, "main_idle_reentries":main_reentries,
                 "worker_idle_reentries":worker_reentries, "sdk_owned_worker_tested":false,
                 "runtime_routing_verified":false, "fg_enabled":false, "p0_passed":false
             }),
@@ -685,7 +742,7 @@ pub(super) unsafe fn run(
         &json!({
             "experiment_passed": true, "sdk_initialized": true, "set_vulkan_succeeded": true,
             "initialized_sdk_idle_reenters_layer": main_reentries != 0 || worker_reentries != 0, "dispatch_live_objects": 0,
-            "fg_enabled": false, "fg_experiment_run":std::env::var("NS_STREAMLINE_PROBE_FG").as_deref()==Ok("1"), "p0_passed": false, "sdk_swapchain_lifecycle_verified": route_requested, "validation_layer_enabled": false, "sdk_runtime_warnings_and_errors": sdk_warnings
+            "fg_enabled": false, "fg_experiment_run":std::env::var("NS_STREAMLINE_PROBE_FG").as_deref()==Ok("1"), "p0_passed": false, "sdk_swapchain_lifecycle_verified": route_requested, "validation_layer_enabled": validation_requested, "sdk_runtime_warnings_and_errors": sdk_warnings
         }),
     )?;
     Ok(())

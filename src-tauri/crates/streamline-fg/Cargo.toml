@@ -19,6 +19,11 @@ name = "streamline-fg-diagnostics"
 path = "src/diagnostics/main.rs"
 required-features = ["diagnostics"]
 
+[[bin]]
+name = "streamline-nr-diagnostics"
+path = "src/diagnostics/nr_main.rs"
+required-features = ["nr-diagnostics"]
+
 [lib]
 name = "streamline_probe_layer"
 crate-type = ["cdylib", "rlib"]
@@ -37,6 +42,9 @@ windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_
 [features]
 sdk-bridge = []
 diagnostics = ["sdk-bridge"]
+nr-diagnostics = []
+nr-coexistence = ["nr-diagnostics", "sdk-bridge"]
+native-nr = ["sdk-bridge"]
 
 [build-dependencies]
 cc = "1"

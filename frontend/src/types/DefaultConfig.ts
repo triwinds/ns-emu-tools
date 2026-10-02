@@ -42,6 +42,9 @@ export const defaultConfig: AppConfig = {
       "rename_yuzu_to_cemu": false,
       "streamline_nvof": true,
       "streamline_sr": false,
+      "streamline_fg": true,
+      "streamline_nr": false,
+      "streamline_nr_intensity": 100,
       "streamline_sr_mode": "quality"
     }
   }

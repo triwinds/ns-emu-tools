@@ -20,6 +20,8 @@ fn requested() -> &'static AtomicBool {
 fn fg_tracking() -> bool {
     // FG needs the presentation viewport even when SR starts off.
     std::env::var("NS_STREAMLINE_TARGET_FG").as_deref() == Ok("1")
+        || (cfg!(feature = "native-nr")
+            && std::env::var("NS_STREAMLINE_NATIVE_NR").as_deref() == Ok("1"))
 }
 fn track_only() -> bool {
     static VALUE: OnceLock<bool> = OnceLock::new();
@@ -136,9 +138,25 @@ pub(crate) fn update(action: impl FnOnce(&mut Model)) {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Source {
     pub image: vk::Image,
+    /// Allocation generation checked against the submitted presentation draw.
+    pub generation: u64,
+    /// Presentation stream epoch, stable only for already observed live images
+    /// with the same validated blit path and color/mapping contract.
+    pub history_identity: u64,
+    pub history_members: u32,
+    pub history_paths: u32,
+    pub history_update: &'static str,
+    pub history_route: [u64; 4],
+    pub usage: u32,
+    pub extent: vk::Extent2D,
     pub raw_copy: bool,
     pub offsets: [vk::Offset3D; 2],
     pub viewport: [f32; 4],
+}
+pub(crate) fn retire_swapchain(device: u64, chain: u64) {
+    if collecting() {
+        update(|m| m.retire_swapchain(device, chain));
+    }
 }
 #[allow(dead_code)] // Only the SDK build uses the selection; transparent builds share observers.
 pub(crate) unsafe fn select(

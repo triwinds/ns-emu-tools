@@ -1,49 +1,54 @@
 {
+  "native_nr": true,
   "files": [
     {
-      "sha256": "ff5223c7dc92bf354c5dd435c594045753aa7020dc58c895971c4f8cff98f16d",
-      "name": "streamline-layer-probe.exe"
+      "name": "streamline-layer-probe.exe",
+      "sha256": "fc0fc61dcd0c3951b737c9518c7503a431b5059ece65522eff90407a299119e6"
     },
     {
-      "sha256": "5cddd9cde4932e24f18d77a9783dcf1271c28960bd141e892cd02252411fe451",
-      "name": "streamline_probe_layer.dll"
+      "name": "streamline_probe_layer.dll",
+      "sha256": "fc90718117405c8791b5cfe79fe2f3510e2ac5c163625f4a608d04170a2b1906"
     },
     {
-      "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
-      "name": "sl.interposer.dll"
+      "name": "nvngx.dll",
+      "sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc"
     },
     {
-      "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
-      "name": "sl.common.dll"
+      "name": "sl.interposer.dll",
+      "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
     },
     {
-      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
-      "name": "sl.dlss_g.dll"
+      "name": "sl.common.dll",
+      "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
     },
     {
-      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced",
-      "name": "sl.reflex.dll"
+      "name": "sl.dlss_g.dll",
+      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
     },
     {
-      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
-      "name": "sl.pcl.dll"
+      "name": "sl.reflex.dll",
+      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
     },
     {
-      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
-      "name": "nvngx_dlssg.dll"
+      "name": "sl.pcl.dll",
+      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
     },
     {
-      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
-      "name": "NvLowLatencyVk.dll"
+      "name": "nvngx_dlssg.dll",
+      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
     },
     {
-      "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c",
-      "name": "sl.dlss.dll"
+      "name": "NvLowLatencyVk.dll",
+      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
     },
     {
-      "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e",
-      "name": "nvngx_dlss.dll"
+      "name": "sl.dlss.dll",
+      "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+    },
+    {
+      "name": "nvngx_dlss.dll",
+      "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
     }
   ],
-  "version": "local-ff5223c7dc92-5cddd9cde493"
+  "version": "local-fc0fc61dcd0c-fc9071811740"
 }

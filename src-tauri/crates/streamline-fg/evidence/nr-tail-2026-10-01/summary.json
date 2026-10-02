@@ -1,0 +1,2203 @@
+{
+  "date": "2026-10-01",
+  "change": "Fence borrowed input copies; defer private NR/SR completion and native present retirement; one pending slot, drain before reuse and teardown. Opt-in NS_STREAMLINE_DEFER_PRESENT=1.",
+  "user_feedback": {
+    "strict": "moving picture normal; pause not tested",
+    "baseline": "same location/view ready; held still",
+    "optimized": "same location/view ready; picture normal; held still"
+  },
+  "checks": {
+    "tests_passed": 119,
+    "hardware_tests_ignored": 1,
+    "cargo_fmt": true,
+    "crate_host_windows_all_features_all_targets_checks": true,
+    "sdk_only_default_checks": true,
+    "main_app_host_windows_checks": true,
+    "cargo_warnings": 0,
+    "cargo_errors": 0
+  },
+  "limitations": [
+    "Strict validation failed with 238 errors and 30 unreviewed warnings.",
+    "Pause, resize, minimize not validated on hardware this round.",
+    "Sequential separate processes; no deterministic replay or long-term benchmark.",
+    "Readbacks use synchronous path; user visual feedback and completion evidence supplement deferred-path testing.",
+    "Initial verifier omitted SR completion events; initial failed report preserved and unchanged raw trace reverified after reader fix.",
+    "FPS improvement is limited near 30 FPS; CPU hook reduction is not equivalent to total frame-time saving."
+  ],
+  "sessions": [
+    {
+      "session": "nr-tail-validation-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "44f667e60c5c464ecd89645d45a0d723bdcaf6ee74337d0955b386fb5eae8842",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "nr_validation_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 2126,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 715,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 2126,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 9,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 6,
+          "readbacks_valid": true,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 9,
+            "SourceChanged": 12,
+            "StrengthChanged": 1
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 2104,
+            "logical_identities": 13,
+            "longest_without_reset": 712,
+            "physical_rotations_without_reset": 2104,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 19
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 2154,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 2154,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 237,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 238,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "module_check": null,
+      "phases": [
+        {
+          "name": "deferred-tail-strict",
+          "revision": 1,
+          "trace_start_us": 125460260,
+          "trace_end_us": 160802407,
+          "seconds": 35.3921776,
+          "frames": 353,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 353
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 353,
+              "mean": 99.8290566572238,
+              "median": 98.048,
+              "p95": 114.495
+            },
+            "hook_ms": {
+              "n": 353,
+              "mean": 9.4181388101983,
+              "median": 9.33,
+              "p95": 11.227
+            },
+            "outside_present_hook_ms": {
+              "n": 353,
+              "mean": 90.4109178470255,
+              "median": 88.769,
+              "p95": 104.132
+            },
+            "nr_evaluated": {
+              "n": 353,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 353,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 353,
+              "mean": 2.3751722606232293,
+              "median": 1.961312,
+              "p95": 3.15968
+            },
+            "native_present_retire_wait_ms": {
+              "n": 353,
+              "mean": 0.052960339943342774,
+              "median": 0.044,
+              "p95": 0.081
+            },
+            "fg_begin_and_reflex_sleep_ms": {
+              "n": 353,
+              "mean": 0.2542974504249292,
+              "median": 0.242,
+              "p95": 0.358
+            },
+            "fg_input_wait_ms": {
+              "n": 353,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "fg_options_ms": {
+              "n": 353,
+              "mean": 0.008413597733711049,
+              "median": 0.008,
+              "p95": 0.01
+            },
+            "fg_proxy_present_ms": {
+              "n": 353,
+              "mean": 0.834628895184136,
+              "median": 0.755,
+              "p95": 1.066
+            },
+            "fg_retire_previous_ms": {
+              "n": 353,
+              "mean": 0.33477337110481586,
+              "median": 0.267,
+              "p95": 0.59
+            },
+            "tail_deferred_fraction": {
+              "n": 353,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 353,
+              "mean": 0.022581665722379605,
+              "median": 0.020512,
+              "p95": 0.026208
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 353,
+              "mean": 0.09766028328611898,
+              "median": 0.09475199999999999,
+              "p95": 0.110944
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 353,
+              "mean": 2.6263909348441925,
+              "median": 2.58192,
+              "p95": 3.100256
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 353,
+              "mean": 0.03836101983002833,
+              "median": 0.037536,
+              "p95": 0.043488
+            },
+            "sr_gpu_total_ms": {
+              "n": 353,
+              "mean": 2.795277235127479,
+              "median": 2.7484480000000002,
+              "p95": 3.2886079999999995
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 353,
+              "mean": 0.010283331444759207,
+              "median": 0.007328,
+              "p95": 0.010304
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 353,
+              "mean": 0.49025779036827194,
+              "median": 0.477,
+              "p95": 0.621
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 353,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "sr_cpu_record_ms": {
+              "n": 353,
+              "mean": 2.3377818696883854,
+              "median": 2.276,
+              "p95": 2.847
+            },
+            "sr_cpu_submit_ms": {
+              "n": 353,
+              "mean": 1.4363172804532578,
+              "median": 1.407,
+              "p95": 1.769
+            },
+            "sr_cpu_retire_wait_ms": {
+              "n": 353,
+              "mean": 0.08603966005665722,
+              "median": 0.07,
+              "p95": 0.183
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 353,
+              "mean": 0.1338691444759207,
+              "median": 0.12822399999999998,
+              "p95": 0.157024
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 353,
+              "mean": 7.695569586402266,
+              "median": 7.600192,
+              "p95": 8.69936
+            },
+            "nr_gpu_output_ms": {
+              "n": 353,
+              "mean": 0.000233971671388102,
+              "median": 0.000192,
+              "p95": 0.000704
+            },
+            "nr_cpu_record_ms": {
+              "n": 353,
+              "mean": 3.352008498583569,
+              "median": 3.393,
+              "p95": 4.339
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 353,
+              "mean": 0.5882804532577903,
+              "median": 0.532,
+              "p95": 0.875
+            },
+            "nr_cpu_submit_ms": {
+              "n": 353,
+              "mean": 0.06342776203966005,
+              "median": 0.056,
+              "p95": 0.111
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 353,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "nr_cpu_input_submit_wait_ms": {
+              "n": 353,
+              "mean": 1.693886685552408,
+              "median": 1.442,
+              "p95": 2.618
+            }
+          },
+          "fps_from_median_interval": 10.199086161879896,
+          "fps_from_mean_interval": 10.017123605942022,
+          "observer_ms_per_present": 1.3189600566572237,
+          "process_cpu_core_equivalents": 2.0188959777371824,
+          "top_thread_core_equivalents": 0.9438879511047662,
+          "gpu_profile_assignment": "Deferred NR profiles assigned to preceding NR submission; SR profiles assigned by frame ID. CPU retire waits attributed to the frame that performs the wait."
+        }
+      ],
+      "readback_cpu_ms": {
+        "n": 6,
+        "mean": 5665.9585,
+        "median": 5719.5470000000005,
+        "p95": 5836.706
+      },
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "1baf078d9c670302f7e92b8cc8d3005e7f7a6737d3dffb40b831eb99f486997d",
+          "bytes": 1661
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "ba7a98406eb318c410c29338d92457ce3ebcf3c05c00543b4a72ee35095ee2f7",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "22e382a41ed1381633e7601d638ab1e2b0a0d78dc5d0dfad5c828b1d0ec5006d",
+          "bytes": 2160
+        },
+        "layer.jsonl": {
+          "sha256": "88ecd28ff0c47597a75148ce9354b63ed83ce511ceb29ead374cae8a9125ffc6",
+          "bytes": 11686630
+        },
+        "nr-validation.jsonl": {
+          "sha256": "03fe45ff020fc6b370c4fb5b5b7bddf0172b6d7747d111efd0028d1df2469658",
+          "bytes": 164744
+        },
+        "runtime/sl.log": {
+          "sha256": "055e6e42607e4104175c1c809b5384a0b67dab0408f58a8ccab987b9fe573bb8",
+          "bytes": 202247
+        },
+        "phase-1.json": {
+          "sha256": "be6a0cdbadf61b5d40c36035d9b5b7ae028b6ec7271d386c8a49729bf83df9f5",
+          "bytes": 415744
+        },
+        "target-result-initial-reader-failure.json": {
+          "sha256": "fad48e954962332090ee255a27c3d934745f439fa355fa68db32840f315b11f7",
+          "bytes": 2163
+        }
+      },
+      "completion_counts": {
+        "target_nr_submission": 2126,
+        "target_nr_completion": 2120,
+        "target_sr_completion": 2120,
+        "route_present_submitted": 2154,
+        "route_present_retired": 2154,
+        "target_nr_readback": 6
+      },
+      "tail_deferred_submissions": 2120,
+      "readback_details": [
+        {
+          "capture": 0,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-0.ppm",
+            "nr-output-1920-1080-0.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 1,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-1.ppm",
+            "nr-output-1920-1080-1.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 2,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-2.ppm",
+            "nr-output-1920-1080-2.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 3,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-3.ppm",
+            "nr-output-1920-1080-3.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.004952809429608205,
+          "output_sha256": "c5ac39cdc9c81a06b33dcb841dcaf6e617702f6d59557c32be237d9ae0f21de4",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 4,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-4.ppm",
+            "nr-output-1920-1080-4.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.004975008863975857,
+          "output_sha256": "0311e7d071914e0914efadb1eb3ddc29cf3b45e1624ae36daea21e8cb14564b1",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 5,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-5.ppm",
+            "nr-output-1920-1080-5.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.004935593013177385,
+          "output_sha256": "b0ab7da374bf916b7195eeb7ab0f9a0e046607a8536d016fea323c3ea0d5743a",
+          "sentinel_pixels": 0
+        }
+      ],
+      "validation_messages": [
+        {
+          "id": -2063277991,
+          "count": 10,
+          "first": {
+            "id_number": -2063277991,
+            "message": "vkCmdCopyBuffer(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/copies.html#VUID-vkCmdCopyBuffer-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -2017440641,
+          "count": 10,
+          "first": {
+            "id_number": -2017440641,
+            "message": "vkCmdBindVertexBuffers2EXT(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers2-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -1744492148,
+          "count": 10,
+          "first": {
+            "id_number": -1744492148,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 2], but there is no VkSubpassDescription::pColorAttachments[2] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput",
+            "review": null,
+            "severity": 256,
+            "type": 2
+          }
+        },
+        {
+          "id": -1693624763,
+          "count": 10,
+          "first": {
+            "id_number": -1693624763,
+            "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x369b000000369b) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+            "review": null,
+            "severity": 256,
+            "type": 2
+          }
+        },
+        {
+          "id": -1604639890,
+          "count": 4,
+          "first": {
+            "id_number": -1604639890,
+            "message": "vkQueueSubmit(): THREADING ERROR : object of type VkQueue is simultaneously used in current thread 43240 \"<tera::ImageResourceMgr>\" (vkQueueSubmit) and thread 45520 \"GUI.RenderThread\" (vkDeviceWaitIdle)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -1551140702,
+          "count": 10,
+          "first": {
+            "id_number": -1551140702,
+            "message": "vkCmdEndRenderPass(): query 0 from VkQueryPool 0x1490000000149 was begun in subpass 0 but never ended.\nThe Vulkan spec states: If vkCmdBeginQuery* was called within a subpass of the render pass, the corresponding vkCmdEndQuery* must have been called subsequently within the same subpass (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-None-07004)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -962408748,
+          "count": 10,
+          "first": {
+            "id_number": -962408748,
+            "message": "vkCmdBindDescriptorSets(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdBindDescriptorSets-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -937765618,
+          "count": 10,
+          "first": {
+            "id_number": -937765618,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 1 not consumed by vertex shader.",
+            "review": null,
+            "severity": 256,
+            "type": 4
+          }
+        },
+        {
+          "id": -619758366,
+          "count": 3,
+          "first": {
+            "id_number": -619758366,
+            "message": "vkCmdSetBlendConstants(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/framebuffer.html#VUID-vkCmdSetBlendConstants-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -543181122,
+          "count": 3,
+          "first": {
+            "id_number": -543181122,
+            "message": "vkEndCommandBuffer(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/cmdbuffers.html#VUID-vkEndCommandBuffer-commandBuffer-00059)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -464217071,
+          "count": 10,
+          "first": {
+            "id_number": -464217071,
+            "message": "vkDestroyBuffer(): can't be called on VkBuffer 0x63150000006315 that is currently in use by VkDescriptorSet 0x56500000005650 which is in use by VkCommandBuffer 0x4312e9418d0\nThe Vulkan spec states: All submitted commands that refer to buffer, either directly or via a VkBufferView, must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyBuffer-buffer-00922)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -455515022,
+          "count": 10,
+          "first": {
+            "id_number": -455515022,
+            "message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] READ_AFTER_WRITE hazard detected. vkCmdBeginRenderPass (from VkCommandBuffer 0x4312e93e0d0 submitted on the current VkQueue 0x4312dc514d0) reads the color aspect of attachment 0 (VkImageView 0x30f500000030f5) in subpass 0 of VkRenderPass 0x30fb00000030fb (loadOp VK_ATTACHMENT_LOAD_OP_LOAD), which was previously written by vkCmdCopyBufferToImage (from VkCommandBuffer 0x4312e9418d0 submitted on VkQueue 0x4312dc514d0). \nNo sufficient synchronization is present to ensure that a read (VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT) at VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT does not conflict with a prior write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_COPY_BIT.",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -379806493,
+          "count": 1,
+          "first": {
+            "id_number": -379806493,
+            "message": "vkCmdDrawIndexed(): VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT state is dynamic, but the command buffer never called vkCmdSetAttachmentFeedbackLoopEnableEXT\nVkPipelineRasterizationStateCreateInfo::rasterizerDiscardEnable was VK_FALSE in the last bound graphics pipeline.\nThe Vulkan spec states: If a shader object is bound to the VK_SHADER_STAGE_FRAGMENT_BIT stage or a graphics pipeline is bound which was created with the VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT dynamic state enabled, and the current value of rasterizerDiscardEnable is VK_FALSE, then vkCmdSetAttachmentFeedbackLoopEnableEXT must have been called and not subsequently invalidated in the current command buffer prior to this drawing command (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-08877)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -365328357,
+          "count": 10,
+          "first": {
+            "id_number": -365328357,
+            "message": "vkCmdBindPipeline(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-vkCmdBindPipeline-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -308264800,
+          "count": 10,
+          "first": {
+            "id_number": -308264800,
+            "message": "vkCmdEndRenderPass(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -143113596,
+          "count": 5,
+          "first": {
+            "id_number": -143113596,
+            "message": "vkCmdSetViewport(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/vertexpostproc.html#VUID-vkCmdSetViewport-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -42261870,
+          "count": 1,
+          "first": {
+            "id_number": -42261870,
+            "message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n",
+            "review": null,
+            "severity": 16,
+            "type": 2
+          }
+        },
+        {
+          "id": 0,
+          "count": 21,
+          "first": {
+            "id_number": 0,
+            "message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)",
+            "review": null,
+            "severity": 16,
+            "type": 1
+          }
+        },
+        {
+          "id": 28428915,
+          "count": 10,
+          "first": {
+            "id_number": 28428915,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pRasterizationState->lineWidth is 4.500000, but the line width state is static (pCreateInfos[0].pDynamicState->pDynamicStates does not contain VK_DYNAMIC_STATE_LINE_WIDTH) and wideLines feature was not enabled.\nThe Vulkan spec states: If the pipeline requires pre-rasterization shader state, and the wideLines feature is not enabled, and no element of the pDynamicStates member of pDynamicState is VK_DYNAMIC_STATE_LINE_WIDTH, the lineWidth member of pRasterizationState must be 1.0 (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 99965422,
+          "count": 5,
+          "first": {
+            "id_number": 99965422,
+            "message": "vkCmdSetScissor(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fragops.html#VUID-vkCmdSetScissor-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 102835677,
+          "count": 10,
+          "first": {
+            "id_number": 102835677,
+            "message": "vkCmdUpdateBuffer(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdUpdateBuffer-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 218230825,
+          "count": 10,
+          "first": {
+            "id_number": 218230825,
+            "message": "vkCmdPushDescriptorSetWithTemplateKHR(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 522653285,
+          "count": 10,
+          "first": {
+            "id_number": 522653285,
+            "message": "vkCmdEndQuery(): query (0) was started outside a renderpass.\nThe Vulkan spec states: If called within a subpass of a render pass instance, the corresponding vkCmdBeginQuery* command must have been called previously within the same subpass (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-None-07007)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 908748201,
+          "count": 10,
+          "first": {
+            "id_number": 908748201,
+            "message": "vkCmdPipelineBarrier(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/synchronization.html#VUID-vkCmdPipelineBarrier-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1180184443,
+          "count": 10,
+          "first": {
+            "id_number": 1180184443,
+            "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x4312e9798d0[nv.sl.dlss_g.cmdCtx.pacer.command-buffer] expects VkImage 0x31190000003119[nv.sl.dlss_g.tex2d.fake-swapchain-buffer] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_PRESENT_SRC_KHR.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1215490720,
+          "count": 1,
+          "first": {
+            "id_number": 1215490720,
+            "message": "vkDestroyDevice(): VkDevice 0x4312def00d0 has 32 leaked objects that have not been destroyed.\n(Only printing the first 10 objects, but can be increased by raising the VK_LAYER_DUPLICATE_MESSAGE_LIMIT/'duplicate_message_limit' setting value)\nVkImage 0x6cff0000006cff, VkImage 0x555d000000555d, VkImage 0x5f210000005f21, VkImage 0x99df00000099df, VkImage 0x989c000000989c, VkImage 0xba58000000ba58, VkImage 0xab0a000000ab0a, VkImageView 0x5f240000005f24, VkImageView 0x989f000000989f, VkImageView 0xab0d000000ab0d.\nThe Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1284016627,
+          "count": 10,
+          "first": {
+            "id_number": 1284016627,
+            "message": "vkCmdBeginRenderPass(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdBeginRenderPass-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1355105800,
+          "count": 2,
+          "first": {
+            "id_number": 1355105800,
+            "message": "vkCmdClearAttachments(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdClearAttachments-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1355467935,
+          "count": 10,
+          "first": {
+            "id_number": 1355467935,
+            "message": "vkCmdBindIndexBuffer(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1397510317,
+          "count": 5,
+          "first": {
+            "id_number": 1397510317,
+            "message": "vkCmdDrawIndexed(): the combined image sampler descriptor [VkDescriptorSet 0x5b250000005b25, Set 2, Binding 135, Index 0, variable \"fp_t_tcb_14\"] has VkImageView 0xb990000000b990 with format of VK_FORMAT_R32_SFLOAT which doesn't support VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT.\n(supported features: VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT|VK_FORMAT_FEATURE_2_BLIT_SRC_BIT|VK_FORMAT_FEATURE_2_BLIT_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT|VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT|VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT|VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT|VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR).\nThe Vulkan spec states: If a VkImageView is sampled with depth comparison, the image view's format features must contain VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-06479)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1544472022,
+          "count": 10,
+          "first": {
+            "id_number": 1544472022,
+            "message": "vkCmdPipelineBarrier(): WRITE_AFTER_WRITE hazard detected. vkCmdPipelineBarrier performs image layout transition on the VkImage 0x31190000003119[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written at the end of subpass 0 (vkCmdEndRenderPass) by the attachment storeOp. \nNo sufficient synchronization is present to ensure that a layout transition does not conflict with a prior write (VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT) at VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT.\nHint: Ensure that srcStageMask includes VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT and srcAccessMask includes VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT. The source side of the barrier protects layout transition writes from previous accesses, and the destination side cannot introduce this specific hazard.\npImageMemoryBarriers[0]: {\n  srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,\n  srcAccessMask = VkAccessFlags2(0),\n  dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,\n  dstAccessMask = VkAccessFlags2(0),\n}\n",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1602651847,
+          "count": 10,
+          "first": {
+            "id_number": 1602651847,
+            "message": "vkCmdDrawIndexed(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1672225264,
+          "count": 10,
+          "first": {
+            "id_number": 1672225264,
+            "message": "vkDestroyImageView(): can't be called on VkImageView 0x4e810000004e81 that is currently in use by VkDescriptorSet 0x4f8f0000004f8f which is in use by VkCommandBuffer 0x4312e9450d0\nThe Vulkan spec states: All submitted commands that refer to imageView must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyImageView-imageView-01026)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1820876487,
+          "count": 9,
+          "first": {
+            "id_number": 1820876487,
+            "message": "vkCmdEndQuery(): was called in VkCommandBuffer 0x4312e93e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x718d000000718d was destroyed\n   which was used by VkDescriptorSet 0x559c000000559c\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 2136492404,
+          "count": 10,
+          "first": {
+            "id_number": 2136492404,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pStages[0] shader [VK_SHADER_STAGE_VERTEX_BIT] has a ClipDistance BuiltIn array size of 8 and a CullDistance BuiltIn array size of 1 which sum to 9 and exceed maxCombinedClipAndCullDistances of 8.\nThe Vulkan spec states: If VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances is not zero, then any entry point interface variable declared with the ClipDistance BuiltIn and CullDistance BuiltIn decoration must not have array sizes which sum to more than VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        }
+      ]
+    },
+    {
+      "session": "nr-tail-baseline-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "44f667e60c5c464ecd89645d45a0d723bdcaf6ee74337d0955b386fb5eae8842",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": true,
+        "nr_readback_requested": false,
+        "nr_requested": true,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 3494,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 2473,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 3494,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 2082,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 2,
+            "SourceChanged": 7
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 3485,
+            "logical_identities": 7,
+            "longest_without_reset": 2471,
+            "physical_rotations_without_reset": 3485,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 5
+        },
+        "nr_performance": true,
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 5581,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 5581,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": false,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "enabled": false,
+          "validation_passed": false
+        }
+      },
+      "module_check": {
+        "modules": [
+          {
+            "name": "streamline_probe_layer.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\streamline-fg\\target\\release\\streamline_probe_layer.dll"
+          },
+          {
+            "name": "sl.interposer.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\runtime\\sl.interposer.dll"
+          },
+          {
+            "name": "sl.common.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\runtime\\sl.common.dll"
+          },
+          {
+            "name": "sl.dlss.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\runtime\\sl.dlss.dll"
+          },
+          {
+            "name": "_nvngx.dll",
+            "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvtfi.inf_amd64_884f78085512abd5\\_nvngx.dll"
+          },
+          {
+            "name": "sl.dlss_g.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\runtime\\sl.dlss_g.dll"
+          },
+          {
+            "name": "sl.pcl.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\runtime\\sl.pcl.dll"
+          },
+          {
+            "name": "sl.reflex.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\runtime\\sl.reflex.dll"
+          },
+          {
+            "name": "nvngx_dlssnr.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\nr\\nvngx_dlssnr.dll"
+          },
+          {
+            "name": "nvngx.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-baseline-001\\nr\\nvngx.dll"
+          }
+        ],
+        "deferPresentRequested": false,
+        "pid": 37976,
+        "validationLoaded": false,
+        "gpuHandoffRequested": true
+      },
+      "phases": [
+        {
+          "name": "immediate-tail",
+          "revision": 1,
+          "trace_start_us": 98591117,
+          "trace_end_us": 139040529,
+          "seconds": 40.4597218,
+          "frames": 1174,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 1174
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 1174,
+              "mean": 34.41177086882453,
+              "median": 33.346,
+              "p95": 49.889
+            },
+            "hook_ms": {
+              "n": 1174,
+              "mean": 14.220360306643952,
+              "median": 14.1335,
+              "p95": 14.965
+            },
+            "outside_present_hook_ms": {
+              "n": 1174,
+              "mean": 20.19141056218058,
+              "median": 19.200499999999998,
+              "p95": 35.839
+            },
+            "nr_evaluated": {
+              "n": 1174,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 1174,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 1174,
+              "mean": 1.9282021669505962,
+              "median": 1.895264,
+              "p95": 2.199392
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 1174,
+              "mean": 0.020940838160136286,
+              "median": 0.018335999999999998,
+              "p95": 0.02112
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 1174,
+              "mean": 0.08950239182282795,
+              "median": 0.07875199999999999,
+              "p95": 0.126592
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 1174,
+              "mean": 2.831764960817717,
+              "median": 2.822096,
+              "p95": 3.14928
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 1174,
+              "mean": 0.04288992163543441,
+              "median": 0.03592000000000001,
+              "p95": 0.041472
+            },
+            "sr_gpu_total_ms": {
+              "n": 1174,
+              "mean": 2.9938545008517887,
+              "median": 2.994896,
+              "p95": 3.3197119999999996
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 1174,
+              "mean": 0.008756388415672913,
+              "median": 0.0072640000000000005,
+              "p95": 0.007936
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 1174,
+              "mean": 0.2129625212947189,
+              "median": 0.204,
+              "p95": 0.275
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 1174,
+              "mean": 12.325045144804088,
+              "median": 12.311,
+              "p95": 13.011
+            },
+            "sr_cpu_record_ms": {
+              "n": 1174,
+              "mean": 0.24671209540034073,
+              "median": 0.236,
+              "p95": 0.323
+            },
+            "sr_cpu_submit_ms": {
+              "n": 1174,
+              "mean": 0.01311243611584327,
+              "median": 0.011,
+              "p95": 0.025
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 1174,
+              "mean": 0.12027295400340715,
+              "median": 0.118432,
+              "p95": 0.143648
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 1174,
+              "mean": 8.036316783645656,
+              "median": 8.025264,
+              "p95": 8.423680000000001
+            },
+            "nr_gpu_output_ms": {
+              "n": 1174,
+              "mean": 0.0005837955706984668,
+              "median": 0.00064,
+              "p95": 0.0008
+            },
+            "nr_cpu_record_ms": {
+              "n": 1174,
+              "mean": 0.4575851788756388,
+              "median": 0.395,
+              "p95": 0.619
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 1174,
+              "mean": 0.4199480408858603,
+              "median": 0.361,
+              "p95": 0.559
+            },
+            "nr_cpu_submit_ms": {
+              "n": 1174,
+              "mean": 0.016744463373083475,
+              "median": 0.013,
+              "p95": 0.032
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 1174,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "nr_cpu_input_submit_wait_ms": {
+              "n": 1174,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "native_present_retire_wait_ms": {
+              "n": 1174,
+              "mean": 0.009867972742759796,
+              "median": 0.001,
+              "p95": 0.022
+            },
+            "fg_begin_and_reflex_sleep_ms": {
+              "n": 1174,
+              "mean": 0.13618057921635435,
+              "median": 0.129,
+              "p95": 0.185
+            },
+            "fg_input_wait_ms": {
+              "n": 1174,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "fg_options_ms": {
+              "n": 1174,
+              "mean": 0.010749574105621806,
+              "median": 0.009,
+              "p95": 0.016
+            },
+            "fg_proxy_present_ms": {
+              "n": 1174,
+              "mean": 0.45375298126064734,
+              "median": 0.3935,
+              "p95": 0.665
+            },
+            "fg_retire_previous_ms": {
+              "n": 1174,
+              "mean": 0.0006788756388415673,
+              "median": 0.001,
+              "p95": 0.001
+            },
+            "tail_deferred_fraction": {
+              "n": 1174,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            }
+          },
+          "fps_from_median_interval": 29.98860433035447,
+          "fps_from_mean_interval": 29.059823855387624,
+          "observer_ms_per_present": 1.3094862862010221,
+          "process_cpu_core_equivalents": 2.8079623374968437,
+          "top_thread_core_equivalents": 0.4406388429492365,
+          "gpu_profile_assignment": "Deferred NR profiles assigned to preceding NR submission; SR profiles assigned by frame ID. CPU retire waits attributed to the frame that performs the wait."
+        },
+        {
+          "name": "immediate-all-off",
+          "revision": 2,
+          "trace_start_us": 142761396,
+          "trace_end_us": 167994572,
+          "seconds": 25.2456616,
+          "frames": 756,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 756
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 756,
+              "mean": 33.33337962962963,
+              "median": 33.3305,
+              "p95": 33.787
+            },
+            "hook_ms": {
+              "n": 756,
+              "mean": 0.8061309523809523,
+              "median": 0.714,
+              "p95": 1.184
+            },
+            "outside_present_hook_ms": {
+              "n": 756,
+              "mean": 32.52724867724868,
+              "median": 32.5895,
+              "p95": 33.097
+            },
+            "nr_evaluated": {
+              "n": 756,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 756,
+              "mean": 2,
+              "median": 2.0,
+              "p95": 2
+            },
+            "native_present_retire_wait_ms": {
+              "n": 756,
+              "mean": 0.03860449735449736,
+              "median": 0.002,
+              "p95": 0.226
+            },
+            "fg_begin_and_reflex_sleep_ms": {
+              "n": 756,
+              "mean": 0.12825132275132275,
+              "median": 0.1155,
+              "p95": 0.19
+            },
+            "fg_input_wait_ms": {
+              "n": 756,
+              "mean": 0.00014550264550264552,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "fg_options_ms": {
+              "n": 756,
+              "mean": 0.006833333333333334,
+              "median": 0.005,
+              "p95": 0.013
+            },
+            "fg_proxy_present_ms": {
+              "n": 756,
+              "mean": 0.4646825396825397,
+              "median": 0.404,
+              "p95": 0.738
+            },
+            "fg_retire_previous_ms": {
+              "n": 756,
+              "mean": 0.0005158730158730159,
+              "median": 0.0,
+              "p95": 0.001
+            },
+            "tail_deferred_fraction": {
+              "n": 756,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            }
+          },
+          "fps_from_median_interval": 30.002550216768423,
+          "fps_from_mean_interval": 29.999958333391202,
+          "observer_ms_per_present": 1.349254761904762,
+          "process_cpu_core_equivalents": 2.8142211571116045,
+          "top_thread_core_equivalents": 0.42829140987931175,
+          "gpu_profile_assignment": "Deferred NR profiles assigned to preceding NR submission; SR profiles assigned by frame ID. CPU retire waits attributed to the frame that performs the wait."
+        }
+      ],
+      "readback_cpu_ms": null,
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "dbc9eadf88529e8491281267bb1411d7fb4cdd9455503cca386d2968fe6a50a3",
+          "bytes": 1538
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "b10426015a8272e32639ddb670979d7aa93bc9e04d4bdb31f5dc76879b4f8e48",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "eff0536fe7e5700decc0aa6a9972e58e89fdb26555171b454aee719926002ba6",
+          "bytes": 1901
+        },
+        "module-check.json": {
+          "sha256": "62a86e4651e54f0f327d18053807d9e49c257d49215b3e103c55d07bca65d358",
+          "bytes": 1661
+        },
+        "layer.jsonl": {
+          "sha256": "24194734ff486a3dc70b5f02a87cfec2b8f5a9099ae1a0715c985230b9ca44b6",
+          "bytes": 20500963
+        },
+        "runtime/sl.log": {
+          "sha256": "f83cb85745b5b3e7b7c18fa99c36e3ca63c9e38c22722f989e739277797d454d",
+          "bytes": 48674
+        },
+        "phase-1.json": {
+          "sha256": "d284b7c6d3f156dc0c1f765d6ff99397263a78c045f974f1f1a5c769aa7464e9",
+          "bytes": 479744
+        },
+        "phase-2.json": {
+          "sha256": "78767bd77361dc1d06a256121361a2241a36b7219824befaf371c1986526dd2c",
+          "bytes": 290547
+        }
+      },
+      "completion_counts": {
+        "target_nr_submission": 3494,
+        "target_nr_completion": 3494,
+        "target_sr_completion": 0,
+        "route_present_submitted": 5581,
+        "route_present_retired": 5581,
+        "target_nr_readback": 0
+      },
+      "tail_deferred_submissions": 0,
+      "readback_details": [],
+      "validation_messages": []
+    },
+    {
+      "session": "nr-tail-performance-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "44f667e60c5c464ecd89645d45a0d723bdcaf6ee74337d0955b386fb5eae8842",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": true,
+        "nr_readback_requested": false,
+        "nr_requested": true,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 5242,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 2221,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 5242,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 915,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 2,
+            "SourceChanged": 15
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 5225,
+            "logical_identities": 15,
+            "longest_without_reset": 2220,
+            "physical_rotations_without_reset": 5225,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 13
+        },
+        "nr_performance": true,
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 6170,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 6170,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": false,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "enabled": false,
+          "validation_passed": false
+        }
+      },
+      "module_check": {
+        "validationLoaded": false,
+        "modules": [
+          {
+            "name": "streamline_probe_layer.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\streamline-fg\\target\\release\\streamline_probe_layer.dll"
+          },
+          {
+            "name": "sl.interposer.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\runtime\\sl.interposer.dll"
+          },
+          {
+            "name": "sl.common.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\runtime\\sl.common.dll"
+          },
+          {
+            "name": "sl.dlss.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\runtime\\sl.dlss.dll"
+          },
+          {
+            "name": "_nvngx.dll",
+            "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvtfi.inf_amd64_884f78085512abd5\\_nvngx.dll"
+          },
+          {
+            "name": "sl.dlss_g.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\runtime\\sl.dlss_g.dll"
+          },
+          {
+            "name": "sl.pcl.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\runtime\\sl.pcl.dll"
+          },
+          {
+            "name": "sl.reflex.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\runtime\\sl.reflex.dll"
+          },
+          {
+            "name": "nvngx_dlssnr.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\nr\\nvngx_dlssnr.dll"
+          },
+          {
+            "name": "nvngx.dll",
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-tail-performance-001\\nr\\nvngx.dll"
+          }
+        ],
+        "deferPresentRequested": true,
+        "pid": 42376,
+        "gpuHandoffRequested": true
+      },
+      "phases": [
+        {
+          "name": "deferred-tail-first",
+          "revision": 1,
+          "trace_start_us": 77950609,
+          "trace_end_us": 118349953,
+          "seconds": 40.4142264,
+          "frames": 1207,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 1207
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 1207,
+              "mean": 33.44384092792046,
+              "median": 33.325,
+              "p95": 37.092
+            },
+            "hook_ms": {
+              "n": 1207,
+              "mean": 4.055521955260978,
+              "median": 3.889,
+              "p95": 4.997
+            },
+            "outside_present_hook_ms": {
+              "n": 1207,
+              "mean": 29.388318972659487,
+              "median": 29.419,
+              "p95": 33.268
+            },
+            "nr_evaluated": {
+              "n": 1207,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 1207,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 1207,
+              "mean": 2.0733322816901407,
+              "median": 1.962176,
+              "p95": 2.834336
+            },
+            "native_present_retire_wait_ms": {
+              "n": 1207,
+              "mean": 0.0035260977630488816,
+              "median": 0.003,
+              "p95": 0.005
+            },
+            "fg_begin_and_reflex_sleep_ms": {
+              "n": 1207,
+              "mean": 0.1844258492129246,
+              "median": 0.141,
+              "p95": 0.248
+            },
+            "fg_input_wait_ms": {
+              "n": 1207,
+              "mean": 2.4855012427506213e-06,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "fg_options_ms": {
+              "n": 1207,
+              "mean": 0.00763960231980116,
+              "median": 0.007,
+              "p95": 0.01
+            },
+            "fg_proxy_present_ms": {
+              "n": 1207,
+              "mean": 0.3219892294946147,
+              "median": 0.289,
+              "p95": 0.465
+            },
+            "fg_retire_previous_ms": {
+              "n": 1207,
+              "mean": 0.10157497928748964,
+              "median": 0.07,
+              "p95": 0.144
+            },
+            "tail_deferred_fraction": {
+              "n": 1207,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 1207,
+              "mean": 0.022747174813587408,
+              "median": 0.021024,
+              "p95": 0.024704
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 1207,
+              "mean": 0.10403202651201325,
+              "median": 0.093408,
+              "p95": 0.136736
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 1207,
+              "mean": 2.815413845898923,
+              "median": 2.809632,
+              "p95": 3.221344
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 1207,
+              "mean": 0.04106710853355427,
+              "median": 0.037984000000000004,
+              "p95": 0.044736
+            },
+            "sr_gpu_total_ms": {
+              "n": 1207,
+              "mean": 2.992182588235294,
+              "median": 2.999104,
+              "p95": 3.410688
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 1207,
+              "mean": 0.008922432477216238,
+              "median": 0.007456000000000001,
+              "p95": 0.008544000000000001
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 1207,
+              "mean": 0.23328334714167356,
+              "median": 0.219,
+              "p95": 0.329
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 1207,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "sr_cpu_record_ms": {
+              "n": 1207,
+              "mean": 0.2848798674399337,
+              "median": 0.267,
+              "p95": 0.405
+            },
+            "sr_cpu_submit_ms": {
+              "n": 1207,
+              "mean": 0.02333057166528583,
+              "median": 0.019,
+              "p95": 0.042
+            },
+            "sr_cpu_retire_wait_ms": {
+              "n": 1207,
+              "mean": 0.0009585749792874897,
+              "median": 0.001,
+              "p95": 0.001
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 1207,
+              "mean": 0.1346677448218724,
+              "median": 0.128864,
+              "p95": 0.164864
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 1207,
+              "mean": 8.115742223695111,
+              "median": 8.136512,
+              "p95": 8.595808000000002
+            },
+            "nr_gpu_output_ms": {
+              "n": 1207,
+              "mean": 0.0005653686826843414,
+              "median": 0.000736,
+              "p95": 0.000896
+            },
+            "nr_cpu_record_ms": {
+              "n": 1207,
+              "mean": 2.6498956089478045,
+              "median": 2.541,
+              "p95": 3.421
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 1207,
+              "mean": 0.43560480530240264,
+              "median": 0.39,
+              "p95": 0.607
+            },
+            "nr_cpu_submit_ms": {
+              "n": 1207,
+              "mean": 0.043825186412593205,
+              "median": 0.036,
+              "p95": 0.082
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 1207,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "nr_cpu_input_submit_wait_ms": {
+              "n": 1207,
+              "mean": 2.1675343827671916,
+              "median": 2.063,
+              "p95": 2.934
+            }
+          },
+          "fps_from_median_interval": 30.007501875468865,
+          "fps_from_mean_interval": 29.900871797448175,
+          "observer_ms_per_present": 1.4152990886495445,
+          "process_cpu_core_equivalents": 2.9827831864672287,
+          "top_thread_core_equivalents": 0.5099534702463092,
+          "gpu_profile_assignment": "Deferred NR profiles assigned to preceding NR submission; SR profiles assigned by frame ID. CPU retire waits attributed to the frame that performs the wait."
+        },
+        {
+          "name": "deferred-all-off",
+          "revision": 2,
+          "trace_start_us": 122579650,
+          "trace_end_us": 147813430,
+          "seconds": 25.2561171,
+          "frames": 756,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 756
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 756,
+              "mean": 33.33351322751323,
+              "median": 33.321,
+              "p95": 37.017
+            },
+            "hook_ms": {
+              "n": 756,
+              "mean": 0.7759484126984127,
+              "median": 0.678,
+              "p95": 1.105
+            },
+            "outside_present_hook_ms": {
+              "n": 756,
+              "mean": 32.55756481481482,
+              "median": 32.601,
+              "p95": 36.274
+            },
+            "nr_evaluated": {
+              "n": 756,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 756,
+              "mean": 2,
+              "median": 2.0,
+              "p95": 2
+            },
+            "native_present_retire_wait_ms": {
+              "n": 756,
+              "mean": 0.03449338624338624,
+              "median": 0.002,
+              "p95": 0.187
+            },
+            "fg_begin_and_reflex_sleep_ms": {
+              "n": 756,
+              "mean": 0.12449206349206349,
+              "median": 0.116,
+              "p95": 0.181
+            },
+            "fg_input_wait_ms": {
+              "n": 756,
+              "mean": 3.968253968253968e-06,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "fg_options_ms": {
+              "n": 756,
+              "mean": 0.0071653439153439155,
+              "median": 0.006,
+              "p95": 0.013
+            },
+            "fg_proxy_present_ms": {
+              "n": 756,
+              "mean": 0.4289722222222222,
+              "median": 0.376,
+              "p95": 0.701
+            },
+            "fg_retire_previous_ms": {
+              "n": 756,
+              "mean": 0.0005687830687830688,
+              "median": 0.001,
+              "p95": 0.001
+            },
+            "tail_deferred_fraction": {
+              "n": 756,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            }
+          },
+          "fps_from_median_interval": 30.011104108520154,
+          "fps_from_mean_interval": 29.999838096111862,
+          "observer_ms_per_present": 1.4287530423280423,
+          "process_cpu_core_equivalents": 3.004222687896866,
+          "top_thread_core_equivalents": 0.4776070665272612,
+          "gpu_profile_assignment": "Deferred NR profiles assigned to preceding NR submission; SR profiles assigned by frame ID. CPU retire waits attributed to the frame that performs the wait."
+        },
+        {
+          "name": "deferred-tail-repeat",
+          "revision": 3,
+          "trace_start_us": 151515951,
+          "trace_end_us": 191902634,
+          "seconds": 40.4036546,
+          "frames": 1203,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 1203
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 1203,
+              "mean": 33.54128345802161,
+              "median": 33.344,
+              "p95": 36.942
+            },
+            "hook_ms": {
+              "n": 1203,
+              "mean": 4.254825436408978,
+              "median": 3.88,
+              "p95": 6.386
+            },
+            "outside_present_hook_ms": {
+              "n": 1203,
+              "mean": 29.286458021612635,
+              "median": 29.389,
+              "p95": 32.925
+            },
+            "nr_evaluated": {
+              "n": 1203,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 1203,
+              "mean": 3,
+              "median": 3,
+              "p95": 3
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 1203,
+              "mean": 2.2254785170407314,
+              "median": 1.9616,
+              "p95": 4.353664
+            },
+            "native_present_retire_wait_ms": {
+              "n": 1203,
+              "mean": 0.00372236076475478,
+              "median": 0.003,
+              "p95": 0.005
+            },
+            "fg_begin_and_reflex_sleep_ms": {
+              "n": 1203,
+              "mean": 0.21313383208645054,
+              "median": 0.139,
+              "p95": 0.238
+            },
+            "fg_input_wait_ms": {
+              "n": 1203,
+              "mean": 1.6625103906899418e-06,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "fg_options_ms": {
+              "n": 1203,
+              "mean": 0.007670822942643391,
+              "median": 0.007,
+              "p95": 0.011
+            },
+            "fg_proxy_present_ms": {
+              "n": 1203,
+              "mean": 0.32579052369077305,
+              "median": 0.288,
+              "p95": 0.496
+            },
+            "fg_retire_previous_ms": {
+              "n": 1203,
+              "mean": 0.105190357439734,
+              "median": 0.073,
+              "p95": 0.151
+            },
+            "tail_deferred_fraction": {
+              "n": 1203,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 1203,
+              "mean": 0.022518423940149628,
+              "median": 0.021056000000000002,
+              "p95": 0.024576
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 1203,
+              "mean": 0.10228830590191189,
+              "median": 0.090848,
+              "p95": 0.139232
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 1203,
+              "mean": 2.853703953449709,
+              "median": 2.8545920000000002,
+              "p95": 3.2896
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 1203,
+              "mean": 0.04314650706566916,
+              "median": 0.038208,
+              "p95": 0.04672
+            },
+            "sr_gpu_total_ms": {
+              "n": 1203,
+              "mean": 3.029486523690773,
+              "median": 3.024224,
+              "p95": 3.463936
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 1203,
+              "mean": 0.007829333333333334,
+              "median": 0.007424,
+              "p95": 0.008576
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 1203,
+              "mean": 0.22572402327514546,
+              "median": 0.212,
+              "p95": 0.316
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 1203,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "sr_cpu_record_ms": {
+              "n": 1203,
+              "mean": 0.27584039900249374,
+              "median": 0.258,
+              "p95": 0.39
+            },
+            "sr_cpu_submit_ms": {
+              "n": 1203,
+              "mean": 0.02243142144638404,
+              "median": 0.019,
+              "p95": 0.039
+            },
+            "sr_cpu_retire_wait_ms": {
+              "n": 1203,
+              "mean": 0.0011903574397339983,
+              "median": 0.001,
+              "p95": 0.001
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 1203,
+              "mean": 0.13116326517040733,
+              "median": 0.12806399999999998,
+              "p95": 0.157696
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 1203,
+              "mean": 8.118417263507897,
+              "median": 8.136416,
+              "p95": 8.623776
+            },
+            "nr_gpu_output_ms": {
+              "n": 1203,
+              "mean": 0.0005767182044887781,
+              "median": 0.000736,
+              "p95": 0.000864
+            },
+            "nr_cpu_record_ms": {
+              "n": 1203,
+              "mean": 2.812761429758936,
+              "median": 2.514,
+              "p95": 5.033
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 1203,
+              "mean": 0.4563665835411471,
+              "median": 0.386,
+              "p95": 0.628
+            },
+            "nr_cpu_submit_ms": {
+              "n": 1203,
+              "mean": 0.04518536990856193,
+              "median": 0.036,
+              "p95": 0.094
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 1203,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "nr_cpu_input_submit_wait_ms": {
+              "n": 1203,
+              "mean": 2.311404821280133,
+              "median": 2.03,
+              "p95": 4.566
+            }
+          },
+          "fps_from_median_interval": 29.990403071017273,
+          "fps_from_mean_interval": 29.81400521693047,
+          "observer_ms_per_present": 1.3809718204488777,
+          "process_cpu_core_equivalents": 2.8996448751940376,
+          "top_thread_core_equivalents": 0.4996453959390099,
+          "gpu_profile_assignment": "Deferred NR profiles assigned to preceding NR submission; SR profiles assigned by frame ID. CPU retire waits attributed to the frame that performs the wait."
+        }
+      ],
+      "readback_cpu_ms": null,
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "dbc9eadf88529e8491281267bb1411d7fb4cdd9455503cca386d2968fe6a50a3",
+          "bytes": 1538
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "d197e1dbea72a852c5fd1576fe294482847cf9118f1ae90430b4fd5bae92d55f",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "1a5a24ef0c74513d67768ddfcd294dd19f891d2328ac8f087f6e7cde87bbc85f",
+          "bytes": 1903
+        },
+        "module-check.json": {
+          "sha256": "4a7c703d4f7eabe769342530c22dbb6e04c5c519558941b28fe0808ff1df87e7",
+          "bytes": 1684
+        },
+        "layer.jsonl": {
+          "sha256": "2bc5a18f256f0f21a19f7e17fc49908a4e56515256723f17a6c6b77dfb6ce55a",
+          "bytes": 28451604
+        },
+        "runtime/sl.log": {
+          "sha256": "5e9e494fd5fdef6691700c893f293ca5ab26d2c93e2b41b4136c990b374eb9ab",
+          "bytes": 57480
+        },
+        "phase-1.json": {
+          "sha256": "2a3038eb7c51a0a828420148892f7842d5b535fead5ac57babf4e99fe7008b9c",
+          "bytes": 478093
+        },
+        "phase-2.json": {
+          "sha256": "5f28f013e2ad4fdfd375eb631fdc0aadde076e71769d182ba404d23f5d07beb4",
+          "bytes": 289723
+        },
+        "phase-3.json": {
+          "sha256": "48a26d6d30d158d1c9fe8bd383054cbc01de41ae40188a5b00ce33c63a976f0d",
+          "bytes": 477549
+        }
+      },
+      "completion_counts": {
+        "target_nr_submission": 5242,
+        "target_nr_completion": 5242,
+        "target_sr_completion": 5242,
+        "route_present_submitted": 6170,
+        "route_present_retired": 6170,
+        "target_nr_readback": 0
+      },
+      "tail_deferred_submissions": 5242,
+      "readback_details": [],
+      "validation_messages": []
+    }
+  ],
+  "p1_passed": false,
+  "p2_passed": false,
+  "formal_performance_verified": false,
+  "formal_visual_quality_verified": false
+}

@@ -34,6 +34,23 @@ unsafe extern "C" {
         reset: u32,
         resources: *const Resource,
     ) -> i32;
+    fn target_sr_options(
+        api: &Api,
+        width: u32,
+        height: u32,
+        mode: u32,
+        preset: u32,
+        input: *mut u32,
+    ) -> i32;
+    fn target_sr_evaluate(
+        api: &Api,
+        evaluate: *mut c_void,
+        command: u64,
+        token: u64,
+        reset: u32,
+        resources: *const Resource,
+    ) -> i32;
+    fn target_sr_free(function: *mut c_void) -> i32;
     fn probe_sr_free(function: *mut c_void) -> i32;
 }
 pub(super) unsafe fn exercise(
@@ -44,9 +61,21 @@ pub(super) unsafe fn exercise(
     device: &ash::Device,
     family: u32,
 ) -> Result<()> {
+    exercise_scoped(session, sdk, instance, physical, device, family, None)
+}
+pub(super) type RecordingScope = fn(vk::CommandBuffer, u32, u32) -> Box<dyn std::any::Any>;
+pub(super) unsafe fn exercise_scoped(
+    session: &Path,
+    sdk: &Library,
+    instance: &ash::Instance,
+    physical: vk::PhysicalDevice,
+    device: &ash::Device,
+    family: u32,
+    scope: Option<RecordingScope>,
+) -> Result<()> {
     // A failed submit/wait may leave GPU work in flight. The parent bounds this
     // child process; do not unwind through SDK/device cleanup on uncertain state.
-    if let Err(error) = run(session, sdk, instance, physical, device, family) {
+    if let Err(error) = run(session, sdk, instance, physical, device, family, scope) {
         let _ = write_json(
             &session.join("sr-failure.json"),
             &json!({"error":error.to_string(),"sr_verified":false}),
@@ -100,6 +129,7 @@ unsafe fn run(
     physical: vk::PhysicalDevice,
     device: &ash::Device,
     family: u32,
+    scope: Option<RecordingScope>,
 ) -> Result<()> {
     type Address = unsafe extern "C" fn();
     let api = Api {
@@ -127,27 +157,62 @@ unsafe fn run(
     let fence = device.create_fence(&vk::FenceCreateInfo::default(), None)?;
     let mut rows = Vec::new();
     let mut frame = 0;
-    for (cycle, output) in [
-        vk::Extent2D {
-            width: 1280,
-            height: 720,
-        },
-        vk::Extent2D {
-            width: 960,
-            height: 540,
-        },
-    ]
+    let magpie = std::env::var("NS_STREAMLINE_SR_MAGPIE_TEST").as_deref() == Ok("1");
+    for (cycle, output) in if magpie {
+        [
+            vk::Extent2D {
+                width: 2688,
+                height: 1512,
+            },
+            vk::Extent2D {
+                width: 960,
+                height: 540,
+            },
+        ]
+    } else {
+        [
+            vk::Extent2D {
+                width: 1280,
+                height: 720,
+            },
+            vk::Extent2D {
+                width: 960,
+                height: 540,
+            },
+        ]
+    }
     .into_iter()
     .enumerate()
     {
-        let mut input_size = [0; 2];
+        let mut input_size = if magpie {
+            if cycle == 0 {
+                [1920, 1080]
+            } else {
+                [960, 540]
+            }
+        } else {
+            [0; 2]
+        };
         fg_api::checked(
-            probe_sr_options(&api, output.width, output.height, input_size.as_mut_ptr()),
+            if magpie {
+                target_sr_options(
+                    &api,
+                    output.width,
+                    output.height,
+                    2,
+                    10,
+                    input_size.as_mut_ptr(),
+                )
+            } else {
+                probe_sr_options(&api, output.width, output.height, input_size.as_mut_ptr())
+            },
             "SR options/optimal settings",
         )?;
         if input_size.contains(&0)
-            || input_size[0] >= output.width
-            || input_size[1] >= output.height
+            || input_size[0] > output.width
+            || (!magpie && input_size[0] == output.width)
+            || input_size[1] > output.height
+            || (!magpie && input_size[1] == output.height)
         {
             return Err("SR returned invalid/non-upscaling optimal size".into());
         }
@@ -157,7 +222,7 @@ unsafe fn run(
         };
         write_json(
             &session.join(format!("sr-plan-{cycle}.json")),
-            &json!({"input":input_size,"output":[output.width,output.height],"mode":"quality"}),
+            &json!({"input":input_size,"output":[output.width,output.height],"mode":if magpie {"balanced"} else {"quality"},"preset":if magpie {"j"} else {"default"},"depth":if magpie {0.0} else {0.5},"motion_format":"fp16_input_pixels"}),
         )?;
         let usage = vk::ImageUsageFlags::SAMPLED
             | vk::ImageUsageFlags::STORAGE
@@ -252,7 +317,7 @@ unsafe fn run(
                         image,
                         vk::ImageLayout::TRANSFER_DST_OPTIMAL,
                         &vk::ClearColorValue {
-                            float32: if i == 2 {
+                            float32: if i == 2 && !magpie {
                                 [0.5; 4]
                             } else if i == 1 {
                                 [1.0, 0.0, 1.0, 1.0]
@@ -271,7 +336,23 @@ unsafe fn run(
                     vk::ImageLayout::GENERAL,
                 );
             }
-            fg_api::checked(
+            let recording = scope.map(|scope| scope(cmd, input.width, input.height));
+            let result = if magpie {
+                // SR-only diagnostics have no Reflex context. Request only the
+                // frame token, without the game path's Reflex sleep marker.
+                let mut token = std::ptr::null_mut();
+                let get: unsafe extern "C" fn(*mut *mut c_void, *const u32) -> i32 =
+                    std::mem::transmute(api.token);
+                fg_api::checked(get(&mut token, &frame), "SR frame token")?;
+                target_sr_evaluate(
+                    &api,
+                    evaluate,
+                    cmd.as_raw(),
+                    token as u64,
+                    u32::from(reset),
+                    resources.as_ptr(),
+                )
+            } else {
                 probe_sr_evaluate(
                     &api,
                     evaluate,
@@ -279,9 +360,10 @@ unsafe fn run(
                     frame,
                     u32::from(reset),
                     resources.as_ptr(),
-                ),
-                "Vulkan SR evaluate",
-            )?;
+                )
+            };
+            fg_api::checked(result, "Vulkan SR evaluate")?;
+            drop(recording);
             let image = vk::Image::from_raw(resources[1].image);
             fg_api::transition(
                 device,
@@ -381,7 +463,14 @@ unsafe fn run(
             return Err("SR output did not respond to changed input".into());
         }
         device.device_wait_idle()?;
-        fg_api::checked(probe_sr_free(free), "SR free resources")?;
+        fg_api::checked(
+            if magpie {
+                target_sr_free(free)
+            } else {
+                probe_sr_free(free)
+            },
+            "SR free resources",
+        )?;
         for res in resources {
             device.destroy_image_view(vk::ImageView::from_raw(res.view), None);
             device.destroy_image(vk::Image::from_raw(res.image), None);

@@ -1,6 +1,6 @@
 //! NVIDIA hardware optical flow through VK_NV_optical_flow.
 //! Independent of the retired colour block-matching experiment. Native flow is
-//! current -> previous in signed 10.5 pixel units; Streamline consumes UV units.
+//! current -> previous in signed 10.5 pixel units; FG and NR/SR have separate outputs.
 use crate::{fg_api::*, target_runtime, trace};
 use ash::vk::{self, Handle};
 use serde_json::json;
@@ -10,6 +10,14 @@ use std::{
     time::Instant,
 };
 static FAMILY: AtomicU32 = AtomicU32::new(u32::MAX);
+#[path = "target_nvof_difference.rs"]
+mod difference;
+
+pub(super) struct Frame {
+    pub(super) ready: vk::Semaphore,
+    pub(super) reset: bool,
+    pub(super) duplicate: bool,
+}
 pub(super) fn requested() -> bool {
     std::env::var("NS_STREAMLINE_TARGET_MOTION").as_deref() == Ok("1")
 }
@@ -42,6 +50,10 @@ pub(super) unsafe fn capability(
         &mut vk::PhysicalDeviceProperties2::default().push_next(&mut props),
     );
     if feature.optical_flow == 0
+        || instance
+            .get_physical_device_features(physical)
+            .shader_storage_image_extended_formats
+            == 0
         || !props
             .supported_output_grid_sizes
             .contains(vk::OpticalFlowGridSizeFlagsNV::TYPE_4X4)
@@ -67,6 +79,19 @@ struct Image {
     view: vk::ImageView,
     extent: vk::Extent2D,
 }
+impl Image {
+    fn capture_resource(&self, format: vk::Format) -> Resource {
+        Resource {
+            image: self.image.as_raw(),
+            memory: self.memory.as_raw(),
+            view: self.view.as_raw(),
+            width: self.extent.width,
+            height: self.extent.height,
+            format: format.as_raw() as u32,
+            usage: vk::ImageUsageFlags::TRANSFER_SRC.as_raw(),
+        }
+    }
+}
 impl Drop for Image {
     fn drop(&mut self) {
         unsafe {
@@ -80,6 +105,84 @@ struct Buffer {
     device: ash::Device,
     buffer: vk::Buffer,
     memory: vk::DeviceMemory,
+}
+struct Map {
+    image: Image,
+    binding: vk::OpticalFlowSessionBindingPointNV,
+    segment: u32,
+}
+fn session_profiles(backward: bool, cost: bool) -> Vec<(bool, bool)> {
+    let mut profiles = Vec::new();
+    for pair in [
+        (backward, cost),
+        (backward, false),
+        (false, cost),
+        (false, false),
+    ] {
+        if !profiles.contains(&pair) {
+            profiles.push(pair);
+        }
+    }
+    profiles
+}
+unsafe fn cost_format_available(
+    instance: vk::Instance,
+    physical: vk::PhysicalDevice,
+    gipa: vk::PFN_vkGetInstanceProcAddr,
+) -> Result<bool> {
+    // Resolve through the instance's existing route. Interposer physical-device
+    // handles cannot be passed to a separately loaded system Loader trampoline.
+    let Some(address) = gipa(
+        instance,
+        c"vkGetPhysicalDeviceOpticalFlowImageFormatsNV".as_ptr(),
+    ) else {
+        return Ok(false);
+    };
+    let get: vk::PFN_vkGetPhysicalDeviceOpticalFlowImageFormatsNV = std::mem::transmute(address);
+    let info = vk::OpticalFlowImageFormatInfoNV::default().usage(vk::OpticalFlowUsageFlagsNV::COST);
+    let mut count = 0;
+    get(physical, &info, &mut count, std::ptr::null_mut()).result()?;
+    let mut formats = vec![vk::OpticalFlowImageFormatPropertiesNV::default(); count as usize];
+    if count != 0 {
+        get(physical, &info, &mut count, formats.as_mut_ptr()).result()?;
+        formats.truncate(count as usize);
+    }
+    Ok(formats.iter().any(|f| f.format == vk::Format::R8_UINT))
+}
+unsafe fn dense_texture(
+    instance: &ash::Instance,
+    physical: vk::PhysicalDevice,
+    device: &ash::Device,
+    extent: vk::Extent2D,
+    format: vk::Format,
+) -> Result<(Image, Resource)> {
+    if !instance
+        .get_physical_device_format_properties(physical, format)
+        .optimal_tiling_features
+        .contains(vk::FormatFeatureFlags::STORAGE_IMAGE | vk::FormatFeatureFlags::SAMPLED_IMAGE)
+    {
+        return Err("NVOF dense guide format unsupported".into());
+    }
+    let memory = instance.get_physical_device_memory_properties(physical);
+    let resource = texture_with_usage(
+        device,
+        &memory,
+        extent,
+        format,
+        vk::ImageUsageFlags::STORAGE
+            | vk::ImageUsageFlags::SAMPLED
+            | vk::ImageUsageFlags::TRANSFER_SRC,
+    )?;
+    Ok((
+        Image {
+            device: device.clone(),
+            image: vk::Image::from_raw(resource.image),
+            memory: vk::DeviceMemory::from_raw(resource.memory),
+            view: vk::ImageView::from_raw(resource.view),
+            extent,
+        },
+        resource,
+    ))
 }
 impl Drop for Buffer {
     fn drop(&mut self) {
@@ -216,7 +319,13 @@ pub(super) struct Flow {
     api: ash::nv::optical_flow::Device,
     session: vk::OpticalFlowSessionNV,
     colors: Vec<Image>,
-    maps: Vec<Image>,
+    maps: Vec<Map>,
+    backward: bool,
+    cost: bool,
+    pixel_motion: Option<(Image, Resource)>,
+    sr_pixel_motion: Option<(Image, Resource)>,
+    confidence: Option<Image>,
+    capture: Option<crate::frame_capture::Capture>,
     data: Option<Buffer>,
     timing: Option<GpuTiming>,
     pools: Vec<vk::CommandPool>,
@@ -236,11 +345,17 @@ pub(super) struct Flow {
     current: usize,
     initialized: bool,
     previous_frame: u32,
+    reference_frame: u32,
     last_frame: Option<Instant>,
+    temporal_hints: bool,
+    static_guard: bool,
+    hint_reset_pending: bool,
+    difference: Option<difference::Difference>,
 }
 impl Flow {
     pub(super) unsafe fn new(
         instance: &ash::Instance,
+        gipa: vk::PFN_vkGetInstanceProcAddr,
         physical: vk::PhysicalDevice,
         device: &ash::Device,
         swapchain: vk::SwapchainKHR,
@@ -248,6 +363,7 @@ impl Flow {
     ) -> Result<Self> {
         Self::create(
             instance,
+            gipa,
             physical,
             device,
             0,
@@ -258,12 +374,28 @@ impl Flow {
     }
     unsafe fn create(
         instance: &ash::Instance,
+        gipa: vk::PFN_vkGetInstanceProcAddr,
         physical: vk::PhysicalDevice,
         device: &ash::Device,
         graphics: u32,
         optical: u32,
         swapchain: vk::SwapchainKHR,
         output: Resource,
+    ) -> Result<Self> {
+        Self::create_with_profile(
+            instance, gipa, physical, device, graphics, optical, swapchain, output, None,
+        )
+    }
+    unsafe fn create_with_profile(
+        instance: &ash::Instance,
+        gipa: vk::PFN_vkGetInstanceProcAddr,
+        physical: vk::PhysicalDevice,
+        device: &ash::Device,
+        graphics: u32,
+        optical: u32,
+        swapchain: vk::SwapchainKHR,
+        output: Resource,
+        preferred: Option<(bool, bool)>,
     ) -> Result<Self> {
         let api = ash::nv::optical_flow::Device::new(instance, device);
         let extent = vk::Extent2D {
@@ -280,6 +412,12 @@ impl Flow {
             session: vk::OpticalFlowSessionNV::null(),
             colors: vec![],
             maps: vec![],
+            backward: false,
+            cost: false,
+            pixel_motion: None,
+            sr_pixel_motion: None,
+            confidence: None,
+            capture: None,
             data: None,
             timing: None,
             pools: vec![],
@@ -299,7 +437,15 @@ impl Flow {
             current: 0,
             initialized: false,
             previous_frame: 0,
+            reference_frame: 0,
             last_frame: None,
+            // Like Magpie, retain hints between new color frames. Exact repeats
+            // never run OF; confidence remains separate from raw motion.
+            temporal_hints: std::env::var("NS_STREAMLINE_NVOF_TEMPORAL_HINTS").as_deref()
+                != Ok("0"),
+            static_guard: std::env::var("NS_STREAMLINE_NVOF_STATIC_GUARD").as_deref() != Ok("0"),
+            hint_reset_pending: true,
+            difference: None,
         };
         let mut props = vk::PhysicalDeviceOpticalFlowPropertiesNV::default();
         instance.get_physical_device_properties2(
@@ -313,21 +459,60 @@ impl Flow {
         {
             return Err("NVOF input extent outside device limits".into());
         }
-        (f.api.fp().create_optical_flow_session_nv)(
-            device.handle(),
-            &vk::OpticalFlowSessionCreateInfoNV::default()
+        let cost_available =
+            props.cost_supported != 0 && cost_format_available(instance.handle(), physical, gipa)?;
+        let (want_backward, want_cost) = preferred.unwrap_or((true, true));
+        let mut last_error = vk::Result::ERROR_INITIALIZATION_FAILED;
+        for (backward, cost) in session_profiles(
+            want_backward && props.bidirectional_flow_supported != 0,
+            want_cost && cost_available,
+        ) {
+            let mut flags = vk::OpticalFlowSessionCreateFlagsNV::empty();
+            if backward {
+                flags |= vk::OpticalFlowSessionCreateFlagsNV::BOTH_DIRECTIONS;
+            }
+            if cost {
+                flags |= vk::OpticalFlowSessionCreateFlagsNV::ENABLE_COST;
+            }
+            let info = vk::OpticalFlowSessionCreateInfoNV::default()
                 .width(extent.width)
                 .height(extent.height)
                 .image_format(vk::Format::B8G8R8A8_UNORM)
                 .flow_vector_format(vk::Format::R16G16_S10_5_NV)
-                .cost_format(vk::Format::UNDEFINED)
+                .cost_format(if cost {
+                    vk::Format::R8_UINT
+                } else {
+                    vk::Format::UNDEFINED
+                })
                 .output_grid_size(vk::OpticalFlowGridSizeFlagsNV::TYPE_4X4)
                 .performance_level(vk::OpticalFlowPerformanceLevelNV::MEDIUM)
-                .flags(vk::OpticalFlowSessionCreateFlagsNV::empty()),
-            std::ptr::null(),
-            &mut f.session,
-        )
-        .result()?;
+                .flags(flags);
+            let mut session = vk::OpticalFlowSessionNV::null();
+            let result = (f.api.fp().create_optical_flow_session_nv)(
+                device.handle(),
+                &info,
+                std::ptr::null(),
+                &mut session,
+            );
+            if result == vk::Result::SUCCESS {
+                f.session = session;
+                f.backward = backward;
+                f.cost = cost;
+                break;
+            }
+            last_error = result;
+            if !matches!(
+                result,
+                vk::Result::ERROR_INITIALIZATION_FAILED
+                    | vk::Result::ERROR_FEATURE_NOT_PRESENT
+                    | vk::Result::ERROR_FORMAT_NOT_SUPPORTED
+            ) {
+                return Err(format!("NVOF session failed: {result:?}").into());
+            }
+        }
+        if f.session == vk::OpticalFlowSessionNV::null() {
+            return Err(format!("NVOF profiles unavailable: {last_error:?}").into());
+        }
         if std::env::var("NS_STREAMLINE_NVOF_TIMING").as_deref() == Ok("1") {
             let bits = instance.get_physical_device_queue_family_properties(physical)
                 [graphics as usize]
@@ -362,26 +547,97 @@ impl Flow {
                 &families,
             )?);
         }
-        f.maps.push(image(
+        for (binding, segment, format, usage, enabled) in [
+            (
+                vk::OpticalFlowSessionBindingPointNV::FLOW_VECTOR,
+                0,
+                vk::Format::R16G16_S10_5_NV,
+                vk::OpticalFlowUsageFlagsNV::OUTPUT,
+                true,
+            ),
+            (
+                vk::OpticalFlowSessionBindingPointNV::BACKWARD_FLOW_VECTOR,
+                1,
+                vk::Format::R16G16_S10_5_NV,
+                vk::OpticalFlowUsageFlagsNV::OUTPUT,
+                f.backward,
+            ),
+            (
+                vk::OpticalFlowSessionBindingPointNV::COST,
+                2,
+                vk::Format::R8_UINT,
+                vk::OpticalFlowUsageFlagsNV::COST,
+                f.cost,
+            ),
+            (
+                vk::OpticalFlowSessionBindingPointNV::BACKWARD_COST,
+                3,
+                vk::Format::R8_UINT,
+                vk::OpticalFlowUsageFlagsNV::COST,
+                f.backward && f.cost,
+            ),
+        ] {
+            if enabled {
+                f.maps.push(Map {
+                    image: image(
+                        instance,
+                        physical,
+                        device,
+                        grid,
+                        format,
+                        usage,
+                        vk::ImageUsageFlags::TRANSFER_SRC,
+                        &families,
+                    )?,
+                    binding,
+                    segment,
+                });
+            }
+        }
+        f.pixel_motion = Some(dense_texture(
             instance,
             physical,
             device,
-            grid,
-            vk::Format::R16G16_S10_5_NV,
-            vk::OpticalFlowUsageFlagsNV::OUTPUT,
-            vk::ImageUsageFlags::TRANSFER_SRC,
-            &families,
+            extent,
+            vk::Format::R16G16_SFLOAT,
         )?);
+        f.sr_pixel_motion = Some(dense_texture(
+            instance,
+            physical,
+            device,
+            extent,
+            vk::Format::R16G16_SFLOAT,
+        )?);
+        f.confidence =
+            Some(dense_texture(instance, physical, device, extent, vk::Format::R16_SFLOAT)?.0);
         let memory = instance.get_physical_device_memory_properties(physical);
+        f.capture = crate::frame_capture::Capture::new(
+            device,
+            &memory,
+            &[
+                f.colors[0].capture_resource(vk::Format::B8G8R8A8_UNORM),
+                f.colors[1].capture_resource(vk::Format::B8G8R8A8_UNORM),
+                output,
+                f.pixel_motion(),
+                f.confidence
+                    .as_ref()
+                    .unwrap()
+                    .capture_resource(vk::Format::R16_SFLOAT),
+                f.sr_pixel_motion(),
+            ],
+        )?;
         let count = u64::from(grid.width) * u64::from(grid.height);
-        let bytes = count * 4;
+        let bytes = count * 16;
         f.data = Some(buffer(
             device,
             &memory,
             bytes,
-            vk::BufferUsageFlags::TRANSFER_DST | vk::BufferUsageFlags::STORAGE_BUFFER,
+            vk::BufferUsageFlags::TRANSFER_DST
+                | vk::BufferUsageFlags::TRANSFER_SRC
+                | vk::BufferUsageFlags::STORAGE_BUFFER,
             false,
         )?);
+        f.difference = Some(difference::Difference::new(device, &memory, &f.colors)?);
         for family in [graphics, optical, graphics] {
             let pool = device.create_command_pool(
                 &vk::CommandPoolCreateInfo::default()
@@ -405,6 +661,10 @@ impl Flow {
         let bindings = [
             vk::DescriptorType::STORAGE_BUFFER,
             vk::DescriptorType::STORAGE_IMAGE,
+            vk::DescriptorType::STORAGE_IMAGE,
+            vk::DescriptorType::STORAGE_IMAGE,
+            vk::DescriptorType::STORAGE_BUFFER,
+            vk::DescriptorType::STORAGE_IMAGE,
         ]
         .into_iter()
         .enumerate()
@@ -426,11 +686,11 @@ impl Flow {
                 .pool_sizes(&[
                     vk::DescriptorPoolSize {
                         ty: vk::DescriptorType::STORAGE_BUFFER,
-                        descriptor_count: 1,
+                        descriptor_count: 2,
                     },
                     vk::DescriptorPoolSize {
                         ty: vk::DescriptorType::STORAGE_IMAGE,
-                        descriptor_count: 1,
+                        descriptor_count: 4,
                     },
                 ]),
             None,
@@ -446,6 +706,18 @@ impl Flow {
         let out = [vk::DescriptorImageInfo::default()
             .image_view(vk::ImageView::from_raw(output.view))
             .image_layout(vk::ImageLayout::GENERAL)];
+        let pixel_motion = [vk::DescriptorImageInfo::default()
+            .image_view(f.pixel_motion.as_ref().unwrap().0.view)
+            .image_layout(vk::ImageLayout::GENERAL)];
+        let sr_pixel_motion = [vk::DescriptorImageInfo::default()
+            .image_view(f.sr_pixel_motion.as_ref().unwrap().0.view)
+            .image_layout(vk::ImageLayout::GENERAL)];
+        let confidence = [vk::DescriptorImageInfo::default()
+            .image_view(f.confidence.as_ref().unwrap().view)
+            .image_layout(vk::ImageLayout::GENERAL)];
+        let matches = [vk::DescriptorBufferInfo::default()
+            .buffer(f.difference.as_ref().unwrap().flags.buffer)
+            .range(vk::WHOLE_SIZE)];
         device.update_descriptor_sets(
             &[
                 vk::WriteDescriptorSet::default()
@@ -458,6 +730,26 @@ impl Flow {
                     .dst_binding(1)
                     .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
                     .image_info(&out),
+                vk::WriteDescriptorSet::default()
+                    .dst_set(f.set)
+                    .dst_binding(2)
+                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                    .image_info(&pixel_motion),
+                vk::WriteDescriptorSet::default()
+                    .dst_set(f.set)
+                    .dst_binding(3)
+                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                    .image_info(&confidence),
+                vk::WriteDescriptorSet::default()
+                    .dst_set(f.set)
+                    .dst_binding(4)
+                    .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                    .buffer_info(&matches),
+                vk::WriteDescriptorSet::default()
+                    .dst_set(f.set)
+                    .dst_binding(5)
+                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                    .image_info(&sr_pixel_motion),
             ],
             &[],
         );
@@ -512,10 +804,17 @@ impl Flow {
         }
         trace::event!(
             "target_nvof_ready",
-            json!({"backend":"VK_NV_optical_flow","width":extent.width,"height":extent.height,"grid":4,"quality":"balanced","bidirectional":false,"cost":false}),
+            json!({"backend":"VK_NV_optical_flow","width":extent.width,"height":extent.height,"grid":4,"quality":"balanced","bidirectional":f.backward,"cost":f.cost,"temporal_hints":f.temporal_hints,"exact_duplicate_filter":true,"unchanged_tile_zero_motion":f.static_guard,"shared_motion_static_guard":false,"confidence_masked":false,"fg_motion":"fp16_pixels","shared_motion":"fp32_uv"}),
         );
         Ok(f)
     }
+    pub(super) fn sr_pixel_motion(&self) -> Resource {
+        self.sr_pixel_motion.as_ref().unwrap().1
+    }
+    pub(super) fn pixel_motion(&self) -> Resource {
+        self.pixel_motion.as_ref().unwrap().1
+    }
+
     pub(super) unsafe fn run(
         &mut self,
         queue: vk::Queue,
@@ -523,7 +822,7 @@ impl Flow {
         output: Resource,
         reset: bool,
         frame: u32,
-    ) -> Result<(vk::Semaphore, bool)> {
+    ) -> Result<Frame> {
         if info.p_image_indices.is_null()
             || (info.wait_semaphore_count > 0 && info.p_wait_semaphores.is_null())
         {
@@ -557,7 +856,7 @@ impl Flow {
         output: Resource,
         reset: bool,
         frame: u32,
-    ) -> Result<(vk::Semaphore, bool)> {
+    ) -> Result<Frame> {
         let started = Instant::now();
         let reset = reset
             || !self.initialized
@@ -584,7 +883,14 @@ impl Flow {
             d.cmd_write_timestamp(copy, vk::PipelineStageFlags::TOP_OF_PIPE, timing.pool, 0);
         }
         if !self.initialized {
-            for i in self.colors.iter().chain(&self.maps) {
+            for i in self
+                .colors
+                .iter()
+                .chain(self.maps.iter().map(|m| &m.image))
+                .chain(self.pixel_motion.iter().map(|p| &p.0))
+                .chain(self.sr_pixel_motion.iter().map(|p| &p.0))
+                .chain(self.confidence.iter())
+            {
                 transition(
                     d,
                     copy,
@@ -686,21 +992,31 @@ impl Flow {
                 vk::ImageLayout::GENERAL,
             );
         }
+        let difference = self.difference.as_ref().unwrap();
+        difference.record(copy, self.current, self.grid);
         if let Some(timing) = &self.timing {
             d.cmd_write_timestamp(copy, vk::PipelineStageFlags::BOTTOM_OF_PIPE, timing.pool, 1);
         }
         d.end_command_buffer(copy)?;
+        // Consume application waits once, then read the exact comparison result.
+        // Subsequent failures propagate; this frame must never replay those waits.
+        let identical = difference.submit(queue, copy, waits, self.semaphores[0])?;
+        let duplicate = !reset && identical;
+        let evaluate = !reset && !duplicate;
+        let capture = crate::frame_capture::selected(frame) && self.capture.is_some();
+        if reset {
+            self.hint_reset_pending = true;
+        }
         for (binding, view) in [
             (vk::OpticalFlowSessionBindingPointNV::INPUT, current.view),
             (
                 vk::OpticalFlowSessionBindingPointNV::REFERENCE,
                 self.colors[1 - self.current].view,
             ),
-            (
-                vk::OpticalFlowSessionBindingPointNV::FLOW_VECTOR,
-                self.maps[0].view,
-            ),
-        ] {
+        ]
+        .into_iter()
+        .chain(self.maps.iter().map(|m| (m.binding, m.image.view)))
+        {
             (self.api.fp().bind_optical_flow_session_image_nv)(
                 d.handle(),
                 self.session,
@@ -712,22 +1028,31 @@ impl Flow {
         }
         let optical = self.commands[1];
         d.begin_command_buffer(optical, &vk::CommandBufferBeginInfo::default())?;
-        (self.api.fp().cmd_optical_flow_execute_nv)(
-            optical,
-            self.session,
-            &vk::OpticalFlowExecuteInfoNV::default().flags(if reset {
-                vk::OpticalFlowExecuteFlagsNV::DISABLE_TEMPORAL_HINTS
-            } else {
-                vk::OpticalFlowExecuteFlagsNV::empty()
-            }),
-        );
+        if evaluate {
+            (self.api.fp().cmd_optical_flow_execute_nv)(
+                optical,
+                self.session,
+                &vk::OpticalFlowExecuteInfoNV::default().flags(
+                    if self.hint_reset_pending || !self.temporal_hints {
+                        vk::OpticalFlowExecuteFlagsNV::DISABLE_TEMPORAL_HINTS
+                    } else {
+                        vk::OpticalFlowExecuteFlagsNV::empty()
+                    },
+                ),
+            );
+        }
         d.end_command_buffer(optical)?;
         let dense = self.commands[2];
         d.begin_command_buffer(dense, &vk::CommandBufferBeginInfo::default())?;
         if let Some(timing) = &self.timing {
             d.cmd_write_timestamp(dense, vk::PipelineStageFlags::TOP_OF_PIPE, timing.pool, 2);
         }
-        for map in &self.maps {
+        for map in self.maps.iter().filter(|_| evaluate) {
+            let offset = u64::from(map.segment)
+                * u64::from(self.grid.width)
+                * u64::from(self.grid.height)
+                * 4;
+            let map = &map.image;
             transition(
                 d,
                 dense,
@@ -741,7 +1066,7 @@ impl Flow {
                 vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
                 self.data.as_ref().unwrap().buffer,
                 &[vk::BufferImageCopy::default()
-                    .buffer_offset(0)
+                    .buffer_offset(offset)
                     .image_subresource(layers)
                     .image_extent(vk::Extent3D {
                         width: map.extent.width,
@@ -778,9 +1103,17 @@ impl Flow {
             &[],
         );
         let mut constants = [0u8; 16];
-        for (i, value) in [self.grid.width, self.grid.height, u32::from(reset), 0]
-            .iter()
-            .enumerate()
+        let flags = u32::from(self.backward)
+            | (u32::from(self.cost) << 1)
+            | (u32::from(self.static_guard) << 2);
+        for (i, value) in [
+            self.grid.width,
+            self.grid.height,
+            u32::from(!evaluate),
+            flags,
+        ]
+        .iter()
+        .enumerate()
         {
             constants[i * 4..i * 4 + 4].copy_from_slice(&value.to_ne_bytes());
         }
@@ -808,6 +1141,9 @@ impl Flow {
             &[],
             &[],
         );
+        if capture {
+            self.capture.as_ref().unwrap().record(dense);
+        }
         if let Some(timing) = &self.timing {
             d.cmd_write_timestamp(
                 dense,
@@ -817,39 +1153,42 @@ impl Flow {
             );
         }
         d.end_command_buffer(dense)?;
-        // Prepare everything before consuming application waits. After submission
-        // failures must propagate: the same binary waits cannot be reused.
-        let stages = vec![vk::PipelineStageFlags::ALL_COMMANDS; waits.len()];
-        d.queue_submit(
-            queue,
-            &[vk::SubmitInfo::default()
-                .command_buffers(&[copy])
-                .wait_semaphores(waits)
-                .wait_dst_stage_mask(&stages)
-                .signal_semaphores(&[self.semaphores[0]])],
-            vk::Fence::null(),
-        )?;
-        d.queue_submit(
-            self.optical_queue,
-            &[vk::SubmitInfo::default()
-                .command_buffers(&[optical])
-                .wait_semaphores(&[self.semaphores[0]])
-                .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS])
-                .signal_semaphores(&[self.semaphores[1]])],
-            vk::Fence::null(),
-        )?;
+        if evaluate {
+            d.queue_submit(
+                self.optical_queue,
+                &[vk::SubmitInfo::default()
+                    .command_buffers(&[optical])
+                    .wait_semaphores(&[self.semaphores[0]])
+                    .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS])
+                    .signal_semaphores(&[self.semaphores[1]])],
+                vk::Fence::null(),
+            )?;
+        }
         d.queue_submit(
             queue,
             &[vk::SubmitInfo::default()
                 .command_buffers(&[dense])
-                .wait_semaphores(&[self.semaphores[1]])
+                .wait_semaphores(&[self.semaphores[if evaluate { 1 } else { 0 }]])
                 .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS])
                 .signal_semaphores(&[self.semaphores[2]])],
             self.fence,
         )?;
+        if capture {
+            d.wait_for_fences(&[self.fence], true, 5_000_000_000)?;
+            self.capture.as_ref().unwrap().save("nvof", frame)?;
+            trace::event!(
+                "target_nvof_capture",
+                json!({
+                    "frame":frame,"reset":reset,"duplicate":duplicate,"evaluated":evaluate,
+                    "current_color_index":self.current,"reference_frame":self.reference_frame,
+                    "temporal_hints_used":evaluate && self.temporal_hints && !self.hint_reset_pending,
+                    "bidirectional":self.backward,"cost":self.cost,
+                })
+            );
+        }
         trace::event!(
             "target_nvof_frame",
-            json!({"frame":frame,"reset":reset,"submit_us":started.elapsed().as_micros(),"grid":4,"confidence_masked":false,"diagnostic_statistics":false}),
+            json!({"frame":frame,"reset":reset,"duplicate":duplicate,"evaluated":evaluate,"temporal_hints_used":evaluate && self.temporal_hints && !self.hint_reset_pending,"reference_frame":self.reference_frame,"submit_us":started.elapsed().as_micros(),"grid":4,"confidence_masked":false,"diagnostic_statistics":false}),
         );
         if self.timing.is_some() {
             trace::event!(
@@ -859,11 +1198,21 @@ impl Flow {
                 "includes_previous_frame_fence_wait":true})
             );
         }
-        self.current = 1 - self.current;
+        if !duplicate {
+            self.current = 1 - self.current;
+            self.reference_frame = frame;
+        }
+        if evaluate {
+            self.hint_reset_pending = false;
+        }
         self.initialized = true;
         self.previous_frame = frame;
         self.last_frame = Some(Instant::now());
-        Ok((self.semaphores[2], reset))
+        Ok(Frame {
+            ready: self.semaphores[2],
+            reset,
+            duplicate,
+        })
     }
 }
 impl Drop for Flow {

@@ -1,0 +1,1863 @@
+{
+  "date": "2026-10-01",
+  "change": "NR-to-SR semaphore handoff with SR final fence retained; NS_STREAMLINE_NR_GPU_HANDOFF=0 selects old CPU wait; same binary in all sessions",
+  "user_feedback": {
+    "strict": "entered moving scene, picture normal",
+    "baseline": "same location and view ready, kept still",
+    "optimized": "same location and view ready, picture normal, kept still"
+  },
+  "limitations": [
+    "Separate processes and sequential samples; not a deterministic replay or long-term statistical benchmark.",
+    "Strict validation still fails; new message ID for fence threading has a historical counterpart with opposite reporting order in an NR-zero-evaluation session. Attribution unresolved.",
+    "Readbacks intentionally use synchronous path; asynchronous picture assessed by user and completion/hand-off evidence.",
+    "End-of-chain CPU wait retained; NR GPU work and outside-hook scheduling remain."
+  ],
+  "checks": {
+    "rust_fmt": true,
+    "all_features_all_targets_tests": true,
+    "crate_host_and_windows_checks": true,
+    "sdk_only_and_default_checks": true,
+    "main_app_host_and_windows_checks": true,
+    "cargo_errors": 0,
+    "cargo_warnings": 0
+  },
+  "sessions": [
+    {
+      "session": "nr-handoff-validation-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "6f034127be986a55195ab180faa2c78ac3e881f203d42ea689b818f3c1c779d6",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "nr_validation_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 1753,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 803,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 1753,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 13,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 6,
+          "readbacks_valid": true,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 9,
+            "SourceChanged": 4,
+            "StrengthChanged": 1
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 1739,
+            "logical_identities": 5,
+            "longest_without_reset": 801,
+            "physical_rotations_without_reset": 1739,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 11
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 1777,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 1777,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 219,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 220,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "module_check": null,
+      "phases": [
+        {
+          "name": "gpu-handoff-strict",
+          "revision": 1,
+          "trace_start_us": 98944615,
+          "trace_end_us": 134268297,
+          "seconds": 35.4038582,
+          "frames": 337,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 337
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 337,
+              "mean": 104.42872403560831,
+              "median": 102.175,
+              "p95": 127.439
+            },
+            "hook_ms": {
+              "n": 337,
+              "mean": 15.580839762611276,
+              "median": 15.32,
+              "p95": 17.689
+            },
+            "outside_present_hook_ms": {
+              "n": 337,
+              "mean": 88.84788427299704,
+              "median": 86.515,
+              "p95": 111.385
+            },
+            "nr_evaluated": {
+              "n": 337,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 337,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 337,
+              "mean": 0.1316806646884273,
+              "median": 0.127136,
+              "p95": 0.153088
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 337,
+              "mean": 7.595873709198813,
+              "median": 7.561856,
+              "p95": 8.675168
+            },
+            "nr_gpu_output_ms": {
+              "n": 337,
+              "mean": 0.00019703264094955489,
+              "median": 0.000128,
+              "p95": 0.000416
+            },
+            "nr_cpu_record_ms": {
+              "n": 337,
+              "mean": 1.6976824925816023,
+              "median": 1.552,
+              "p95": 2.083
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 337,
+              "mean": 0.6280445103857567,
+              "median": 0.523,
+              "p95": 0.748
+            },
+            "nr_cpu_submit_ms": {
+              "n": 337,
+              "mean": 0.7936973293768546,
+              "median": 0.738,
+              "p95": 1.151
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 337,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 337,
+              "mean": 0.02026074777448071,
+              "median": 0.018911999999999998,
+              "p95": 0.024768000000000002
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 337,
+              "mean": 0.09606105637982196,
+              "median": 0.09539199999999999,
+              "p95": 0.10848000000000001
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 337,
+              "mean": 2.6310125578635013,
+              "median": 2.56864,
+              "p95": 2.992288
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 337,
+              "mean": 0.036908629080118695,
+              "median": 0.035584000000000005,
+              "p95": 0.042527999999999996
+            },
+            "sr_gpu_total_ms": {
+              "n": 337,
+              "mean": 2.791682278931751,
+              "median": 2.7324159999999997,
+              "p95": 3.1734400000000003
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 337,
+              "mean": 0.007439287833827893,
+              "median": 0.006912,
+              "p95": 0.01008
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 337,
+              "mean": 0.48991691394658754,
+              "median": 0.467,
+              "p95": 0.635
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 337,
+              "mean": 7.356697329376854,
+              "median": 7.228,
+              "p95": 9.269
+            },
+            "sr_cpu_record_ms": {
+              "n": 337,
+              "mean": 2.2368367952522257,
+              "median": 2.146,
+              "p95": 2.789
+            },
+            "sr_cpu_submit_ms": {
+              "n": 337,
+              "mean": 1.3439198813056379,
+              "median": 1.3,
+              "p95": 1.65
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 337,
+              "mean": 2.171019014836795,
+              "median": 1.8936959999999998,
+              "p95": 3.0483200000000004
+            }
+          },
+          "fps_from_median_interval": 9.787129924149744,
+          "fps_from_mean_interval": 9.575909398826113,
+          "observer_ms_per_present": 1.2536777448071217,
+          "process_cpu_core_equivalents": 1.9078958744671504,
+          "top_thread_core_equivalents": 0.8835548324504362
+        }
+      ],
+      "readback_cpu_ms": {
+        "n": 6,
+        "mean": 5969.906166666667,
+        "median": 6029.2125,
+        "p95": 6259.297
+      },
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "443157c36a996d16d4ff7bf3b42547e1acc9b711bfb73572428822b9b4a95dbd",
+          "bytes": 1661
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "cce7c75dfb3ba4f4a7ad3d07c3d2f5c679aa632037bcfe0fbcea6214472f98cb",
+          "bytes": 18
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "6856763a961b4177319b2f3fa20f707bd6340a17f8b0cfa25b6ca5ab48528736",
+          "bytes": 2159
+        },
+        "layer.jsonl": {
+          "sha256": "59876dddd91ce8cd75aa2816a3c6ff39a5023994b398fc40cc73034bd058e700",
+          "bytes": 7558410
+        },
+        "nr-validation.jsonl": {
+          "sha256": "293b37a57a41ae468e70cff1cb558fdd7bed4ca322d1868a8758accddda7d10d",
+          "bytes": 159329
+        },
+        "runtime/sl.log": {
+          "sha256": "968736d32fc97f17f6de614fb1587fda4807a5dad1eecade3ea5fc0bee97d07b",
+          "bytes": 188749
+        }
+      },
+      "handoff_counts": {
+        "target_nr_submission": 1753,
+        "target_nr_completion": 1747,
+        "target_sr_frame": 1764,
+        "target_nr_readback": 6
+      },
+      "deferred_submissions": 1747,
+      "readback_details": [
+        {
+          "capture": 0,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-0.ppm",
+            "nr-output-1920-1080-0.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 1,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-1.ppm",
+            "nr-output-1920-1080-1.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 2,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-2.ppm",
+            "nr-output-1920-1080-2.ppm"
+          ],
+          "finite": true,
+          "intensity": 1.0,
+          "mean_absolute_input_difference": 0.00039185698732681985,
+          "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 3,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-3.ppm",
+            "nr-output-1920-1080-3.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.005205388957516715,
+          "output_sha256": "7169ec1eb9b24887970d769156bb2225d7fe520671ba60a7ac2eebd225a37093",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 4,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-4.ppm",
+            "nr-output-1920-1080-4.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.005249671857878796,
+          "output_sha256": "2129206a6237ac67d4bf8e50b89c1c8c8b80eb872372db9a8f120827ff48021a",
+          "sentinel_pixels": 0
+        },
+        {
+          "capture": 5,
+          "extent": [
+            1920,
+            1080
+          ],
+          "fence_completed": true,
+          "files": [
+            "nr-input-1920-1080-5.ppm",
+            "nr-output-1920-1080-5.ppm"
+          ],
+          "finite": true,
+          "intensity": 0.5,
+          "mean_absolute_input_difference": 0.005263051654321406,
+          "output_sha256": "3643c4c3a852dafee733a0b95378e4c97d6bf8282734730802ce1fd39b82e432",
+          "sentinel_pixels": 0
+        }
+      ],
+      "validation_messages": [
+        {
+          "id": -2063277991,
+          "count": 10,
+          "first": {
+            "id_number": -2063277991,
+            "message": "vkCmdCopyBuffer(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/copies.html#VUID-vkCmdCopyBuffer-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -2017440641,
+          "count": 10,
+          "first": {
+            "id_number": -2017440641,
+            "message": "vkCmdBindVertexBuffers2EXT(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers2-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -1744492148,
+          "count": 10,
+          "first": {
+            "id_number": -1744492148,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 2], but there is no VkSubpassDescription::pColorAttachments[2] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput",
+            "review": null,
+            "severity": 256,
+            "type": 2
+          }
+        },
+        {
+          "id": -1693624763,
+          "count": 10,
+          "first": {
+            "id_number": -1693624763,
+            "message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x368f000000368f) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS.",
+            "review": null,
+            "severity": 256,
+            "type": 2
+          }
+        },
+        {
+          "id": -1604639890,
+          "count": 1,
+          "first": {
+            "id_number": -1604639890,
+            "message": "vkQueueSubmit(): THREADING ERROR : object of type VkFence is simultaneously used in current thread 38252 \"GUI.RenderThread\" (vkQueueSubmit) and thread 38312 \"GPU.MainThread\" (vkWaitForFences)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -1551140702,
+          "count": 10,
+          "first": {
+            "id_number": -1551140702,
+            "message": "vkCmdEndRenderPass(): query 0 from VkQueryPool 0x1460000000146 was begun in subpass 0 but never ended.\nThe Vulkan spec states: If vkCmdBeginQuery* was called within a subpass of the render pass, the corresponding vkCmdEndQuery* must have been called subsequently within the same subpass (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-None-07004)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -962408748,
+          "count": 10,
+          "first": {
+            "id_number": -962408748,
+            "message": "vkCmdBindDescriptorSets(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdBindDescriptorSets-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -937765618,
+          "count": 10,
+          "first": {
+            "id_number": -937765618,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 1 not consumed by vertex shader.",
+            "review": null,
+            "severity": 256,
+            "type": 4
+          }
+        },
+        {
+          "id": -619758366,
+          "count": 2,
+          "first": {
+            "id_number": -619758366,
+            "message": "vkCmdSetBlendConstants(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/framebuffer.html#VUID-vkCmdSetBlendConstants-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -543181122,
+          "count": 3,
+          "first": {
+            "id_number": -543181122,
+            "message": "vkEndCommandBuffer(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/cmdbuffers.html#VUID-vkEndCommandBuffer-commandBuffer-00059)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -464217071,
+          "count": 10,
+          "first": {
+            "id_number": -464217071,
+            "message": "vkDestroyBuffer(): can't be called on VkBuffer 0x61fa00000061fa that is currently in use by VkDescriptorSet 0x56bb00000056bb which is in use by VkCommandBuffer 0x3deaa3450d0\nThe Vulkan spec states: All submitted commands that refer to buffer, either directly or via a VkBufferView, must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyBuffer-buffer-00922)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -455515022,
+          "count": 10,
+          "first": {
+            "id_number": -455515022,
+            "message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] READ_AFTER_WRITE hazard detected. vkCmdBeginRenderPass (from VkCommandBuffer 0x3deaa33e0d0 submitted on the current VkQueue 0x3dea96514d0) reads the color aspect of attachment 0 (VkImageView 0x30f500000030f5) in subpass 0 of VkRenderPass 0x30fb00000030fb (loadOp VK_ATTACHMENT_LOAD_OP_LOAD), which was previously written by vkCmdCopyBufferToImage (from VkCommandBuffer 0x3deaa3418d0 submitted on VkQueue 0x3dea96514d0). \nNo sufficient synchronization is present to ensure that a read (VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT) at VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT does not conflict with a prior write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_COPY_BIT.",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -379806493,
+          "count": 1,
+          "first": {
+            "id_number": -379806493,
+            "message": "vkCmdDrawIndexed(): VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT state is dynamic, but the command buffer never called vkCmdSetAttachmentFeedbackLoopEnableEXT\nVkPipelineRasterizationStateCreateInfo::rasterizerDiscardEnable was VK_FALSE in the last bound graphics pipeline.\nThe Vulkan spec states: If a shader object is bound to the VK_SHADER_STAGE_FRAGMENT_BIT stage or a graphics pipeline is bound which was created with the VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT dynamic state enabled, and the current value of rasterizerDiscardEnable is VK_FALSE, then vkCmdSetAttachmentFeedbackLoopEnableEXT must have been called and not subsequently invalidated in the current command buffer prior to this drawing command (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-08877)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -365328357,
+          "count": 10,
+          "first": {
+            "id_number": -365328357,
+            "message": "vkCmdBindPipeline(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-vkCmdBindPipeline-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -308264800,
+          "count": 10,
+          "first": {
+            "id_number": -308264800,
+            "message": "vkCmdEndRenderPass(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -143113596,
+          "count": 5,
+          "first": {
+            "id_number": -143113596,
+            "message": "vkCmdSetViewport(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/vertexpostproc.html#VUID-vkCmdSetViewport-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": -42261870,
+          "count": 1,
+          "first": {
+            "id_number": -42261870,
+            "message": "vkCreateInstance(): Current Validation Enabled:\n  - Core Checks\n  - Synchronization\n  - Stateless Parameter\n  - Object lifetime\n  - Thread Safety\n  - Handle Wrapping\n",
+            "review": null,
+            "severity": 16,
+            "type": 2
+          }
+        },
+        {
+          "id": 0,
+          "count": 21,
+          "first": {
+            "id_number": 0,
+            "message": "Inserted device layer \"VK_LAYER_KHRONOS_validation\" (D:\\py\\ns-emu-tools\\src-tauri\\target\\vulkan-sdk-1.4.363.0\\Bin\\VkLayer_khronos_validation.dll)",
+            "review": null,
+            "severity": 16,
+            "type": 1
+          }
+        },
+        {
+          "id": 28428915,
+          "count": 10,
+          "first": {
+            "id_number": 28428915,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pRasterizationState->lineWidth is 4.500000, but the line width state is static (pCreateInfos[0].pDynamicState->pDynamicStates does not contain VK_DYNAMIC_STATE_LINE_WIDTH) and wideLines feature was not enabled.\nThe Vulkan spec states: If the pipeline requires pre-rasterization shader state, and the wideLines feature is not enabled, and no element of the pDynamicStates member of pDynamicState is VK_DYNAMIC_STATE_LINE_WIDTH, the lineWidth member of pRasterizationState must be 1.0 (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 99965422,
+          "count": 5,
+          "first": {
+            "id_number": 99965422,
+            "message": "vkCmdSetScissor(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fragops.html#VUID-vkCmdSetScissor-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 102835677,
+          "count": 3,
+          "first": {
+            "id_number": 102835677,
+            "message": "vkCmdUpdateBuffer(): was called in VkCommandBuffer 0x3deaa3418d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkImageView 0x6ce20000006ce2 was destroyed\n   which was used by VkDescriptorSet 0x4e780000004e78\n- VkImageView 0x6cc60000006cc6 was destroyed\n   which was used by VkDescriptorSet 0x4ec20000004ec2\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdUpdateBuffer-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 218230825,
+          "count": 4,
+          "first": {
+            "id_number": 218230825,
+            "message": "vkCmdPushDescriptorSetWithTemplateKHR(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 522653285,
+          "count": 10,
+          "first": {
+            "id_number": 522653285,
+            "message": "vkCmdEndQuery(): query (0) was started outside a renderpass.\nThe Vulkan spec states: If called within a subpass of a render pass instance, the corresponding vkCmdBeginQuery* command must have been called previously within the same subpass (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-None-07007)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 908748201,
+          "count": 10,
+          "first": {
+            "id_number": 908748201,
+            "message": "vkCmdPipelineBarrier(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/synchronization.html#VUID-vkCmdPipelineBarrier-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1180184443,
+          "count": 10,
+          "first": {
+            "id_number": 1180184443,
+            "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x3deaa3798d0[nv.sl.dlss_g.cmdCtx.pacer.command-buffer] expects VkImage 0x31170000003117[nv.sl.dlss_g.tex2d.fake-swapchain-buffer] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_PRESENT_SRC_KHR.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1215490720,
+          "count": 1,
+          "first": {
+            "id_number": 1215490720,
+            "message": "vkDestroyDevice(): VkDevice 0x3dea98f00d0 has 26 leaked objects that have not been destroyed.\n(Only printing the first 10 objects, but can be increased by raising the VK_LAYER_DUPLICATE_MESSAGE_LIMIT/'duplicate_message_limit' setting value)\nVkImage 0x5e8a0000005e8a, VkImage 0x87900000008790, VkImage 0x55240000005524, VkImage 0x6c150000006c15, VkImage 0x88dd00000088dd, VkImage 0x98a300000098a3, VkImageView 0x55270000005527, VkImageView 0x6c1a0000006c1a, VkImageView 0x98a600000098a6, VkImageView 0x88e000000088e0\nThe Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1284016627,
+          "count": 10,
+          "first": {
+            "id_number": 1284016627,
+            "message": "vkCmdBeginRenderPass(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdBeginRenderPass-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1355105800,
+          "count": 9,
+          "first": {
+            "id_number": 1355105800,
+            "message": "vkCmdClearAttachments(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdClearAttachments-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1355467935,
+          "count": 10,
+          "first": {
+            "id_number": 1355467935,
+            "message": "vkCmdBindIndexBuffer(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1397510317,
+          "count": 6,
+          "first": {
+            "id_number": 1397510317,
+            "message": "vkCmdDrawIndexed(): the combined image sampler descriptor [VkDescriptorSet 0x531c000000531c, Set 2, Binding 135, Index 0, variable \"fp_t_tcb_14\"] has VkImageView 0xab21000000ab21 with format of VK_FORMAT_R32_SFLOAT which doesn't support VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT.\n(supported features: VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT|VK_FORMAT_FEATURE_2_BLIT_SRC_BIT|VK_FORMAT_FEATURE_2_BLIT_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT|VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT|VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT|VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT|VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR).\nThe Vulkan spec states: If a VkImageView is sampled with depth comparison, the image view's format features must contain VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-06479)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1544472022,
+          "count": 10,
+          "first": {
+            "id_number": 1544472022,
+            "message": "vkCmdPipelineBarrier(): WRITE_AFTER_WRITE hazard detected. vkCmdPipelineBarrier performs image layout transition on the VkImage 0x31170000003117[nv.sl.dlss_g.tex2d.fake-swapchain-buffer], which was previously written at the end of subpass 0 (vkCmdEndRenderPass) by the attachment storeOp. \nNo sufficient synchronization is present to ensure that a layout transition does not conflict with a prior write (VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT) at VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT.\nHint: Ensure that srcStageMask includes VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT and srcAccessMask includes VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT. The source side of the barrier protects layout transition writes from previous accesses, and the destination side cannot introduce this specific hazard.\npImageMemoryBarriers[0]: {\n  srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,\n  srcAccessMask = VkAccessFlags2(0),\n  dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,\n  dstAccessMask = VkAccessFlags2(0),\n}\n",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1602651847,
+          "count": 10,
+          "first": {
+            "id_number": 1602651847,
+            "message": "vkCmdDrawIndexed(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1635651583,
+          "count": 1,
+          "first": {
+            "id_number": 1635651583,
+            "message": "vkCmdSetDepthBias(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/primsrast.html#VUID-vkCmdSetDepthBias-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 1820876487,
+          "count": 9,
+          "first": {
+            "id_number": 1820876487,
+            "message": "vkCmdEndQuery(): was called in VkCommandBuffer 0x3deaa3450d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x6fe40000006fe4 was destroyed\n   which was used by VkDescriptorSet 0x5a6a0000005a6a\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-commandBuffer-recording)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        },
+        {
+          "id": 2136492404,
+          "count": 10,
+          "first": {
+            "id_number": 2136492404,
+            "message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pStages[0] shader [VK_SHADER_STAGE_VERTEX_BIT] has a ClipDistance BuiltIn array size of 8 and a CullDistance BuiltIn array size of 1 which sum to 9 and exceed maxCombinedClipAndCullDistances of 8.\nThe Vulkan spec states: If VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances is not zero, then any entry point interface variable declared with the ClipDistance BuiltIn and CullDistance BuiltIn decoration must not have array sizes which sum to more than VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710)",
+            "review": null,
+            "severity": 4096,
+            "type": 2
+          }
+        }
+      ]
+    },
+    {
+      "session": "nr-handoff-baseline-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "6f034127be986a55195ab180faa2c78ac3e881f203d42ea689b818f3c1c779d6",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": true,
+        "nr_readback_requested": false,
+        "nr_requested": true,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 3678,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 3015,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 3678,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 2128,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 2,
+            "SourceChanged": 5
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 3671,
+            "logical_identities": 5,
+            "longest_without_reset": 3014,
+            "physical_rotations_without_reset": 3671,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 4
+        },
+        "nr_performance": true,
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 5810,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 5810,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": false,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "enabled": false,
+          "validation_passed": false
+        }
+      },
+      "module_check": {
+        "pid": 5600,
+        "modules": [
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\streamline-fg\\target\\release\\streamline_probe_layer.dll",
+            "name": "streamline_probe_layer.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\runtime\\sl.interposer.dll",
+            "name": "sl.interposer.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\runtime\\sl.common.dll",
+            "name": "sl.common.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\runtime\\sl.dlss.dll",
+            "name": "sl.dlss.dll"
+          },
+          {
+            "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvtfi.inf_amd64_884f78085512abd5\\_nvngx.dll",
+            "name": "_nvngx.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\runtime\\sl.dlss_g.dll",
+            "name": "sl.dlss_g.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\runtime\\sl.pcl.dll",
+            "name": "sl.pcl.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\runtime\\sl.reflex.dll",
+            "name": "sl.reflex.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\nr\\nvngx_dlssnr.dll",
+            "name": "nvngx_dlssnr.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-baseline-001\\nr\\nvngx.dll",
+            "name": "nvngx.dll"
+          }
+        ],
+        "gpuHandoffRequested": false,
+        "validationLoaded": false
+      },
+      "phases": [
+        {
+          "name": "cpu-wait-baseline",
+          "revision": 1,
+          "trace_start_us": 89510271,
+          "trace_end_us": 129896902,
+          "seconds": 40.4198375,
+          "frames": 1077,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 1077
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 1077,
+              "mean": 37.45149860724234,
+              "median": 33.438,
+              "p95": 50.293
+            },
+            "hook_ms": {
+              "n": 1077,
+              "mean": 14.624649025069639,
+              "median": 14.539,
+              "p95": 15.502
+            },
+            "outside_present_hook_ms": {
+              "n": 1077,
+              "mean": 22.826849582172702,
+              "median": 19.006,
+              "p95": 35.979
+            },
+            "nr_evaluated": {
+              "n": 1077,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 1077,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 1077,
+              "mean": 0.12175316620241411,
+              "median": 0.10992,
+              "p95": 0.14448
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 1077,
+              "mean": 8.212687361188486,
+              "median": 8.165888,
+              "p95": 8.887296000000001
+            },
+            "nr_gpu_output_ms": {
+              "n": 1077,
+              "mean": 0.0004402154131847725,
+              "median": 0.000384,
+              "p95": 0.000704
+            },
+            "nr_cpu_record_ms": {
+              "n": 1077,
+              "mean": 0.45252553389043637,
+              "median": 0.405,
+              "p95": 0.633
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 1077,
+              "mean": 0.41499814298978643,
+              "median": 0.37,
+              "p95": 0.58
+            },
+            "nr_cpu_submit_ms": {
+              "n": 1077,
+              "mean": 0.014681522748375116,
+              "median": 0.011,
+              "p95": 0.029
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 1077,
+              "mean": 9.794405756731662,
+              "median": 9.752,
+              "p95": 10.582
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 1077,
+              "mean": 0.02337042896935933,
+              "median": 0.020192,
+              "p95": 0.028896
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 1077,
+              "mean": 0.06673717363045496,
+              "median": 0.063552,
+              "p95": 0.07324800000000001
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 1077,
+              "mean": 2.6019522971216342,
+              "median": 2.6319679999999996,
+              "p95": 2.943712
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 1077,
+              "mean": 0.037015591457753017,
+              "median": 0.035392,
+              "p95": 0.037952
+            },
+            "sr_gpu_total_ms": {
+              "n": 1077,
+              "mean": 2.7365206759517178,
+              "median": 2.7613119999999998,
+              "p95": 3.0805439999999997
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 1077,
+              "mean": 0.0074451847725162485,
+              "median": 0.0069759999999999996,
+              "p95": 0.008256
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 1077,
+              "mean": 0.26240947075208915,
+              "median": 0.241,
+              "p95": 0.375
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 1077,
+              "mean": 2.834506963788301,
+              "median": 2.842,
+              "p95": 3.196
+            },
+            "sr_cpu_record_ms": {
+              "n": 1077,
+              "mean": 0.3437149489322191,
+              "median": 0.316,
+              "p95": 0.484
+            },
+            "sr_cpu_submit_ms": {
+              "n": 1077,
+              "mean": 0.050686165273909005,
+              "median": 0.046,
+              "p95": 0.081
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 1077,
+              "mean": 1.9256307520891365,
+              "median": 1.8746880000000001,
+              "p95": 2.2679679999999998
+            }
+          },
+          "fps_from_median_interval": 29.9060948621329,
+          "fps_from_mean_interval": 26.70120121192215,
+          "observer_ms_per_present": 1.358575208913649,
+          "process_cpu_core_equivalents": 2.656492619496553,
+          "top_thread_core_equivalents": 0.4325691561723869
+        },
+        {
+          "name": "baseline-all-off",
+          "revision": 2,
+          "trace_start_us": 156266786,
+          "trace_end_us": 181533053,
+          "seconds": 25.2880344,
+          "frames": 757,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 757
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 757,
+              "mean": 33.33287978863937,
+              "median": 33.338,
+              "p95": 37.166
+            },
+            "hook_ms": {
+              "n": 757,
+              "mean": 0.7760937912813738,
+              "median": 0.699,
+              "p95": 1.195
+            },
+            "outside_present_hook_ms": {
+              "n": 757,
+              "mean": 32.55678599735799,
+              "median": 32.597,
+              "p95": 36.487
+            },
+            "nr_evaluated": {
+              "n": 757,
+              "mean": 0,
+              "median": 0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 757,
+              "mean": 2,
+              "median": 2,
+              "p95": 2
+            }
+          },
+          "fps_from_median_interval": 29.995800587917692,
+          "fps_from_mean_interval": 30.000408195778622,
+          "observer_ms_per_present": 1.3979940554821664,
+          "process_cpu_core_equivalents": 2.9324639798813306,
+          "top_thread_core_equivalents": 0.4627929879753722
+        }
+      ],
+      "readback_cpu_ms": null,
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "b2615fc71e217dfe68ab16ef72a98c0e9abe243f356f854a0e5a68627d3040a6",
+          "bytes": 1538
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "e81d04454985e197e697605d608484e118bd7688910ad9dc72e2d39402bde41a",
+          "bytes": 18
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "8d3999a5ed34674ac441199f0340c56e6053960b5b484cf3ea7de23019ceebd7",
+          "bytes": 1901
+        },
+        "module-check.json": {
+          "sha256": "5b10451cdea3ebfbe9a0682bf992439f3f4c87135fc2d9996e4d9e2d55ff600a",
+          "bytes": 1650
+        },
+        "layer.jsonl": {
+          "sha256": "f1c637e95b8ac45cc489f1a7abf9197acb12de4df1b4479b9e5720bda8eb8db9",
+          "bytes": 17548959
+        },
+        "runtime/sl.log": {
+          "sha256": "2002ccf3cf15be385c5dbb1d31d57af8178c9c0756c56af0087bd2034675654a",
+          "bytes": 45974
+        }
+      },
+      "handoff_counts": {
+        "target_nr_submission": 3678,
+        "target_nr_completion": 0,
+        "target_sr_frame": 3682,
+        "target_nr_readback": 0
+      },
+      "deferred_submissions": 0,
+      "readback_details": [],
+      "validation_messages": []
+    },
+    {
+      "session": "nr-handoff-performance-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "6f034127be986a55195ab180faa2c78ac3e881f203d42ea689b818f3c1c779d6",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": true,
+        "nr_readback_requested": false,
+        "nr_requested": true,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 4902,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 2096,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 4902,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 909,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 3,
+            "SourceChanged": 7
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 4892,
+            "logical_identities": 7,
+            "longest_without_reset": 2095,
+            "physical_rotations_without_reset": 4892,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 6
+        },
+        "nr_performance": true,
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 5817,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 5817,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": false,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "enabled": false,
+          "validation_passed": false
+        }
+      },
+      "module_check": {
+        "validationLoaded": false,
+        "pid": 23176,
+        "gpuHandoffRequested": true,
+        "modules": [
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\streamline-fg\\target\\release\\streamline_probe_layer.dll",
+            "name": "streamline_probe_layer.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\runtime\\sl.interposer.dll",
+            "name": "sl.interposer.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\runtime\\sl.common.dll",
+            "name": "sl.common.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\runtime\\sl.dlss.dll",
+            "name": "sl.dlss.dll"
+          },
+          {
+            "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvtfi.inf_amd64_884f78085512abd5\\_nvngx.dll",
+            "name": "_nvngx.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\runtime\\sl.dlss_g.dll",
+            "name": "sl.dlss_g.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\runtime\\sl.pcl.dll",
+            "name": "sl.pcl.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\runtime\\sl.reflex.dll",
+            "name": "sl.reflex.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\nr\\nvngx_dlssnr.dll",
+            "name": "nvngx_dlssnr.dll"
+          },
+          {
+            "path": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-handoff-performance-001\\nr\\nvngx.dll",
+            "name": "nvngx.dll"
+          }
+        ]
+      },
+      "phases": [
+        {
+          "name": "gpu-handoff-first",
+          "revision": 1,
+          "trace_start_us": 77318274,
+          "trace_end_us": 117739037,
+          "seconds": 40.4284024,
+          "frames": 1150,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 1150
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 1150,
+              "mean": 35.13018695652174,
+              "median": 33.351,
+              "p95": 50.015
+            },
+            "hook_ms": {
+              "n": 1150,
+              "mean": 14.132055652173912,
+              "median": 14.025,
+              "p95": 15.182
+            },
+            "outside_present_hook_ms": {
+              "n": 1150,
+              "mean": 20.998131304347826,
+              "median": 19.4065,
+              "p95": 35.973
+            },
+            "nr_evaluated": {
+              "n": 1150,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 1150,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 1150,
+              "mean": 0.11775140173913043,
+              "median": 0.11568,
+              "p95": 0.140192
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 1150,
+              "mean": 8.009781982608695,
+              "median": 7.980848,
+              "p95": 8.553888
+            },
+            "nr_gpu_output_ms": {
+              "n": 1150,
+              "mean": 0.00046160695652173913,
+              "median": 0.000384,
+              "p95": 0.000704
+            },
+            "nr_cpu_record_ms": {
+              "n": 1150,
+              "mean": 0.4410486956521739,
+              "median": 0.391,
+              "p95": 0.67
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 1150,
+              "mean": 0.40351565217391305,
+              "median": 0.357,
+              "p95": 0.601
+            },
+            "nr_cpu_submit_ms": {
+              "n": 1150,
+              "mean": 0.018809565217391303,
+              "median": 0.014,
+              "p95": 0.042
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 1150,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 1150,
+              "mean": 0.02546095304347826,
+              "median": 0.020192,
+              "p95": 0.022047999999999998
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 1150,
+              "mean": 0.08799432347826087,
+              "median": 0.075952,
+              "p95": 0.208928
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 1150,
+              "mean": 2.7958288695652174,
+              "median": 2.789584,
+              "p95": 3.159328
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 1150,
+              "mean": 0.043474281739130434,
+              "median": 0.038368,
+              "p95": 0.04208
+            },
+            "sr_gpu_total_ms": {
+              "n": 1150,
+              "mean": 2.9604362573913043,
+              "median": 2.9532,
+              "p95": 3.336448
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 1150,
+              "mean": 0.007677829565217392,
+              "median": 0.0072640000000000005,
+              "p95": 0.007808
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 1150,
+              "mean": 0.21344695652173915,
+              "median": 0.202,
+              "p95": 0.288
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 1150,
+              "mean": 12.254130434782608,
+              "median": 12.21,
+              "p95": 13.086
+            },
+            "sr_cpu_record_ms": {
+              "n": 1150,
+              "mean": 0.24823565217391305,
+              "median": 0.233,
+              "p95": 0.351
+            },
+            "sr_cpu_submit_ms": {
+              "n": 1150,
+              "mean": 0.016782608695652172,
+              "median": 0.011,
+              "p95": 0.046
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 1150,
+              "mean": 1.9338935652173912,
+              "median": 1.877008,
+              "p95": 2.3936640000000002
+            }
+          },
+          "fps_from_median_interval": 29.984108422536057,
+          "fps_from_mean_interval": 28.465547343588934,
+          "observer_ms_per_present": 1.3608907826086956,
+          "process_cpu_core_equivalents": 2.767624203720699,
+          "top_thread_core_equivalents": 0.43247751486712216
+        },
+        {
+          "name": "handoff-all-off",
+          "revision": 2,
+          "trace_start_us": 121955249,
+          "trace_end_us": 147188399,
+          "seconds": 25.2597329,
+          "frames": 756,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 756
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 756,
+              "mean": 33.33303306878307,
+              "median": 33.337,
+              "p95": 33.784
+            },
+            "hook_ms": {
+              "n": 756,
+              "mean": 0.7099140211640211,
+              "median": 0.638,
+              "p95": 1.078
+            },
+            "outside_present_hook_ms": {
+              "n": 756,
+              "mean": 32.62311904761905,
+              "median": 32.670500000000004,
+              "p95": 33.135
+            },
+            "nr_evaluated": {
+              "n": 756,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 756,
+              "mean": 2,
+              "median": 2.0,
+              "p95": 2
+            }
+          },
+          "fps_from_median_interval": 29.99670036296007,
+          "fps_from_mean_interval": 30.00027024052955,
+          "observer_ms_per_present": 1.412196560846561,
+          "process_cpu_core_equivalents": 2.949358185810429,
+          "top_thread_core_equivalents": 0.44413573351759394
+        },
+        {
+          "name": "gpu-handoff-repeat",
+          "revision": 3,
+          "trace_start_us": 150887241,
+          "trace_end_us": 191267646,
+          "seconds": 40.3902909,
+          "frames": 1187,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 1187
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 1187,
+              "mean": 33.99305307497894,
+              "median": 33.349,
+              "p95": 34.151
+            },
+            "hook_ms": {
+              "n": 1187,
+              "mean": 14.33018449873631,
+              "median": 14.187,
+              "p95": 15.538
+            },
+            "outside_present_hook_ms": {
+              "n": 1187,
+              "mean": 19.66286857624263,
+              "median": 19.193,
+              "p95": 20.401
+            },
+            "nr_evaluated": {
+              "n": 1187,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 1187,
+              "mean": 3,
+              "median": 3,
+              "p95": 3
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 1187,
+              "mean": 0.11317709856781803,
+              "median": 0.10716800000000001,
+              "p95": 0.120128
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 1187,
+              "mean": 8.207485223251895,
+              "median": 8.138336,
+              "p95": 8.965216
+            },
+            "nr_gpu_output_ms": {
+              "n": 1187,
+              "mean": 0.00047226284751474305,
+              "median": 0.000384,
+              "p95": 0.000768
+            },
+            "nr_cpu_record_ms": {
+              "n": 1187,
+              "mean": 0.45865543386689134,
+              "median": 0.386,
+              "p95": 0.617
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 1187,
+              "mean": 0.42172704296545915,
+              "median": 0.352,
+              "p95": 0.564
+            },
+            "nr_cpu_submit_ms": {
+              "n": 1187,
+              "mean": 0.017330244313395114,
+              "median": 0.014,
+              "p95": 0.035
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 1187,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 1187,
+              "mean": 0.024048444818871105,
+              "median": 0.020064,
+              "p95": 0.024384
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 1187,
+              "mean": 0.0782355248525695,
+              "median": 0.064704,
+              "p95": 0.10844799999999999
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 1187,
+              "mean": 2.786306641954507,
+              "median": 2.714368,
+              "p95": 3.360576
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 1187,
+              "mean": 0.0441326099410278,
+              "median": 0.038880000000000005,
+              "p95": 0.041568
+            },
+            "sr_gpu_total_ms": {
+              "n": 1187,
+              "mean": 2.941315935973041,
+              "median": 2.8780479999999997,
+              "p95": 3.524128
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 1187,
+              "mean": 0.008592714406065712,
+              "median": 0.007296,
+              "p95": 0.00784
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 1187,
+              "mean": 0.20694271272114576,
+              "median": 0.198,
+              "p95": 0.265
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 1187,
+              "mean": 12.415901432181972,
+              "median": 12.358,
+              "p95": 13.53
+            },
+            "sr_cpu_record_ms": {
+              "n": 1187,
+              "mean": 0.2391263689974726,
+              "median": 0.228,
+              "p95": 0.311
+            },
+            "sr_cpu_submit_ms": {
+              "n": 1187,
+              "mean": 0.013548441449031171,
+              "median": 0.011,
+              "p95": 0.024
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 1187,
+              "mean": 1.900420556023589,
+              "median": 1.85568,
+              "p95": 2.249568
+            }
+          },
+          "fps_from_median_interval": 29.985906623886777,
+          "fps_from_mean_interval": 29.41777538470247,
+          "observer_ms_per_present": 1.3039497051390059,
+          "process_cpu_core_equivalents": 2.770235680575403,
+          "top_thread_core_equivalents": 0.42011952927033763
+        }
+      ],
+      "readback_cpu_ms": null,
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "b2615fc71e217dfe68ab16ef72a98c0e9abe243f356f854a0e5a68627d3040a6",
+          "bytes": 1538
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "4fe158c187be8a553d8d549c1924ea2fac7be76b74513eb8622104dab346bfa7",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "3a3e3441ebd4ed9fd703e1ebb6d7c0f8e86743dc3f7d5b2fae84a61b952582fe",
+          "bytes": 1900
+        },
+        "module-check.json": {
+          "sha256": "768665368a406c41a316d87fb175fd5c7245f9f92fda3a95ed2f1c4ce96ce23c",
+          "bytes": 1674
+        },
+        "layer.jsonl": {
+          "sha256": "de25fe917f30d78e318b40b12a262aba28b12b2459f4afd068d7bff7623fa1a9",
+          "bytes": 21543633
+        },
+        "runtime/sl.log": {
+          "sha256": "004acd46bb3d843e42632d5a22ca56beb257f4068b6140c6a7b385a5f8d08b6e",
+          "bytes": 50918
+        }
+      },
+      "handoff_counts": {
+        "target_nr_submission": 4902,
+        "target_nr_completion": 4902,
+        "target_sr_frame": 4908,
+        "target_nr_readback": 0
+      },
+      "deferred_submissions": 4902,
+      "readback_details": [],
+      "validation_messages": []
+    }
+  ],
+  "p1_passed": false,
+  "p2_passed": false,
+  "formal_performance_verified": false
+}

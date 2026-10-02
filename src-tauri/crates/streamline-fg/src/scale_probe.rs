@@ -87,8 +87,16 @@ macro_rules! hook {
                 target_runtime::ensure_device(d.handle);
                 target_runtime::device_proc(d.handle, CStr::from_bytes_with_nul_unchecked(concat!(stringify!($name),"\0").as_bytes())).unwrap_or(f)
             } else { f };
+            let f = crate::present_layout::barrier_intercept(CStr::from_bytes_with_nul_unchecked(concat!(stringify!($name),"\0").as_bytes())).unwrap_or(f);
+            let f = if stringify!($name) != "vkDeviceWaitIdle" {
+                crate::queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(concat!(stringify!($name),"\0").as_bytes())).unwrap_or(f)
+            } else { f };
             let f:vk::$pfn=std::mem::transmute(f);
+            #[cfg(all(windows, feature="native-nr"))]
+            let $r=crate::validation_context::application(stringify!($name), || f($h,$($a),*));
+            #[cfg(not(all(windows, feature="native-nr")))]
             let $r=f($h,$($a),*);
+            proxy_record!($name,d.handle.as_raw(),$h,$r $(,$a)*);
             if active() && crate::source_auto::wants_call(stringify!($name)) {
                 let started = crate::source_auto::measuring().then(std::time::Instant::now);
                 if crate::source_auto::enabled() {
@@ -130,6 +138,8 @@ hook!(vkCmdDraw,PFN_vkCmdDraw,(h:vk::CommandBuffer,v:u32,i:u32,fv:u32,fi:u32),()
 hook!(vkCmdDrawIndexed,PFN_vkCmdDrawIndexed,(h:vk::CommandBuffer,v:u32,i:u32,fv:u32,vo:i32,fi:u32),(),(),r,json!({"indices":v,"instances":i,"first_index":fv,"vertex_offset":vo,"first_instance":fi}));
 hook!(vkCmdBlitImage,PFN_vkCmdBlitImage,(h:vk::CommandBuffer,s:vk::Image,sl:vk::ImageLayout,d:vk::Image,dl:vk::ImageLayout,n:u32,regions:*const vk::ImageBlit,f:vk::Filter),(),(),r,json!({"src":s.as_raw(),"dst":d.as_raw(),"src_layout":sl.as_raw(),"dst_layout":dl.as_raw(),"filter":f.as_raw(),"regions":items(regions,n).iter().map(|r|json!({"src":r.src_offsets.map(|o|[o.x,o.y,o.z]),"dst":r.dst_offsets.map(|o|[o.x,o.y,o.z]),"src_mip":r.src_subresource.mip_level,"dst_mip":r.dst_subresource.mip_level})).collect::<Vec<_>>()}));
 hook!(vkCmdCopyImage,PFN_vkCmdCopyImage,(h:vk::CommandBuffer,s:vk::Image,sl:vk::ImageLayout,d:vk::Image,dl:vk::ImageLayout,n:u32,regions:*const vk::ImageCopy),(),(),r,json!({"src":s.as_raw(),"dst":d.as_raw(),"regions":items(regions,n).iter().map(|r|json!({"extent":[r.extent.width,r.extent.height,r.extent.depth],"src":[r.src_offset.x,r.src_offset.y],"dst":[r.dst_offset.x,r.dst_offset.y]})).collect::<Vec<_>>()}));
+hook!(vkDestroyPipeline,PFN_vkDestroyPipeline,(h:vk::Device,p:vk::Pipeline,a:*const vk::AllocationCallbacks),(),(),r,json!({"pipeline":p.as_raw()}));
+hook!(vkDestroyRenderPass,PFN_vkDestroyRenderPass,(h:vk::Device,p:vk::RenderPass,a:*const vk::AllocationCallbacks),(),(),r,json!({"renderpass":p.as_raw()}));
 hook!(vkCmdPushConstants,PFN_vkCmdPushConstants,(h:vk::CommandBuffer,l:vk::PipelineLayout,s:vk::ShaderStageFlags,o:u32,n:u32,v:*const std::ffi::c_void),(),(),r,json!({"layout":l.as_raw(),"stages":s.as_raw(),"offset":o,"bytes":items(v.cast::<u8>(),n)}));
 
 static TEMPLATES: OnceLock<Mutex<HashMap<(u64, u64), Vec<vk::DescriptorUpdateTemplateEntry>>>> =
@@ -249,6 +259,8 @@ pub(super) unsafe fn intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
         vkCmdBeginRendering,
         vkCmdBeginRenderingKHR,
         vkCreateSampler,
+        vkDestroyPipeline,
+        vkDestroyRenderPass,
         vkDestroySampler,
         vkGetDeviceQueue,
         vkGetDeviceQueue2,

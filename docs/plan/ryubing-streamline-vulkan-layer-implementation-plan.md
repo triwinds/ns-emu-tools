@@ -76,7 +76,7 @@ src-tauri/
 
 Rust 层负责 Vulkan ABI、状态机和资源管理。Streamline 的 ABI 必须以固定版本头文件为准：不得直接把反编译出的 C# 结构体布局当成稳定 Rust FFI。若 SDK 的 C++ 接口需要桥接，P0 明确最小 C ABI shim 的范围、构建方式及必要性；不在本阶段擅自扩展为一整套 C++ 运行时。
 
-现有 `graphics_components/vulkan.rs` 管理的是共享 ReShade 注册与文件事务。新方案可以复用已验证的文件校验或计划思想，但不复用其全局注册作用域，也不把新 DLL 注册进既有 ReShade 安装记录。
+历史实现 `graphics_components/vulkan.rs` 曾管理共享 ReShade 注册与文件事务，已随旧路线移除（2026-10-01）。当前运行库归档校验位于 `graphics_components/runtime_package.rs`；原生图层不使用 ReShade 的全局注册作用域或安装记录。
 
 ## 4. P0：补齐分支调用链与 SDK 契约
 

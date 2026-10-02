@@ -1,22 +1,62 @@
 #version 450
 layout(local_size_x=8,local_size_y=8) in;
 layout(std430,binding=0) readonly buffer Data { uint words[]; } data;
-layout(rg32f,binding=1) uniform writeonly image2D motion;
-layout(push_constant) uniform Settings { uint width; uint height; uint reset; uint reserved; } settings;
-vec2 vectorAt(ivec2 p) {
+layout(rg32f,binding=1) uniform writeonly image2D motionUv;
+layout(rg16f,binding=2) uniform writeonly image2D motionPixels;
+layout(r16f,binding=3) uniform writeonly image2D confidenceImage;
+layout(std430,binding=4) readonly buffer Matches { uint changed; uint sameTiles[]; } matches;
+layout(rg16f,binding=5) uniform writeonly image2D motionPixelsSr;
+// Aligned segments: forward/backward S10.5 and forward/backward R8 costs.
+layout(push_constant) uniform Settings { uint width; uint height; uint reset; uint flags; } settings;
+uint count() { return settings.width*settings.height; }
+uint indexAt(ivec2 p) {
     p=clamp(p,ivec2(0),ivec2(settings.width,settings.height)-1);
-    uint raw=data.words[uint(p.y)*settings.width+uint(p.x)];
+    return uint(p.y)*settings.width+uint(p.x);
+}
+vec2 vectorAt(ivec2 p,uint segment) {
+    uint raw=data.words[segment*count()+indexAt(p)];
     return vec2(float(int(raw<<16)>>16),float(int(raw)>>16))/32.;
 }
+vec2 sampleFlow(vec2 p,uint segment) {
+    vec2 pos=p/4.-.5; ivec2 b=ivec2(floor(pos)); vec2 f=fract(pos);
+    return mix(mix(vectorAt(b,segment),vectorAt(b+ivec2(1,0),segment),f.x),
+        mix(vectorAt(b+ivec2(0,1),segment),vectorAt(b+ivec2(1,1),segment),f.x),f.y);
+}
+float costAt(ivec2 p,uint segment) {
+    uint i=indexAt(p);
+    uint packed=data.words[segment*count()+i/4];
+    return float((packed>>((i%4)*8))&255u)/255.;
+}
+float sampleCost(vec2 p,uint segment) {
+    vec2 pos=p/4.-.5; ivec2 b=ivec2(floor(pos)); vec2 f=fract(pos);
+    return mix(mix(costAt(b,segment),costAt(b+ivec2(1,0),segment),f.x),
+        mix(costAt(b+ivec2(0,1),segment),costAt(b+ivec2(1,1),segment),f.x),f.y);
+}
 void main() {
-    ivec2 p=ivec2(gl_GlobalInvocationID.xy); ivec2 size=imageSize(motion);
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy); ivec2 size=imageSize(motionUv);
     if(any(greaterThanEqual(p,size))) return;
-    vec2 uv=vec2(0);
+    vec2 forward=vec2(0); float confidence=0;
     if(settings.reset==0) {
-        vec2 pos=(vec2(p)+.5)/4.-.5; ivec2 b=ivec2(floor(pos)); vec2 f=fract(pos);
-        vec2 flow=mix(mix(vectorAt(b),vectorAt(b+ivec2(1,0)),f.x),
-            mix(vectorAt(b+ivec2(0,1)),vectorAt(b+ivec2(1,1)),f.x),f.y);
-        uv=flow/vec2(size);
+        vec2 pixel=vec2(p)+.5;
+        forward=sampleFlow(pixel,0);
+        confidence=(settings.flags&2u)!=0 ? 1.-sampleCost(pixel,2) : .65;
+        if((settings.flags&1u)!=0) {
+            vec2 previous=pixel+forward;
+            bool inside=all(greaterThanEqual(previous,vec2(0))) && all(lessThan(previous,vec2(size)));
+            vec2 backward=sampleFlow(previous,1);
+            float threshold=.75+.05*length(forward);
+            confidence*=inside ? clamp(1.-length(forward+backward)/threshold,0.,1.) : 0.;
+            if((settings.flags&2u)!=0) confidence*=1.-sampleCost(previous,3);
+        }
     }
-    imageStore(motion,p,vec4(uv,0,0));
+    // NR/SR keep the raw field and confidence contract. An exact unchanged
+    // RGBA tile proves zero screen displacement for FG, even when OF matching
+    // on a flat UI edge retained an ambiguous temporal hint.
+    vec2 fgForward=forward;
+    uint tile=uint(p.y/4)*settings.width+uint(p.x/4);
+    if((settings.flags&4u)!=0 && matches.sameTiles[tile]!=0) fgForward=vec2(0);
+    imageStore(motionUv,p,vec4(forward/vec2(size),0,0));
+    imageStore(motionPixels,p,vec4(fgForward,0,0));
+    imageStore(motionPixelsSr,p,vec4(forward,0,0));
+    imageStore(confidenceImage,p,vec4(clamp(confidence,0.,1.),0,0,0));
 }

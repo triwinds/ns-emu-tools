@@ -14,6 +14,63 @@ static APP: AtomicU64 = AtomicU64::new(0);
 static NATIVE: AtomicU64 = AtomicU64::new(0);
 static LAST: Mutex<Option<(Instant, bool, String, u64)>> = Mutex::new(None);
 static SR: Mutex<Option<Value>> = Mutex::new(None);
+static NR: Mutex<Option<Value>> = Mutex::new(None);
+static FG: Mutex<Option<(Instant, Value)>> = Mutex::new(None);
+#[cfg(all(windows, feature = "sdk-bridge"))]
+pub fn fg(status: Value) {
+    *FG.lock().unwrap() = Some((Instant::now(), status));
+}
+static NR_CONTROL: OnceLock<Mutex<(crate::nr_history::Controls, u64)>> = OnceLock::new();
+static CONTROL_UPDATE: Mutex<()> = Mutex::new(());
+pub fn frame_controls() -> ((bool, u64), SrControl, (crate::nr_history::Controls, u64)) {
+    requested(); // Start the worker before taking its update lock.
+    let _update = CONTROL_UPDATE.lock().unwrap();
+    (*CONTROL.lock().unwrap(), sr_requested(), nr_requested())
+}
+fn nr_control() -> &'static Mutex<(crate::nr_history::Controls, u64)> {
+    NR_CONTROL.get_or_init(|| {
+        Mutex::new((
+            crate::nr_history::Controls {
+                enabled: cfg!(feature = "native-nr")
+                    && std::env::var("NS_STREAMLINE_NATIVE_NR").as_deref() == Ok("1")
+                    && std::env::var("NS_STREAMLINE_NR_INITIAL_ENABLED").as_deref() != Ok("0"),
+                intensity: std::env::var("NS_STREAMLINE_NR_INTENSITY")
+                    .ok()
+                    .and_then(|v| v.parse::<f32>().ok())
+                    .filter(|v| v.is_finite() && (0.0..=1.0).contains(v))
+                    .unwrap_or(1.0),
+            },
+            0,
+        ))
+    })
+}
+pub fn nr_requested() -> (crate::nr_history::Controls, u64) {
+    *nr_control().lock().unwrap()
+}
+#[cfg(feature = "native-nr")]
+pub fn nr(status: Value) {
+    *NR.lock().unwrap() = Some(status);
+}
+fn apply_nr_control(control: &mut (crate::nr_history::Controls, u64), v: &Value) {
+    let (Some(enabled), Some(revision)) = (v["nrEnabled"].as_bool(), v["nrRevision"].as_u64())
+    else {
+        return;
+    };
+    if revision <= control.1 {
+        return;
+    }
+    let intensity = match v.get("nrIntensity") {
+        None => control.0.intensity,
+        Some(v) => match v
+            .as_f64()
+            .filter(|v| v.is_finite() && (0.0..=1.0).contains(v))
+        {
+            Some(v) => v as f32,
+            None => return,
+        },
+    };
+    *control = (crate::nr_history::Controls { enabled, intensity }, revision);
+}
 static SR_CONTROL: OnceLock<Mutex<SrControl>> = OnceLock::new();
 fn sr_control() -> &'static Mutex<SrControl> {
     SR_CONTROL.get_or_init(|| {
@@ -65,7 +122,21 @@ fn apply_sr_control(control: &mut SrControl, value: &Value) {
     }
 }
 pub fn sr(status: Value) {
-    *SR.lock().unwrap() = Some(status);
+    update_sr_status(&mut SR.lock().unwrap(), status);
+}
+fn update_sr_status(previous: &mut Option<Value>, mut status: Value) {
+    // Runtime status is published before end-of-frame confirmation. Preserve
+    // the last completed revision until sr_applied confirms the next frame.
+    if let Some(value) = previous.as_ref() {
+        for field in ["appliedRevision", "mode", "preset"] {
+            if status.get(field).is_none() {
+                if let Some(value) = value.get(field) {
+                    status[field] = value.clone();
+                }
+            }
+        }
+    }
+    *previous = Some(status);
 }
 static STOP: AtomicBool = AtomicBool::new(false);
 static WORKER: Mutex<Option<std::thread::JoinHandle<()>>> = Mutex::new(None);
@@ -78,6 +149,10 @@ pub fn shutdown() {
 static START: OnceLock<()> = OnceLock::new();
 pub fn requested() -> (bool, u64) {
     START.get_or_init(|| {
+        *CONTROL.lock().unwrap() = (
+            std::env::var("NS_STREAMLINE_TARGET_FG").as_deref() == Ok("1"),
+            0,
+        );
         if !crate::trace::authorized() {
             return;
         }
@@ -98,13 +173,19 @@ fn worker(dir: std::path::PathBuf) {
     while !STOP.load(Ordering::Acquire) {
         if let Ok(bytes) = std::fs::read(dir.join("control.json")) {
             if let Ok(v) = serde_json::from_slice::<Value>(&bytes) {
+                #[cfg(all(windows, feature = "sdk-bridge"))]
+                crate::frame_capture::request(&v);
                 if v["sourceTrackingStop"] == true {
                     crate::source_auto::stop_measurement_tracking();
                 }
-                apply_control(&mut CONTROL.lock().unwrap(), &v);
-                apply_sr_control(&mut sr_control().lock().unwrap(), &v);
-                let fg_requested = CONTROL.lock().unwrap().0;
-                crate::source_auto::set_requested(sr_requested().0 != 0 || fg_requested);
+                let tracking = {
+                    let _update = CONTROL_UPDATE.lock().unwrap();
+                    apply_control(&mut CONTROL.lock().unwrap(), &v);
+                    apply_sr_control(&mut sr_control().lock().unwrap(), &v);
+                    apply_nr_control(&mut nr_control().lock().unwrap(), &v);
+                    sr_requested().0 != 0 || CONTROL.lock().unwrap().0 || nr_requested().0.enabled
+                };
+                crate::source_auto::set_requested(tracking);
             }
         }
         if sample_at.elapsed() >= Duration::from_secs(1) {
@@ -130,6 +211,22 @@ fn worker(dir: std::path::PathBuf) {
             let control = *CONTROL.lock().unwrap();
             let status = json!({"srPresetSupported":true,"srScaleSupported":true,"srScaleBasis":"source_output","srLiveSupported":crate::target_sr::available(),"sr":SR.lock().unwrap().clone(),"protocol":1,"updatedAt":now,"fresh":fresh,"requested":control.0,"revision":control.1,"appliedRevision":applied,"active":active && fresh,"reason":if fresh {reason} else {"waiting".into()},"samples":samples});
             let mut status = status;
+            status["fg"] = FG
+                .lock()
+                .unwrap()
+                .as_ref()
+                .filter(|(time, _)| time.elapsed() < Duration::from_secs(1))
+                .map(|(_, value)| value.clone())
+                .unwrap_or(json!({"state":"waiting","generationObserved":false}));
+            status["nrLiveSupported"] = json!(
+                cfg!(feature = "native-nr")
+                    && std::env::var("NS_STREAMLINE_NATIVE_NR").as_deref() == Ok("1")
+            );
+            status["nr"] = NR
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap_or(json!({"active":false,"reason":"waiting"}));
             if crate::source_auto::measuring() {
                 status["sourceMeasurement"] = crate::source_auto::measurement();
             }
@@ -165,6 +262,73 @@ fn apply_control(control: &mut (bool, u64), v: &Value) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn runtime_status_preserves_only_the_last_completed_sr_revision() {
+        let mut status = Some(
+            json!({"active":true,"appliedRevision":17,"mode":6,"preset":"k","input":[100,100]}),
+        );
+        update_sr_status(&mut status, json!({"active":false,"reason":"disabled"}));
+        let value = status.as_ref().unwrap();
+        assert_eq!(value["appliedRevision"], 17);
+        assert_eq!(value["mode"], 6);
+        assert_eq!(value["preset"], "k");
+        assert_eq!(value["active"], false);
+        assert!(value.get("input").is_none());
+        update_sr_status(
+            &mut status,
+            json!({"active":false,"mode":0,"appliedRevision":18,"preset":"default"}),
+        );
+        update_sr_status(&mut status, json!({"active":true,"mode":6}));
+        assert_eq!(status.as_ref().unwrap()["appliedRevision"], 18);
+        assert_eq!(status.as_ref().unwrap()["mode"], 6);
+    }
+    #[test]
+    fn nr_controls_are_independent_atomic_and_reject_stale_or_invalid_strength() {
+        let mut nr = (
+            crate::nr_history::Controls {
+                enabled: true,
+                intensity: 0.5,
+            },
+            4,
+        );
+        let mut fg = (false, 7);
+        apply_nr_control(
+            &mut nr,
+            &json!({"nrEnabled":false,"nrIntensity":0.25,"nrRevision":5,"enabled":true,"revision":6}),
+        );
+        assert!(!nr.0.enabled && nr.0.intensity == 0.25 && nr.1 == 5);
+        apply_control(&mut fg, &json!({"nrEnabled":true,"nrRevision":6}));
+        assert_eq!(fg, (false, 7));
+        for value in [
+            json!({"nrEnabled":true,"nrRevision":4}),
+            json!({"nrEnabled":true,"nrRevision":6,"nrIntensity":1.1}),
+            json!({"nrEnabled":true,"nrRevision":6,"nrIntensity":"1"}),
+            json!({"nrEnabled":true}),
+        ] {
+            apply_nr_control(&mut nr, &value);
+            assert_eq!(
+                nr,
+                (
+                    crate::nr_history::Controls {
+                        enabled: false,
+                        intensity: 0.25
+                    },
+                    5
+                )
+            );
+        }
+        apply_nr_control(&mut nr, &json!({"nrEnabled":true,"nrRevision":6}));
+        assert_eq!(
+            nr,
+            (
+                crate::nr_history::Controls {
+                    enabled: true,
+                    intensity: 0.25
+                },
+                6
+            )
+        );
+    }
     #[test]
     fn preset_updates_are_atomic_and_older_controls_preserve_selection() {
         let mut control = (6, 10, 100, StreamlineSrPreset::K);

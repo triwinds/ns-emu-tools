@@ -1,0 +1,3755 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-30",
+  "phase": "P0 pinned-runtime experimental acceptance and P1 history groundwork",
+  "p0_passed": true,
+  "acceptance_scope": "Runtime A + recorded bridge + RTX 5070 Ti Laptop / driver 610.88 + VVL 1.4.363.0 + explicit NR/SR diagnostic repairs. Runtime B worker test verifies NR-only subset. Synthetic SDR inputs and serialized single-device recording only.",
+  "game_integration_verified": false,
+  "production_enabled": false,
+  "nr_to_sr_color_flow_verified": false,
+  "fg_coexistence_verified": false,
+  "bridge_audit": {
+    "abi": "0x0001004000480038",
+    "init_and_evaluate_call_rva": "0x10d0",
+    "return_continuation_rva": "0x10d3",
+    "post_call_result_store_rva": "0x10e2",
+    "tail_call": false
+  },
+  "final_executable_sha256": "d3eac666bb61da76e4b9cc8303b2eb6abda135af272d5939eea7bd01553a6389",
+  "trials": [
+    {
+      "name": "nr-p0-coexist-resize-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-coexist-resize-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": true,
+        "trace_layouts": true,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": null,
+        "pause_without_motion": null,
+        "record_on_worker": null,
+        "sr_control": null,
+        "coexist_sr": true
+      },
+      "host_sha256": "cea312af768d700ffd1941d5a77236bb24963e3d588e4bcb833ca12f888aef78",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 12.8465076,
+        "exit_code": -1073740791,
+        "last_event": {
+          "details": {
+            "result": 3134193671,
+            "result_hex": "0xbad00007"
+          },
+          "sequence": 1856,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": false
+      },
+      "validation_errors": 17,
+      "error_groups": {
+        "privateData feature": 1,
+        "SR exposure WRITE_AFTER_WRITE": 8,
+        "GENERAL/UNDEFINED initial layout": 8
+      },
+      "error_messages": [
+        {
+          "count": 1,
+          "message": "vkCreatePrivateDataSlot(): privateData feature was not enabled.\nThe Vulkan spec states: The privateData feature must be enabled (https://docs.vulkan.org/spec/latest/chapters/private_data.html#VUID-vkCreatePrivateDataSlot-privateData-04564)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0xed00000000ed[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0xf000000000f0[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db6e0d0 expects VkImage 0xe700000000e7[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db6e0d0 expects VkImage 0xea00000000ea[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x1650000000165[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x1680000000168[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db6e0d0 expects VkImage 0x15f000000015f[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db6e0d0 expects VkImage 0x1620000000162[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x3080000000308[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x30b000000030b[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db718d0 expects VkImage 0x3050000000305[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db718d0 expects VkImage 0x3020000000302[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x3800000000380[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x3830000000383[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db718d0 expects VkImage 0x37d000000037d[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2a42db718d0 expects VkImage 0x37a000000037a[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        }
+      ],
+      "readbacks": 48,
+      "nr_evaluations": 36,
+      "paused_frames": 0,
+      "nr_off_control_frames": 0,
+      "nr_resets": 36,
+      "motionless_evaluations": 24,
+      "paused_copy_exact": true,
+      "all_readbacks_finite_and_fenced": true,
+      "recovery_resets": [
+        {
+          "ordinal": 3,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        },
+        {
+          "ordinal": 15,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        },
+        {
+          "ordinal": 27,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        },
+        {
+          "ordinal": 39,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        }
+      ],
+      "features_created": 12,
+      "features_released": 12,
+      "layout_transitions": 16,
+      "sr_exposure_clear_dependencies": 0,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "destroy_feature_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "snippet_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        },
+        {
+          "stage": "destroy_capability_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "core_shutdown",
+          "details": {
+            "result": 3134193671,
+            "result_hex": "0xbad00007"
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_while_nr_active",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_after_nr_shutdown",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": null,
+      "failure": {
+        "error": "core_shutdown: NGX result 0xbad00007",
+        "p0_passed": false
+      },
+      "raw_file_sha256": {
+        "nr-inputs.json": "90aae83d4304bece344ffb3220d708f9684d1fc6f669e79bb4d7becd291e9ad4",
+        "nr-options.json": "9106242c2759516b2c63f88cb58a2130a1024ea6abd073852f7b24bcb8473cdd",
+        "nr-events.jsonl": "cef6d80f56781b557c9010b8f496e5c23148ade89257c5ecb77b83bbe27575b3",
+        "validation.jsonl": "0e99726c69e41fb693bc6224276780905f72c68d0c32a1a56459fd15bb1f2342",
+        "nr-process.json": "66f7f522d15a0deaf3fe1dce615163c2f19c5c58cec159663097f6c7bbc13097",
+        "nr-failure.json": "f09e9746493784b6ee37271769221e6f589c856070707cedb23924d45c9e9424",
+        "api-dump.txt": "d4bbba746b5371b5de2f960240f1aec64c2d2936ff5ec0d52e518dddc2bd08ff"
+      }
+    },
+    {
+      "name": "nr-p0-sr-control-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-sr-control-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": false,
+        "trace_layouts": true,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": null,
+        "pause_without_motion": null,
+        "record_on_worker": null,
+        "sr_control": true,
+        "coexist_sr": true
+      },
+      "host_sha256": "77983e3699a0d78160286d6c695b84ef77a4d6d9c9ace75eab43ec1bf5df0e99",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 3.1089611,
+        "exit_code": -1073740791,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 115,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": false
+      },
+      "validation_errors": 8,
+      "error_groups": {
+        "SR exposure WRITE_AFTER_WRITE": 4,
+        "GENERAL/UNDEFINED initial layout": 4
+      },
+      "error_messages": [
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0xe700000000e7[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0xea00000000ea[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1571271e0d0 expects VkImage 0xe400000000e4[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1571271e0d0 expects VkImage 0xe100000000e1[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x15f000000015f[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x1620000000162[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1571271e0d0 expects VkImage 0x15c000000015c[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1571271e0d0 expects VkImage 0x1590000000159[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        }
+      ],
+      "readbacks": 0,
+      "nr_evaluations": 0,
+      "paused_frames": 0,
+      "nr_off_control_frames": 0,
+      "nr_resets": 0,
+      "motionless_evaluations": 0,
+      "paused_copy_exact": null,
+      "all_readbacks_finite_and_fenced": null,
+      "recovery_resets": [],
+      "features_created": 0,
+      "features_released": 0,
+      "layout_transitions": 0,
+      "sr_exposure_clear_dependencies": 0,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_control",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "nr_evaluations": 0,
+        "nr_initialized": false,
+        "p0_passed": false,
+        "sr_control_only": true,
+        "validation_errors": 8
+      },
+      "failure": {
+        "error": "SR-only control has validation errors",
+        "p0_passed": false
+      },
+      "raw_file_sha256": {
+        "nr-inputs.json": "d8833326d68d331dd01bddaf569c0e6c949b27b055c3a5d278916a73d89ea6d8",
+        "nr-options.json": "68223e2ac7f57d0a866ade7b5e073702d015f0f66f418d8ddbee6f1f0e0c48f9",
+        "nr-events.jsonl": "d9d87dc284e5e250c32dcc06f1b33b40c474878e28c03882e0d8ac1e446d7e70",
+        "validation.jsonl": "94e1e97148d8cd5db40eb37f8979314890f71dad845e42cea5176aa5d55f3be4",
+        "nr-result.json": "79cc050eab0ba88448be38659936c2b93db6052f10edc80297bc38a12cbd142e",
+        "nr-process.json": "61cc5f8450b5341d4027c1cf8413034e582d77c011acc5120b69d15589cc10c8",
+        "nr-failure.json": "713ba5ec7eed03a5c8bdeb3db14827cdddc3c2b05437dffac7e9d0750ce66348",
+        "api-dump.txt": "9b4dabd3c071e81030281bf45e7207c136e4281418bb33fe624eeaa09d382f71"
+      }
+    },
+    {
+      "name": "nr-p0-coexist-owner-002",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-coexist-owner-002",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": false,
+        "trace_layouts": true,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": null,
+        "pause_without_motion": null,
+        "record_on_worker": null,
+        "sr_control": false,
+        "coexist_sr": true
+      },
+      "host_sha256": "77983e3699a0d78160286d6c695b84ef77a4d6d9c9ace75eab43ec1bf5df0e99",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 5.918165,
+        "exit_code": -1073740791,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 1672,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": false
+      },
+      "validation_errors": 16,
+      "error_groups": {
+        "SR exposure WRITE_AFTER_WRITE": 8,
+        "GENERAL/UNDEFINED initial layout": 8
+      },
+      "error_messages": [
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0xed00000000ed[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0xf000000000f0[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2082447e0d0 expects VkImage 0xe700000000e7[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2082447e0d0 expects VkImage 0xea00000000ea[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x1650000000165[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x1680000000168[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2082447e0d0 expects VkImage 0x15f000000015f[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2082447e0d0 expects VkImage 0x1620000000162[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x2780000000278[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x27b000000027b[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x208244818d0 expects VkImage 0x2750000000275[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x208244818d0 expects VkImage 0x2720000000272[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x2f000000002f0[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "vkCmdClearColorImage(): WRITE_AFTER_WRITE hazard detected. vkCmdClearColorImage writes to VkImage 0x2f300000002f3[nv.ngx.dlss.resource], which was previously written during an image layout transition initiated by vkCmdPipelineBarrier[nv.ngx.dlss.Evaluate]. \nThe current synchronization allows VK_ACCESS_2_SHADER_READ_BIT|VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT|VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT|VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI, but to prevent this hazard, it must allow VK_ACCESS_2_TRANSFER_WRITE_BIT accesses at VK_PIPELINE_STAGE_2_CLEAR_BIT.\nImage clear subresource range 0: {\n  aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1\n}\n"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x208244818d0 expects VkImage 0x2ed00000002ed[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        },
+        {
+          "count": 1,
+          "message": "[ Debug region: nv.ngx.dlss.Evaluate ] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x208244818d0 expects VkImage 0x2ea00000002ea[nv.ngx.dlss.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+        }
+      ],
+      "readbacks": 12,
+      "nr_evaluations": 9,
+      "paused_frames": 0,
+      "nr_off_control_frames": 0,
+      "nr_resets": 9,
+      "motionless_evaluations": 6,
+      "paused_copy_exact": true,
+      "all_readbacks_finite_and_fenced": true,
+      "recovery_resets": [
+        {
+          "ordinal": 3,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        }
+      ],
+      "features_created": 3,
+      "features_released": 3,
+      "layout_transitions": 4,
+      "sr_exposure_clear_dependencies": 0,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "destroy_feature_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "snippet_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "destroy_capability_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "core_shutdown_deferred",
+          "details": {
+            "owner": "Streamline",
+            "reason": "slShutdown closes shared NGX; NR stop only releases its feature/maps/snippet"
+          }
+        },
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_while_nr_active",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_after_nr_shutdown",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": true,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 1,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 2,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "resize_outputs": [],
+        "resized_and_recreated": false,
+        "streamline_coexistence_verified": true,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 16,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "failure": {
+        "error": "validation errors or unreviewed warnings prevent passing P0; inspect validation.jsonl",
+        "p0_passed": false
+      },
+      "raw_file_sha256": {
+        "nr-inputs.json": "d8833326d68d331dd01bddaf569c0e6c949b27b055c3a5d278916a73d89ea6d8",
+        "nr-options.json": "4a4637f0b4572a35cca2d5de998d661ce64f6e0921043986c8429a6ede410c18",
+        "nr-events.jsonl": "7b0919ac564e6c89976c8d020cf8366bdc71f1cd5a5b77d092db6f6ed10de78b",
+        "validation.jsonl": "33cb8eb9a9e9fe91526a05dc1524605afff315e82d9f88df98dc7672bf346296",
+        "nr-result.json": "276556e98340e99ce59bfab47fc768002cdb6ebccc36fc644261471d61a15ff2",
+        "nr-process.json": "b8da1070dd55e465aa47b9341690c9022af8e5888c611ca90eeec5cf5a528d69",
+        "nr-failure.json": "78e6d29abb2f0f7003e298028466d2b3e0391af015ab81c4ba323a29a2d2c3e5",
+        "api-dump.txt": "c2eb5514d174dfba475fad75b83a19a757b71b726b93e6e49ad69952d21d77fd"
+      }
+    },
+    {
+      "name": "nr-p0-sr-control-repaired-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-sr-control-repaired-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": false,
+        "trace_layouts": true,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": true,
+        "pause_without_motion": null,
+        "record_on_worker": null,
+        "sr_control": true,
+        "coexist_sr": true
+      },
+      "host_sha256": "44575b46e05212b08660d9cbed8b9d10896f5e1cf3cf21f7f52d753c03ac1dbe",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 3.0101272,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 124,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "validation_errors": 0,
+      "error_groups": {},
+      "error_messages": [],
+      "readbacks": 0,
+      "nr_evaluations": 0,
+      "paused_frames": 0,
+      "nr_off_control_frames": 0,
+      "nr_resets": 0,
+      "motionless_evaluations": 0,
+      "paused_copy_exact": null,
+      "all_readbacks_finite_and_fenced": null,
+      "recovery_resets": [],
+      "features_created": 0,
+      "features_released": 0,
+      "layout_transitions": 8,
+      "sr_exposure_clear_dependencies": 8,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_control",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "nr_evaluations": 0,
+        "nr_initialized": false,
+        "p0_passed": false,
+        "sr_control_only": true,
+        "validation_errors": 0
+      },
+      "failure": null,
+      "raw_file_sha256": {
+        "nr-inputs.json": "ea68f4da6e0179cdbce73910378af876dd67c92b72d96d9c4e7c87c931f4bf1c",
+        "nr-options.json": "bce52536f5be905c7d0cb953f9da2dcf21f616582555784510b71ff53867f6d9",
+        "nr-events.jsonl": "a15b645199f613bf126f0915e4246e2a5840aaa2dcf58d7b569b1a6f414b039b",
+        "validation.jsonl": "52eba3bff00b50054fae5819ad6c20c664de18c7abd0da4c01c47a21cc1a61df",
+        "nr-result.json": "726cd55c2861537d0dbf8ff5a1f54d09efa8bba4ec06b51e38bd335e73666d00",
+        "nr-process.json": "c244760bece4b1b7671200627af199cc2c2f561d38a3dd36eeed560ec485c55f",
+        "api-dump.txt": "be5128c4cca6886ebeecf639bbc0381131699e1bb574917aaa473ad315442ddb"
+      }
+    },
+    {
+      "name": "nr-p0-coexist-full-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-coexist-full-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": true,
+        "trace_layouts": false,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": true,
+        "pause_without_motion": null,
+        "record_on_worker": null,
+        "sr_control": false,
+        "coexist_sr": true
+      },
+      "host_sha256": "9b338276c3e2782106aaad752dab801774147eaabda0cbc8b86dac84352b6959",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 151.1756582,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 14232,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "validation_errors": 0,
+      "error_groups": {},
+      "error_messages": [],
+      "readbacks": 2424,
+      "nr_evaluations": 2412,
+      "paused_frames": 0,
+      "nr_off_control_frames": 0,
+      "nr_resets": 836,
+      "motionless_evaluations": 816,
+      "paused_copy_exact": true,
+      "all_readbacks_finite_and_fenced": true,
+      "recovery_resets": [
+        {
+          "ordinal": 3,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        },
+        {
+          "ordinal": 609,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        },
+        {
+          "ordinal": 1215,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        },
+        {
+          "ordinal": 1821,
+          "cycle": 1,
+          "frame": 0,
+          "reset": true,
+          "reason": "feature_created"
+        }
+      ],
+      "features_created": 12,
+      "features_released": 12,
+      "layout_transitions": 64,
+      "sr_exposure_clear_dependencies": 48,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "destroy_feature_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "snippet_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "destroy_capability_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "core_shutdown_deferred",
+          "details": {
+            "owner": "Streamline",
+            "reason": "slShutdown closes shared NGX; NR stop only releases its feature/maps/snippet"
+          }
+        },
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_while_nr_active",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-0",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-1",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-2",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-3",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_after_nr_shutdown",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "resize_outputs": [
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "intensity_response_detected": true,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": false
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "intensity_response_detected": true,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": false
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "intensity_response_detected": true,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": false
+          }
+        ],
+        "resized_and_recreated": true,
+        "streamline_coexistence_verified": true,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "failure": null,
+      "raw_file_sha256": {
+        "nr-inputs.json": "29d5868c993d24ddc7cd80aa87f901dee3967575bb82b2a4f8eb3b101db23866",
+        "nr-options.json": "08c9dec6abf933c427e8eddd540b66ea43f3b5da505d461bbe6a500ecd12c66c",
+        "nr-events.jsonl": "ab132214c3f4f395793f190624c22f4bc4a5dc9808ce65493785800bd62b30ba",
+        "validation.jsonl": "a59fc3ca533a9419acde0745a88a9dd88c426b841adb99fc5d875b32d7836427",
+        "nr-result.json": "953f73bde3ff84532c35a51e5d6f0f556c5348cf165c9c43972ec18c1b088a75",
+        "nr-process.json": "48e826e7d96ce0e3f2749236ee7628fcdd4d934dbfc3f3f7feb346e7118119c5"
+      }
+    },
+    {
+      "name": "nr-p0-coexist-history-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-coexist-history-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": true,
+        "trace_layouts": false,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": true,
+        "pause_without_motion": true,
+        "record_on_worker": null,
+        "sr_control": false,
+        "coexist_sr": true
+      },
+      "host_sha256": "c724dfd2d2413f2cbc2a6905d34ac90b026012f67cd004dd9ed432206e9e6901",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 147.2495082,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 12600,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "validation_errors": 0,
+      "error_groups": {},
+      "error_messages": [],
+      "readbacks": 2424,
+      "nr_evaluations": 1596,
+      "paused_frames": 816,
+      "nr_off_control_frames": 12,
+      "nr_resets": 20,
+      "motionless_evaluations": 0,
+      "paused_copy_exact": true,
+      "all_readbacks_finite_and_fenced": true,
+      "recovery_resets": [
+        {
+          "ordinal": 4,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 203,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 304,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 503,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 605,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 610,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 809,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 910,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1109,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1211,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1216,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1415,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1516,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1715,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1817,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1822,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2021,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2122,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2321,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2423,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        }
+      ],
+      "features_created": 12,
+      "features_released": 12,
+      "layout_transitions": 64,
+      "sr_exposure_clear_dependencies": 48,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "destroy_feature_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "snippet_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "destroy_capability_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "core_shutdown_deferred",
+          "details": {
+            "owner": "Streamline",
+            "reason": "slShutdown closes shared NGX; NR stop only releases its feature/maps/snippet"
+          }
+        },
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_while_nr_active",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-0",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-1",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-2",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-3",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_after_nr_shutdown",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "evaluations": 399,
+          "intensity_response_detected": true,
+          "paused_frames": 204,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": true
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "resize_outputs": [
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 399,
+            "intensity_response_detected": true,
+            "paused_frames": 204,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 399,
+            "intensity_response_detected": true,
+            "paused_frames": 204,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 399,
+            "intensity_response_detected": true,
+            "paused_frames": 204,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          }
+        ],
+        "resized_and_recreated": true,
+        "streamline_coexistence_verified": true,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy": "pause_nr_and_reset_on_recovery",
+        "zero_motion_policy_verified": true
+      },
+      "failure": null,
+      "raw_file_sha256": {
+        "nr-inputs.json": "215a94d8c3dd5fbf63b8276affb0e563666a7b4bbe931e194bb07d8567d4517a",
+        "nr-options.json": "82bd7fe216507faa8f4db03d252973dd97f96eba5d26e60b02b241a5f6619e0e",
+        "nr-events.jsonl": "a3c1ff4d6faddbae98c03ed4dc95bb1f3071d47878f2b394e533e692ca617df2",
+        "validation.jsonl": "da9a73730e5feccd1e02bbe5498b98cca8deda7d6866f79207c5cd7773cca74a",
+        "nr-result.json": "f727e06512d1e2257fe72ab8ddee291713af652c52bdc3bf6259bcbb417afeb2",
+        "nr-process.json": "9f5d227da874069d13a13628afe4730395c7b41e643c804e80cf539a0380f87f"
+      }
+    },
+    {
+      "name": "nr-p0-worker-history-alt-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-worker-history-alt-001",
+      "input_options": {
+        "runtime_sha256": "4b8d19bc3eff58a084f5eca7489c921501c203450169fb82ff4f649a4482ba05",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": true,
+        "trace_layouts": false,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": false,
+        "pause_without_motion": true,
+        "record_on_worker": true,
+        "sr_control": false,
+        "coexist_sr": false
+      },
+      "host_sha256": "af5d3d28d47be98dc962194c9cfe6789d26faa0b530dd450955c64569528dd60",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": null,
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 141.4412558,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 8394,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "validation_errors": 0,
+      "error_groups": {},
+      "error_messages": [],
+      "readbacks": 2424,
+      "nr_evaluations": 1596,
+      "paused_frames": 816,
+      "nr_off_control_frames": 12,
+      "nr_resets": 20,
+      "motionless_evaluations": 0,
+      "paused_copy_exact": true,
+      "all_readbacks_finite_and_fenced": true,
+      "recovery_resets": [
+        {
+          "ordinal": 4,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 203,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 304,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 503,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 605,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 610,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 809,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 910,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1109,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1211,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1216,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1415,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1516,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1715,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1817,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 1822,
+          "cycle": 1,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2021,
+          "cycle": 1,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2122,
+          "cycle": 2,
+          "frame": 1,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2321,
+          "cycle": 2,
+          "frame": 200,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 2423,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        }
+      ],
+      "features_created": 12,
+      "features_released": 12,
+      "layout_transitions": 16,
+      "sr_exposure_clear_dependencies": 0,
+      "worker_batches_joined": 4,
+      "shutdown_sequence": [
+        {
+          "stage": "destroy_feature_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "snippet_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "destroy_capability_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "core_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        }
+      ],
+      "sr_phases": [],
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "evaluations": 399,
+          "intensity_response_detected": true,
+          "paused_frames": 204,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": true
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "resize_outputs": [
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 399,
+            "intensity_response_detected": true,
+            "paused_frames": 204,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 399,
+            "intensity_response_detected": true,
+            "paused_frames": 204,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 1,
+                "frames": 300,
+                "intensity": 0.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 197,
+                "cycle": 2,
+                "frames": 300,
+                "intensity": 1.0,
+                "moving_pairs": 197,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 399,
+            "intensity_response_detected": true,
+            "paused_frames": 204,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          }
+        ],
+        "resized_and_recreated": true,
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy": "pause_nr_and_reset_on_recovery",
+        "zero_motion_policy_verified": true
+      },
+      "failure": null,
+      "raw_file_sha256": {
+        "nr-inputs.json": "29bae3df0860a7ec9d355a69ed5d43ff8c76a0e473c878d008ecd7faf0c09230",
+        "nr-options.json": "5e13741a361f9d377248f0199005f081714ee4762937c92ff69dc23965d17b5b",
+        "nr-events.jsonl": "c3cf6264c931a733ad105909864d1fe273ec8efe22ac9593c97cf5694f352f4e",
+        "validation.jsonl": "50147787a0b9622208b5bac99082f5298305b1a03ac92eb3c0f7bd17168e521a",
+        "nr-result.json": "f598bb3b5881bfcab61a2e50dc0cfde36196fef5f434c89b514b66f05ca36592",
+        "nr-process.json": "c8fa7dfb7ba1ab2791b0506448b1f128a642236ea0bbe5ece2633ffd8028556e"
+      }
+    },
+    {
+      "name": "nr-p0-coexist-final-smoke-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-coexist-final-smoke-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": true,
+        "trace_layouts": true,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": true,
+        "pause_without_motion": true,
+        "record_on_worker": false,
+        "sr_control": false,
+        "coexist_sr": true
+      },
+      "host_sha256": "c4f19bed2b23336ff92c3601ec19b837ecee5b22a1f066c2f0aeb535e731fcc5",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 12.9445425,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 4695,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "validation_errors": 0,
+      "error_groups": {},
+      "error_messages": [],
+      "readbacks": 48,
+      "nr_evaluations": 12,
+      "paused_frames": 24,
+      "nr_off_control_frames": 12,
+      "nr_resets": 12,
+      "motionless_evaluations": 0,
+      "paused_copy_exact": true,
+      "all_readbacks_finite_and_fenced": true,
+      "recovery_resets": [
+        {
+          "ordinal": 5,
+          "cycle": 1,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 8,
+          "cycle": 2,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 11,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 17,
+          "cycle": 1,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 20,
+          "cycle": 2,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 23,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 29,
+          "cycle": 1,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 32,
+          "cycle": 2,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 35,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 41,
+          "cycle": 1,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 44,
+          "cycle": 2,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        },
+        {
+          "ordinal": 47,
+          "cycle": 3,
+          "frame": 2,
+          "reset": true,
+          "reason": "Resumed"
+        }
+      ],
+      "features_created": 12,
+      "features_released": 12,
+      "layout_transitions": 64,
+      "sr_exposure_clear_dependencies": 48,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "destroy_feature_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "snippet_shutdown",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "destroy_capability_parameters",
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          }
+        },
+        {
+          "stage": "core_shutdown_deferred",
+          "details": {
+            "owner": "Streamline",
+            "reason": "slShutdown closes shared NGX; NR stop only releases its feature/maps/snippet"
+          }
+        },
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_while_nr_active",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-0",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-1",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-2",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_with_live_nr_feature-3",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        },
+        {
+          "phase": "sr_after_nr_shutdown",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "coexistence_execution_completed": true,
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": true,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 1,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 2,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "evaluations": 3,
+          "intensity_response_detected": true,
+          "paused_frames": 6,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": true
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "external review of synthetic output and optimized caller boundary audit",
+          "curated P0 acceptance for the exact pinned runtime/GPU combination",
+          "full continuous-output run; init/trace-only is not an acceptance sample"
+        ],
+        "resize_outputs": [
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 1,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 2,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 3,
+            "intensity_response_detected": true,
+            "paused_frames": 6,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 1,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 2,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 3,
+            "intensity_response_detected": true,
+            "paused_frames": 6,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          },
+          {
+            "cycles": [
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 0,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": false,
+                "released": false
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 1,
+                "frames": 3,
+                "intensity": 0.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 2,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              },
+              {
+                "changed_moving_pairs": 0,
+                "cycle": 3,
+                "frames": 3,
+                "intensity": 1.0,
+                "moving_pairs": 0,
+                "nr_enabled": true,
+                "released": true
+              }
+            ],
+            "evaluations": 3,
+            "intensity_response_detected": true,
+            "paused_frames": 6,
+            "readback_complete": true,
+            "synthetic_inputs": true,
+            "zero_motion_policy_verified": true
+          }
+        ],
+        "resized_and_recreated": true,
+        "streamline_coexistence_verified": true,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy": "pause_nr_and_reset_on_recovery",
+        "zero_motion_policy_verified": true
+      },
+      "failure": null,
+      "raw_file_sha256": {
+        "nr-inputs.json": "797955f86a4e31e5124fc954276fc1ec8527a803ab61096ced925479c34f3afb",
+        "nr-options.json": "fe64d3325897e6b730eb91b87cb2ac7dbff7c3a860b12538c76625d5d11b90f3",
+        "nr-events.jsonl": "1e01e0dd6b0a4dd4818b1b945c81289a5afde8b2a38bf0ebc7301e015940b7f0",
+        "validation.jsonl": "557d549394d88efef2ff1bda666c14e7a9696d0bc02cb2002e82238bc45a9ae4",
+        "nr-result.json": "b7164f91197fa8e944e593e7c446fd2d4caeb368d433a0648a03b309880cde69",
+        "nr-process.json": "9063e9f1c1c475458b7452c90ba635f4c33be281b5f680ec2cdb9f49b158fed0",
+        "api-dump.txt": "da6a92456cf4102dac4a7793b55239255e32213c49caf9a23b555d508ed62387"
+      }
+    },
+    {
+      "name": "nr-p0-sr-control-final-001",
+      "raw_session": "D:/py/ns-emu-tools/src-tauri/target/nr-p0-sr-control-final-001",
+      "input_options": {
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "width": 640,
+        "height": 360,
+        "resize": false,
+        "trace_layouts": false,
+        "repair_internal_layouts": true,
+        "repair_sr_resources": true,
+        "pause_without_motion": false,
+        "record_on_worker": false,
+        "sr_control": true,
+        "coexist_sr": true
+      },
+      "host_sha256": "c4f19bed2b23336ff92c3601ec19b837ecee5b22a1f066c2f0aeb535e731fcc5",
+      "validation_files": {
+        "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+        "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+      },
+      "coexist_files": [
+        {
+          "name": "sl.interposer.dll",
+          "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+        },
+        {
+          "name": "sl.common.dll",
+          "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+        },
+        {
+          "name": "sl.dlss_g.dll",
+          "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+        },
+        {
+          "name": "sl.reflex.dll",
+          "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+        },
+        {
+          "name": "sl.pcl.dll",
+          "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+        },
+        {
+          "name": "nvngx_dlssg.dll",
+          "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+        },
+        {
+          "name": "NvLowLatencyVk.dll",
+          "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+        },
+        {
+          "name": "sl.dlss.dll",
+          "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+        },
+        {
+          "name": "nvngx_dlss.dll",
+          "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+        }
+      ],
+      "gpu": {
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "driver_name": "NVIDIA",
+        "driver_info": "610.88",
+        "driver_version": 2559967232,
+        "device_id": 12056,
+        "vendor_id": 4318,
+        "device_uuid": [
+          84,
+          213,
+          249,
+          113,
+          142,
+          49,
+          48,
+          56,
+          88,
+          148,
+          8,
+          63,
+          0,
+          161,
+          76,
+          89
+        ],
+        "luid": [
+          61,
+          227,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "validation_configuration": {
+        "available": true,
+        "core_validation": true,
+        "enabled": true,
+        "implementation_version": 1,
+        "spec_version": 4211051,
+        "synchronization_validation": true
+      },
+      "process": {
+        "elapsed_seconds": 2.9085036,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 0
+          },
+          "sequence": 109,
+          "stage": "coexist_sl_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "validation_errors": 0,
+      "error_groups": {},
+      "error_messages": [],
+      "readbacks": 0,
+      "nr_evaluations": 0,
+      "paused_frames": 0,
+      "nr_off_control_frames": 0,
+      "nr_resets": 0,
+      "motionless_evaluations": 0,
+      "paused_copy_exact": null,
+      "all_readbacks_finite_and_fenced": null,
+      "recovery_resets": [],
+      "features_created": 0,
+      "features_released": 0,
+      "layout_transitions": 8,
+      "sr_exposure_clear_dependencies": 8,
+      "worker_batches_joined": 0,
+      "shutdown_sequence": [
+        {
+          "stage": "coexist_sl_shutdown",
+          "details": {
+            "result": 0
+          }
+        }
+      ],
+      "sr_phases": [
+        {
+          "phase": "sr_control",
+          "frames": 6,
+          "sha256": [
+            "463215d1cab74f02744d83eb852b7d6389729c2e2b65b1160d8b8f5a7073075e",
+            "80c1f908c1ed06e4b45f2eafcf486a8a9fe7a9839356f80faa95223582643eee",
+            "0beb8204706dd79c9a0fbf983a4e2f5ec3563d503e994595b166ecf2ada74248",
+            "02d273a13abdf8a6b1d9ae098e5d02629ec1f7df08e25363e657a6ab398de04c",
+            "176f81084f7ee1e865e9c5423f19f84d917a80157e59e8a7bdc2e4d80e1e7eae",
+            "7e137635799774dd6c93f5e931ce06ddf62e5035a13bcfe328ff1c553aa96034"
+          ],
+          "all_fences_completed": true,
+          "checker_pattern_preserved": true
+        }
+      ],
+      "result": {
+        "nr_evaluations": 0,
+        "nr_initialized": false,
+        "p0_passed": false,
+        "sr_control_only": true,
+        "unreviewed_warnings": 0,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ]
+      },
+      "failure": null,
+      "raw_file_sha256": {
+        "nr-inputs.json": "5210f09ca4d3a9ed6b294ceae4e25d5fc8842e2c4d6aceaaa571fe4813c8fb0a",
+        "nr-options.json": "dc92b623084b173bced514bffd951018c102af6c05872327165b4657d43ecf5f",
+        "nr-events.jsonl": "7fb499bf272672c1fb1ae2255dd15778853c3488b8deb892bd80430eaf67569e",
+        "validation.jsonl": "5039455ca7a9f355c942d29a67ff5afdcae0e23fb53ffa391f7f35deaf6849f1",
+        "nr-result.json": "94480d7a4b80cc72084bb1f8965c801db6d4d671621a43bd9d57efef4fa80b01",
+        "nr-process.json": "32ef9ce2b272ced84eec80ec2d2cbe2be8842c47808ce39554e994c08e8de41a"
+      }
+    }
+  ],
+  "independent_frame_checks": [
+    {
+      "session": "nr-p0-coexist-history-001",
+      "verified": "missing motion never evaluates; exact original-copy fallback; valid-motion recovery resets; every readback finite/fenced"
+    },
+    {
+      "session": "nr-p0-worker-history-alt-001",
+      "verified": "missing motion never evaluates; exact original-copy fallback; valid-motion recovery resets; every readback finite/fenced"
+    }
+  ],
+  "worker_output_comparison": {
+    "baseline": "nr-p0-coexist-history-001",
+    "worker_alternative_dll": "nr-p0-worker-history-alt-001",
+    "frames_compared": 2424,
+    "identical_sha256": 2424,
+    "same_reset_decisions": true
+  },
+  "sr_output_comparisons": [
+    {
+      "session": "nr-p0-coexist-resize-001",
+      "phase": "sr_while_nr_active",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-resize-001",
+      "phase": "sr_after_nr_shutdown",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-sr-control-001",
+      "phase": "sr_control",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-owner-002",
+      "phase": "sr_while_nr_active",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-owner-002",
+      "phase": "sr_after_nr_shutdown",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-sr-control-repaired-001",
+      "phase": "sr_control",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-full-001",
+      "phase": "sr_while_nr_active",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-full-001",
+      "phase": "sr_with_live_nr_feature-0",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-full-001",
+      "phase": "sr_with_live_nr_feature-1",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-full-001",
+      "phase": "sr_with_live_nr_feature-2",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-full-001",
+      "phase": "sr_with_live_nr_feature-3",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-full-001",
+      "phase": "sr_after_nr_shutdown",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-history-001",
+      "phase": "sr_while_nr_active",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-history-001",
+      "phase": "sr_with_live_nr_feature-0",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-history-001",
+      "phase": "sr_with_live_nr_feature-1",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-history-001",
+      "phase": "sr_with_live_nr_feature-2",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-history-001",
+      "phase": "sr_with_live_nr_feature-3",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-history-001",
+      "phase": "sr_after_nr_shutdown",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-final-smoke-001",
+      "phase": "sr_while_nr_active",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-final-smoke-001",
+      "phase": "sr_with_live_nr_feature-0",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-final-smoke-001",
+      "phase": "sr_with_live_nr_feature-1",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-final-smoke-001",
+      "phase": "sr_with_live_nr_feature-2",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-final-smoke-001",
+      "phase": "sr_with_live_nr_feature-3",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-coexist-final-smoke-001",
+      "phase": "sr_after_nr_shutdown",
+      "identical_frames": 6
+    },
+    {
+      "session": "nr-p0-sr-control-final-001",
+      "phase": "sr_control",
+      "identical_frames": 6
+    }
+  ],
+  "rust_validation": {
+    "cargo_fmt": "application and streamline-fg",
+    "cargo_check": [
+      "application host",
+      "application x86_64-pc-windows-msvc",
+      "streamline-fg all-features all-targets host",
+      "streamline-fg all-features all-targets x86_64-pc-windows-msvc",
+      "NR-only diagnostic x86_64-pc-windows-msvc"
+    ],
+    "warnings": 0,
+    "tests_passed": 88,
+    "tests_ignored": 1,
+    "ignored_reason": "pre-existing hardware NVOF test",
+    "safe_fallback_policy": "Safe pre-submit fallback and resume reset both downstream consumers; paused consumer reset remains pending. Unit-tested, not GPU-failure-injected."
+  },
+  "remaining_integration_work": [
+    "production per-device dispatch and image lifetime tracking; current workaround diagnostic-only",
+    "real source gamma/crop/flip and NVOF motion contract",
+    "NR output to SR input and final FG resource tagging; all eight combinations",
+    "independent NR launch, state, runtime ownership, backend config and live controls",
+    "emulator resize/minimize/pause/focus plus 10-minute motion run under validation",
+    "game image quality and performance measured separately from validation"
+  ],
+  "last_source_change_after_gpu_smoke": "Added public History.safe_fallback and its transition test; unused by the existing GPU execution path."
+}

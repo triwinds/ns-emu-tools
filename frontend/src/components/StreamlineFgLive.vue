@@ -123,12 +123,12 @@ onBeforeUnmount(() => { disposed = true; generation++; clearTimeout(timer); resi
       v-if="!live.connected"
       class="live-note"
     >
-      通过工具箱的“以 FG 启动”入口打开模拟器后，可在这里实时切换。
+      通过工具箱的“以画面增强启动”入口打开模拟器后，可在这里实时切换。
     </p>
     <div class="live-sr">
       <span>SR 画面重建</span>
       <span v-if="live.connected && live.fresh && live.sr?.active">
-        {{ srModeLabel }} {{ live.sr.source === 'native_source' ? '缩放前画面' : '窗口画面' }}运行中 · {{ (live.sr.original_input ?? live.sr.input)?.join(' × ') }} → {{ live.sr.processing_output?.join(' × ') }} → 窗口 {{ live.sr.output?.join(' × ') }}
+        {{ srModeLabel }} {{ live.sr.source === 'nr_output' ? 'NR 输出' : live.sr.source === 'native_source' ? '缩放前画面' : '窗口画面' }}运行中 · {{ (live.sr.original_input ?? live.sr.input)?.join(' × ') }} → {{ live.sr.processing_output?.join(' × ') }} → 窗口 {{ live.sr.output?.join(' × ') }}
         <span v-if="live.sr.source === 'present_source' && live.sr.fallbackReason"> · 自动回退：{{ live.sr.fallbackReason }}</span>
         · {{ live.sr.motion ? '光流辅助' : '逐帧重置' }}
         · 预设 {{ !live.sr.preset || live.sr.preset === 'default' ? '自动' : live.sr.preset.toUpperCase() }}

@@ -1,4 +1,4 @@
-//! Read-only preflight for the local experimental FG package.
+//! Read-only preflight for the pinned downloadable graphics package.
 //! Deliberately separate target identity from GPU support and live session state.
 use super::streamline_install;
 use crate::models::graphics_components::GraphicsApi;
@@ -62,6 +62,81 @@ pub(super) fn file_digest(path: &Path) -> Result<String, String> {
         digest.update(&buffer[..size]);
     }
     Ok(format!("{:x}", digest.finalize()))
+}
+pub async fn detect_online(
+    executable: PathBuf,
+    graphics_api: GraphicsApi,
+) -> Result<FgPreflight, String> {
+    let started = std::time::Instant::now();
+    let (local, update) = tokio::join!(
+        tauri::async_runtime::spawn_blocking(move || detect(executable, graphics_api)),
+        super::streamline_update::check(),
+    );
+    let mut report = local.map_err(|e| e.to_string())??;
+    report.apply_update(update);
+    tracing::info!(
+        elapsed_ms = started.elapsed().as_millis(),
+        "画面增强组件前台检查已完成"
+    );
+    Ok(report)
+}
+impl FgPreflight {
+    fn apply_update(&mut self, update: super::streamline_update::Update) {
+        let installed = streamline_install::installed_package(&self.executable).ok();
+        let verified_latest = update.fresh
+            && update.package.as_ref().is_some_and(|latest| {
+                installed.as_ref().is_some_and(|current| {
+                    current.version == latest.version
+                        && super::streamline_update::same_files(current, latest)
+                })
+            });
+        let detail = match update.package {
+            Some(latest) => {
+                self.package_available = true;
+                self.planned_destination =
+                    streamline_install::planned_package(&self.executable, &latest);
+                let current = installed
+                    .as_ref()
+                    .map(|p| p.version.as_str())
+                    .unwrap_or("未知");
+                if self.installation_state == "installed"
+                    && current == latest.version
+                    && installed
+                        .as_ref()
+                        .is_some_and(|p| !super::streamline_update::same_files(p, &latest))
+                {
+                    format!(
+                        "远端同版本组件的校验值发生变化：{}。请等待发布新版本；当前安装保持可用。",
+                        latest.version
+                    )
+                } else if self.installation_state == "installed" && current != latest.version {
+                    self.installation_state = "outdated";
+                    format!("发现组件小包更新：{current} → {}。点击下载并安装全部组件即可更新；稳定包缓存将复用，当前游戏会话保持不变。", latest.version)
+                } else if self.installation_state == "installed" && update.fresh {
+                    format!("已安装最新组件小包：{}。文件校验已通过。", latest.version)
+                } else if self.installation_state == "installed" {
+                    format!("已安装组件小包：{}。{}", latest.version, update.message)
+                } else {
+                    format!(
+                        "可安装组件小包：{}。自动下载并校验小包和配套稳定包。",
+                        latest.version
+                    )
+                }
+            }
+            None => format!("{} {}", self.package_message, update.message),
+        };
+        self.package_message = detail.clone();
+        self.checks.push(PreflightCheck {
+            id: "component-version",
+            label: "组件小包版本",
+            status: if self.installation_state == "installed" && verified_latest {
+                CheckStatus::Passed
+            } else {
+                CheckStatus::Pending
+            },
+            detail,
+        });
+    }
 }
 
 pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPreflight, String> {
@@ -163,9 +238,10 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
         requires_trial_confirmation,
         target_sha256: Some(hash),
         checks,
-        package_available: package.is_ok(),
+        package_available: package.is_ok() || super::streamline_download::available(),
         package_message: match package {
-            Ok(()) => "本地实验组件包已通过完整校验。普通游戏不设帧数上限；失焦时暂停、回到前台可恢复；窗口操作或运行条件不满足仍可能停用 FG。".into(),
+            Ok(()) => "画面增强组件已缓存并通过完整校验。普通游戏不设帧数上限；失焦时暂停、回到前台可恢复；窗口操作或运行条件不满足仍可能停用 FG。".into(),
+            Err(_) if super::streamline_download::available() => "安装时自动从 runtimes 仓库下载并校验 NR、SR / DLAA、FG 与配套图层，无需手动寻找 DLL。".into(),
             Err(error) => error,
         },
         runtime_state: "unknown",
@@ -175,6 +251,84 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    #[ignore = "Read-only preflight timing using FG_CHECK_TARGET and optional FG_CHECK_CONFIG"]
+    async fn local_preflight_timing() {
+        if let Some(path) = std::env::var_os("FG_CHECK_CONFIG") {
+            let config: crate::config::Config =
+                serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+            crate::config::CONFIG.write().setting.network = config.setting.network;
+        }
+        let target = PathBuf::from(std::env::var_os("FG_CHECK_TARGET").expect("FG_CHECK_TARGET"));
+        let started = std::time::Instant::now();
+        let report = detect_online(target.clone(), GraphicsApi::Vulkan)
+            .await
+            .unwrap();
+        println!(
+            "First preflight: {:?}; {}",
+            started.elapsed(),
+            report
+                .checks
+                .iter()
+                .find(|c| c.id == "component-version")
+                .unwrap()
+                .detail
+        );
+        tokio::time::sleep(std::time::Duration::from_secs(8)).await;
+        let started = std::time::Instant::now();
+        let report = detect_online(target, GraphicsApi::Vulkan).await.unwrap();
+        println!(
+            "Cached preflight: {:?}; {}",
+            started.elapsed(),
+            report
+                .checks
+                .iter()
+                .find(|c| c.id == "component-version")
+                .unwrap()
+                .detail
+        );
+    }
+    #[test]
+    fn remote_update_exposes_install_action_while_offline_report_retains_installed_state() {
+        let make_report = || FgPreflight {
+            executable: std::env::temp_dir().join("unused-preflight-test.exe"),
+            checked_at: String::new(),
+            target_version: None,
+            compatibility: "verified",
+            requires_trial_confirmation: false,
+            target_sha256: None,
+            checks: vec![],
+            package_available: false,
+            package_message: String::new(),
+            planned_destination: PathBuf::new(),
+            installation_state: "installed",
+            runtime_state: "unknown",
+        };
+        let latest = super::super::streamline_update::tests::fixture();
+        let mut report = make_report();
+        report.apply_update(super::super::streamline_update::Update {
+            package: Some(latest),
+            message: String::new(),
+            fresh: true,
+        });
+        assert_eq!(report.installation_state, "outdated");
+        assert!(report.package_available && report.package_message.contains("发现组件小包更新"));
+        assert!(matches!(
+            report.checks.last().unwrap().status,
+            CheckStatus::Pending
+        ));
+        let mut report = make_report();
+        report.apply_update(super::super::streamline_update::Update {
+            package: None,
+            message: "未能检查远端组件更新".into(),
+            fresh: false,
+        });
+        assert_eq!(report.installation_state, "installed");
+        assert!(matches!(
+            report.checks.last().unwrap().status,
+            CheckStatus::Pending
+        ));
+    }
     #[test]
     fn new_x64_build_is_unverified_but_dll_and_x86_are_incompatible() {
         let dir = tempfile::tempdir().unwrap();

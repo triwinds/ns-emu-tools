@@ -60,6 +60,16 @@ static CLOSED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::ne
 pub(super) fn enabled() -> bool {
     std::env::var("NS_STREAMLINE_TARGET_SDK").as_deref() == Ok("1")
 }
+fn nr_requested() -> bool {
+    #[cfg(feature = "native-nr")]
+    {
+        crate::nr_runtime::requested()
+    }
+    #[cfg(not(feature = "native-nr"))]
+    {
+        false
+    }
+}
 unsafe fn address(sdk: &Sdk, name: &[u8]) -> Result<*mut c_void> {
     type F = unsafe extern "C" fn();
     Ok(*sdk.library.get::<F>(name).map_err(|e| e.to_string())? as *mut c_void)
@@ -168,7 +178,26 @@ unsafe fn initialize() -> Result<Option<Arc<Sdk>>> {
         }
         sdk.device_ext
             .retain(|name| name.as_c_str() != c"VK_EXT_buffer_device_address");
+        if nr_requested()
+            || crate::sdk_output_layout::enabled()
+            || crate::sdk_transfer_access::enabled()
+        {
+            sdk.instance_ext
+                .push(ash::ext::debug_utils::NAME.to_owned());
+        }
+        if nr_requested() {
+            for name in [
+                c"VK_NVX_binary_import",
+                c"VK_NVX_image_view_handle",
+                c"VK_KHR_push_descriptor",
+            ] {
+                if !sdk.device_ext.iter().any(|n| n.as_c_str() == name) {
+                    sdk.device_ext.push(name.to_owned());
+                }
+            }
+        }
         sdk.instance_ext.extend([
+            ash::khr::surface::NAME.to_owned(),
             ash::khr::get_surface_capabilities2::NAME.to_owned(),
             ash::ext::surface_maintenance1::NAME.to_owned(),
         ]);
@@ -225,6 +254,18 @@ pub(super) unsafe fn create_instance(
         let copy = (*info)
             .application_info(&app)
             .enabled_extension_names(&pointers);
+        #[cfg(feature = "native-nr")]
+        if crate::nr_validation::enabled() {
+            let enables = [vk::ValidationFeatureEnableEXT::SYNCHRONIZATION_VALIDATION];
+            let mut validation =
+                vk::ValidationFeaturesEXT::default().enabled_validation_features(&enables);
+            let mut callback = crate::nr_validation::create_info();
+            return Ok(next(
+                &copy.push_next(&mut validation).push_next(&mut callback),
+                alloc,
+                out,
+            ));
+        }
         Ok(next(&copy, alloc, out))
     })();
     match result {
@@ -351,6 +392,9 @@ pub(super) unsafe fn create_device(
         {
             return Err("required SDK feature unavailable".into());
         }
+        if nr_requested() && (f13.maintenance4 == 0 || f13.private_data == 0) {
+            return Err("native NR requires maintenance4 and privateData".into());
+        }
         let mut priorities =
             std::slice::from_raw_parts(original.p_queue_priorities, original.queue_count as usize)
                 .to_vec();
@@ -364,11 +408,26 @@ pub(super) unsafe fn create_device(
                     .queue_priorities(&optical_priority),
             );
         }
-        let chain = crate::target_device_plan::FeatureChain::for_target((*info).p_next)?;
+        let chain = if nr_requested() {
+            crate::target_device_plan::FeatureChain::for_target_with_nr((*info).p_next, true)?
+        } else {
+            crate::target_device_plan::FeatureChain::for_target((*info).p_next)?
+        };
         let pointers: Vec<_> = names.iter().map(|s| s.as_ptr()).collect();
         let mut copy = (*info)
             .enabled_extension_names(&pointers)
             .queue_create_infos(&queues);
+        // FP16 motion/confidence stores need extended storage image formats.
+        // Copy the application's core features; never patch borrowed memory.
+        let mut core_features = if (*info).p_enabled_features.is_null() {
+            vk::PhysicalDeviceFeatures::default()
+        } else {
+            *(*info).p_enabled_features
+        };
+        if optical_family.is_some() {
+            core_features.shader_storage_image_extended_formats = vk::TRUE;
+            copy.p_enabled_features = &core_features;
+        }
         copy.p_next = chain.head();
         let mut optical_feature =
             vk::PhysicalDeviceOpticalFlowFeaturesNV::default().optical_flow(true);
@@ -430,14 +489,38 @@ pub(super) unsafe fn ensure_device(device: vk::Device) {
     // Initialization is deferred to the first application device command.
     let result = (|| -> Result<()> {
         let sdk = SDK.get().ok_or("SDK missing")?;
+        #[cfg(feature = "native-nr")]
+        let (gipa, gdpa): (vk::PFN_vkGetInstanceProcAddr, vk::PFN_vkGetDeviceProcAddr) =
+            if nr_requested() {
+                let downstream = ash::Device::load_with(
+                    |name| {
+                        probeRouteGdpa(device, name.as_ptr())
+                            .map_or(std::ptr::null(), |f| f as *const _)
+                    },
+                    device,
+                );
+                crate::nr_layout::install(
+                    probeRouteGipa,
+                    probeRouteGdpa,
+                    &downstream,
+                    crate::nr_runtime::event,
+                )
+                .map_err(|e| e.to_string())?;
+                (crate::nr_layout::gipa, crate::nr_layout::gdpa)
+            } else {
+                (probeRouteGipa, probeRouteGdpa)
+            };
+        #[cfg(not(feature = "native-nr"))]
+        let (gipa, gdpa): (vk::PFN_vkGetInstanceProcAddr, vk::PFN_vkGetDeviceProcAddr) =
+            (probeRouteGipa, probeRouteGdpa);
         require(
             probe_sl_register_route(
                 address(sdk, b"slRegisterVulkanLayerRouteV1\0")?,
                 pending.parent.handle.as_raw(),
                 pending.physical.as_raw(),
                 device.as_raw(),
-                probeRouteGipa,
-                probeRouteGdpa,
+                gipa,
+                gdpa,
             ),
             "register route",
         )?;
@@ -454,6 +537,12 @@ pub(super) unsafe fn ensure_device(device: vk::Device) {
             "set Vulkan info",
         )?;
         ACTIVE.store(device.as_raw(), std::sync::atomic::Ordering::SeqCst);
+        #[cfg(feature = "native-nr")]
+        if nr_requested() {
+            // A failed optional NR init reports a disabled state and retains
+            // callback/DLL storage; it never shuts down the shared SDK core.
+            let _ = crate::nr_runtime::initialize(pending.parent.handle, pending.physical, device);
+        }
         trace::event!(
             "target_sdk_ready",
             json!({"device":device.as_raw(),"fg_enabled":false,"after_loader_create_device":true}),
@@ -473,6 +562,8 @@ pub(super) unsafe fn destroy_device(device: vk::Device) {
         return;
     }
     crate::live::shutdown();
+    #[cfg(feature = "native-nr")]
+    crate::nr_runtime::shutdown(device);
     let sdk = SDK.get().unwrap();
     let function = address(sdk, b"slShutdown\0").unwrap_or_else(|_| std::process::abort());
     let result = probe_sl_shutdown(function);
@@ -618,7 +709,7 @@ pub(super) unsafe fn create_swapchain(
                 return Err("Immediate presentation required for FG".into());
             }
             copy.present_mode = vk::PresentModeKHR::IMMEDIATE;
-            if crate::target_nvof::enabled() || crate::target_sr::available() {
+            if crate::target_nvof::enabled() || crate::target_sr::available() || nr_requested() {
                 let caps_query: vk::PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR =
                     std::mem::transmute(
                         (dispatch.gipa)(
@@ -631,7 +722,7 @@ pub(super) unsafe fn create_swapchain(
                 caps_query(physical, (*info).surface, &mut caps)
                     .result()
                     .map_err(|e| e.to_string())?;
-                if crate::target_sr::available() {
+                if crate::target_sr::available() || nr_requested() {
                     let usage =
                         vk::ImageUsageFlags::TRANSFER_SRC | vk::ImageUsageFlags::TRANSFER_DST;
                     sr_allowed = caps.supported_usage_flags.contains(usage);
@@ -659,6 +750,9 @@ pub(super) unsafe fn create_swapchain(
             }
         }
         let result = create(device, &copy, alloc, out);
+        if result == vk::Result::SUCCESS {
+            crate::present_layout::created(device, *out);
+        }
         if result == vk::Result::SUCCESS && crate::target_fg::enabled() {
             crate::target_fg::created(
                 device,

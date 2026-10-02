@@ -1,0 +1,1988 @@
+{
+  "date": "2026-09-30",
+  "conclusion": "Missing initial transitions reproduced; opt-in pinned-runtime diagnostic repair removes all four validation errors. P0 remains incomplete.",
+  "final_executable_sha256": "0a51818ccc2cf7366b361183772922cfca0789395119fbb37417b075d9bb1bd3",
+  "comparisons": [
+    {
+      "baseline": "nr-p0-layout-trace-001",
+      "repaired": "nr-p0-layout-repair-trace-final-001",
+      "frames_compared": 12,
+      "identical_frames": 12,
+      "differing_frames": []
+    },
+    {
+      "baseline": "nr-p0-layout-baseline-full-001",
+      "repaired": "nr-p0-layout-repair-final-001",
+      "frames_compared": 606,
+      "identical_frames": 606,
+      "differing_frames": []
+    },
+    {
+      "baseline": "nr-p0-layout-baseline-alt-001",
+      "repaired": "nr-p0-layout-repair-alt-001",
+      "frames_compared": 606,
+      "identical_frames": 606,
+      "differing_frames": []
+    }
+  ],
+  "sessions": [
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-trace-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "93700a550ffd8d930228c19b85d9cffdcb4d0da37e2a2ac3b1f28ec33d859dd5",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/py/ns-emu-tools/src-tauri/target/release/graphics-components/cache/aio-v1/runtimes/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": {
+          "dll_sha256": "c9d73b28a9eaa57fdc0f1c9deee0d46ebade08d80b8cd4c1a493874d964a21cc",
+          "manifest_sha256": "41a595a5a31e12c9fd7d943e6368e8fbc82b5d3d07f271f6774df4a98245355f"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-trace-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-trace-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-trace-001",
+        "trace_layouts": true,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": true,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 1,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 2,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 4,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 2.8106524999999998,
+        "exit_code": -1073740791,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 345,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": false
+      },
+      "added_transitions": [],
+      "errors": [
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2828050e0d0 expects VkImage 0x8c000000008c[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 294,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2828050e0d0 expects VkImage 0x890000000089[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 295,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2828050e0d0 expects VkImage 0x950000000095[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 312,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2828050e0d0 expects VkImage 0x9e000000009e[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 329,
+          "severity": 4096,
+          "type": 2
+        }
+      ],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "b1cc2a513553be9e4d880d1e6edc8182fab740d4ccdc4f60a1ea666b32706916",
+          "bytes": 1981
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "7532943ae7c7f832fac096cfa6b5d1a0ec0be9195775d0f410765e11ea55d440",
+          "bytes": 658
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "f3ef0b4fbdb751eeec56eb26ecdf005bf0707c9a0dfe2a308b2973882e14ee35",
+          "bytes": 3262
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "4a2003039652c87b7d0ce6b9bf9f55b9b89d83b5de46ea6c85142ec69d5f03f1",
+          "bytes": 263
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "a328d96053803d8fadce4ba742e4de900fea91168cbc4989957f1ec6f387253d",
+          "bytes": 22450
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "6a4e48c9fef7b3cbde2734e32ef790874c3b1f74fad2145184664ac5b258199c",
+          "bytes": 18527
+        },
+        {
+          "name": "stdout.txt",
+          "sha256": "02ff9860ff7a54e78457e8985b58c58544c1031970f33f67b8a1940d89029a39",
+          "bytes": 4135810
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "885c039bf1b72dead2f485ff06ec26ccdb9afda6f5651546cda6161c68c05ad6",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/py/ns-emu-tools/src-tauri/target/release/graphics-components/cache/aio-v1/runtimes/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": {
+          "dll_sha256": "c9d73b28a9eaa57fdc0f1c9deee0d46ebade08d80b8cd4c1a493874d964a21cc",
+          "manifest_sha256": "41a595a5a31e12c9fd7d943e6368e8fbc82b5d3d07f271f6774df4a98245355f"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": true,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-001",
+        "trace_layouts": true,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": true,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 1,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 2,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 2.6077582,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 346,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "added_transitions": [
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2345356353744,
+            "image": 150633093005449,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 291,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2345356353744,
+            "image": 153931627888780,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 294,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2345356353744,
+            "image": 163827232538773,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 309,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2345356353744,
+            "image": 173722837188766,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 326,
+          "stage": "layout_probe_transition"
+        }
+      ],
+      "errors": [],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "66dac4183270ca73ff62d937c810c3aefb60e05edf885309cd6459a575744fad",
+          "bytes": 1981
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "be342fa9a31450006dda81b274db1724fe3a8f1ba7b1d6eebcbe6199732fb2c5",
+          "bytes": 696
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "48e38c08c94bd557568a17e54643789bcbb5e4b1188c4d3a338d65aff9ceaea3",
+          "bytes": 3309
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "375857a5f7ead2ff57f2d58ce100f311946f202297a84df0dc18ec5d7b113ddb",
+          "bytes": 243
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "d6b91b59264ff84f3e4eed4b1f72e0227c0287c0ea4ab91a057cea5c5e757a7f",
+          "bytes": 23411
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "e53517a7e39d7a13d731cd87d15f7580304f1575ad13e670867c8474d98c7c99",
+          "bytes": 14935
+        },
+        {
+          "name": "api-dump.txt",
+          "sha256": "990b4e29dbf1cb2a3e74cb486d01c8bbcdb0a52d560126bd49cd09ee0ea7d32e",
+          "bytes": 4144782
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-full-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "885c039bf1b72dead2f485ff06ec26ccdb9afda6f5651546cda6161c68c05ad6",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/py/ns-emu-tools/src-tauri/target/release/graphics-components/cache/aio-v1/runtimes/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": null,
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-full-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": false,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-full-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-full-001",
+        "trace_layouts": false,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": false,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 4,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 22.472991,
+        "exit_code": -1073740791,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 2706,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": false
+      },
+      "added_transitions": [],
+      "errors": [
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1e28050e0d0 expects VkImage 0x8c000000008c[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 279,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1e28050e0d0 expects VkImage 0x890000000089[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 280,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1e28050e0d0 expects VkImage 0x950000000095[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 1485,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x1e28050e0d0 expects VkImage 0x9e000000009e[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 2690,
+          "severity": 4096,
+          "type": 2
+        }
+      ],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "366a9df17b65a7c5de66a66096f6c2a111a92c904c0082fe42655f8737801470",
+          "bytes": 1804
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "c9d7a0e465e47085b34c4e8b7647a128bafb97a6a231bc4ae7385091158479f2",
+          "bytes": 719
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "dcc4ca3d4b41eb443e83d47acb454517845b92464188fe631ab1c179a3efe8cb",
+          "bytes": 3323
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "92376ddd6fafb5a23530f4e0503b32781c9e187439c4f9306455939890ca6327",
+          "bytes": 255
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "bdbbff3b424f99f6ebd38b8a03cc83ee02338820b845d5bdb05033cf6a51566c",
+          "bytes": 517235
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "8a7cc722a21e918eaa24e3e70bd073b08e594bccad97bc13d2fbdbc171476a50",
+          "bytes": 16348
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-full-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "885c039bf1b72dead2f485ff06ec26ccdb9afda6f5651546cda6161c68c05ad6",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/py/ns-emu-tools/src-tauri/target/release/graphics-components/cache/aio-v1/runtimes/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": null,
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-full-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": true,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-full-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-full-001",
+        "trace_layouts": false,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 22.5756781,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 2707,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "added_transitions": [
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2050852184272,
+            "image": 150633093005449,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 276,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2050852184272,
+            "image": 153931627888780,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 279,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2050852184272,
+            "image": 163827232538773,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 1482,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2050852184272,
+            "image": 173722837188766,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 2687,
+          "stage": "layout_probe_transition"
+        }
+      ],
+      "errors": [],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "366a9df17b65a7c5de66a66096f6c2a111a92c904c0082fe42655f8737801470",
+          "bytes": 1804
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "38fa0468d04388faf87066f21bc55514af73622b86172bcd145671db2c66de81",
+          "bytes": 712
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "d5f3d0cb978afdc8db97ef94cf341e5b1fa919102f0f43c5084404517d566983",
+          "bytes": 3322
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "9c531d4f2973f4e1e29be5a3a472738706239a403080ef1c83a22938777ddd5c",
+          "bytes": 245
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "19ece9cda22d9717749ed7d54276e9919754e6e7ee44146bfe63119199d6e68a",
+          "bytes": 518193
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "9ea1b5a616841fa7f43da53482e1992fddba06d01ef76142b8e7c54d23450896",
+          "bytes": 12754
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-final-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "0a51818ccc2cf7366b361183772922cfca0789395119fbb37417b075d9bb1bd3",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/py/ns-emu-tools/src-tauri/target/release/graphics-components/cache/aio-v1/runtimes/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": null,
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-final-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": true,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-final-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-final-001",
+        "trace_layouts": false,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 21.669292,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 2707,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "added_transitions": [
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2077126680784,
+            "image": 150633093005449,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 276,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2077126680784,
+            "image": 153931627888780,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 279,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2077126680784,
+            "image": 163827232538773,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 1482,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2077126680784,
+            "image": 173722837188766,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 2687,
+          "stage": "layout_probe_transition"
+        }
+      ],
+      "errors": [],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "d051c9d7a84892bdf5fa5dad158c80fb365a214a5c561de229a5f6c144d70cd8",
+          "bytes": 1804
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "d1fb1777889df399a17c7eb87750d7f4ab373d339f900ebe4e6023b419916bce",
+          "bytes": 715
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "d5f3d0cb978afdc8db97ef94cf341e5b1fa919102f0f43c5084404517d566983",
+          "bytes": 3322
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "8e2d60f55200b1118cbd1aea8390d254b9552b2bc901bf5521f57eada09f03be",
+          "bytes": 244
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "eac74e95d298393b184b3f0a2e18ad378478a20d1d071abe8103c3933fa40dc0",
+          "bytes": 518195
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "9ea1b5a616841fa7f43da53482e1992fddba06d01ef76142b8e7c54d23450896",
+          "bytes": 12754
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-alt-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "0a51818ccc2cf7366b361183772922cfca0789395119fbb37417b075d9bb1bd3",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/ryubing-dlss5-win-x64/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": null,
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-alt-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": true,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-alt-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "4b8d19bc3eff58a084f5eca7489c921501c203450169fb82ff4f649a4482ba05",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-alt-001",
+        "trace_layouts": false,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 22.8758183,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 2707,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "added_transitions": [
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2134604046544,
+            "image": 150633093005449,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 276,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2134604046544,
+            "image": 153931627888780,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 279,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2134604046544,
+            "image": 163827232538773,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 1482,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 2134604046544,
+            "image": 173722837188766,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 2687,
+          "stage": "layout_probe_transition"
+        }
+      ],
+      "errors": [],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "7a4e365919051936742fb09236ed7d66661357dca0f86659b6a53229ad111725",
+          "bytes": 1743
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "5be22d5c717b10b0e6fca8eeb743540d0696a0b27a3f81e733db502d33090abf",
+          "bytes": 709
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "d5f3d0cb978afdc8db97ef94cf341e5b1fa919102f0f43c5084404517d566983",
+          "bytes": 3322
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "7b97efeb8d28d28eac523d51a3e4f7415e56a9881cdd2ae1e795d68e84f3c4fb",
+          "bytes": 245
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "453f164feb84c0cb79f6854c8c63385d5c01858722f45b6531f9e61bf1b433e8",
+          "bytes": 518191
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "9ea1b5a616841fa7f43da53482e1992fddba06d01ef76142b8e7c54d23450896",
+          "bytes": 12754
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-alt-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "0a51818ccc2cf7366b361183772922cfca0789395119fbb37417b075d9bb1bd3",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/ryubing-dlss5-win-x64/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": null,
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-alt-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": false,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-alt-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "4b8d19bc3eff58a084f5eca7489c921501c203450169fb82ff4f649a4482ba05",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-baseline-alt-001",
+        "trace_layouts": false,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": false,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": false,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 1,
+              "frames": 300,
+              "intensity": 0.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 197,
+              "cycle": 2,
+              "frames": 300,
+              "intensity": 1.0,
+              "moving_pairs": 197,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 4,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 21.6667735,
+        "exit_code": -1073740791,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 2706,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": false
+      },
+      "added_transitions": [],
+      "errors": [
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2f70050e0d0 expects VkImage 0x8c000000008c[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 279,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2f70050e0d0 expects VkImage 0x890000000089[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 280,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2f70050e0d0 expects VkImage 0x950000000095[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 1485,
+          "severity": 4096,
+          "type": 2
+        },
+        {
+          "id_number": 1180184443,
+          "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x2f70050e0d0 expects VkImage 0x9e000000009e[nv.ngx.dlssnr.resource] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+          "sequence": 2690,
+          "severity": 4096,
+          "type": 2
+        }
+      ],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "7a4e365919051936742fb09236ed7d66661357dca0f86659b6a53229ad111725",
+          "bytes": 1743
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "0a6d2430b07e0d22de846e8f8ac6869e886e96549e30a93ff6bdda1c8169913a",
+          "bytes": 716
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "dcc4ca3d4b41eb443e83d47acb454517845b92464188fe631ab1c179a3efe8cb",
+          "bytes": 3323
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "f59044209936be4446816775dbc540b01bf3f55140981ae8f191c73951960f5d",
+          "bytes": 256
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "ebb0eb3fdb33f1d305d30cb81cd8394e20643220b730d0f3a2e5141d400c2a56",
+          "bytes": 517233
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "4200c2ed72ced0047587e4e34faf880d849d55694ddf970f8efcea669dc29697",
+          "bytes": 16348
+        }
+      ]
+    },
+    {
+      "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-trace-final-001",
+      "inputs": {
+        "color": "gamma_encoded_rgba16f",
+        "contract": {
+          "api_version": 21,
+          "artifacts": [
+            {
+              "path": "include/nvsdk_ngx_defs.h",
+              "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"
+            },
+            {
+              "path": "include/nvsdk_ngx_defs_vk.h",
+              "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"
+            },
+            {
+              "path": "include/nvsdk_ngx_params.h",
+              "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"
+            },
+            {
+              "path": "include/nvsdk_ngx_vk.h",
+              "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"
+            },
+            {
+              "path": "lib/Windows_x86_64/nvsdk_ngx_d.lib",
+              "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"
+            }
+          ],
+          "experimental": true,
+          "ngx_feature": 18,
+          "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+          "schema_version": 1,
+          "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b"
+        },
+        "depth": "synthetic_constant",
+        "fg_requested": false,
+        "host_sha256": "0a51818ccc2cf7366b361183772922cfca0789395119fbb37417b075d9bb1bd3",
+        "motion": "synthetic_uv_current_to_previous",
+        "nr_requested": true,
+        "source_bridge": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\nr-call-bridge\\target\\release\\nvngx.dll",
+        "source_runtime": "D:/py/ns-emu-tools/src-tauri/target/release/graphics-components/cache/aio-v1/runtimes/nvngx_dlssnr.dll",
+        "sr_requested": false,
+        "trace_files": {
+          "dll_sha256": "c9d73b28a9eaa57fdc0f1c9deee0d46ebade08d80b8cd4c1a493874d964a21cc",
+          "manifest_sha256": "41a595a5a31e12c9fd7d943e6368e8fbc82b5d3d07f271f6774df4a98245355f"
+        },
+        "validation_files": {
+          "dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        }
+      },
+      "options": {
+        "bridge": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-trace-final-001\\nvngx.dll",
+        "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+        "frames": 300,
+        "height": 360,
+        "init_only": false,
+        "repair_internal_layouts": true,
+        "runtime": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-trace-final-001\\nvngx_dlssnr.dll",
+        "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+        "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-p0-layout-repair-trace-final-001",
+        "trace_layouts": true,
+        "validation_dir": "D:/py/ns-emu-tools/src-tauri/target/vulkan-sdk-1.4.363.0/Bin",
+        "width": 640,
+        "without_validation": false
+      },
+      "result": {
+        "experimental_internal_layout_repair": true,
+        "game_integration_verified": false,
+        "initialized": true,
+        "layout_trace_only": true,
+        "outputs": {
+          "cycles": [
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 0,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": false,
+              "released": false
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 1,
+              "frames": 3,
+              "intensity": 0.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 2,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            },
+            {
+              "changed_moving_pairs": 0,
+              "cycle": 3,
+              "frames": 3,
+              "intensity": 1.0,
+              "moving_pairs": 0,
+              "nr_enabled": true,
+              "released": true
+            }
+          ],
+          "intensity_response_detected": true,
+          "readback_complete": true,
+          "synthetic_inputs": true,
+          "zero_motion_policy_verified": false
+        },
+        "p0_passed": false,
+        "remaining_gates": [
+          "zero validation errors and reviewed warnings",
+          "Streamline coexistence and shutdown ownership",
+          "review outputs and zero-motion policy",
+          "optimized caller boundary audit"
+        ],
+        "streamline_coexistence_verified": false,
+        "unreviewed_warnings": 0,
+        "validation_enabled": true,
+        "validation_errors": 0,
+        "validation_warnings": 6,
+        "warning_reviews": [
+          {
+            "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          },
+          {
+            "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+            "review": "Expected child-only exclusion of implicit layers; this is a loader notice, not a synchronization or lifetime warning."
+          }
+        ],
+        "warnings_reviewed": true,
+        "zero_motion_policy_verified": false
+      },
+      "process": {
+        "elapsed_seconds": 2.3083122,
+        "exit_code": 0,
+        "last_event": {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 346,
+          "stage": "core_shutdown"
+        },
+        "p0_passed": false,
+        "success": true
+      },
+      "added_transitions": [
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 1355067482320,
+            "image": 150633093005449,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 291,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 1355067482320,
+            "image": 153931627888780,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 294,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 1355067482320,
+            "image": 163827232538773,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 309,
+          "stage": "layout_probe_transition"
+        },
+        {
+          "details": {
+            "before_first_use": true,
+            "command": 1355067482320,
+            "image": 173722837188766,
+            "new_layout": "GENERAL",
+            "old_layout": "UNDEFINED"
+          },
+          "sequence": 326,
+          "stage": "layout_probe_transition"
+        }
+      ],
+      "errors": [],
+      "files": [
+        {
+          "name": "nr-inputs.json",
+          "sha256": "8cd03c2714e791633d874d2358b9a6faa102b3a9c92af254e507f6b2c17cf970",
+          "bytes": 1981
+        },
+        {
+          "name": "nr-options.json",
+          "sha256": "7f25be1f1c2c85fef97a9a2e87042872586274d139ea2001ad095d585dda2b0e",
+          "bytes": 732
+        },
+        {
+          "name": "nr-result.json",
+          "sha256": "48e38c08c94bd557568a17e54643789bcbb5e4b1188c4d3a338d65aff9ceaea3",
+          "bytes": 3309
+        },
+        {
+          "name": "nr-process.json",
+          "sha256": "39d78c3be4dcf14267242501d9b575d6d375296707befc2a55c1623bb7948b93",
+          "bytes": 243
+        },
+        {
+          "name": "nr-events.jsonl",
+          "sha256": "2fe6fb83954f7061681e2b561bfbc629f82b3b3ead6a77967948c19adde984cd",
+          "bytes": 23435
+        },
+        {
+          "name": "validation.jsonl",
+          "sha256": "e53517a7e39d7a13d731cd87d15f7580304f1575ad13e670867c8474d98c7c99",
+          "bytes": 14935
+        },
+        {
+          "name": "api-dump.txt",
+          "sha256": "d6bf2a8e75bc62a0385be18cd4785001a2137bde5f896cc8ac00ee908b0f7041",
+          "bytes": 4144782
+        }
+      ]
+    }
+  ],
+  "checks": [
+    "cargo fmt application and streamline-fg",
+    "cargo check application host and x86_64-pc-windows-msvc: no warnings",
+    "cargo check streamline-fg all features/all targets host and x86_64-pc-windows-msvc: no warnings",
+    "8 existing NR diagnostic tests passed"
+  ],
+  "production_enabled": false,
+  "p0_passed": false
+}

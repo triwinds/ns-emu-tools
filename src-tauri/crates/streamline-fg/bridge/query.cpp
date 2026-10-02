@@ -249,6 +249,17 @@ static_assert(fgExtent(93, 0, 2374, 1335).left == 93 &&
 static_assert(fgExtent(0, 140, 1920, 800).top == 140 &&
               fgExtent(0, 140, 1920, 800).left == 0 &&
               fgExtent(0, 140, 1920, 800).width == 1920);
+static constexpr float fgMotionScale(uint32_t format, uint32_t textureExtent,
+    uint32_t activeExtent) {
+    return format == VK_FORMAT_R16G16_SFLOAT ?
+        1.0f/float(activeExtent) : float(textureExtent)/float(activeExtent);
+}
+// Pixel and full-texture UV inputs must describe the same displacement in a
+// cropped viewport, including independent horizontal and vertical scales.
+static_assert(fgMotionScale(VK_FORMAT_R16G16_SFLOAT, 2560, 1280) * 16.0f ==
+              fgMotionScale(VK_FORMAT_R32G32_SFLOAT, 2560, 1280) * (16.0f/2560.0f));
+static_assert(fgMotionScale(VK_FORMAT_R16G16_SFLOAT, 1440, 720) * -8.0f ==
+              fgMotionScale(VK_FORMAT_R32G32_SFLOAT, 1440, 720) * (-8.0f/1440.0f));
 extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32_t reset,
     const ProbeFGResource* inputs, const uint32_t* region) noexcept {
     try {
@@ -266,14 +277,16 @@ extern "C" int32_t probe_fg_inputs(const ProbeFGApi* api, uint64_t token, uint32
         for (uint32_t i=0; i<4; ++i) identity.setRow(i, {i==0 ? 1.0f : 0.0f, i==1 ? 1.0f : 0.0f, i==2 ? 1.0f : 0.0f, i==3 ? 1.0f : 0.0f});
         constants.cameraViewToClip = constants.clipToCameraView = constants.clipToLensClip = constants.clipToPrevClip = constants.prevClipToClip = identity;
         constants.jitterOffset = constants.cameraPinholeOffset = {0,0};
-        // NVOF stores UV displacement relative to the full texture. Tags below
-        // crop that texture, so normalize displacement to the active region.
-        constants.mvecScale = {float(inputs[1].width)/float(extent.width), float(inputs[1].height)/float(extent.height)};
+        // FP16 NVOF guidance matches Magpie's pixel convention. Streamline
+        // requires normalization to the active tagged region. NR/SR retain UV.
+        constants.mvecScale = {
+            fgMotionScale(inputs[1].format, inputs[1].width, extent.width),
+            fgMotionScale(inputs[1].format, inputs[1].height, extent.height)};
         constants.cameraPos = {0,0,0}; constants.cameraUp = {0,1,0};
         constants.cameraRight = {1,0,0}; constants.cameraFwd = {0,0,1};
         constants.cameraNear = 0.1f;
-        constants.cameraFar = referenceParameters() ? 10000.0f : 1000.0f;
-        constants.cameraFOV = referenceParameters() ? 1.0f : 1.04719755f;
+        constants.cameraFar = 1000.0f;
+        constants.cameraFOV = 1.04719755f;
         if (referenceParameters()) {
             constants.motionVectorsInvalidValue = 0.0f;
             constants.orthographicProjection = sl::eFalse;

@@ -40,8 +40,20 @@ fn fixture() -> Model {
     );
     m.chains.insert((DEVICE, 5), vec![99]);
     m.samplers.insert((DEVICE, 6), true);
-    m.pipelines.insert((DEVICE, 7), true);
-    m.renderpasses.insert((DEVICE, 8), true);
+    m.pipelines.insert(
+        (DEVICE, 7),
+        Known {
+            valid: true,
+            generation: 1,
+        },
+    );
+    m.renderpasses.insert(
+        (DEVICE, 8),
+        Known {
+            valid: true,
+            generation: 1,
+        },
+    );
     m.descriptors.insert(
         (DEVICE, 10),
         Descriptor {
@@ -79,8 +91,16 @@ fn barrier(
         )
 }
 fn record(m: &mut Model) {
+    record_path(m, 7, 8);
+}
+fn record_path(m: &mut Model, pipeline: u64, renderpass: u64) {
+    let source_image = m
+        .descriptors
+        .get(&(DEVICE, 12))
+        .and_then(|d| m.views.get(&(DEVICE, d.view)))
+        .map_or(42, |v| v.image);
     m.begin(DEVICE, COMMAND, true);
-    m.pipeline(DEVICE, COMMAND, 7);
+    m.pipeline(DEVICE, COMMAND, pipeline);
     m.sets(
         DEVICE,
         COMMAND,
@@ -96,12 +116,12 @@ fn record(m: &mut Model) {
         DEVICE,
         COMMAND,
         &[barrier(
-            42,
+            source_image,
             vk::ImageLayout::GENERAL,
             vk::ImageLayout::GENERAL,
         )],
     );
-    m.begin_pass(DEVICE, COMMAND, 4, 8);
+    m.begin_pass(DEVICE, COMMAND, 4, renderpass);
     m.viewport(
         DEVICE,
         COMMAND,
@@ -216,7 +236,7 @@ fn rejects_shader_drift_sampler_changes_and_missing_clear() {
         let mut m = fixture();
         match fault {
             0 => {
-                m.pipelines.insert((DEVICE, 7), false);
+                m.pipelines.get_mut(&(DEVICE, 7)).unwrap().valid = false;
             }
             1 => {
                 m.samplers.insert((DEVICE, 6), false);
@@ -303,4 +323,244 @@ fn reenable_requires_fresh_descriptor_and_command_evidence() {
     submit(&mut m);
     assert!(select(&mut m).is_err());
     assert_eq!(m.images.len(), 1);
+}
+
+fn add_source(m: &mut Model, image: u64, generation: u64) {
+    let original = m.images[&(DEVICE, 42)];
+    m.images.insert(
+        (DEVICE, image),
+        Image {
+            generation,
+            ..original
+        },
+    );
+    m.views.insert(
+        (DEVICE, image + 1),
+        View {
+            image,
+            format: 37,
+            ..Default::default()
+        },
+    );
+}
+fn present_source(m: &mut Model, image: u64) -> Source {
+    m.descriptors.get_mut(&(DEVICE, 12)).unwrap().view = image + 1;
+    record(m);
+    submit(m);
+    select(m).unwrap()
+}
+#[test]
+fn observed_live_rotation_preserves_nr_history_and_new_members_reset_once() {
+    use crate::nr_history::{Controls, History, Reason, Source as TemporalSource};
+    let mut m = fixture();
+    add_source(&mut m, 52, 2);
+    add_source(&mut m, 62, 3);
+    let mut history = History::default();
+    let controls = Controls {
+        enabled: true,
+        intensity: 1.0,
+    };
+    let mut identities = Vec::new();
+    for (frame, image, expected) in [
+        (0, 42, Reason::Created),
+        (1, 52, Reason::SourceChanged),
+        (2, 42, Reason::Continuous),
+        (3, 52, Reason::Continuous),
+        (4, 62, Reason::SourceChanged),
+        (5, 42, Reason::Continuous),
+        (6, 62, Reason::Continuous),
+    ] {
+        let s = present_source(&mut m, image);
+        identities.push(s.history_identity);
+        let decision = history
+            .next(
+                controls,
+                TemporalSource {
+                    identity: s.history_identity,
+                    extent: [1920, 1080],
+                    mapping: 1,
+                },
+                frame,
+                true,
+            )
+            .unwrap();
+        assert_eq!(decision.reason, expected);
+        assert_eq!(decision.reset_nr, expected != Reason::Continuous);
+        history.sr_consumed();
+        history.fg_consumed();
+        assert_eq!(s.image.as_raw(), image);
+        assert_eq!(s.generation, m.images[&(DEVICE, image)].generation);
+    }
+    assert_eq!(identities[1], identities[2]);
+    assert_ne!(identities[3], identities[4]);
+    assert_eq!(m.cohorts[&(DEVICE, QUEUE, 5)].members.len(), 3);
+}
+#[test]
+fn equivalent_rotating_paths_and_extra_usage_preserve_the_observed_stream() {
+    let mut m = fixture();
+    add_source(&mut m, 52, 2);
+    m.images.get_mut(&(DEVICE, 52)).unwrap().usage |= 2 | 4;
+    m.pipelines.insert(
+        (DEVICE, 17),
+        Known {
+            valid: true,
+            generation: 2,
+        },
+    );
+    m.renderpasses.insert(
+        (DEVICE, 18),
+        Known {
+            valid: true,
+            generation: 2,
+        },
+    );
+    let present = |m: &mut Model, image: u64, p: u64, r: u64| {
+        m.descriptors.get_mut(&(DEVICE, 12)).unwrap().view = image + 1;
+        record_path(m, p, r);
+        submit(m);
+        select(m).unwrap()
+    };
+    let first = present(&mut m, 42, 7, 8);
+    let learned = present(&mut m, 52, 17, 18);
+    assert_ne!(first.history_identity, learned.history_identity);
+    assert_eq!(learned.history_update, "new_image_and_path");
+    for image in [42, 52, 42, 52] {
+        let (p, r) = if image == 42 { (7, 8) } else { (17, 18) };
+        let s = present(&mut m, image, p, r);
+        assert_eq!(s.history_identity, learned.history_identity);
+        assert_eq!((s.history_members, s.history_paths), (2, 2));
+        assert_eq!(s.history_update, "continuous");
+    }
+    // An unselected path retiring must break continuity immediately.
+    m.pipelines.remove(&(DEVICE, 17));
+    let retired = present(&mut m, 42, 7, 8);
+    assert_ne!(retired.history_identity, learned.history_identity);
+    assert_eq!(retired.history_update, "path_retired");
+    m.pipelines.insert(
+        (DEVICE, 17),
+        Known {
+            valid: true,
+            generation: 99,
+        },
+    );
+    assert_ne!(
+        present(&mut m, 52, 17, 18).history_identity,
+        retired.history_identity
+    );
+}
+#[test]
+fn new_path_with_an_observed_image_resets_once_and_path_pool_is_bounded() {
+    let mut m = fixture();
+    let mut old = present_source(&mut m, 42).history_identity;
+    for i in 0..MAX_PRESENT_PATHS {
+        let pipeline = 100 + i as u64;
+        m.pipelines.insert(
+            (DEVICE, pipeline),
+            Known {
+                valid: true,
+                generation: 20 + i as u64,
+            },
+        );
+        record_path(&mut m, pipeline, 8);
+        submit(&mut m);
+        let first = select(&mut m).unwrap();
+        assert_ne!(first.history_identity, old);
+        assert_eq!(first.history_members, 1);
+        assert!((1..=MAX_PRESENT_PATHS as u32).contains(&first.history_paths));
+        record_path(&mut m, pipeline, 8);
+        submit(&mut m);
+        assert_eq!(
+            select(&mut m).unwrap().history_identity,
+            first.history_identity
+        );
+        old = first.history_identity;
+    }
+    assert_eq!(m.cohorts[&(DEVICE, QUEUE, 5)].paths.len(), 1);
+}
+#[test]
+fn destroyed_or_reallocated_pool_member_breaks_history_before_it_is_reused() {
+    let mut m = fixture();
+    add_source(&mut m, 52, 2);
+    present_source(&mut m, 42);
+    let old = present_source(&mut m, 52).history_identity;
+    assert_eq!(present_source(&mut m, 42).history_identity, old);
+    m.images.remove(&(DEVICE, 52));
+    let after_destroy = present_source(&mut m, 42);
+    assert_ne!(after_destroy.history_identity, old);
+    assert_eq!(after_destroy.history_members, 1);
+    add_source(&mut m, 52, 99);
+    let recreated = present_source(&mut m, 52);
+    assert_ne!(recreated.history_identity, after_destroy.history_identity);
+    assert_eq!(recreated.generation, 99);
+    // Even a member not used in this frame must keep its allocation generation.
+    m.images.get_mut(&(DEVICE, 52)).unwrap().generation += 1;
+    assert_ne!(
+        present_source(&mut m, 42).history_identity,
+        recreated.history_identity
+    );
+}
+#[test]
+fn mapping_encoding_and_validated_pipeline_generations_break_history() {
+    for fault in 0..4 {
+        let mut m = fixture();
+        let old = present_source(&mut m, 42).history_identity;
+        match fault {
+            0 => m.descriptors.get_mut(&(DEVICE, 10)).unwrap().uv = Some([1., 0., 1., 0.]),
+            1 => m.images.get_mut(&(DEVICE, 42)).unwrap().format = 37,
+            2 => m.pipelines.get_mut(&(DEVICE, 7)).unwrap().generation += 1,
+            _ => m.renderpasses.get_mut(&(DEVICE, 8)).unwrap().generation += 1,
+        }
+        assert_ne!(
+            present_source(&mut m, 42).history_identity,
+            old,
+            "fault {fault}"
+        );
+    }
+    // A path changed after the draw cannot authorize a source at all.
+    for pipeline in [true, false] {
+        let mut m = fixture();
+        record(&mut m);
+        submit(&mut m);
+        if pipeline {
+            m.pipelines.get_mut(&(DEVICE, 7)).unwrap().generation += 1;
+        } else {
+            m.renderpasses.remove(&(DEVICE, 8));
+        }
+        assert_eq!(select(&mut m), Err("呈现路径已变化"));
+    }
+}
+#[test]
+fn missing_evidence_and_swapchain_retirement_cannot_reuse_an_old_epoch() {
+    let mut m = fixture();
+    let first = present_source(&mut m, 42).history_identity;
+    assert!(select(&mut m).is_err());
+    let recovered = present_source(&mut m, 42).history_identity;
+    assert_ne!(first, recovered);
+    m.retire_swapchain(DEVICE, 5);
+    assert!(!m.chains.contains_key(&(DEVICE, 5)));
+    assert!(m.cohorts.is_empty());
+    m.chains.insert((DEVICE, 5), vec![99]);
+    assert_ne!(present_source(&mut m, 42).history_identity, recovered);
+    m.clear_frame_state();
+    assert!(m.cohorts.is_empty());
+}
+#[test]
+fn source_groups_are_bounded_and_scoped_to_the_presenting_swapchain() {
+    let mut m = fixture();
+    for i in 0..MAX_SOURCE_IMAGES + 1 {
+        let image = 42 + i as u64 * 10;
+        add_source(&mut m, image, i as u64 + 1);
+        let s = present_source(&mut m, image);
+        assert!((1..=MAX_SOURCE_IMAGES as u32).contains(&s.history_members));
+    }
+    assert_eq!(m.cohorts[&(DEVICE, QUEUE, 5)].members.len(), 1);
+    let old = present_source(&mut m, 42).history_identity;
+    m.chains.insert((DEVICE, 6), vec![99]);
+    record(&mut m);
+    submit(&mut m);
+    let second = m
+        .select(DEVICE, QUEUE, 6, 0, &[vk::Semaphore::from_raw(55)])
+        .unwrap();
+    assert_ne!(second.history_identity, old);
+    assert_eq!(present_source(&mut m, 42).history_identity, old);
 }

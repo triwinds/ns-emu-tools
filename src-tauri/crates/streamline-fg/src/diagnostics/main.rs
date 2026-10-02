@@ -40,7 +40,13 @@ fn main() {
 #[cfg(all(windows, feature = "sdk-bridge"))]
 #[path = "../fg_api.rs"]
 mod fg_api;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[path = "../fg_pause.rs"]
+mod fg_pause;
 
+#[cfg(all(windows, feature = "native-nr"))]
+#[path = "../nr_package.rs"]
+mod nr_package;
 #[cfg(windows)]
 #[path = "../support.rs"]
 mod support;

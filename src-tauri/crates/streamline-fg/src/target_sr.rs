@@ -86,7 +86,7 @@ fn sizes(original: vk::Extent2D, scale: u16) -> Result<(vk::Extent2D, vk::Extent
         width: dimension(original.width)?,
         height: dimension(original.height)?,
     };
-    // DLSS does not downscale: below 1x first reduce the color input, then use DLAA.
+    // DLSS does not downscale: below 1x first reduce the color input.
     Ok((if scale < 100 { output } else { original }, output))
 }
 fn offsets(size: vk::Extent2D) -> [vk::Offset3D; 2] {
@@ -128,8 +128,6 @@ unsafe extern "C" {
         command: u64,
         token: u64,
         reset: u32,
-        motion_scale_x: f32,
-        motion_scale_y: f32,
         resources: *const Resource,
     ) -> i32;
     fn target_sr_free(function: *mut c_void) -> i32;
@@ -137,21 +135,33 @@ unsafe extern "C" {
 pub(super) struct Sr {
     device: ash::Device,
     resources: Vec<Resource>,
+    raw_copy: bool,
+    motion_adapter: Option<super::target_sr_motion::Adapter>,
+    raw_capture: Option<crate::frame_capture::Capture>,
     images: Vec<vk::Image>,
     pool: vk::CommandPool,
     command: vk::CommandBuffer,
     fence: vk::Fence,
+    ready: vk::Semaphore,
+    in_flight: bool,
+    pending: Option<(serde_json::Value, serde_json::Value)>,
     initialized: bool,
     extent: vk::Extent2D,
     scale: u16,
     original: vk::Extent2D,
     previous_source: Option<crate::source_auto::Source>,
     timing: Option<Timing>,
+    capture: Option<crate::frame_capture::Capture>,
 }
 impl Sr {
     pub(super) fn matches_source(&self, native: Option<crate::source_auto::Source>) -> bool {
         self.original == source_extent(self.extent, native)
-            && (self.resources.len() == 5) == native.is_some_and(|n| n.raw_copy)
+            && self.raw_copy == native.is_some_and(|n| n.raw_copy)
+            && (!self.raw_copy
+                || native.is_some_and(|n| {
+                    [n.extent.width, n.extent.height]
+                        == [self.resources[4].width, self.resources[4].height]
+                }))
     }
 
     pub(super) unsafe fn new(
@@ -168,16 +178,23 @@ impl Sr {
         let mut this = Self {
             device: device.clone(),
             resources: Vec::new(),
+            raw_copy: native.is_some_and(|n| n.raw_copy),
+            motion_adapter: None,
+            raw_capture: None,
             images: Vec::new(),
             pool: vk::CommandPool::null(),
             command: vk::CommandBuffer::null(),
             fence: vk::Fence::null(),
+            ready: vk::Semaphore::null(),
+            in_flight: false,
+            pending: None,
             initialized: false,
             extent,
             scale,
             original: source_extent(extent, native),
             previous_source: None,
             timing: None,
+            capture: None,
         };
         if std::env::var("NS_STREAMLINE_SR_TIMING").as_deref() == Ok("1") {
             let bits = instance.get_physical_device_queue_family_properties(physical)[0]
@@ -205,7 +222,7 @@ impl Sr {
                 &target_runtime::fg_api()?,
                 work.width,
                 work.height,
-                if scale <= 100 { 6 } else { mode },
+                mode,
                 preset.sdk_value(),
                 size.as_mut_ptr(),
             ),
@@ -231,11 +248,12 @@ impl Sr {
                 vk::FormatFeatureFlags::SAMPLED_IMAGE | vk::FormatFeatureFlags::TRANSFER_DST,
             ),
             (
-                vk::Format::R32G32_SFLOAT,
+                vk::Format::R16G16_SFLOAT,
                 vk::FormatFeatureFlags::BLIT_SRC
                     | vk::FormatFeatureFlags::BLIT_DST
                     | vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR
-                    | vk::FormatFeatureFlags::SAMPLED_IMAGE,
+                    | vk::FormatFeatureFlags::SAMPLED_IMAGE
+                    | vk::FormatFeatureFlags::STORAGE_IMAGE,
             ),
         ] {
             if !instance
@@ -258,7 +276,11 @@ impl Sr {
                 usage | vk::ImageUsageFlags::STORAGE,
             ),
             (input, vk::Format::R32_SFLOAT, usage),
-            (input, vk::Format::R32G32_SFLOAT, usage),
+            (
+                input,
+                vk::Format::R16G16_SFLOAT,
+                usage | vk::ImageUsageFlags::STORAGE,
+            ),
         ] {
             this.resources
                 .push(texture_with_usage(device, &props, size, format, usage)?);
@@ -267,11 +289,22 @@ impl Sr {
             this.resources.push(texture_with_usage(
                 device,
                 &props,
-                this.original,
+                native.unwrap().extent,
                 vk::Format::R8G8B8A8_UNORM,
                 usage,
             )?);
         }
+        this.capture = crate::frame_capture::Capture::new(
+            device,
+            &props,
+            &[this.resources[0], this.resources[1], this.resources[3]],
+        )?;
+        this.raw_capture =
+            crate::frame_capture::Capture::new(device, &props, &[this.resources[1]])?;
+        this.motion_adapter = Some(super::target_sr_motion::Adapter::new(
+            device,
+            this.resources[3],
+        )?);
         let get: vk::PFN_vkGetSwapchainImagesKHR = std::mem::transmute(
             target_runtime::device_proc(device.handle(), c"vkGetSwapchainImagesKHR")
                 .ok_or("missing SR swapchain images")?,
@@ -301,9 +334,10 @@ impl Sr {
                 .command_buffer_count(1),
         )?[0];
         this.fence = device.create_fence(&vk::FenceCreateInfo::default(), None)?;
+        this.ready = device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?;
         trace::event!(
             "target_sr_ready",
-            json!({"input":size,"output":[extent.width,extent.height],"mode":mode,"source":"auto_native_or_present","native_render_resolution_changed":false})
+            json!({"input":size,"output":[extent.width,extent.height],"mode":mode,"source":"auto_native_or_present","native_render_resolution_changed":false,"preset":preset.as_str(),"depth":"synthetic_zero","motion_format":"fp16_input_pixels"})
         );
         Ok(this)
     }
@@ -315,7 +349,18 @@ impl Sr {
         motion: Option<Resource>,
         reset: bool,
         native: std::result::Result<crate::source_auto::Source, &'static str>,
-    ) -> Result<()> {
+        processed: Option<Resource>,
+        defer_tail: bool,
+        frame: u32,
+    ) -> Result<Option<vk::Semaphore>> {
+        let capture = crate::frame_capture::selected(frame) && self.capture.is_some();
+        let defer_tail = defer_tail && !capture;
+        if self.in_flight || self.pending.is_some() {
+            return Err("SR previous submission has not retired".into());
+        }
+        if defer_tail && processed.is_none() {
+            return Err("deferred SR requires private NR input".into());
+        }
         let started = self.timing.as_ref().map(|_| Instant::now());
         if info.p_image_indices.is_null()
             || (info.wait_semaphore_count > 0 && info.p_wait_semaphores.is_null())
@@ -367,7 +412,39 @@ impl Sr {
             width: input.width,
             height: input.height,
         };
-        if let Some(native) = native {
+        if let Some(color) = processed {
+            if [color.width, color.height] != [self.original.width, self.original.height]
+                || color.format != vk::Format::R16G16B16A16_SFLOAT.as_raw() as u32
+            {
+                return Err("SR processed NR color contract mismatch".into());
+            }
+            let image = vk::Image::from_raw(color.image);
+            transition(
+                d,
+                cmd,
+                image,
+                vk::ImageLayout::GENERAL,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            );
+            if let Some(t) = &self.timing {
+                t.mark(d, cmd, 1);
+            }
+            blit_region(
+                d,
+                cmd,
+                image,
+                offsets(self.original),
+                vk::Image::from_raw(input.image),
+                offsets(input_extent),
+            );
+            transition(
+                d,
+                cmd,
+                image,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                vk::ImageLayout::GENERAL,
+            );
+        } else if let Some(native) = native {
             transition(
                 d,
                 cmd,
@@ -392,8 +469,8 @@ impl Sr {
                         .src_subresource(layers)
                         .dst_subresource(layers)
                         .extent(vk::Extent3D {
-                            width: self.original.width,
-                            height: self.original.height,
+                            width: self.resources[4].width,
+                            height: self.resources[4].height,
                             depth: 1,
                         })],
                 );
@@ -455,48 +532,10 @@ impl Sr {
             cmd,
             vk::Image::from_raw(self.resources[2].image),
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-            &vk::ClearColorValue { float32: [0.5; 4] },
+            &vk::ClearColorValue { float32: [0.0; 4] },
             &[range()],
         );
-        if let Some(motion) = motion {
-            let image = vk::Image::from_raw(motion.image);
-            transition(
-                d,
-                cmd,
-                image,
-                vk::ImageLayout::GENERAL,
-                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-            );
-            let motion_extent = vk::Extent2D {
-                width: motion.width,
-                height: motion.height,
-            };
-            let region = native.map_or(offsets(motion_extent), |n| {
-                let x = motion.width as f32 / self.extent.width as f32;
-                let y = motion.height as f32 / self.extent.height as f32;
-                viewport_offsets([
-                    n.viewport[0] * x,
-                    n.viewport[1] * y,
-                    n.viewport[2] * x,
-                    n.viewport[3] * y,
-                ])
-            });
-            blit_region(
-                d,
-                cmd,
-                image,
-                region,
-                vk::Image::from_raw(mv.image),
-                offsets(input_extent),
-            );
-            transition(
-                d,
-                cmd,
-                image,
-                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                vk::ImageLayout::GENERAL,
-            );
-        } else {
+        if motion.is_none() {
             d.cmd_clear_color_image(
                 cmd,
                 vk::Image::from_raw(mv.image),
@@ -514,10 +553,37 @@ impl Sr {
                 vk::ImageLayout::GENERAL,
             );
         }
+        if let Some(motion) = motion {
+            let region =
+                native.map_or([0.0, 0.0, motion.width as f32, motion.height as f32], |n| {
+                    let x = motion.width as f32 / self.extent.width as f32;
+                    let y = motion.height as f32 / self.extent.height as f32;
+                    [
+                        n.viewport[0] * x,
+                        n.viewport[1] * y,
+                        n.viewport[2] * x,
+                        n.viewport[3] * y,
+                    ]
+                });
+            self.motion_adapter
+                .as_ref()
+                .unwrap()
+                .record(cmd, motion, region)?;
+            transition(
+                d,
+                cmd,
+                vk::Image::from_raw(mv.image),
+                vk::ImageLayout::GENERAL,
+                vk::ImageLayout::GENERAL,
+            );
+        }
         if let Some(t) = &self.timing {
             t.mark(d, cmd, 3);
         }
         let evaluate_started = started.map(|_| Instant::now());
+        #[cfg(feature = "native-nr")]
+        let _nr_recording = crate::nr_runtime::requested()
+            .then(|| crate::nr_layout::Recording::sr(cmd, input.width, input.height));
         checked(
             target_sr_evaluate(
                 &target_runtime::fg_api()?,
@@ -525,15 +591,18 @@ impl Sr {
                 cmd.as_raw(),
                 token,
                 u32::from(reset || !self.initialized || motion.is_none()),
-                native.map_or(1.0, |n| self.extent.width as f32 / n.viewport[2]),
-                native.map_or(1.0, |n| self.extent.height as f32 / n.viewport[3]),
                 self.resources.as_ptr(),
             ),
             "SR evaluate",
         )?;
+        #[cfg(feature = "native-nr")]
+        drop(_nr_recording);
         let evaluate_us = evaluate_started.map(|s| s.elapsed().as_micros());
         if let Some(t) = &self.timing {
             t.mark(d, cmd, 4);
+        }
+        if capture {
+            self.raw_capture.as_ref().unwrap().record(cmd);
         }
         transition(
             d,
@@ -605,6 +674,9 @@ impl Sr {
         if let Some(t) = &self.timing {
             t.mark(d, cmd, 5);
         }
+        if capture {
+            self.capture.as_ref().unwrap().record(cmd);
+        }
         d.end_command_buffer(cmd)?;
         let waits = if info.wait_semaphore_count == 0 {
             &[][..]
@@ -614,41 +686,75 @@ impl Sr {
         let stages = vec![vk::PipelineStageFlags::ALL_COMMANDS; waits.len()];
         let record_us = started.map(|s| s.elapsed().as_micros());
         let submit_started = started.map(|_| Instant::now());
+        let signals = if defer_tail { vec![self.ready] } else { vec![] };
+        self.in_flight = true;
         d.queue_submit(
             queue,
             &[vk::SubmitInfo::default()
                 .command_buffers(&[cmd])
                 .wait_semaphores(waits)
-                .wait_dst_stage_mask(&stages)],
+                .wait_dst_stage_mask(&stages)
+                .signal_semaphores(&signals)],
             self.fence,
         )?;
         let submit_us = submit_started.map(|s| s.elapsed().as_micros());
         let wait_started = started.map(|_| Instant::now());
-        // This first version deliberately bounds reuse with a CPU fence; no binary semaphore is reused while present owns it.
-        d.wait_for_fences(&[self.fence], true, 5_000_000_000)?;
+        if !defer_tail {
+            d.wait_for_fences(&[self.fence], true, 5_000_000_000)?;
+            self.in_flight = false;
+        }
+        if capture {
+            self.capture.as_ref().unwrap().save("sr", frame)?;
+            self.raw_capture.as_ref().unwrap().save("sr-raw", frame)?;
+        }
         let wait_us = wait_started.map(|s| s.elapsed().as_micros());
-        if let Some(t) = &self.timing {
-            let gpu = t.read(d);
-            trace::event!(
-                "target_sr_profile",
-                json!({"token":token,"scale":self.scale,
+        let mut profile = json!({"token":token,"frame":frame,"scale":self.scale,
                 "input":[input.width,input.height],"output":[output.width,output.height],
-                "raw_copy":native.is_some_and(|n|n.raw_copy),"gpu_available":gpu.is_some(),
-                "gpu_us":gpu.map(|v|json!({"transitions_and_raw_copy":v[0],"color_blit":v[1],
-                    "depth_motion_prepare":v[2],"dlss_evaluate":v[3],"output_blit":v[4],"total":v.iter().sum::<f64>()})),
-                "cpu_us":{"record":record_us,"evaluate_call_in_record":evaluate_us,"submit":submit_us,"fence_wait":wait_us},
-                "cpu_wait_includes_upstream":true})
-            );
+                "raw_copy":native.is_some_and(|n|n.raw_copy),
+                "cpu_us":{"record":record_us,"evaluate_call_in_record":evaluate_us,"submit":submit_us,"fence_wait":if defer_tail {Some(0)} else {wait_us}},
+                "tail_deferred":defer_tail,"cpu_wait_includes_upstream":true});
+        if defer_tail {
+            self.pending = Some((
+                profile,
+                json!({"frame":frame,"fence":self.fence.as_raw(),"ready_semaphore":self.ready.as_raw(),"color_image":processed.map(|r|r.image),"fence_completed":true}),
+            ));
+        } else if let Some(t) = &self.timing {
+            Self::profile_gpu(&mut profile, t.read(d));
+            trace::event!("target_sr_profile", profile);
         }
         crate::live::sr(
-            json!({"source":if native.is_some(){"native_source"}else{"present_source"},"fallbackReason":native_reason,"scale":self.scale,"active":true,"original_input":[self.original.width,self.original.height],"input":[input.width,input.height],"output":[self.extent.width,self.extent.height],"processing_output":[output.width,output.height],"motion":motion.is_some()}),
+            json!({"source":if processed.is_some(){"nr_output"}else if native.is_some(){"native_source"}else{"present_source"},"colorImage":processed.map(|r|r.image),"fallbackReason":native_reason,"scale":self.scale,"active":true,"original_input":[self.original.width,self.original.height],"input":[input.width,input.height],"output":[self.extent.width,self.extent.height],"processing_output":[output.width,output.height],"motion":motion.is_some()}),
         );
         self.initialized = true;
         self.previous_source = native;
         trace::event!(
             "target_sr_frame",
-            json!({"source":if native.is_some(){"native_source"}else{"present_source"},"fallback_reason":native_reason,"scale":self.scale,"evaluated":true,"motion":if motion.is_some(){"nvof"}else{"zero"},"history_reset":reset || motion.is_none(),"original_input":[self.original.width,self.original.height],"input":[input.width,input.height],"output":[self.extent.width,self.extent.height],"processing_output":[output.width,output.height]})
+            json!({"frame":frame,"fence":self.fence.as_raw(),"tail_deferred":defer_tail,"ready_semaphore":if defer_tail {self.ready.as_raw()} else {0},"source":if processed.is_some(){"nr_output"}else if native.is_some(){"native_source"}else{"present_source"},"color_image":processed.map(|r|r.image),"consumed_waits":waits.iter().map(|s|s.as_raw()).collect::<Vec<_>>(),"fence_completed":!defer_tail,"fallback_reason":native_reason,"scale":self.scale,"evaluated":true,"motion":if motion.is_some(){"nvof"}else{"zero"},"history_reset":reset || motion.is_none(),"original_input":[self.original.width,self.original.height],"input":[input.width,input.height],"output":[self.extent.width,self.extent.height],"processing_output":[output.width,output.height]})
         );
+        Ok(defer_tail.then_some(self.ready))
+    }
+    fn profile_gpu(profile: &mut serde_json::Value, gpu: Option<[f64; 5]>) {
+        profile["gpu_available"] = json!(gpu.is_some());
+        profile["gpu_us"] = json!(gpu.map(|v|json!({"transitions_and_raw_copy":v[0],"color_blit":v[1],
+            "depth_motion_prepare":v[2],"dlss_evaluate":v[3],"output_blit":v[4],"total":v.iter().sum::<f64>()})));
+    }
+    /// Chain owner first retires the native present, which covers semaphore
+    /// consumption. Only then may this single slot and its ready signal be reused.
+    pub(super) unsafe fn finish(&mut self) -> Result<()> {
+        if self.pending.is_none() {
+            return Ok(());
+        }
+        let started = Instant::now();
+        self.device
+            .wait_for_fences(&[self.fence], true, 5_000_000_000)?;
+        self.in_flight = false;
+        let (mut profile, completion) = self.pending.take().unwrap();
+        profile["cpu_retire_wait_us"] = json!(started.elapsed().as_micros());
+        if let Some(t) = &self.timing {
+            Self::profile_gpu(&mut profile, t.read(&self.device));
+            trace::event!("target_sr_profile", profile);
+        }
+        trace::event!("target_sr_completion", completion);
         Ok(())
     }
 }
@@ -719,6 +825,10 @@ unsafe fn blit_region(
 impl Drop for Sr {
     fn drop(&mut self) {
         unsafe {
+            if self.in_flight || self.pending.is_some() {
+                std::process::abort();
+            }
+            drop(self.motion_adapter.take());
             // Caller only drops after device idle; uncertain GPU failures abort at the presentation boundary.
             if let Ok(f) = target_runtime::sr_function(b"slFreeResources\0") {
                 if target_sr_free(f) != 0 {
@@ -735,6 +845,9 @@ impl Drop for Sr {
             }
             if self.fence != vk::Fence::null() {
                 self.device.destroy_fence(self.fence, None);
+            }
+            if self.ready != vk::Semaphore::null() {
+                self.device.destroy_semaphore(self.ready, None);
             }
             if let Some(t) = &self.timing {
                 self.device.destroy_query_pool(t.pool, None);
@@ -763,6 +876,17 @@ mod tests {
         let native = crate::source_auto::Source {
             raw_copy: false,
             image: vk::Image::null(),
+            generation: 1,
+            history_identity: 1,
+            history_members: 1,
+            history_paths: 1,
+            history_update: "initial",
+            history_route: [0; 4],
+            usage: 1,
+            extent: vk::Extent2D {
+                width: 1920,
+                height: 1080,
+            },
             offsets: [
                 vk::Offset3D {
                     x: 0,

@@ -31,6 +31,9 @@ export function operateStreamlineFg(action: 'install' | 'launch' | 'uninstall', 
 
 export interface FgSample { time: number; appFps: number | null; presentFps: number | null }
 export interface FgLive {
+  nrLiveSupported?: boolean
+  sentNrRevision?: number
+  nr?: { active: boolean; requested?: boolean; appliedRevision?: number; intensity?: number; reason?: string; source?: string; depth?: string; motionValid?: boolean; input?: number[]; error?: string; reset?: boolean; resetReason?: string } | null
   srLiveSupported?: boolean
   srPresetSupported?: boolean
   sentSrRevision?: number
@@ -46,6 +49,20 @@ export interface FgLive {
   sentRevision?: number
   samples?: FgSample[]
 }
-export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string) {
-  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset })
+export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string, nrEnabled?: boolean, nrIntensity?: number) {
+  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset, nrEnabled, nrIntensity })
 }
+
+export interface NativeNrComponent {
+  supported: boolean
+  packageReady: boolean
+  installed: boolean
+  runtimeSha256: string | null
+  runtimeVersion: string
+  architecture: string
+  depth: string
+  message: string
+}
+export const getNativeNrComponent = () => graphicsCommand<NativeNrComponent>('get_native_nr_component', {})
+export const installNativeNrRuntime = () => graphicsCommand<NativeNrComponent>('install_native_nr_runtime', {})
+export const uninstallNativeNrRuntime = () => graphicsCommand<NativeNrComponent>('uninstall_native_nr_runtime', {})

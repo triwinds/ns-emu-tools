@@ -504,8 +504,8 @@ pub use sr_preset::StreamlineSrPreset;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum StreamlineSrMode {
-    #[default]
     Quality,
+    #[default]
     Balanced,
     Performance,
     Dlaa,
@@ -529,6 +529,16 @@ pub struct OtherSetting {
     /// FG 启动时请求 NVIDIA 硬件光流；旧配置保持开启。
     #[serde(default = "default_true")]
     pub streamline_nvof: bool,
+    /// 旧配置的专用启动保持 FG 开启；NR 和 SR 独立控制。
+    #[serde(default = "default_true")]
+    pub streamline_fg: bool,
+    #[serde(default)]
+    pub streamline_nr: bool,
+    #[serde(
+        default = "default_nr_intensity",
+        deserialize_with = "deserialize_nr_intensity"
+    )]
+    pub streamline_nr_intensity: u8,
     #[serde(default)]
     pub streamline_sr: bool,
     #[serde(default)]
@@ -544,12 +554,26 @@ impl Default for OtherSetting {
         Self {
             rename_yuzu_to_cemu: false,
             streamline_nvof: true,
+            streamline_fg: true,
+            streamline_nr: false,
+            streamline_nr_intensity: default_nr_intensity(),
             streamline_sr: false,
-            streamline_sr_mode: StreamlineSrMode::Quality,
+            streamline_sr_mode: StreamlineSrMode::Balanced,
             streamline_sr_scale: None,
-            streamline_sr_preset: StreamlineSrPreset::Default,
+            streamline_sr_preset: StreamlineSrPreset::J,
         }
     }
+}
+
+fn default_nr_intensity() -> u8 {
+    100
+}
+fn deserialize_nr_intensity<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8, D::Error> {
+    let value = u8::deserialize(d)?;
+    if value > 100 {
+        return Err(serde::de::Error::custom("NR 强度必须为 0～100"));
+    }
+    Ok(value)
 }
 
 /// 通用设置
@@ -868,13 +892,34 @@ mod tests {
 mod streamline_sr_config_tests {
     use super::*;
     #[test]
+    fn nr_strength_roundtrips_and_rejects_invalid_configuration() {
+        for strength in [0, 50, 100] {
+            let mut settings = OtherSetting::default();
+            settings.streamline_fg = false;
+            settings.streamline_nr = true;
+            settings.streamline_nr_intensity = strength;
+            let encoded = serde_json::to_string(&settings).unwrap();
+            assert_eq!(
+                serde_json::from_str::<OtherSetting>(&encoded).unwrap(),
+                settings
+            );
+        }
+        for value in ["-1", "101", "256", "0.5", "null", "\"50\""] {
+            let encoded = format!(r#"{{"streamline_nr_intensity":{value}}}"#);
+            assert!(serde_json::from_str::<OtherSetting>(&encoded).is_err());
+        }
+    }
+    #[test]
     fn legacy_settings_leave_sr_off_and_preserve_nvof_default() {
         let settings: OtherSetting =
             serde_json::from_str(r#"{"rename_yuzu_to_cemu":true}"#).unwrap();
         assert!(!settings.streamline_sr);
         assert!(settings.streamline_nvof);
-        assert_eq!(settings.streamline_sr_mode, StreamlineSrMode::Quality);
-        assert_eq!(settings.streamline_sr_preset, StreamlineSrPreset::Default);
+        assert!(settings.streamline_fg);
+        assert!(!settings.streamline_nr);
+        assert_eq!(settings.streamline_nr_intensity, 100);
+        assert_eq!(settings.streamline_sr_mode, StreamlineSrMode::Balanced);
+        assert_eq!(settings.streamline_sr_preset, StreamlineSrPreset::J);
         assert!(settings.rename_yuzu_to_cemu);
     }
     #[test]

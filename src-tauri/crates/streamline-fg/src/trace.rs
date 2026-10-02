@@ -29,7 +29,10 @@ pub fn verbose() -> bool {
     static VERBOSE: OnceLock<bool> = OnceLock::new();
     *VERBOSE.get_or_init(|| match std::env::var("NS_STREAMLINE_TRACE_VERBOSE") {
         Ok(v) => v == "1",
-        Err(_) => std::env::var("NS_STREAMLINE_TARGET_FG").as_deref() != Ok("1"),
+        Err(_) => {
+            std::env::var("NS_STREAMLINE_TARGET_FG").as_deref() != Ok("1")
+                && std::env::var("NS_STREAMLINE_NATIVE_NR").as_deref() != Ok("1")
+        }
     })
 }
 fn hot_event(name: &str) -> bool {
@@ -46,7 +49,15 @@ pub fn enabled(name: &str) -> bool {
     if !frames
         && matches!(
             name,
-            "vkQueuePresentKHR" | "route_present_retired" | "target_fg_frame" | "target_sr_frame"
+            "vkQueuePresentKHR"
+                | "route_present_retired"
+                | "target_fg_frame"
+                | "target_sr_frame"
+                | "target_nr_frame"
+                | "target_nr_submission"
+                | "target_nr_completion"
+                | "target_nr_profile"
+                | "target_nr_evaluate"
         )
     {
         return false;

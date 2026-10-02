@@ -6,7 +6,7 @@ mod tests;
 use ash::vk::{self, Handle};
 use std::collections::HashMap;
 type Key = (u64, u64);
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct Image {
     pub extent: [u32; 3],
     pub format: i32,
@@ -16,6 +16,43 @@ pub(crate) struct Image {
     pub samples: u32,
     pub generation: u64,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Known {
+    pub valid: bool,
+    pub generation: u64,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Route {
+    pipeline: u64,
+    pipeline_generation: u64,
+    renderpass: u64,
+    renderpass_generation: u64,
+}
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct Signature {
+    image: Image,
+    offsets: [[i32; 3]; 2],
+    viewport: [u32; 4],
+    framebuffer_size: [u32; 2],
+    route: Route,
+}
+impl Signature {
+    fn same_contract(self, other: Self) -> bool {
+        self.image == other.image
+            && self.offsets == other.offsets
+            && self.viewport == other.viewport
+            && self.framebuffer_size == other.framebuffer_size
+    }
+}
+struct Cohort {
+    signature: Signature,
+    members: Vec<(u64, Image)>,
+    paths: Vec<Route>,
+    identity: u64,
+}
+// A bounded pool of validated presentation sources, not all same-sized images.
+const MAX_SOURCE_IMAGES: usize = 8;
+const MAX_PRESENT_PATHS: usize = 8;
 #[derive(Clone, Copy, Default)]
 pub(crate) struct View {
     pub image: u64,
@@ -44,6 +81,7 @@ struct Barrier {
 struct Draw {
     source: Result<Source, &'static str>,
     image: Option<Image>,
+    signature: Option<Signature>,
     destination: u64,
     ended: bool,
     presented: bool,
@@ -78,12 +116,14 @@ pub(crate) struct Model {
     pub chains: HashMap<Key, Vec<u64>>,
     pub samplers: HashMap<Key, bool>,
     pub shaders: HashMap<Key, u8>,
-    pub pipelines: HashMap<Key, bool>,
-    pub renderpasses: HashMap<Key, bool>,
+    pub pipelines: HashMap<Key, Known>,
+    pub renderpasses: HashMap<Key, Known>,
     pub descriptors: HashMap<Key, Descriptor>,
     commands: HashMap<Key, Command>,
     submitted: Vec<Submitted>,
     last_submit: HashMap<u64, u64>,
+    cohorts: HashMap<(u64, u64, u64), Cohort>,
+    history_serial: u64,
     pub invalid: bool,
     pub serial: u64,
 }
@@ -93,6 +133,12 @@ impl Model {
         self.descriptors.clear();
         self.submitted.clear();
         self.last_submit.clear();
+        self.cohorts.clear();
+    }
+    pub fn retire_swapchain(&mut self, device: u64, chain: u64) {
+        self.chains.remove(&(device, chain));
+        self.cohorts
+            .retain(|&(d, _, c), _| d != device || c != chain);
     }
     pub fn within_budget(&self) -> bool {
         self.images.len()
@@ -104,6 +150,7 @@ impl Model {
             + self.shaders.len()
             + self.pipelines.len()
             + self.renderpasses.len()
+            + self.cohorts.len()
             < 65536
             && self.submitted.len() < 256
             && self
@@ -236,10 +283,18 @@ impl Model {
             return;
         }
         let source = (|| {
-            if self.pipelines.get(&(d, command.pipeline)) != Some(&true) {
+            if !self
+                .pipelines
+                .get(&(d, command.pipeline))
+                .is_some_and(|p| p.valid)
+            {
                 return Err("缩放着色器不匹配");
             }
-            if self.renderpasses.get(&(d, command.renderpass)) != Some(&true) {
+            if !self
+                .renderpasses
+                .get(&(d, command.renderpass))
+                .is_some_and(|p| p.valid)
+            {
                 return Err("渲染通道布局不匹配");
             }
             if indexed || args != [4, 1, 0, 0] {
@@ -309,6 +364,17 @@ impl Model {
             }
             Ok(Source {
                 image: vk::Image::from_raw(view.image),
+                generation: image.generation,
+                history_identity: 0,
+                history_members: 0,
+                history_paths: 0,
+                history_update: "unselected",
+                history_route: [0; 4],
+                usage: image.usage,
+                extent: vk::Extent2D {
+                    width: image.extent[0],
+                    height: image.extent[1],
+                },
                 raw_copy: image.format == 43,
                 viewport,
                 offsets: [
@@ -328,10 +394,35 @@ impl Model {
         let image = source
             .ok()
             .and_then(|s| self.images.get(&(d, s.image.as_raw())).copied());
+        let signature = source.ok().and_then(|s| {
+            Some(Signature {
+                // Allocation identity is checked separately for each pool member.
+                image: Image {
+                    generation: 0,
+                    // Extra usage flags do not change the sampled color. The
+                    // full allocation contract is still checked per member.
+                    usage: 1,
+                    ..image?
+                },
+                offsets: s.offsets.map(|o| [o.x, o.y, o.z]),
+                viewport: s.viewport.map(f32::to_bits),
+                framebuffer_size: fb.size,
+                route: Route {
+                    pipeline: command.pipeline,
+                    pipeline_generation: self.pipelines.get(&(d, command.pipeline))?.generation,
+                    renderpass: command.renderpass,
+                    renderpass_generation: self
+                        .renderpasses
+                        .get(&(d, command.renderpass))?
+                        .generation,
+                },
+            })
+        });
         for destination in destinations {
             self.commands.get_mut(&(d, c)).unwrap().draws.push(Draw {
                 source,
                 image,
+                signature,
                 destination,
                 ended: false,
                 presented: false,
@@ -416,9 +507,107 @@ impl Model {
             if draw.source_changed {
                 return Err("源纹理同步条件不匹配");
             }
-            Ok(source)
+            let signature = draw.signature.ok_or("呈现路径身份缺失")?;
+            if !self.route_live(d, signature.route) {
+                return Err("呈现路径已变化");
+            }
+            Ok((source, signature, draw.image.ok_or("源纹理缺失")?))
         })();
         self.submitted.retain(|s| s.device != d || s.queue != q);
-        result
+        match result {
+            Ok((mut source, signature, image)) => {
+                let key = (d, q, chain);
+                let mut update = match self.cohorts.get(&key) {
+                    None => "initial",
+                    Some(c) if !c.signature.same_contract(signature) => "contract_changed",
+                    Some(c)
+                        if c.members
+                            .iter()
+                            .any(|(h, i)| self.images.get(&(d, *h)) != Some(i)) =>
+                    {
+                        "allocation_retired"
+                    }
+                    Some(c) if c.paths.iter().any(|p| !self.route_live(d, *p)) => "path_retired",
+                    Some(_) => "continuous",
+                };
+                if update != "continuous" {
+                    self.cohorts.remove(&key);
+                }
+                let known_image = self
+                    .cohorts
+                    .get(&key)
+                    .is_some_and(|c| c.members.contains(&(source.image.as_raw(), image)));
+                let known_path = self
+                    .cohorts
+                    .get(&key)
+                    .is_some_and(|c| c.paths.contains(&signature.route));
+                if !known_image || !known_path {
+                    // Equivalent recognized blits may use rotating Vulkan objects.
+                    // Learn each live image/path conservatively, with one reset;
+                    // thereafter preserve history only while all remain valid.
+                    if update == "continuous" {
+                        update = match (known_image, known_path) {
+                            (false, false) => "new_image_and_path",
+                            (false, true) => "new_image",
+                            (true, false) => "new_path",
+                            (true, true) => unreachable!(),
+                        };
+                    }
+                    self.history_serial = self
+                        .history_serial
+                        .checked_add(1)
+                        .expect("source history epoch exhausted");
+                    let cohort = self.cohorts.entry(key).or_insert_with(|| Cohort {
+                        signature,
+                        members: Vec::new(),
+                        paths: Vec::new(),
+                        identity: 0,
+                    });
+                    if (!known_image && cohort.members.len() == MAX_SOURCE_IMAGES)
+                        || (!known_path && cohort.paths.len() == MAX_PRESENT_PATHS)
+                    {
+                        cohort.members.clear();
+                        cohort.paths.clear();
+                        update = "pool_limit";
+                    }
+                    if !cohort.members.contains(&(source.image.as_raw(), image)) {
+                        cohort.members.push((source.image.as_raw(), image));
+                    }
+                    if !cohort.paths.contains(&signature.route) {
+                        cohort.paths.push(signature.route);
+                    }
+                    cohort.identity = self.history_serial;
+                }
+                let cohort = self.cohorts.get(&key).unwrap();
+                source.history_identity = cohort.identity;
+                source.history_members = cohort.members.len() as u32;
+                source.history_paths = cohort.paths.len() as u32;
+                source.history_update = update;
+                source.history_route = [
+                    signature.route.pipeline,
+                    signature.route.pipeline_generation,
+                    signature.route.renderpass,
+                    signature.route.renderpass_generation,
+                ];
+                Ok(source)
+            }
+            Err(error) => {
+                // Missing/ambiguous evidence must break temporal continuity too.
+                self.cohorts.remove(&(d, q, chain));
+                Err(error)
+            }
+        }
+    }
+    fn route_live(&self, d: u64, route: Route) -> bool {
+        self.pipelines.get(&(d, route.pipeline))
+            == Some(&Known {
+                valid: true,
+                generation: route.pipeline_generation,
+            })
+            && self.renderpasses.get(&(d, route.renderpass))
+                == Some(&Known {
+                    valid: true,
+                    generation: route.renderpass_generation,
+                })
     }
 }

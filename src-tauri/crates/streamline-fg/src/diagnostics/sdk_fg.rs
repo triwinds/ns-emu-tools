@@ -42,7 +42,15 @@ unsafe fn run(
         constants: *sdk.get::<Address>(b"slSetConstants\0")? as *mut _,
         tags: *sdk.get::<Address>(b"slSetTagForFrame\0")? as *mut _,
     };
-    checked(probe_fg_options(&api, 0, 0, 0, 0, 16667), "initial FG off")?;
+    crate::fg_pause::configure(
+        &api,
+        false,
+        false,
+        vk::Extent2D::default(),
+        0,
+        vk::Format::R32G32_SFLOAT,
+        16667,
+    )?;
     let initial = state(&api)?;
     write_json(
         &session.join("fg-initial.json"),
@@ -132,10 +140,9 @@ unsafe fn run(
     {
         return Err("FG requires immediate mode".into());
     }
-    if !caps
-        .supported_usage_flags
-        .contains(vk::ImageUsageFlags::TRANSFER_DST)
-    {
+    let backbuffer_usage =
+        vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::COLOR_ATTACHMENT;
+    if !caps.supported_usage_flags.contains(backbuffer_usage) {
         return Err("missing transfer usage".into());
     }
     let format = vk::Format::B8G8R8A8_UNORM;
@@ -160,7 +167,8 @@ unsafe fn run(
             .image_color_space(vk::ColorSpaceKHR::SRGB_NONLINEAR)
             .image_extent(extent)
             .image_array_layers(1)
-            .image_usage(vk::ImageUsageFlags::TRANSFER_DST)
+            // The SDK creates views for its ordinary proxy images.
+            .image_usage(backbuffer_usage)
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
             .pre_transform(caps.current_transform)
             .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
@@ -176,7 +184,13 @@ unsafe fn run(
     )?;
     validate_enable(&generation_state, extent)?;
     let props = instance.get_physical_device_memory_properties(physical);
-    for format in [vk::Format::R32_SFLOAT, vk::Format::R32G32_SFLOAT] {
+    let pixel_guidance = std::env::var("NS_STREAMLINE_FG_PIXEL_INPUTS").as_deref() == Ok("1");
+    let motion_format = if pixel_guidance {
+        vk::Format::R16G16_SFLOAT
+    } else {
+        vk::Format::R32G32_SFLOAT
+    };
+    for format in [vk::Format::R32_SFLOAT, motion_format] {
         if !instance
             .get_physical_device_format_properties(physical, format)
             .optimal_tiling_features
@@ -187,8 +201,17 @@ unsafe fn run(
     }
     let resources = [
         texture(device, &props, extent, vk::Format::R32_SFLOAT)?,
-        texture(device, &props, extent, vk::Format::R32G32_SFLOAT)?,
+        texture(device, &props, extent, motion_format)?,
     ];
+    write_json(
+        &session.join("fg-input-contract.json"),
+        &json!({
+            "motion_format":motion_format.as_raw(),"motion_units":if pixel_guidance {"pixels"} else {"uv"},
+            "streamline_normalization":if pixel_guidance {"inverse_active_extent"} else {"texture_extent_over_active_extent"},
+            "camera_far":1000.0,"camera_fov_radians":1.04719755,
+            "sdk_controls_generated_output":true,"per_output_disable_flag_available":false,
+        }),
+    )?;
     let size = u64::from(extent.width) * u64::from(extent.height) * 4;
     let buffer = device.create_buffer(
         &vk::BufferCreateInfo::default()
@@ -261,7 +284,27 @@ unsafe fn run(
     let mut semaphores = Vec::new();
     let mut rows = Vec::new();
     let mut token = 0;
+    // Windows can reject SetForegroundWindow. Do not consume the bounded sample
+    // while the SDK is inactive; let the user focus this owned diagnostic window.
+    let focus_started = std::time::Instant::now();
+    while GetForegroundWindow() != hwnd {
+        SetForegroundWindow(hwnd);
+        if focus_started.elapsed() > std::time::Duration::from_secs(300) {
+            return Err("diagnostic window never became foreground; no active FG sample".into());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    let repeat_test = std::env::var("NS_STREAMLINE_FG_REPEAT_TEST").as_deref() == Ok("1");
+    let mut suspended_frames = 0u32;
     for frame in 0..600u32 {
+        let focus_started = std::time::Instant::now();
+        while GetForegroundWindow() != hwnd {
+            SetForegroundWindow(hwnd);
+            if focus_started.elapsed() > std::time::Duration::from_secs(60) {
+                return Err("diagnostic window lost foreground; active sample incomplete".into());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
         // Last iteration applies Off on the presenting thread before any window destruction.
         checked(
             probe_fg_begin(&api, frame + 100, &mut token),
@@ -269,7 +312,9 @@ unsafe fn run(
         )?;
         checked(probe_fg_marker(&api, token, 0), "simulation start")?;
         let pixels = std::slice::from_raw_parts_mut(mapped, size as usize);
-        let x = (frame * 7) % (extent.width - 160);
+        let duplicate = repeat_test && (120..240).contains(&frame) && frame % 2 == 1;
+        let color_frame = if duplicate { frame - 1 } else { frame };
+        let x = (color_frame * 7) % (extent.width - 160);
         for y in 0..extent.height {
             for col in 0..extent.width {
                 let offset = ((y * extent.width + col) * 4) as usize;
@@ -332,7 +377,9 @@ unsafe fn run(
             cmd,
             images[index as usize],
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-            vk::ImageLayout::PRESENT_SRC_KHR,
+            // Pinned SDK returns ordinary virtual backbuffers, consumed by its
+            // pacer as transfer sources; these are not native WSI images.
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
         );
         device.end_command_buffer(cmd)?;
         checked(probe_fg_marker(&api, token, 2), "render submit start")?;
@@ -347,17 +394,20 @@ unsafe fn run(
         )?;
         checked(probe_fg_marker(&api, token, 3), "render submit end")?;
         checked(probe_fg_marker(&api, token, 4), "present start")?;
-        checked(
-            probe_fg_options(
+        if duplicate {
+            crate::fg_pause::suspend(&api, extent, images.len() as u32, motion_format, 16667)?;
+            suspended_frames += 1;
+        } else {
+            crate::fg_pause::configure(
                 &api,
-                u32::from(frame < 599),
-                extent.width,
-                extent.height,
+                frame < 599,
+                false,
+                extent,
                 images.len() as u32,
+                motion_format,
                 16667,
-            ),
-            "per-frame FG options",
-        )?;
+            )?;
+        }
         if swap.queue_present(
             queue,
             &vk::PresentInfoKHR::default()
@@ -371,7 +421,7 @@ unsafe fn run(
         let s = state(&api)?;
         write_json(
             &session.join(format!("fg-frame-{frame:03}.json")),
-            &json!({"frame":frame,"state":s.json(),"requested_on":frame<599,"foreground":GetForegroundWindow()==hwnd,"activation_state":if frame==599 {"Off"} else if s.value>0 && s.presented>1 {"GeneratingReported"} else {"WarmingUpOrNotGenerating"}}),
+            &json!({"frame":frame,"state":s.json(),"generation_feedback":s.generation(frame<599,duplicate),"duplicate_suspended":duplicate,"requested_on":frame<599,"foreground":GetForegroundWindow()==hwnd,"activation_state":if frame==599 {"Off"} else if duplicate {"SuspendedRetainingResources"} else if s.value>0 && s.presented>1 {"GeneratingReported"} else {"WarmingUpOrNotGenerating"}}),
         )?;
         if s.status != 0 {
             return Err(format!("FG runtime status {}", s.status).into());
@@ -409,6 +459,23 @@ unsafe fn run(
     PostMessageW(hwnd, WM_APP, 0, 0);
     window_thread.join().map_err(|_| "window thread failed")?;
     let presented: u64 = rows.iter().map(|s| u64::from(s.presented)).sum();
+    let alternating_presented: u64 = rows[120..240].iter().map(|s| u64::from(s.presented)).sum();
+    let resumed_presented: u64 = rows[240..599].iter().map(|s| u64::from(s.presented)).sum();
+    write_json(
+        &session.join("fg-repeat-report.json"),
+        &json!({
+            "enabled":repeat_test,"suspended_frames":suspended_frames,
+            "alternating_application_frames":120,"alternating_sdk_presented":alternating_presented,
+            "alternating_extra_frames":alternating_presented > 120,
+            "resumed_application_frames":359,"resumed_sdk_presented":resumed_presented,
+            "resumed_extra_frames":resumed_presented > 359,
+        }),
+    )?;
+    if repeat_test
+        && (suspended_frames != 60 || alternating_presented <= 120 || resumed_presented <= 359)
+    {
+        return Err("SDK did not resume generation after repeat suspension".into());
+    }
     write_json(
         &session.join("fg-result.json"),
         &json!({"application_frames":600,"sdk_reported_presented":presented,"sdk_reports_extra_frames":presented>600,"width":extent.width,"height":extent.height,"requested_multiplier":2,"display_effect_verified":false,"game_integration_verified":false,"input_completion_wait_count":rows.iter().filter(|s|s.value>0).count(),"maximum_input_completion_value":rows.iter().map(|s|s.value).max().unwrap_or(0),"input_completion_waited":rows.iter().any(|s|s.value>0),"shutdown_fg_off":true}),
