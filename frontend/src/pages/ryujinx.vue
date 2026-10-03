@@ -1,157 +1,220 @@
 <template>
   <SimplePage>
-    <v-card class="mx-auto" style="margin-bottom: 10px">
-      <v-container>
-        <v-row>
-          <v-col>
-            <div style="height: 50px">
-              <v-img src="@/assets/ryujinx.webp" height="40" width="40" class="float-left"
-                   style="margin-right: 15px"></v-img>
-              <p class="text-h4 text-primary float-left">
-                Ryujinx 基础信息
-              </p>
-            </div>
-          </v-col>
-        </v-row>
-        <v-divider style="margin-bottom: 15px"></v-divider>
-        <v-row>
-          <v-col>
-            <v-select variant="outlined" v-model="selectedBranch" :items="availableBranch" hide-details
-                      @update:model-value="switchRyujinxBranch" color="error" item-color="error"
-                      item-title="text" item-value="value"
-                      label="当前使用的 Ryujinx 分支"></v-select>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="7">
-            <v-autocomplete label="Ryujinx 路径" v-model="selectedRyujinxPath" :items="historyPathList"
-                            @update:model-value="updateRyujinxPathFunc"
-                            style="cursor: default" variant="underlined">
-              <template v-slot:item="{props, item}">
-                <v-list-item v-bind="props" :title="item.raw">
-                  <template v-slot:append>
-                    <v-btn color="error" size="small" icon variant="outlined" right
-                           v-if="selectedRyujinxPath !== item.raw"
-                           @click.stop="deleteHistoryPath(item.raw)">
-                      <v-icon size="small" :icon="mdiTrashCanOutline"></v-icon>
-                    </v-btn>
-                  </template>
-                </v-list-item>
+    <div class="emulator-page">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title text-primary">模拟器管理</h1>
+          <p class="section-description">管理 {{ selectedEmulatorName }} 模拟器的安装、版本和运行</p>
+        </div>
+        <v-select
+          v-model="selectedBranch"
+          :items="availableBranch"
+          item-title="text"
+          item-value="value"
+          label="模拟器分支"
+          variant="outlined"
+          density="compact"
+          color="primary"
+          hide-details
+          class="branch-select"
+          :disabled="isRunningInstall"
+          @update:model-value="switchRyujinxBranch"
+        >
+          <template #selection>
+            <span>{{ selectedBranch === 'canary' ? 'Ryujinx Canary 版' : 'Ryujinx 正式版' }}</span>
+          </template>
+        </v-select>
+      </header>
 
-              </template>
-            </v-autocomplete>
-          </v-col>
-          <v-col cols="5">
-            <v-btn size="large" color="secondary" variant="outlined" style="margin-right: 5px" min-width="120px"
-                   :disabled='isRunningInstall' @click="askAndUpdateRyujinxPath">修改路径
-            </v-btn>
-            <v-btn size="large" color="success" variant="outlined" min-width="120px" :disabled='isRunningInstall'
-                   @click="startRyujinx">启动龙神
-            </v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-                  <span class="text-h6 text-secondary">
-                    当前 Ryujinx 版本：
-                  </span>
-            <v-tooltip top>
-              <template v-slot:activator="{ props }">
-                <v-btn color="warning" variant="outlined" style="margin-right: 15px" v-bind="props"
-                       @click="detectRyujinxVersion" :disabled='isRunningInstall'>
-                  {{ configStore.config.ryujinx.version ? configStore.config.ryujinx.version : "未知" }}
+      <v-card class="management-card" variant="elevated">
+        <div class="emulator-identity">
+          <div class="identity-title">
+            <v-img src="@/assets/ryujinx.webp" width="48" height="48" class="emulator-logo" />
+            <div>
+              <h2 class="emulator-name">{{ selectedEmulatorName }}</h2>
+              <p class="section-description">Nintendo Switch 模拟器</p>
+            </div>
+          </div>
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="large"
+            :prepend-icon="mdiPlay"
+            :disabled="isRunningInstall"
+            class="launch-button"
+            @click="startRyujinx"
+          >启动模拟器</v-btn>
+        </div>
+
+        <v-divider class="card-divider" />
+
+        <div class="path-row">
+          <h3 class="row-title">安装文件夹</h3>
+          <v-autocomplete
+            v-model="selectedRyujinxPath"
+            :items="historyPathList"
+            label="安装目录"
+            variant="outlined"
+            density="compact"
+            color="primary"
+            hide-details
+            :disabled="isRunningInstall"
+            class="path-input"
+            @update:model-value="updateRyujinxPathFunc"
+          >
+            <template #item="{ props, item }">
+              <v-list-item v-bind="props" :title="item.raw">
+                <template #append>
+                  <v-btn
+                    v-if="selectedRyujinxPath !== item.raw"
+                    color="error"
+                    size="small"
+                    icon
+                    variant="text"
+                    :aria-label="`删除历史路径 ${item.raw}`"
+                    @click.stop="deleteHistoryPath(item.raw)"
+                  >
+                    <v-icon size="small" :icon="mdiTrashCanOutline" />
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
+          <v-btn color="secondary" variant="outlined" :disabled="isRunningInstall" @click="askAndUpdateRyujinxPath">
+            修改路径
+          </v-btn>
+        </div>
+
+        <div class="version-grid">
+          <section class="version-section">
+            <h3 class="row-title">当前已安装版本</h3>
+            <p class="version-value">
+              <span
+                class="status-dot"
+                :class="configStore.config.ryujinx.version ? 'bg-success' : 'bg-warning'"
+                aria-hidden="true"
+              />
+              <span class="version-text">{{ configStore.config.ryujinx.version || '未识别' }}</span>
+            </p>
+            <div class="version-actions">
+              <p class="section-description">
+                {{ configStore.config.ryujinx.version ? '可重新检测当前模拟器版本。' : '未识别当前模拟器版本，可尝试重新检测。' }}
+              </p>
+              <v-btn color="secondary" variant="outlined" :disabled="isRunningInstall" @click="detectRyujinxVersion">
+                重新检测
+              </v-btn>
+            </div>
+          </section>
+
+          <section class="version-section latest-version">
+            <h3 class="row-title">最新 {{ selectedEmulatorName }} 版本</h3>
+            <p class="version-value version-text">{{ latestRyujinxVersion }}</p>
+            <ChangeLogDialog v-if="selectedBranch === 'canary' || selectedBranch === 'mainline'">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" color="secondary" variant="outlined" @click="loadChangeLog">
+                  查看更新日志
                 </v-btn>
               </template>
-              <span>点击重新检测 Ryujinx 版本</span>
-            </v-tooltip>
-            <span class="text-h6 text-secondary">
-                    最新 Ryujinx 版本：
-                  </span>
-            <span class="text-h6">
-                    {{ latestRyujinxVersion }}
-                  </span>
-            <ChangeLogDialog v-if="selectedBranch === 'canary' || selectedBranch === 'mainline'">
-              <template v-slot:activator="{ props }">
-                <span v-bind="props" @click="loadChangeLog"
-                      style="margin-left: 10px">
-                  <v-icon color="warning" :icon="mdiTimelineQuestionOutline"></v-icon>
-                </span>
-              </template>
-              <template v-slot:content>
-                <div class="text--primary" v-html="changeLogHtml"></div>
+              <template #content>
+                <div v-html="changeLogHtml" />
               </template>
             </ChangeLogDialog>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <span class="text-h6 text-secondary">当前固件版本：</span>
-            <v-tooltip top>
-              <template v-slot:activator="{ props }">
-                <v-btn color="warning" variant="outlined" v-bind="props"
-                       @click="detectFirmwareVersion" :disabled='isRunningInstall'>
-                  {{ configStore.config.ryujinx.firmware ? configStore.config.ryujinx.firmware : "未知" }}
-                </v-btn>
-              </template>
-              <span>点击重新检测固件版本, 需安装密钥后使用</span>
-            </v-tooltip>
-            <span class="text-h7 text-secondary">
-              （如果固件能用就没必要更新）
-            </span>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-card>
-    <v-card class="mx-auto">
-      <v-container>
-        <v-row>
-          <v-col>
-            <div style="height: 50px">
-              <v-img src="@/assets/ryujinx.webp" height="40" width="40" class="float-left"
-                   style="margin-right: 15px"></v-img>
-              <p class="text-h4 text-primary float-left">
-                Ryujinx 组件管理
+          </section>
+        </div>
+      </v-card>
+
+      <header class="component-header">
+        <h2 class="page-title text-primary">组件管理</h2>
+        <p class="section-description">管理模拟器版本与固件</p>
+      </header>
+
+      <v-card class="management-card" variant="elevated">
+        <div class="install-row">
+          <div>
+            <h3 class="row-title">模拟器版本安装</h3>
+            <p class="section-description">安装指定版本的 {{ selectedEmulatorName }} 模拟器。</p>
+          </div>
+          <div class="install-controls">
+            <v-text-field
+              v-model="targetRyujinxVersion"
+              label="安装版本"
+              variant="outlined"
+              density="compact"
+              color="primary"
+              hide-details
+              class="version-input"
+              :disabled="isRunningInstall || isLoadingRyujinxVersions"
+              :loading="isLoadingRyujinxVersions"
+            />
+            <v-btn
+              color="info"
+              variant="flat"
+              :disabled="isRunningInstall || isLoadingRyujinxVersions"
+              @click="installRyujinx"
+            >安装模拟器</v-btn>
+          </div>
+        </div>
+
+        <v-divider class="card-divider" />
+
+        <div class="install-row">
+          <div>
+            <h3 class="row-title">固件管理</h3>
+            <p class="section-description">安装或更新 Nintendo Switch 固件。</p>
+          </div>
+          <div class="firmware-controls">
+            <div class="firmware-status">
+              <p class="section-description">当前版本</p>
+              <p class="firmware-version">
+                <span
+                  class="status-dot"
+                  :class="configStore.config.ryujinx.firmware ? 'bg-success' : 'bg-warning'"
+                  aria-hidden="true"
+                />
+                <span class="version-text">{{ configStore.config.ryujinx.firmware || '未识别' }}</span>
               </p>
+              <v-tooltip text="重新检测固件版本，需先安装密钥" location="top">
+                <template #activator="{ props }">
+                  <v-btn v-bind="props" color="secondary" variant="outlined" :disabled="isRunningInstall" @click="detectFirmwareVersion">
+                    重新检测
+                  </v-btn>
+                </template>
+              </v-tooltip>
             </div>
-          </v-col>
-        </v-row>
-        <v-divider style="margin-bottom: 15px"></v-divider>
-        <v-row>
-          <v-col cols="7">
-            <v-text-field hide-details label="需要安装的 Ryujinx 版本" variant="underlined"
-                          v-model="targetRyujinxVersion" :loading="isLoadingRyujinxVersions"
-                          :disabled="isRunningInstall || isLoadingRyujinxVersions"></v-text-field>
-          </v-col>
-          <v-col>
-            <v-btn color="info" size="large" variant="outlined" min-width="160px"
-                   :disabled="isRunningInstall || isLoadingRyujinxVersions"
-                   @click="installRyujinx">
-              安装 Ryujinx
-            </v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="7">
-            <v-autocomplete hide-details v-model="appStore.targetFirmwareVersion" label="需要安装的固件版本"
-                          item-title="name" item-value="version"
-                          :items="appStore.availableFirmwareInfos" variant="underlined"></v-autocomplete>
-          </v-col>
-          <v-col>
-            <v-btn color="info" size="large" variant="outlined" min-width="160px" :disabled='isRunningInstall'
-                   @click="firmwareInstallationWarningDialog = true" >
-              安装固件
-            </v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-                  <span>安装/更新固件后, 请一并安装相应的 keys:
-                    <router-link to="/keys" class="info--text">密钥管理</router-link>
-                  </span>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-card>
+            <div class="install-controls">
+              <v-autocomplete
+                v-model="appStore.targetFirmwareVersion"
+                :items="appStore.availableFirmwareInfos"
+                item-title="name"
+                item-value="version"
+                label="安装固件版本"
+                variant="outlined"
+                density="compact"
+                color="primary"
+                hide-details
+                :disabled="isRunningInstall"
+              />
+              <v-btn color="info" variant="flat" :disabled="isRunningInstall" @click="firmwareInstallationWarningDialog = true">
+                安装固件
+              </v-btn>
+            </div>
+          </div>
+        </div>
+
+        <v-divider class="card-divider" />
+
+        <footer class="component-footer">
+          <p class="section-description firmware-note">
+            <v-icon :icon="mdiInformationOutline" size="20" />
+            能正常运行游戏时，无需更新固件。
+          </p>
+          <p class="section-description">
+            安装或更新固件后，请安装对应密钥。
+            <router-link to="/keys" class="keys-link text-accent">密钥管理</router-link>
+          </p>
+        </footer>
+      </v-card>
+    </div>
     <v-dialog v-model="firmwareInstallationWarningDialog" max-width="800">
       <v-card>
         <dialog-title>
@@ -190,7 +253,7 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import type {CommonResponse} from "@/types";
 import {useAppStore} from "@/stores/app";
 import markdown from "@/utils/markdown";
-import {mdiTimelineQuestionOutline, mdiTrashCanOutline} from "@mdi/js";
+import {mdiInformationOutline, mdiPlay, mdiTrashCanOutline} from "@mdi/js";
 import ChangeLogDialog from "@/components/ChangeLogDialog.vue";
 import SimplePage from "@/components/SimplePage.vue";
 import MarkdownContentBox from "@/components/MarkdownContentBox.vue";
@@ -233,6 +296,7 @@ let availableBranch = ref([
   }
 ])
 let selectedBranch = ref('')
+const selectedEmulatorName = computed(() => selectedBranch.value === 'canary' ? 'Ryujinx Canary' : 'Ryujinx')
 const cds = useConsoleDialogStore()
 const configStore = useConfigStore()
 const appStore = useAppStore()
@@ -448,6 +512,4 @@ async function loadChangeLog() {
 
 </script>
 
-<style scoped>
-
-</style>
+<style scoped src="@/styles/emulator-management.css"></style>
