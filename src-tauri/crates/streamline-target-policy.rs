@@ -5,6 +5,66 @@ use std::{
     path::Path,
 };
 pub const VERIFIED_HASH: &str = "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85";
+pub const YUZU_NAMES: &[&str] = &[
+    "yuzu.exe",
+    "eden.exe",
+    "citron.exe",
+    "suzu.exe",
+    "suyu.exe",
+    "sudachi.exe",
+    "torzu.exe",
+    "cemu.exe", // Toolbox's optional rename for yuzu-family installations.
+];
+pub const RYUJINX_NAMES: &[&str] = &["Ryujinx.exe", "Ryujinx.Ava.exe"];
+
+/// A launch-protocol hint, never evidence that a build has been verified.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TargetFamily {
+    Yuzu,
+    Ryujinx,
+    Unknown,
+}
+impl TargetFamily {
+    pub fn detect(path: &Path, hash: &str) -> Self {
+        if hash == VERIFIED_HASH {
+            return Self::Ryujinx;
+        }
+        let name = path.file_name().unwrap_or_default().to_string_lossy();
+        if YUZU_NAMES.iter().any(|n| name.eq_ignore_ascii_case(n)) {
+            Self::Yuzu
+        } else if RYUJINX_NAMES.iter().any(|n| name.eq_ignore_ascii_case(n)) {
+            Self::Ryujinx
+        } else {
+            Self::Unknown
+        }
+    }
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Yuzu => "yuzu",
+            Self::Ryujinx => "ryujinx",
+            Self::Unknown => "unknown",
+        }
+    }
+    // The manager uses only family discovery; the separate launcher uses this.
+    #[allow(dead_code)]
+    pub fn configure_command(
+        self,
+        command: &mut std::process::Command,
+        enhanced: bool,
+        game: Option<&Path>,
+    ) {
+        // Ryubing applies this after loading global and per-game settings.
+        // Qt yuzu forks select Vulkan in their settings and reject this option.
+        if enhanced && self == Self::Ryujinx {
+            command.args(["--graphics-backend", "Vulkan"]);
+        }
+        if let Some(game) = game {
+            // A single absolute ROM path also works with older Qt builds that
+            // interpret newer command-line options themselves as ROM paths.
+            command.arg(game);
+        }
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Compatibility {
     Verified,
@@ -84,6 +144,58 @@ pub fn validate_executable(path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn family_hint_never_verifies_an_unknown_build() {
+        for name in YUZU_NAMES {
+            assert_eq!(
+                TargetFamily::detect(Path::new(name), "new"),
+                TargetFamily::Yuzu
+            );
+            assert_eq!(classify("new", true), Compatibility::Unverified);
+        }
+        assert_eq!(
+            TargetFamily::detect(Path::new("EDEN.EXE"), "new"),
+            TargetFamily::Yuzu
+        );
+        assert_eq!(
+            TargetFamily::detect(Path::new("eden-cli.exe"), "new"),
+            TargetFamily::Unknown
+        );
+        assert_eq!(
+            TargetFamily::detect(Path::new("other.exe"), "new"),
+            TargetFamily::Unknown
+        );
+        assert_eq!(
+            TargetFamily::detect(Path::new("renamed.exe"), VERIFIED_HASH),
+            TargetFamily::Ryujinx
+        );
+    }
+    #[test]
+    fn launch_arguments_follow_the_emulator_protocol() {
+        use std::{ffi::OsString, process::Command};
+        let game = Path::new("C:/games/a game.xci");
+        for (family, enhanced, expected) in [
+            (TargetFamily::Yuzu, true, vec!["C:/games/a game.xci"]),
+            (TargetFamily::Yuzu, false, vec!["C:/games/a game.xci"]),
+            (
+                TargetFamily::Ryujinx,
+                true,
+                vec!["--graphics-backend", "Vulkan", "C:/games/a game.xci"],
+            ),
+            (TargetFamily::Ryujinx, false, vec!["C:/games/a game.xci"]),
+            (TargetFamily::Unknown, true, vec!["C:/games/a game.xci"]),
+        ] {
+            let mut command = Command::new("emulator.exe");
+            family.configure_command(&mut command, enhanced, Some(game));
+            assert_eq!(
+                command.get_args().collect::<Vec<_>>(),
+                expected.iter().map(OsString::from).collect::<Vec<_>>()
+            );
+        }
+        let mut command = Command::new("eden.exe");
+        TargetFamily::Yuzu.configure_command(&mut command, true, None);
+        assert_eq!(command.get_args().count(), 0);
+    }
     #[test]
     fn explicit_trial_only_bypasses_unknown_build_not_incompatibility() {
         assert_eq!(classify(VERIFIED_HASH, true), Compatibility::Verified);

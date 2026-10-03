@@ -408,7 +408,7 @@ pub(super) unsafe fn create_device(
                     .queue_priorities(&optical_priority),
             );
         }
-        let chain = if nr_requested() {
+        let mut chain = if nr_requested() {
             crate::target_device_plan::FeatureChain::for_target_with_nr((*info).p_next, true)?
         } else {
             crate::target_device_plan::FeatureChain::for_target((*info).p_next)?
@@ -424,7 +424,7 @@ pub(super) unsafe fn create_device(
         } else {
             *(*info).p_enabled_features
         };
-        if optical_family.is_some() {
+        if optical_family.is_some() && !chain.enable_storage_image_formats() {
             core_features.shader_storage_image_extended_formats = vk::TRUE;
             copy.p_enabled_features = &core_features;
         }

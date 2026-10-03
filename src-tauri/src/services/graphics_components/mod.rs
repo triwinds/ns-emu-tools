@@ -18,8 +18,7 @@ pub(super) mod streamline_update;
 use std::path::Path;
 use std::path::PathBuf;
 
-const YUZU_NAMES: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.exe", "cemu.exe"];
-const RYUJINX_NAMES: &[&str] = &["Ryujinx.exe", "Ryujinx.Ava.exe"];
+use streamline_fg::target_policy::{RYUJINX_NAMES, YUZU_NAMES};
 
 pub fn list_targets() -> Result<Vec<GraphicsTargetCandidate>, String> {
     let config = get_config();

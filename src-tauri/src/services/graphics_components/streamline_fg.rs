@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 #[path = "../../../crates/streamline-target-policy.rs"]
 pub(super) mod target_policy;
-use target_policy::{classify, validate_executable, Compatibility};
+use target_policy::{classify, validate_executable, Compatibility, TargetFamily};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -163,6 +163,7 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
         "首版支持 Windows x64".into(),
     );
     let hash = file_digest(&executable)?;
+    let family = TargetFamily::detect(&executable, &hash);
     let validation = validate_executable(&executable);
     let compatibility = classify(&hash, validation.is_ok());
     let requires_trial_confirmation =
@@ -191,8 +192,20 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
         } else {
             CheckStatus::Blocked
         },
-        "需要 Vulkan；此处按页面选择检查，启动前仍需核对模拟器设置".into(),
+        if family == TargetFamily::Yuzu {
+            "需要在 Eden / yuzu 系列的全局和游戏专属设置中选择 Vulkan；专用启动不会改写配置。请关闭模拟器内置插帧，避免与 FG 重复处理".into()
+        } else {
+            "需要 Vulkan；此处按页面选择检查，启动前仍需核对模拟器设置".into()
+        },
     );
+    if family == TargetFamily::Yuzu {
+        check(
+            "source",
+            "画面输入",
+            CheckStatus::Pending,
+            format!("{} 系列使用最终呈现画面试运行 NR、SR / DLAA 和 FG，包含黑边与叠加界面。尚未接入游戏原生纹理、深度或运动矢量；SR 不降低模拟器渲染分辨率，实际能力由运行时检查。需要更新增强组件以使用此启动方式", family.as_str()),
+        );
+    }
     let directory = executable.parent().ok_or("主程序没有父目录")?;
     let mut conflicts = Vec::new();
     for name in [
@@ -376,6 +389,26 @@ mod tests {
     fn rejects_missing_target() {
         let dir = tempfile::tempdir().unwrap();
         assert!(detect(dir.path().join("missing.exe"), GraphicsApi::Vulkan).is_err());
+    }
+    #[test]
+    fn eden_trial_reports_present_input_without_claiming_a_verified_build() {
+        let dir = tempfile::tempdir().unwrap();
+        let exe = dir.path().join("eden.exe");
+        std::fs::write(&exe, super::super::tests::pe(0x8664, 0x20b)).unwrap();
+        let report = detect(exe, GraphicsApi::Vulkan).unwrap();
+        assert_eq!(report.compatibility, "unverified");
+        assert!(report.requires_trial_confirmation);
+        assert!(report.target_version.is_none());
+        let source = report.checks.iter().find(|c| c.id == "source").unwrap();
+        assert!(matches!(source.status, CheckStatus::Pending));
+        assert!(source.detail.contains("最终呈现画面"));
+        assert!(report
+            .checks
+            .iter()
+            .find(|c| c.id == "api")
+            .unwrap()
+            .detail
+            .contains("游戏专属设置"));
     }
     #[test]
     fn unknown_executable_cannot_pass_identity_or_claim_gpu_support() {

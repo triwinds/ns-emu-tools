@@ -69,6 +69,21 @@ fn enumerates_all_installations_and_deduplicates_paths() {
 }
 
 #[test]
+fn discovers_yuzu_forks_and_renamed_installations_but_not_helper_programs() {
+    let dir = tempfile::tempdir().unwrap();
+    for name in YUZU_NAMES
+        .iter()
+        .copied()
+        .chain(["eden-cli.exe", "yuzu-room.exe"])
+    {
+        fs::write(dir.path().join(name), b"").unwrap();
+    }
+    let targets = collect_targets(vec![("yuzu", dir.path().into())]).unwrap();
+    assert_eq!(targets.len(), YUZU_NAMES.len());
+    assert!(targets.iter().all(|t| t.family == "yuzu"));
+}
+
+#[test]
 fn serializes_api_choices_explicitly() {
     assert_eq!(
         serde_json::to_string(&GraphicsApi::OpenGl).unwrap(),

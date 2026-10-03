@@ -242,6 +242,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     let compatibility = target_policy::classify(&target_hash, true);
     compatibility.authorize(allow_unverified)?;
+    let family = target_policy::TargetFamily::detect(&executable, &target_hash);
     if scale_copy && compatibility != target_policy::Compatibility::Verified {
         return Err("GPU copy trial requires the pinned verified executable".into());
     }
@@ -393,6 +394,9 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_TARGET_SDK", if sdk_off { "1" } else { "0" })
         .env("NS_STREAMLINE_TARGET_RUNTIME", &runtime_dest)
         .env("NS_STREAMLINE_TARGET_FG", if fg { "1" } else { "0" })
+        // Eden/yuzu use the completed presentation image. Their native texture
+        // path must not inherit the pinned Ryujinx shader/descriptor contract.
+        .env("NS_STREAMLINE_TARGET_FAMILY", family.as_str())
         .env(
             "NS_STREAMLINE_GRAPHICS_RUNTIME",
             if graphics_launch { "1" } else { "0" },
@@ -464,21 +468,18 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_PROBE_SDK_ROUTE", "0")
         .stdout(fs::File::create(session.join("target.stdout.log"))?)
         .stderr(fs::File::create(session.join("target.stderr.log"))?);
-    // Ryubing applies this override after ReloadConfig, including per-game config.
-    // Enhanced launches require Vulkan even when the stored backend is invalid.
-    if fg || native_nr || graphics_launch {
-        command.args(["--graphics-backend", "Vulkan"]);
-    }
-    if let Some(game) = &game {
-        command.arg(game);
-    }
+    family.configure_command(
+        &mut command,
+        fg || native_nr || graphics_launch,
+        game.as_deref(),
+    );
     write_json(
         &session.join("target-inputs.json"),
         &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     write_json(
         &session.join("target-command.json"),
-        &json!({"arguments":command.get_args().map(|a|a.to_string_lossy().into_owned()).collect::<Vec<_>>(),"graphics_backend_override":if fg||native_nr||graphics_launch {Some("Vulkan")} else {None}}),
+        &json!({"family":family.as_str(),"arguments":command.get_args().map(|a|a.to_string_lossy().into_owned()).collect::<Vec<_>>(),"graphics_backend_override":if (fg||native_nr||graphics_launch) && family == target_policy::TargetFamily::Ryujinx {Some("Vulkan")} else {None},"presentation_source":if family == target_policy::TargetFamily::Yuzu {"present_image"} else {"verified_native_or_present"}}),
     )?;
     if hash(&executable)? != target_hash {
         return Err("target changed during launch preparation; inspect it again".into());
@@ -489,7 +490,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         &json!({"pid":child.id()}),
     )?;
     println!(
-        "Target diagnostic running; close Ryujinx normally when finished. Evidence: {}",
+        "Target running; close the emulator normally when finished. Evidence: {}",
         session.display()
     );
     let status = child.wait()?;

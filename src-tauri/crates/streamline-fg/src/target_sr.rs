@@ -89,6 +89,18 @@ fn sizes(original: vk::Extent2D, scale: u16) -> Result<(vk::Extent2D, vk::Extent
     // DLSS does not downscale: below 1x first reduce the color input.
     Ok((if scale < 100 { output } else { original }, output))
 }
+pub(super) fn can_process(
+    window: vk::Extent2D,
+    native: Option<crate::source_auto::Source>,
+    scale: u16,
+) -> bool {
+    crate::target_fg_gate::processing_extent([window.width, window.height])
+        && sizes(source_extent(window, native), scale).is_ok_and(|(input, output)| {
+            [input, output]
+                .into_iter()
+                .all(|size| crate::target_fg_gate::processing_extent([size.width, size.height]))
+        })
+}
 fn offsets(size: vk::Extent2D) -> [vk::Offset3D; 2] {
     [
         vk::Offset3D::default(),
@@ -862,6 +874,15 @@ impl Drop for Sr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn skips_tiny_loading_surfaces_and_scaled_inputs_before_sdk_evaluation() {
+        let size = |width, height| vk::Extent2D { width, height };
+        assert!(!can_process(size(100, 30), None, 100));
+        assert!(!can_process(size(32, 32), None, 50));
+        assert!(can_process(size(64, 64), None, 50));
+        assert!(can_process(size(1920, 1080), None, 100));
+        assert!(!can_process(size(8192, 8192), None, 200));
+    }
     #[test]
     fn timestamp_wrap_and_period() {
         assert_eq!(timestamp_us(250, 10, 8, 1000.0), 16.0);

@@ -258,9 +258,18 @@ pub unsafe extern "system" fn vkCreateDevice(
             json!({"family":q.queue_family_index,"count":q.queue_count,"flags":q.flags.as_raw()})
         })
         .collect();
+    let mut feature_chain = Vec::new();
+    let mut node = (*info).p_next.cast::<vk::BaseInStructure>();
+    for _ in 0..64 {
+        if node.is_null() {
+            break;
+        }
+        feature_chain.push(format!("{:?}", (*node).s_type));
+        node = (*node).p_next;
+    }
     trace::event!(
         "device_request",
-        json!({"queues":queues,"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count)}),
+        json!({"queues":queues,"feature_chain":feature_chain,"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count)}),
     );
     (*chain).data = (*link).next as usize;
     #[cfg(all(windows, feature = "sdk-bridge"))]

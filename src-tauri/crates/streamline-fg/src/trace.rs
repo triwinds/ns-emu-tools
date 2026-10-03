@@ -81,8 +81,11 @@ pub fn record(name: &str, details: Value) {
         }
         let path = std::env::var_os("NS_STREAMLINE_PROBE_TRACE")?;
         OpenOptions::new()
-            .create_new(true)
-            .write(true)
+            // Qt's Vulkan suitability checks can unload and reload this DLL
+            // before the game's instance. Keep evidence from every lifetime in
+            // the launcher's private session instead of losing the later logs.
+            .create(true)
+            .append(true)
             .open(path)
             .ok()
             .map(|file| Mutex::new(BufWriter::with_capacity(64 * 1024, file)))

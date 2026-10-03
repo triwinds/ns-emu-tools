@@ -302,12 +302,11 @@ pub(super) unsafe fn present(
         #[cfg(not(feature = "native-nr"))]
         let _ = nr_applied;
         let native_source = crate::source_auto::select(queue, &*info);
-        let region = native_source.ok().and_then(|source| {
-            crate::target_fg_gate::content_region(
-                source.viewport,
-                [chain.extent.width, chain.extent.height],
-            )
-        });
+        let region = crate::target_fg_gate::presentation_region(
+            native_source.ok().map(|source| source.viewport),
+            [chain.extent.width, chain.extent.height],
+            std::env::var("NS_STREAMLINE_TARGET_FAMILY").as_deref() == Ok("yuzu"),
+        );
         let region_changed = region != chain.region;
         chain.region = region;
         let region_off = match region {
@@ -338,9 +337,13 @@ pub(super) unsafe fn present(
         let on = off_reason.is_none();
         let boundary_reset = chain.temporal_boundary.next(foreground == root, on);
         #[cfg(feature = "native-nr")]
+        let nr_extent = crate::target_nr::extent(chain.extent, native_source.ok());
+        #[cfg(feature = "native-nr")]
         let nr_requested = crate::nr_runtime::requested()
             && crate::nr_runtime::ready()
             && nr_controls.enabled
+            && crate::target_fg_gate::processing_extent([nr_extent.width, nr_extent.height])
+            && crate::target_fg_gate::processing_extent([chain.extent.width, chain.extent.height])
             && !chain.nr_failed
             && !crate::target_window::stopping();
         #[cfg(not(feature = "native-nr"))]
@@ -361,11 +364,20 @@ pub(super) unsafe fn present(
             device.device_wait_idle()?;
             drop(chain.sr.take());
         }
-        let sr_requested = crate::target_sr::available() && sr_mode != 0 && !chain.sr_failed;
+        let sr_dimensions_allowed =
+            crate::target_sr::can_process(chain.extent, native_source.ok(), sr_scale);
+        let sr_requested = crate::target_sr::available()
+            && sr_mode != 0
+            && !chain.sr_failed
+            && sr_dimensions_allowed;
         if sr_mode == 0 {
             crate::live::sr(json!({"active":false,"reason":"已关闭"}));
         } else if !chain.sr_allowed {
             crate::live::sr(json!({"active":false,"reason":"当前显示表面不支持 SR 读写"}));
+        } else if !sr_dimensions_allowed {
+            crate::live::sr(
+                json!({"active":false,"reason":"当前窗口或处理画面的尺寸不支持 SR，等待游戏画面"}),
+            );
         }
         if chain.resources.is_none() && (on || sr_requested || nr_requested) {
             chain.resources = Some(guides(d, &device, &mut chain, queue, handle)?);

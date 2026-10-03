@@ -64,6 +64,26 @@ pub(super) fn content_region(viewport: [f32; 4], size: [u32; 2]) -> Option<[u32;
     }
     Some([x, y, width, height])
 }
+
+/// Yuzu-family trials process the complete presented image, including bars and
+/// overlays. This does not establish a native texture or its content viewport.
+pub(super) fn presentation_region(
+    native_viewport: Option<[f32; 4]>,
+    size: [u32; 2],
+    present_image: bool,
+) -> Option<[u32; 4]> {
+    match native_viewport {
+        Some(viewport) => content_region(viewport, size),
+        None if present_image && size[0] > 0 && size[1] > 0 => Some([0, 0, size[0], size[1]]),
+        None => None,
+    }
+}
+
+// DLSS rejects outputs smaller than 32 pixels. Qt can present a tiny loading
+// surface before the game window; leave it unprocessed and retry on the game.
+pub(super) fn processing_extent(size: [u32; 2]) -> bool {
+    size.into_iter().all(|v| (32..=8192).contains(&v))
+}
 #[derive(Clone, Copy)]
 pub(super) struct Inputs {
     pub status: u32,
@@ -314,6 +334,35 @@ mod lifecycle_tests {
 #[cfg(test)]
 mod region_tests {
     use super::*;
+    #[test]
+    fn loading_surfaces_are_skipped_before_processing() {
+        for size in [[100, 30], [31, 100], [0, 0], [8193, 1080]] {
+            assert!(!processing_extent(size));
+        }
+        for size in [[32, 32], [1920, 1080], [8192, 8192]] {
+            assert!(processing_extent(size));
+        }
+    }
+    #[test]
+    fn present_image_trials_do_not_require_a_native_texture() {
+        assert_eq!(
+            presentation_region(None, [1920, 1080], true),
+            Some([0, 0, 1920, 1080])
+        );
+        assert_eq!(presentation_region(None, [1920, 1080], false), None);
+        assert_eq!(presentation_region(None, [0, 1080], true), None);
+        assert_eq!(presentation_region(None, [1920, 0], true), None);
+        let viewport = [0., 140., 1920., 800.];
+        assert_eq!(
+            presentation_region(Some(viewport), [1920, 1080], true),
+            Some([0, 140, 1920, 800])
+        );
+        // A rejected native contract must not be hidden by a full-window fallback.
+        assert_eq!(
+            presentation_region(Some([0., 0., 2000., 1080.]), [1920, 1080], true),
+            None
+        );
+    }
     #[test]
     fn accepts_horizontal_vertical_and_no_bars() {
         for (viewport, size, expected) in [
