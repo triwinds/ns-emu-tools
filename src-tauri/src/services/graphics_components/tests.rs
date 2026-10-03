@@ -71,11 +71,12 @@ fn enumerates_all_installations_and_deduplicates_paths() {
 #[test]
 fn discovers_yuzu_forks_and_renamed_installations_but_not_helper_programs() {
     let dir = tempfile::tempdir().unwrap();
-    for name in YUZU_NAMES
-        .iter()
-        .copied()
-        .chain(["eden-cli.exe", "yuzu-room.exe"])
-    {
+    for name in YUZU_NAMES.iter().copied().chain([
+        "eden-cli.exe",
+        "yuzu-room.exe",
+        "citron-cmd.exe",
+        "citron-room.exe",
+    ]) {
         fs::write(dir.path().join(name), b"").unwrap();
     }
     let targets = collect_targets(vec![("yuzu", dir.path().into())]).unwrap();

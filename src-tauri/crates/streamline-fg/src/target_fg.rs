@@ -690,7 +690,10 @@ pub(super) unsafe fn present(
         let result =
             crate::route_objects::with_deferred(sr_ready.is_some(), || next(queue, &forwarded));
         let present_us = present_started.elapsed().as_micros();
-        if result != vk::Result::SUCCESS && result != vk::Result::SUBOPTIMAL_KHR {
+        if !matches!(
+            result,
+            vk::Result::SUCCESS | vk::Result::SUBOPTIMAL_KHR | vk::Result::ERROR_OUT_OF_DATE_KHR
+        ) {
             return Err(format!("proxy present failed {result:?}").into());
         }
         checked(probe_fg_marker(&api, token, 5), "present end")?;
@@ -704,6 +707,26 @@ pub(super) unsafe fn present(
         let input_wait_us = input_started.elapsed().as_micros();
         if s.status != 0 {
             return Err(format!("SDK FG status {}", s.status).into());
+        }
+        if result == vk::Result::ERROR_OUT_OF_DATE_KHR {
+            // WSI still enqueues semaphore waits for an out-of-date present.
+            // Retire processing and SDK inputs before returning the original
+            // result so Qt can recreate its swapchain after a window resize.
+            finish_pending(&mut chain)?;
+            chain.was_on = false;
+            chain.temporal_boundary = crate::target_fg_gate::TemporalBoundary::default();
+            crate::target_window::active(false);
+            crate::live::fg(json!({"state":"off","generationObserved":false,
+                "sdkPresented":0,"requested":false,"suspended":false,
+                "feedback":"streamline_present_count","perOutputDisableFlagAvailable":false}));
+            crate::live::frame(false, Some("window_operation"), control_revision);
+            trace::event!(
+                "target_swapchain_out_of_date",
+                json!({"swapchain":handle.as_raw(),"frame":frame,
+                    "input_wait_completed":true,"pending_processing_completed":true,
+                    "result":result.as_raw()}),
+            );
+            return Ok(result);
         }
         if on {
             chain.on_frames = chain.on_frames.saturating_add(1);

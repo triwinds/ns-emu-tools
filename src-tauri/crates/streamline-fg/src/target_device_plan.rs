@@ -74,6 +74,7 @@ impl FeatureChain {
                     vk::PhysicalDevicePipelineExecutablePropertiesFeaturesKHR,
                     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
                     vk::PhysicalDeviceDepthBiasControlFeaturesEXT,
+                    vk::PhysicalDeviceFragmentShadingRateFeaturesKHR,
                     vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
                     vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
                     vk::PhysicalDeviceDepthClipControlFeaturesEXT,
@@ -361,6 +362,52 @@ mod tests {
                 feature::<vk::PhysicalDeviceFeatures2>(&chain)
                     .features
                     .geometry_shader,
+                vk::TRUE
+            );
+        }
+    }
+
+    #[test]
+    fn citron_fragment_shading_rate_request_is_preserved_in_owned_chain() {
+        unsafe {
+            let mut rate = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR::default()
+                .pipeline_fragment_shading_rate(true)
+                .primitive_fragment_shading_rate(false)
+                .attachment_fragment_shading_rate(true);
+            let mut subgroup = vk::PhysicalDeviceSubgroupSizeControlFeatures::default()
+                .subgroup_size_control(true);
+            let mut root = vk::PhysicalDeviceFeatures2::default();
+            subgroup.p_next =
+                (&mut rate as *mut vk::PhysicalDeviceFragmentShadingRateFeaturesKHR).cast();
+            root.p_next =
+                (&mut subgroup as *mut vk::PhysicalDeviceSubgroupSizeControlFeatures).cast();
+            let chain = FeatureChain::for_target_with_nr(
+                (&root as *const vk::PhysicalDeviceFeatures2).cast(),
+                true,
+            )
+            .unwrap();
+            let copied = feature::<vk::PhysicalDeviceFragmentShadingRateFeaturesKHR>(&chain);
+            assert_eq!(copied.pipeline_fragment_shading_rate, vk::TRUE);
+            assert_eq!(copied.primitive_fragment_shading_rate, vk::FALSE);
+            assert_eq!(copied.attachment_fragment_shading_rate, vk::TRUE);
+            assert_ne!(copied as *const _, &rate as *const _);
+            assert_eq!(
+                root.p_next,
+                (&subgroup as *const vk::PhysicalDeviceSubgroupSizeControlFeatures)
+                    .cast_mut()
+                    .cast()
+            );
+            assert_eq!(
+                feature::<vk::PhysicalDeviceSubgroupSizeControlFeatures>(&chain)
+                    .subgroup_size_control,
+                vk::TRUE
+            );
+            assert_eq!(
+                feature::<vk::PhysicalDeviceSynchronization2Features>(&chain).synchronization2,
+                vk::TRUE
+            );
+            assert_eq!(
+                feature::<vk::PhysicalDeviceMaintenance4Features>(&chain).maintenance4,
                 vk::TRUE
             );
         }

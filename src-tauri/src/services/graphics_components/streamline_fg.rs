@@ -193,7 +193,7 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
             CheckStatus::Blocked
         },
         if family == TargetFamily::Yuzu {
-            "需要在 Eden / yuzu 系列的全局和游戏专属设置中选择 Vulkan；专用启动不会改写配置。请关闭模拟器内置插帧，避免与 FG 重复处理".into()
+            "需要在 Eden / Citron / yuzu 系列的全局和游戏专属设置中选择 Vulkan；专用启动不会改写配置。请关闭模拟器内置插帧，避免与 FG 重复处理".into()
         } else {
             "需要 Vulkan；此处按页面选择检查，启动前仍需核对模拟器设置".into()
         },
@@ -391,24 +391,26 @@ mod tests {
         assert!(detect(dir.path().join("missing.exe"), GraphicsApi::Vulkan).is_err());
     }
     #[test]
-    fn eden_trial_reports_present_input_without_claiming_a_verified_build() {
+    fn eden_and_citron_trials_report_present_input_without_claiming_verified_builds() {
         let dir = tempfile::tempdir().unwrap();
-        let exe = dir.path().join("eden.exe");
-        std::fs::write(&exe, super::super::tests::pe(0x8664, 0x20b)).unwrap();
-        let report = detect(exe, GraphicsApi::Vulkan).unwrap();
-        assert_eq!(report.compatibility, "unverified");
-        assert!(report.requires_trial_confirmation);
-        assert!(report.target_version.is_none());
-        let source = report.checks.iter().find(|c| c.id == "source").unwrap();
-        assert!(matches!(source.status, CheckStatus::Pending));
-        assert!(source.detail.contains("最终呈现画面"));
-        assert!(report
-            .checks
-            .iter()
-            .find(|c| c.id == "api")
-            .unwrap()
-            .detail
-            .contains("游戏专属设置"));
+        for name in ["eden.exe", "citron.exe"] {
+            let exe = dir.path().join(name);
+            std::fs::write(&exe, super::super::tests::pe(0x8664, 0x20b)).unwrap();
+            let report = detect(exe, GraphicsApi::Vulkan).unwrap();
+            assert_eq!(report.compatibility, "unverified");
+            assert!(report.requires_trial_confirmation);
+            assert!(report.target_version.is_none());
+            let source = report.checks.iter().find(|c| c.id == "source").unwrap();
+            assert!(matches!(source.status, CheckStatus::Pending));
+            assert!(source.detail.contains("最终呈现画面"));
+            assert!(report
+                .checks
+                .iter()
+                .find(|c| c.id == "api")
+                .unwrap()
+                .detail
+                .contains("游戏专属设置"));
+        }
     }
     #[test]
     fn unknown_executable_cannot_pass_identity_or_claim_gpu_support() {
