@@ -125,7 +125,15 @@ foreach ($part in @(@{version=$version; files=$layerFiles}, @{version=$runtimeVe
 }
 $release = @{version=$version; native_nr=$true; schema_version=1; launcher_protocol=1; files=$files; parts=$parts}
 $sourceFiles = @(rg --files --hidden -g '!**/target/**' -g '!**/evidence/**' (Join-Path $tauri 'crates/streamline-fg') (Join-Path $tauri 'crates/nr-call-bridge'))
-$sourceFiles += @(Join-Path $tauri 'crates/streamline-nr-contract.rs'; Join-Path $tauri 'crates/streamline-target-policy.rs'; Join-Path $repository 'LICENSE')
+$sourceFiles += @(Join-Path $tauri 'crates/streamline-nr-contract.rs'; Join-Path $tauri 'crates/streamline-target-policy.rs'; Join-Path $tauri 'crates/streamline-sr-preset.rs'; Join-Path $repository 'LICENSE')
+# Keep compile-time regression fixtures without including bulk experiment logs.
+foreach ($fixture in @(
+    'evidence/sdk-fg-2026-09-25/passed-002/cycle-trace.jsonl',
+    'evidence/sdk-fg-2026-09-25/passed-002/fg-result.json',
+    'evidence/sdk-recovery-2026-09-25/passed-001/cycle-00/cycle-trace.jsonl',
+    'evidence/sdk-recovery-2026-09-25/passed-001/cycle-00/sdk-swapchain-calls.json',
+    'evidence/sdk-route-resize-2026-09-25/passed-001/layer.jsonl'
+)) { $sourceFiles += Join-Path $PSScriptRoot $fixture }
 $sourceArchive = Join-Path $output ($version + '-sources.zip')
 # Reuse corresponding source only when all members still match exactly.
 Write-Archive $sourceArchive @($sourceFiles | Sort-Object | ForEach-Object {
