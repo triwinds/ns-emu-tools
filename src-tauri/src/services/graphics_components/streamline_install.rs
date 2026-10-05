@@ -100,6 +100,15 @@ fn selected_at(base: &Path, exe: &Path) -> Result<(PathBuf, Package), String> {
 pub(super) fn installed_package(exe: &Path) -> Result<Package, String> {
     selected_at(&root(), exe).map(|(_, p)| p)
 }
+/// Preset metadata must not report the embedded fallback as an installed build.
+pub(super) fn verified_preset_package(exe: &Path) -> Result<Package, String> {
+    verified_preset_package_at(&root(), exe)
+}
+fn verified_preset_package_at(base: &Path, exe: &Path) -> Result<Package, String> {
+    let (dir, package) = selected_at(base, exe)?;
+    owned_for(&dir, exe, true, &package)?;
+    Ok(package)
+}
 pub(super) fn plain(path: &Path, directory: bool) -> Result<(), String> {
     let m = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     #[cfg(windows)]
@@ -166,7 +175,7 @@ pub(super) fn availability() -> Result<(), String> {
 }
 pub(super) fn native_bridge() -> Result<PathBuf, String> {
     if !package().native_nr {
-        return Err("当前组件包未包含原生 NR，请更新画面增强组件包".into());
+        return Err("当前组件包未包含 NR，请更新画面增强组件包".into());
     }
     availability()?;
     let bridge = source().join("nvngx.dll");
@@ -240,7 +249,7 @@ pub(crate) fn authorize(
     if hash != expected {
         return Err("主程序已改变，请重新检查安装条件".into());
     }
-    target_policy::classify(&hash, true).authorize(consent)?;
+    target_policy::classify(&exe, &hash, true).authorize(consent)?;
     Ok(exe)
 }
 fn copy_package_for(from: &Path, to: &Path, package: &Package) -> Result<(), String> {
@@ -413,8 +422,55 @@ pub fn launch(
     let (installed, package) = selected_at(&root(), &exe)?;
     owned_for(&installed, &exe, true, &package)?;
     let graphics_settings = crate::config::CONFIG.read().setting.other.clone();
-    if graphics_settings.streamline_nr_intensity > 100 {
-        return Err("NR 强度必须为 0～100".into());
+    if graphics_settings.streamline_nr_intensity > 200 {
+        return Err("NR 强度必须为 0～200".into());
+    }
+    let advanced = graphics_settings.streamline_advanced;
+    // Older verified packages ignore this environment variable. Reject tuned
+    // launches rather than silently starting with different settings.
+    if advanced != Default::default() || graphics_settings.streamline_nr_intensity > 100 {
+        let bytes =
+            fs::read(installed.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
+        let marker = crate::config::advanced_settings::CAPABILITY_MARKER;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("当前画面增强组件不支持新增高级配置，请更新组件后再专用启动；也可先在三个弹窗恢复默认配置".into());
+        }
+        let marker = crate::config::advanced_settings::NR_LOOK_MARKER;
+        let two_pass_marker = crate::config::advanced_settings::NR_TWO_PASS_MARKER;
+        let temporal_marker = crate::config::advanced_settings::NR_TEMPORAL_LOOK_MARKER;
+        if !advanced.nr.look.temporal.is_default()
+            && !bytes
+                .windows(temporal_marker.len())
+                .any(|v| v == temporal_marker)
+        {
+            return Err(
+                "当前组件不支持时间 Look，请更新组件后重新专用启动，或恢复时间平滑默认配置".into(),
+            );
+        }
+        if !advanced.nr.second_pass.is_default()
+            && !bytes
+                .windows(two_pass_marker.len())
+                .any(|v| v == two_pass_marker)
+        {
+            return Err(
+                "当前组件不支持两遍 NR，请更新组件后重新专用启动，或恢复第二遍默认配置".into(),
+            );
+        }
+        if !advanced.nr.look.is_default() && !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err(
+                "当前画面增强组件不支持 NR Look，请更新组件后重新专用启动，或恢复 Look 默认配置"
+                    .into(),
+            );
+        }
+        let marker = crate::config::advanced_settings::NR_SPATIAL_LOOK_MARKER;
+        if !advanced.nr.look.spatial.is_default()
+            && !bytes.windows(marker.len()).any(|v| v == marker)
+        {
+            return Err(
+                "当前组件不支持空间 Look，请更新组件后重新专用启动，或恢复空间 Look 默认配置"
+                    .into(),
+            );
+        }
     }
     let nr_runtime = match super::native_nr::current_runtime() {
         Ok(runtime) => runtime,
@@ -422,7 +478,7 @@ pub fn launch(
         Err(_) => None,
     };
     if graphics_settings.streamline_nr && nr_runtime.is_none() {
-        return Err("请先下载并安装原生 NR 组件，再启用神经渲染".into());
+        return Err("请先下载并安装 NR 组件，再启用神经渲染".into());
     }
     let sessions = root().join("sessions");
     safe_dir(&sessions)?;
@@ -455,6 +511,10 @@ pub fn launch(
     }
     cmd.env("NS_STREAMLINE_TRACE_VERBOSE", "0");
     cmd.env("NS_STREAMLINE_TRACE_FRAMES", "0");
+    cmd.env(
+        "NS_STREAMLINE_ADVANCED_SETTINGS",
+        serde_json::to_string(&advanced).map_err(|e| e.to_string())?,
+    );
     cmd.arg("--target-probe")
         .arg("--graphics-launch")
         .arg("--expected-target-sha256")
@@ -505,7 +565,11 @@ pub fn launch(
     if let Some(path) = game {
         cmd.arg("--game").arg(path);
     }
-    if consent {
+    // Protocol-1 launchers predate family adaptation. Permit their generic path
+    // for recognized emulators while retaining the exact target/hash checks.
+    if consent
+        || target_policy::classify(&exe, &expected, true) == target_policy::Compatibility::Adapted
+    {
         cmd.arg("--allow-unverified-target");
     }
     cmd.stdin(Stdio::null())
@@ -541,6 +605,46 @@ pub fn launch(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn preset_metadata_never_treats_embedded_manifest_as_an_installed_build() {
+        let temp = tempfile::tempdir().unwrap();
+        let exe = temp.path().join("eden.exe");
+        fs::write(&exe, b"target").unwrap();
+        let base = temp.path().join("empty-store");
+        let (destination, candidate) = selected_at(&base, &exe).unwrap();
+        assert_eq!(candidate.version, package().version);
+        assert!(!destination.exists());
+        assert!(verified_preset_package_at(&base, &exe).is_err());
+        // An installation receipt without the verified payload is still unknown.
+        fs::create_dir_all(&destination).unwrap();
+        fs::write(
+            destination.join("installation.json"),
+            serde_json::to_vec(&receipt_for(&exe, &candidate).unwrap()).unwrap(),
+        )
+        .unwrap();
+        assert!(verified_preset_package_at(&base, &exe).is_err());
+    }
+    #[test]
+    #[cfg(all(windows, target_arch = "x86_64"))]
+    fn adapted_launches_still_enforce_vulkan_architecture_and_current_target_hash() {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = super::super::tests::pe(0x8664, 0x20b);
+        for name in ["eden.exe", "citron.exe", "Ryujinx.exe", "other.exe"] {
+            let exe = temp.path().join(name);
+            fs::write(&exe, &bytes).unwrap();
+            let expected = file_digest(&exe).unwrap();
+            assert_eq!(
+                authorize(&exe, GraphicsApi::Vulkan, false, &expected).is_ok(),
+                name != "other.exe"
+            );
+            assert!(authorize(&exe, GraphicsApi::Vulkan, true, &expected).is_ok());
+            assert!(authorize(&exe, GraphicsApi::OpenGl, true, &expected).is_err());
+            assert!(authorize(&exe, GraphicsApi::Vulkan, true, "stale hash").is_err());
+            fs::write(&exe, super::super::tests::pe(0x14c, 0x10b)).unwrap();
+            let current = file_digest(&exe).unwrap();
+            assert!(authorize(&exe, GraphicsApi::Vulkan, true, &current).is_err());
+        }
+    }
     #[test]
     fn upgrades_select_only_after_verification_and_uninstall_never_reactivates_old_versions() {
         let temp = tempfile::tempdir().unwrap();
@@ -629,7 +733,17 @@ mod tests {
             .ok()
             .map(|v| v.parse().unwrap());
         let sr_mode = std::env::var("FG_SMOKE_SR_MODE").ok();
-        let result = live(exe, enabled, sr_mode, None, None, nr_enabled, nr_intensity).unwrap();
+        let result = live(
+            exe,
+            enabled,
+            sr_mode,
+            None,
+            None,
+            nr_enabled,
+            nr_intensity,
+            None,
+        )
+        .unwrap();
         println!("FG_LIVE={result}");
         assert_eq!(result["connected"], true);
     }
@@ -717,6 +831,7 @@ pub fn live(
     sr_preset: Option<String>,
     nr_enabled: Option<bool>,
     nr_intensity: Option<f32>,
+    advanced: Option<crate::config::advanced_settings::AdvancedUpdate>,
 ) -> Result<serde_json::Value, String> {
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
@@ -775,15 +890,19 @@ pub fn live(
     {
         return Err("无效的 SR 模型预设".into());
     }
-    if nr_intensity.is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v)) {
-        return Err("NR 强度必须为 0～1".into());
+    if nr_intensity.is_some_and(|v| !v.is_finite() || !(0.0..=2.0).contains(&v)) {
+        return Err("NR 强度必须为 0～2".into());
     }
+    let advanced = advanced.unwrap_or_default();
     if enabled.is_some()
         || sr_mode.is_some()
         || sr_scale.is_some()
         || sr_preset.is_some()
         || nr_enabled.is_some()
         || nr_intensity.is_some()
+        || advanced.nr.is_some()
+        || advanced.sr.is_some()
+        || advanced.fg.is_some()
     {
         if !connected {
             return Err("游戏未连接，请通过工具箱重新启动游戏".into());
@@ -794,6 +913,46 @@ pub fn live(
         } else {
             serde_json::json!({})
         };
+        if (advanced.nr.is_some()
+            || advanced.sr.is_some()
+            || advanced.fg.is_some()
+            || nr_intensity.is_some_and(|v| v > 1.0))
+            && v["advancedSettingsSupported"] != true
+        {
+            return Err("当前会话不支持新增高级配置，请更新画面增强组件并重新专用启动".into());
+        }
+        if let Some(fg) = advanced.fg {
+            if enabled.is_none() {
+                return Err("FG 配置更新必须同时指定开关状态".into());
+            }
+            if let Some(maximum) = v["fg"]["maximumGenerated"].as_u64() {
+                if maximum > 0 && !fg.supported(maximum as u32) {
+                    return Err(format!("当前 GPU / 运行库最高支持 {}× 帧生成", maximum + 1));
+                }
+            }
+            control["fgOptions"] = serde_json::to_value(fg).map_err(|e| e.to_string())?;
+        }
+        if let Some(sr) = advanced.sr {
+            if sr_mode.is_none() {
+                return Err("SR 配置更新必须同时指定重建方式".into());
+            }
+            control["srOptions"] = serde_json::to_value(sr).map_err(|e| e.to_string())?;
+        }
+        if let Some(nr) = advanced.nr {
+            if !nr.look.temporal.is_default() && v["nrTemporalLookSupported"] != true {
+                return Err("当前会话不支持时间 Look，请更新组件并重新专用启动".into());
+            }
+            if !nr.second_pass.is_default() && v["nrTwoPassSupported"] != true {
+                return Err("当前会话不支持两遍 NR，请更新组件并重新专用启动".into());
+            }
+            if !nr.look.spatial.is_default() && v["nrSpatialLookSupported"] != true {
+                return Err("当前会话不支持空间 Look，请更新组件并重新专用启动".into());
+            }
+            if !nr.look.is_default() && v["nrLookSupported"] != true {
+                return Err("当前会话不支持 NR Look，请更新组件并重新专用启动".into());
+            }
+            control["nrOptions"] = serde_json::to_value(nr).map_err(|e| e.to_string())?;
+        }
         if sr_scale.is_some()
             && (v["srScaleSupported"] != true || v["srScaleBasis"] != "source_output")
         {
@@ -837,9 +996,9 @@ pub fn live(
             control["revision"] = revision.into();
             v["sentRevision"] = revision.into();
         }
-        if nr_enabled.is_some() || nr_intensity.is_some() {
+        if nr_enabled.is_some() || nr_intensity.is_some() || advanced.nr.is_some() {
             if v["nrLiveSupported"] != true {
-                return Err("当前会话未准备原生 NR；请下载并安装 NR 组件后重新专用启动".into());
+                return Err("当前会话未准备 NR；请下载并安装 NR 组件后重新专用启动".into());
             }
             let revision = now.max(
                 control["nrRevision"]

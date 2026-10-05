@@ -2,12 +2,14 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import StreamlineFgLive from './StreamlineFgLive.vue'
 import NativeNrControls from './NativeNrControls.vue'
+import GraphicsAdvancedDialog from './GraphicsAdvancedDialog.vue'
 import { useConfigStore } from '@/stores/ConfigStore'
 import { useProgressStore } from '@/stores/ProgressStore'
 import { updateSetting } from '@/utils/tauri'
-import { mdiCheckCircleOutline, mdiAlertCircleOutline, mdiClockOutline, mdiLayersOutline } from '@mdi/js'
+import { mdiCheckCircleOutline, mdiAlertCircleOutline, mdiClockOutline, mdiLayersOutline, mdiTuneVariant, mdiRefresh, mdiClipboardTextSearchOutline } from '@mdi/js'
 import type { GraphicsApi } from '@/utils/graphics'
 import { detectStreamlineFg, operateStreamlineFg, liveStreamlineFg, type FgLive, type FgCheck, type FgPreflight } from '@/utils/streamlineFg'
+import { graphicsAdvanced, type FgOptions } from '@/utils/graphicsAdvanced'
 
 const emit = defineEmits<{ busy: [value: boolean] }>()
 const activeAction = ref<'install' | 'launch' | 'uninstall' | null>(null)
@@ -16,18 +18,30 @@ const configStore = useConfigStore()
 const progress = useProgressStore()
 const savingNvof = ref(false)
 const savingNr = ref(false)
+const srAdvanced = ref(false)
+const fgAdvanced = ref(false)
 const currentLive = ref<FgLive>({ connected: false })
 const nvofError = ref('')
+const nvofFeedback = ref('自动保存；下次以画面增强启动时生效。')
 const srFeedback = ref('自动保存；连接专用启动的游戏后实时应用。')
 const srPending = ref(0)
+const fgPending = ref(0)
+const fgFeedback = ref('自动保存；连接专用启动的游戏后实时应用。')
 let srDeadline = 0
+let fgDeadline = 0
 function receiveLive(value: FgLive) {
   currentLive.value = value
-  if (!srPending.value) return
-  if (value.connected && value.fresh && (value.sr?.appliedRevision ?? 0) >= srPending.value) {
+  if (fgPending.value && value.connected && value.fresh && (value.appliedRevision ?? 0) >= fgPending.value) {
+    fgPending.value = 0
+    fgFeedback.value = value.fg?.unsupportedMultiplier ? '已保存；当前 GPU / 运行库不支持所选倍数，FG 已暂停。请降低倍数。' : '当前游戏已应用 FG 设置。'
+  } else if (fgPending.value && Date.now() > fgDeadline) {
+    fgPending.value = 0
+    fgFeedback.value = '已保存，尚未收到生效确认；回到游戏后查看实际状态。'
+  }
+  if (srPending.value && value.connected && value.fresh && (value.sr?.appliedRevision ?? 0) >= srPending.value) {
     srPending.value = 0
     srFeedback.value = value.sr?.active ? 'SR 已生效。' : `SR ${value.sr?.reason ?? '未运行'}`
-  } else if (Date.now() > srDeadline) {
+  } else if (srPending.value && Date.now() > srDeadline) {
     srPending.value = 0
     srFeedback.value = '已保存，但尚未收到生效确认。请回到游戏恢复画面后查看运行状态。'
   }
@@ -35,14 +49,35 @@ function receiveLive(value: FgLive) {
 const nvofEnabled = computed(() => configStore.config.setting.other?.streamline_nvof ?? true)
 const fgEnabled = computed(() => configStore.config.setting.other?.streamline_fg ?? true)
 const srEnabled = computed(() => configStore.config.setting.other?.streamline_sr ?? false)
-const srMode = computed(() => configStore.config.setting.other?.streamline_sr_mode ?? 'quality')
-const srPreset = computed(() => configStore.config.setting.other?.streamline_sr_preset ?? 'default')
+const srMode = computed(() => configStore.config.setting.other?.streamline_sr_mode ?? 'balanced')
+const srPreset = computed(() => configStore.config.setting.other?.streamline_sr_preset ?? 'j')
+const advancedOptions = computed(() => graphicsAdvanced(configStore.config.setting.other?.streamline_advanced))
+const srOptions = ref({ ...advancedOptions.value.sr })
+const fgOptions = ref({ ...advancedOptions.value.fg })
+watch(() => advancedOptions.value.sr, value => { srOptions.value = { ...value } })
+watch(() => advancedOptions.value.fg, value => { fgOptions.value = { ...value } })
+const fgMaximum = computed(() => currentLive.value.connected ? currentLive.value.fg?.maximumGenerated : undefined)
+const fgMultipliers = computed(() => [2, 3, 4, 5, 6].map(value => {
+  const disabled = !!fgMaximum.value && value > fgMaximum.value + 1
+  return { title: `${value}×${disabled ? '（当前不可用）' : ''}`, value, props: { disabled, 'aria-disabled': disabled } }
+}))
+const fgModes = [{ title: '固定倍数', value: 'fixed' }, { title: '动态目标帧率', value: 'dynamic' }]
+const reflexModes = [{ title: '低延迟（默认）', value: 'low_latency' }, { title: '低延迟 + Boost', value: 'boost' }]
+const fgSummary = computed(() => advancedOptions.value.fg.mode === 'dynamic' ? `动态帧生成 · 目标 ${advancedOptions.value.fg.targetFps || '显示器刷新率'}${advancedOptions.value.fg.targetFps ? ' FPS' : ''} · 最高 ${advancedOptions.value.fg.multiplier}×` : `${advancedOptions.value.fg.multiplier}× 帧生成`)
+const srDefault = computed(() => srMode.value === 'balanced' && savedScale.value === 172 && srPreset.value === 'j' && JSON.stringify(advancedOptions.value.sr) === JSON.stringify(graphicsAdvanced().sr))
+const fgDefault = computed(() => nvofEnabled.value && JSON.stringify(advancedOptions.value.fg) === JSON.stringify(graphicsAdvanced().fg))
+const srModes = [
+  { title: 'DLAA · 等尺寸抗锯齿', value: 'dlaa', scale: 100 },
+  { title: 'Quality · 画质', value: 'quality', scale: 150 },
+  { title: 'Balanced · 均衡', value: 'balanced', scale: 172 },
+  { title: 'Performance · 性能', value: 'performance', scale: 200 },
+] as const
 const srPresets = [
   { title: '自动（运行库默认）', value: 'default' },
-  { title: 'K · 画质优先', value: 'k' },
-  { title: 'J · 减少拖影，可能增加闪烁', value: 'j' },
-  { title: 'M · Performance 模式默认模型', value: 'm' },
-  { title: 'L · Ultra Performance 模式默认模型', value: 'l' },
+  { title: 'J（默认）', value: 'j' },
+  { title: 'K', value: 'k' },
+  { title: 'M', value: 'm' },
+  { title: 'L', value: 'l' },
 ]
 async function setSrPreset(value: string) {
   if (srPresets.some(p => p.value === value)) {
@@ -53,25 +88,55 @@ const savedScale = computed(() => configStore.config.setting.other?.streamline_s
 const sliderScale = (value: number) => Math.min(2, Math.max(1, value / 100))
 const srScale = ref(sliderScale(savedScale.value))
 watch(savedScale, value => { srScale.value = sliderScale(value) })
-type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nvof' | 'streamline_fg' | 'streamline_sr' | 'streamline_sr_mode' | 'streamline_sr_scale' | 'streamline_sr_preset'>>
+const srModeTitle = computed(() => srModes.find(mode => mode.value === srMode.value)?.title ?? srMode.value)
+const srPresetTitle = computed(() => srPreset.value === 'default' ? '自动模型' : `${srPreset.value.toUpperCase()} 模型`)
+type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nvof' | 'streamline_fg' | 'streamline_sr' | 'streamline_sr_mode' | 'streamline_sr_scale' | 'streamline_sr_preset' | 'streamline_advanced'>>
+async function saveSrOptions() {
+  await saveGraphics({ streamline_advanced: { ...advancedOptions.value, sr: { ...srOptions.value } } })
+}
+async function saveFgOptions() {
+  const next: FgOptions = { ...fgOptions.value, inputFps: Number(fgOptions.value.inputFps), targetFps: Number(fgOptions.value.targetFps) }
+  if (!Number.isInteger(next.targetFps) || (next.targetFps !== 0 && (next.targetFps < 30 || next.targetFps > 360)) || !Number.isInteger(next.inputFps) || (next.inputFps !== 0 && (next.inputFps < 15 || next.inputFps > 240))) {
+    nvofError.value = '目标帧率需为 0 或 30～360，输入帧率上限需为 0 或 15～240。'
+    return
+  }
+  if (fgMaximum.value && next.multiplier > fgMaximum.value + 1) {
+    nvofError.value = `当前 GPU / 运行库最高支持 ${fgMaximum.value + 1}×。请降低倍数。`
+    return
+  }
+  await saveGraphics({ streamline_advanced: { ...advancedOptions.value, fg: next } })
+}
+function srModeForScale(scale: number) {
+  if (scale === 100) return 'dlaa'
+  return srModes.filter(mode => mode.value !== 'dlaa').reduce((closest, mode) =>
+    Math.abs(mode.scale - scale) < Math.abs(closest.scale - scale) ? mode : closest,
+  ).value
+}
 async function setFg(value: boolean | null) {
   if (value === null) return
   await saveGraphics({ streamline_fg: value })
 }
 async function setNvof(value: boolean | null) {
-  if (value !== null) await saveGraphics({ streamline_nvof: value })
+  if (value === null) return
+  await saveGraphics({ streamline_nvof: value })
+  if (!nvofError.value) nvofFeedback.value = '已保存；下次以画面增强启动时生效。当前游戏会话保持原设置。'
 }
 async function setSr(value: boolean | null) {
-  if (value !== null) await saveGraphics({ streamline_sr: value, streamline_sr_scale: Math.round(srScale.value * 100) })
+  const scale = Math.round(srScale.value * 100)
+  if (value !== null) await saveGraphics({ streamline_sr: value, streamline_sr_scale: scale, streamline_sr_mode: srModeForScale(scale) })
 }
 async function setSrScale() {
   const scale = Math.round(srScale.value * 100)
   if (!Number.isFinite(scale) || scale < 100 || scale > 200 || scale === savedScale.value) return
-  await saveGraphics({ streamline_sr_scale: scale })
+  await saveGraphics({ streamline_sr_scale: scale, streamline_sr_mode: srModeForScale(scale) })
   srScale.value = sliderScale(savedScale.value)
 }
 async function saveGraphics(patch: GraphicsSettings) {
-  if (savingNvof.value || savingNr.value || !configStore.config.setting.other) return
+  if (props.disabled || working.value || !configStore.config.setting.other) return
+  if (Object.entries(patch).every(([key, value]) => JSON.stringify(configStore.config.setting.other[key as keyof GraphicsSettings]) === JSON.stringify(value))) return
+  const affectsSr = 'streamline_sr' in patch || 'streamline_sr_mode' in patch || 'streamline_sr_scale' in patch || 'streamline_sr_preset' in patch || (patch.streamline_advanced && JSON.stringify(patch.streamline_advanced.sr) !== JSON.stringify(advancedOptions.value.sr))
+  const affectsFg = 'streamline_fg' in patch || (patch.streamline_advanced && JSON.stringify(patch.streamline_advanced.fg) !== JSON.stringify(advancedOptions.value.fg))
+  if ((affectsSr && srPending.value) || (affectsFg && fgPending.value)) return
   const executable = props.executable
   savingNvof.value = true
   nvofError.value = ''
@@ -79,28 +144,52 @@ async function saveGraphics(patch: GraphicsSettings) {
     const setting = configStore.config.setting
     await updateSetting({ ...setting, other: { ...setting.other, ...patch } })
     Object.assign(configStore.config.setting.other, patch)
-    if ('streamline_sr' in patch || 'streamline_sr_mode' in patch || 'streamline_sr_scale' in patch || 'streamline_sr_preset' in patch) {
+    if (affectsSr || affectsFg) {
       if (executable !== props.executable) return
-      srFeedback.value = '已保存，正在连接游戏…'
+      if (affectsSr) srFeedback.value = '已保存，正在连接游戏…'
+      if (affectsFg) fgFeedback.value = '已保存，正在连接游戏…'
       try {
         const status = executable ? await liveStreamlineFg(executable) : { connected: false }
         if (executable !== props.executable) return
         if (!status.connected) {
-          srFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
+          if (affectsSr) srFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
+          if (affectsFg) fgFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
         } else {
-          const result = await liveStreamlineFg(executable, undefined, srEnabled.value ? srMode.value : 'off', savedScale.value, srPreset.value)
-          if (executable !== props.executable) return
-          srPending.value = result.sentSrRevision ?? 0
-          srDeadline = Date.now() + 10000
-          srFeedback.value = '已保存，正在应用到当前游戏…'
+          if (affectsSr) {
+            if (!status.advancedSettingsSupported && JSON.stringify(advancedOptions.value.sr) !== JSON.stringify(graphicsAdvanced().sr)) {
+              srFeedback.value = '已保存；当前组件不支持曝光配置，请更新画面增强组件后重新专用启动。'
+            } else {
+              const result = await liveStreamlineFg(executable, undefined, srEnabled.value ? srMode.value : 'off', savedScale.value, srPreset.value, undefined, undefined, status.advancedSettingsSupported ? { sr: advancedOptions.value.sr } : undefined)
+              if (executable !== props.executable) return
+              srPending.value = result.sentSrRevision ?? 0
+              srDeadline = Date.now() + 10000
+              srFeedback.value = srPending.value ? '已保存，正在应用到当前游戏…' : '已保存，但未收到应用请求确认。请查看游戏运行状态。'
+            }
+          }
+          if (affectsFg) {
+            if (!status.advancedSettingsSupported && JSON.stringify(advancedOptions.value.fg) !== JSON.stringify(graphicsAdvanced().fg)) {
+              fgFeedback.value = '已保存；当前组件不支持新增参数，请更新画面增强组件后重新专用启动。'
+            } else {
+              const result = await liveStreamlineFg(executable, fgEnabled.value, undefined, undefined, undefined, undefined, undefined, status.advancedSettingsSupported ? { fg: advancedOptions.value.fg } : undefined)
+              if (executable !== props.executable) return
+              fgPending.value = result.sentRevision ?? 0
+              fgDeadline = Date.now() + 10000
+              fgFeedback.value = fgPending.value ? '已保存，正在应用到当前游戏…' : '已保存，但未收到应用请求确认。请查看游戏运行状态。'
+            }
+          }
         }
       } catch (e) {
-        srFeedback.value = `已保存，实时应用失败：${e instanceof Error ? e.message : String(e)}`
+        const feedback = `已保存，实时应用失败：${e instanceof Error ? e.message : String(e)}`
+        if (affectsSr) srFeedback.value = feedback
+        if (affectsFg) fgFeedback.value = feedback
       }
     }
   } catch (e) {
     nvofError.value = `图形设置保存失败：${e instanceof Error ? e.message : String(e)}`
   } finally {
+    srScale.value = sliderScale(savedScale.value)
+    srOptions.value = { ...advancedOptions.value.sr }
+    fgOptions.value = { ...advancedOptions.value.fg }
     savingNvof.value = false
   }
 }
@@ -117,10 +206,11 @@ const installed = computed(() => report.value?.installationState === 'installed'
 const working = computed(() => loading.value || savingNvof.value || savingNr.value)
 watch(working, value => emit('busy', value), { flush: 'sync' })
 const installLabel = computed(() => activeAction.value === 'install' ? '正在下载并安装…' : '下载并安装全部组件')
-const nextStep = computed(() => !props.executable ? '先在上方选择模拟器主程序。' : loading.value ? (activeAction.value ? '操作进行中，下载进度与取消操作见进度窗口。' : '正在检查模拟器与组件…') : !report.value ? '检查未完成，请重新检查后继续。' : blocked.value.length ? '请先解决下方列出的安装条件。' : report.value.requiresTrialConfirmation && !allowUnverified.value ? '此版本尚未验证，请先阅读并确认兼容性提示。' : installed.value ? '组件已安装。选择下方效果，再通过此面板启动模拟器。' : report.value.installationState === 'damaged' ? '组件不完整。先移除损坏安装，再下载并安装全部组件。' : !report.value.packageAvailable ? '组件包暂不可用，请查看检测详情并重新检查。' : '一次安装 NR、SR / DLAA 和帧生成所需组件，无需手动查找 DLL。')
+const nextStep = computed(() => !props.executable ? '先在上方选择模拟器主程序。' : loading.value ? (activeAction.value ? '操作进行中，下载进度与取消操作见进度窗口。' : '正在检查模拟器与组件…') : !report.value ? '检查未完成，请重新检查后继续。' : blocked.value.length ? '请先解决下方列出的安装条件。' : report.value.requiresTrialConfirmation && !allowUnverified.value ? '当前程序尚无适配记录，请先阅读并确认尝试。' : installed.value ? '组件已安装。选择下方效果，再通过此面板启动模拟器。' : report.value.installationState === 'damaged' ? '组件不完整。先移除损坏安装，再下载并安装全部组件。' : !report.value.packageAvailable ? '组件包暂不可用，请查看检测详情并重新检查。' : '一次安装 NR、SR / DLAA 和帧生成所需组件，无需手动查找 DLL。')
 const blocked = computed(() => report.value?.checks.filter(c => c.status === 'blocked') ?? [])
-const targetMatches = computed(() => report.value?.compatibility === 'verified')
-const statusLabel = computed(() => loading.value ? activeAction.value === 'install' ? '正在安装' : activeAction.value === 'launch' ? '正在启动' : activeAction.value === 'uninstall' ? '正在卸载' : '正在检查' : error.value ? '操作失败' : !report.value ? '等待检查' : blocked.value.length ? '不满足启用条件' : report.value.requiresTrialConfirmation && !allowUnverified.value ? '兼容性未验证' : report.value.installationState === 'installed' ? '已安装' : report.value.installationState === 'damaged' ? '安装需检查' : report.value.packageAvailable ? '可以安装' : '缺少组件包')
+const targetAdapted = computed(() => report.value?.compatibility === 'verified' || report.value?.compatibility === 'adapted')
+const targetFamilyLabel = computed(() => report.value?.targetFamily === 'yuzu' ? 'Eden / Citron / yuzu 系列' : 'Ryujinx 系列')
+const statusLabel = computed(() => loading.value ? activeAction.value === 'install' ? '正在安装' : activeAction.value === 'launch' ? '正在启动' : activeAction.value === 'uninstall' ? '正在卸载' : '正在检查' : error.value ? '操作失败' : !report.value ? '等待检查' : blocked.value.length ? '不满足启用条件' : report.value.requiresTrialConfirmation && !allowUnverified.value ? '需要确认尝试' : report.value.installationState === 'installed' ? '已安装' : report.value.installationState === 'damaged' ? '安装需检查' : report.value.packageAvailable ? '可以安装' : '缺少组件包')
 const canUse = computed(() => !!report.value && !blocked.value.length && (!report.value.requiresTrialConfirmation || allowUnverified.value))
 const checkIcon = (status: FgCheck['status']) => ({ passed: mdiCheckCircleOutline, blocked: mdiAlertCircleOutline, pending: mdiClockOutline })[status]
 const checkLabel = (status: FgCheck['status']) => ({ passed: '通过', blocked: '不满足', pending: '待确认' })[status]
@@ -133,8 +223,13 @@ watch(() => [props.executable, props.api], () => {
   revision++
   inspectionPending = true
   srPending.value = 0
+  fgPending.value = 0
+  srAdvanced.value = false
+  fgAdvanced.value = false
   currentLive.value = { connected: false }
   srFeedback.value = '自动保存；连接专用启动的游戏后实时应用。'
+  fgFeedback.value = '自动保存；连接专用启动的游戏后实时应用。'
+  nvofFeedback.value = '自动保存；下次以画面增强启动时生效。'
   allowUnverified.value = false
   report.value = null
   error.value = ''
@@ -253,23 +348,31 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           {{ cleanPath(executable) }}
         </p>
         <p
-          v-if="report && targetMatches"
+          v-if="report && targetAdapted"
           class="fg-match"
         >
           <v-icon
             :icon="mdiCheckCircleOutline"
             size="16"
             color="success"
-          /> 已匹配 {{ report.targetVersion }}
+          /> 已适配 {{ targetFamilyLabel }}
+        </p>
+        <p v-if="report && targetAdapted">
+          <template v-if="report.buildTest">
+            本版本实测通过：{{ report.buildTest.version }}。
+          </template>
+          <template v-else>
+            当前版本尚无实测记录；满足运行条件即可安装和启动。
+          </template>
         </p>
         <div
           v-if="report?.requiresTrialConfirmation && !blocked.length"
           class="fg-trial"
         >
-          <p>此构建兼容性未验证。选择尝试不会跳过运行时能力检查。</p>
+          <p>未识别为已适配的模拟器。选择尝试仍需通过运行时能力检查。</p>
           <v-checkbox
             v-model="allowUnverified"
-            label="允许尝试此未验证构建"
+            label="允许尝试此程序"
             density="compact"
             hide-details
             :disabled="disabled || loading"
@@ -315,14 +418,20 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             {{ report?.installationState === 'damaged' ? '移除损坏组件' : installLabel }}
           </v-btn>
           <v-btn
-            variant="text"
+            class="fg-utility-button"
+            variant="outlined"
+            height="44"
+            :prepend-icon="mdiRefresh"
             :disabled="!executable || disabled || working"
             @click="inspect"
           >
             重新检查
           </v-btn>
           <v-btn
-            variant="text"
+            class="fg-utility-button"
+            variant="outlined"
+            height="44"
+            :prepend-icon="mdiClipboardTextSearchOutline"
             :disabled="working || disabled"
             @click="details = true"
           >
@@ -377,101 +486,78 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             :live="currentLive"
             @busy="savingNr = $event"
           />
-          <div class="fg-sr-setting">
-            <v-switch
-              :model-value="fgEnabled"
-              label="提升流畅度 · FG 帧生成（2×）"
-              color="primary"
-              density="compact"
-              hide-details
-              inset
-              :disabled="disabled || loading || savingNvof || savingNr"
-              @update:model-value="setFg"
-            />
-            <p>插入生成帧，让画面更流畅。下次从此面板启动时生效；游戏运行中可在运行控制里切换。</p>
-            <v-switch
-              :model-value="srEnabled"
-              label="改善锯齿 · SR / DLAA"
-              color="primary"
-              density="compact"
-              hide-details
-              inset
-              :loading="savingNvof"
-              :disabled="disabled || loading || savingNvof || savingNr || !configStore.config.setting.other"
-              aria-describedby="fg-sr-description"
-              @update:model-value="setSr"
-            />
+          <div class="fg-effect">
+            <h3>改善锯齿 · SR / DLAA</h3>
             <p id="fg-sr-description">
-              重建画面以改善锯齿，文字和界面也会参与处理。开启后可调整倍率与模型，会增加 GPU 开销。
+              重建画面以改善锯齿，文字和界面也会参与处理，会增加 GPU 开销。
             </p>
-            <div
-              v-if="srEnabled"
-              class="fg-sr-options"
-            >
-              <v-select
-                :model-value="srPreset"
-                :items="srPresets"
-                label="SR / DLAA 模型预设"
-                variant="outlined"
-                density="compact"
-                :disabled="disabled || loading || savingNvof || savingNr || !!srPending"
-                hint="自动保存并实时应用。不同模型会改变画质和耗时，M / L 不代表一定更快。"
-                persistent-hint
-                @update:model-value="setSrPreset"
-              />
-              <div class="fg-sr-scale-label">
-                <span id="fg-sr-scale-label">放大倍率</span><output>{{ srScale.toFixed(2) }}×</output>
-              </div>
-              <v-slider
-                v-model="srScale"
-                :min="1.0"
-                :max="2.0"
-                :step="0.05"
+            <div class="fg-effect-controls">
+              <v-switch
+                :model-value="srEnabled"
+                label="启用 SR / DLAA"
                 color="primary"
-                thumb-label
+                density="compact"
                 hide-details
-                aria-labelledby="fg-sr-scale-label"
-                :disabled="disabled || loading || savingNvof || savingNr"
-                @end="setSrScale"
-                @keyup="setSrScale"
+                inset
+                :loading="savingNvof"
+                :disabled="disabled || loading || savingNvof || savingNr || !!srPending || !configStore.config.setting.other"
+                aria-describedby="fg-sr-description"
+                @update:model-value="setSr"
               />
-              <div class="fg-sr-scale-label">
-                <span>1.0× 等尺寸抗锯齿</span><span>2.0×</span>
-              </div>
-              <p>1.0× 使用 DLAA 等尺寸抗锯齿；高于 1.0× 先重建到更高分辨率，再缩回窗口以改善锯齿。2.0× 表示输入宽高各两倍，处理像素数为四倍，会增加 GPU 开销。</p>
-              <p>优先处理模拟器缩放前的画面；无法识别时自动使用窗口画面。不会改变模拟器内部渲染分辨率，不保证提升帧率。</p>
-              <p>建议保留 NVIDIA 光流辅助；不可用时逐帧重置重建历史。实际输入尺寸和执行状态见下方运行控制。</p>
+              <v-btn
+                variant="text"
+                size="small"
+                :prepend-icon="mdiTuneVariant"
+                aria-label="SR 高级配置"
+                aria-haspopup="dialog"
+                :disabled="disabled || working"
+                @click="srAdvanced = true"
+              >
+                高级配置
+              </v-btn>
             </div>
-            <p class="fg-motion-timing">
-              {{ srFeedback }} 调整倍率或模型可能短暂停顿，实际运行状态见下方。
+            <p class="fg-effect-summary">
+              {{ srModeTitle }} · {{ (savedScale / 100).toFixed(2) }}× · {{ srPresetTitle }}
+            </p>
+            <p role="status">
+              {{ srFeedback }}
             </p>
           </div>
-          <details class="fg-motion-setting">
-            <summary>高级设置 · NVIDIA 光流辅助</summary>
-            <v-switch
-              :model-value="nvofEnabled"
-              label="NVIDIA 光流辅助"
-              color="primary"
-              density="compact"
-              hide-details
-              inset
-              :loading="savingNvof"
-              :disabled="disabled || loading || savingNvof || savingNr || !configStore.config.setting.other"
-              aria-describedby="fg-motion-description fg-motion-timing"
-              @update:model-value="setNvof"
-            />
-            <p id="fg-motion-description">
-              利用 NVIDIA 硬件估算画面运动，辅助 SR 和帧生成。会增加处理开销，可关闭对比效果；准备 NR 的会话始终使用硬件光流。
+          <div class="fg-effect">
+            <h3>提升流畅度 · FG 帧生成</h3>
+            <p>插入生成帧，让画面更流畅。连接游戏后可实时切换，生成能力以 GPU 与运行库支持为准。</p>
+            <div class="fg-effect-controls">
+              <v-switch
+                :model-value="fgEnabled"
+                label="启用 FG 帧生成"
+                color="primary"
+                density="compact"
+                hide-details
+                inset
+                :disabled="disabled || working || !!fgPending || !configStore.config.setting.other"
+                @update:model-value="setFg"
+              />
+              <v-btn
+                variant="text"
+                size="small"
+                :prepend-icon="mdiTuneVariant"
+                aria-label="FG 高级配置"
+                aria-haspopup="dialog"
+                :disabled="disabled || working"
+                @click="fgAdvanced = true"
+              >
+                高级配置
+              </v-btn>
+            </div>
+            <p class="fg-effect-summary">
+              {{ fgSummary }} · NVIDIA 光流辅助{{ nvofEnabled ? '开启' : '关闭（NR 会话除外）' }}
             </p>
-            <p
-              id="fg-motion-timing"
-              class="fg-motion-timing"
-            >
-              自动保存 · 下次以画面增强启动时生效，当前游戏会话不变。
+            <p role="status">
+              {{ fgFeedback }}
             </p>
-          </details>
+          </div>
           <p
-            v-if="nvofError"
+            v-if="nvofError && !srAdvanced && !fgAdvanced"
             class="fg-error"
             role="alert"
           >
@@ -510,6 +596,245 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       <span>支持 Ryujinx / Ryubing</span>
       <span>需要 Vulkan 图形接口</span>
     </div>
+
+    <GraphicsAdvancedDialog
+      v-model="srAdvanced"
+      title="SR / DLAA 高级配置"
+      title-id="sr-advanced-title"
+      description="调整倍率、模型和曝光。设置自动保存；连接专用启动的游戏后实时应用，效果关闭时也可预先配置。"
+      :busy="savingNvof"
+    >
+      <div class="fg-sr-options">
+        <div class="fg-scale-section">
+          <div class="fg-sr-scale-label">
+            <label id="fg-sr-scale-label">自定义放大倍率</label><output>{{ srScale.toFixed(2) }}×</output>
+          </div>
+          <v-slider
+            v-model="srScale"
+            :min="1.0"
+            :max="2.0"
+            :step="0.01"
+            color="primary"
+            thumb-label
+            hide-details
+            aria-labelledby="fg-sr-scale-label"
+            :disabled="disabled || working || !!srPending"
+            @end="setSrScale"
+            @keyup="setSrScale"
+          />
+          <div class="fg-sr-scale-label fg-muted">
+            <span>1.00× · DLAA</span><span>2.00× · 四倍像素</span>
+          </div>
+          <p class="fg-option-note">
+            1.00× 使用 DLAA。更高倍率先重建，再缩回窗口，不改变模拟器内部渲染分辨率。倍率越高，处理像素越多。
+          </p>
+          <p class="fg-option-note">
+            所选倍率需运行库支持当前画面尺寸；未生效时可恢复默认配置后重试。
+          </p>
+        </div>
+        <v-select
+          :model-value="srPreset"
+          :items="srPresets"
+          label="模型预设"
+          variant="outlined"
+          density="comfortable"
+          :disabled="disabled || working || !!srPending"
+          hint="默认使用 J。自动使用运行库默认模型；J / K / M / L 可逐项对比画质和耗时。"
+          persistent-hint
+          @update:model-value="setSrPreset"
+        />
+        <div class="fg-advanced-section">
+          <h3>曝光</h3>
+          <v-switch
+            v-model="srOptions.autoExposure"
+            label="自动曝光"
+            color="primary"
+            density="comfortable"
+            inset
+            hide-details
+            :disabled="disabled || working || !!srPending"
+            @update:model-value="saveSrOptions"
+          />
+          <p class="fg-option-note">
+            默认由运行库估算曝光。关闭后使用下方比例处理输入画面。
+          </p>
+          <div class="fg-sr-scale-label fg-control-label">
+            <label id="sr-exposure-label">曝光比例</label><output>{{ (srOptions.exposure / 100).toFixed(2) }}×</output>
+          </div>
+          <v-slider
+            v-model="srOptions.exposure"
+            :min="25"
+            :max="400"
+            :step="5"
+            color="primary"
+            hide-details
+            aria-labelledby="sr-exposure-label"
+            :disabled="disabled || working || !!srPending || srOptions.autoExposure"
+            @end="saveSrOptions"
+            @keyup="saveSrOptions"
+          />
+          <div class="fg-sr-scale-label fg-muted">
+            <span>0.25×</span><span>1.00× 标准</span><span>4.00×</span>
+          </div>
+        </div>
+      </div>
+      <p class="fg-option-note">
+        优先处理模拟器缩放前的画面，无法识别时使用窗口画面。光流辅助可在 FG 高级配置中调整；不可用时逐帧重置重建历史。
+      </p>
+      <p
+        class="fg-apply-feedback"
+        role="status"
+      >
+        {{ srFeedback }} 调整倍率或模型可能短暂停顿。
+      </p>
+      <p
+        v-if="nvofError"
+        class="fg-error"
+        role="alert"
+      >
+        {{ nvofError }}
+      </p>
+      <template #actions>
+        <v-btn
+          variant="text"
+          :disabled="disabled || working || !!srPending || srDefault"
+          @click="saveGraphics({ streamline_sr_mode: 'balanced', streamline_sr_scale: 172, streamline_sr_preset: 'j', streamline_advanced: { ...advancedOptions, sr: graphicsAdvanced().sr } })"
+        >
+          恢复默认配置
+        </v-btn>
+      </template>
+    </GraphicsAdvancedDialog>
+
+    <GraphicsAdvancedDialog
+      v-model="fgAdvanced"
+      title="FG 高级配置"
+      title-id="fg-advanced-title"
+      description="调整生成倍数、目标帧率和延迟。设置自动保存；连接支持高级配置的游戏会话后实时应用。"
+      :busy="savingNvof"
+    >
+      <div class="fg-sr-options">
+        <v-select
+          v-model="fgOptions.mode"
+          :items="fgModes"
+          label="帧生成方式"
+          variant="outlined"
+          :disabled="disabled || working || !!fgPending"
+          @update:model-value="saveFgOptions"
+        />
+        <v-select
+          v-model="fgOptions.multiplier"
+          :items="fgMultipliers"
+          :label="fgOptions.mode === 'dynamic' ? '最高生成倍数' : '生成倍数'"
+          variant="outlined"
+          :disabled="disabled || working || !!fgPending"
+          hint="2× 包含 1 帧原始画面和 1 帧生成画面。更高倍数需要 GPU 与运行库支持。"
+          persistent-hint
+          @update:model-value="saveFgOptions"
+        />
+        <p
+          v-if="fgMaximum"
+          class="fg-capability"
+          role="status"
+        >
+          当前会话最高支持 {{ fgMaximum + 1 }}×
+        </p>
+        <v-text-field
+          v-if="fgOptions.mode === 'dynamic'"
+          v-model.number="fgOptions.targetFps"
+          label="动态目标帧率"
+          type="number"
+          min="0"
+          max="360"
+          suffix="FPS"
+          variant="outlined"
+          :disabled="disabled || working || !!fgPending"
+          hint="0 自动匹配显示器刷新率；自定义范围 30～360。运行库在最高倍数内调整生成帧数。"
+          persistent-hint
+          @change="saveFgOptions"
+          @keyup.enter="saveFgOptions"
+        />
+        <div class="fg-advanced-section">
+          <h3>延迟与帧率</h3>
+          <v-select
+            v-model="fgOptions.reflex"
+            :items="reflexModes"
+            label="Reflex 延迟模式"
+            variant="outlined"
+            :disabled="disabled || working || !!fgPending"
+            hint="Boost 让 GPU 保持较高频率，可能增加功耗。"
+            persistent-hint
+            @update:model-value="saveFgOptions"
+          />
+          <v-text-field
+            v-model.number="fgOptions.inputFps"
+            label="原始帧率上限"
+            type="number"
+            min="0"
+            max="240"
+            suffix="FPS"
+            variant="outlined"
+            :disabled="disabled || working || !!fgPending"
+            hint="通过 Reflex 限制送入处理链的原始帧率。0 不限制；自定义范围 15～240，不是生成后的帧率。"
+            persistent-hint
+            @change="saveFgOptions"
+            @keyup.enter="saveFgOptions"
+          />
+        </div>
+      </div>
+      <p
+        v-if="currentLive.connected && !currentLive.advancedSettingsSupported"
+        class="fg-option-note"
+      >
+        当前组件不支持新增参数。设置可先保存，更新画面增强组件并重新专用启动后使用。
+      </p>
+      <v-switch
+        :model-value="nvofEnabled"
+        label="NVIDIA 光流辅助"
+        color="primary"
+        density="comfortable"
+        hide-details
+        inset
+        :loading="savingNvof"
+        :disabled="disabled || working || !configStore.config.setting.other"
+        aria-describedby="fg-motion-description"
+        @update:model-value="setNvof"
+      />
+      <p
+        id="fg-motion-description"
+        class="fg-option-note"
+      >
+        利用 NVIDIA 硬件估算画面运动，辅助 FG 和 SR。默认开启，会增加处理开销，可关闭对比效果。
+      </p>
+      <div class="fg-shared-setting">
+        <strong>此设置也影响 SR</strong>
+        <p>NR 会话始终使用硬件光流。安装 NR 组件后，专用启动会为实时切换准备 NR，因此即使此开关关闭，该会话仍会启用光流。</p>
+      </div>
+      <p
+        class="fg-apply-feedback"
+        role="status"
+      >
+        {{ fgFeedback }}
+      </p>
+      <p class="fg-option-note">
+        光流辅助：{{ nvofFeedback }}
+      </p>
+      <p
+        v-if="nvofError"
+        class="fg-error"
+        role="alert"
+      >
+        {{ nvofError }}
+      </p>
+      <template #actions>
+        <v-btn
+          variant="text"
+          :disabled="disabled || working || !!fgPending || fgDefault"
+          @click="saveGraphics({ streamline_nvof: true, streamline_advanced: { ...advancedOptions, fg: graphicsAdvanced().fg } })"
+        >
+          恢复默认配置
+        </v-btn>
+      </template>
+    </GraphicsAdvancedDialog>
 
     <v-dialog
       v-model="details"
@@ -611,15 +936,28 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-blockers { padding-left: 18px; }
 .fg-trial { margin-top: 12px; font-size: 13px; line-height: 1.7; padding: 12px; background: rgba(var(--v-theme-warning), .09); border-radius: 8px; }
 .fg-error { color: rgb(var(--v-theme-error)); overflow-wrap: anywhere; }
-.fg-sr-setting { margin-top: 0; padding: 18px 0; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
-.fg-sr-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); margin-top: 6px; }
+.fg-effect { padding: 20px 0; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
+.fg-effect h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.fg-effect p { font-size: 13px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); margin-top: 6px; }
+.fg-effect-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fg-effect-controls .v-switch { flex: 1 1 180px; }
+.fg-effect-controls .v-btn { flex-shrink: 0; }
+.fg-effect-summary { font-variant-numeric: tabular-nums; }
 .fg-sr-scale-label { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .fg-sr-scale-label output { font-weight: 600; }
-.fg-sr-options { display: grid; gap: 10px; margin: 16px 0 12px; }
-.fg-motion-setting { margin-top: 0; padding-top: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); }
-.fg-motion-setting p { font-size: 12px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); }
-.fg-motion-setting .fg-motion-timing { margin-top: 6px; }
-.fg-motion-setting .fg-error { margin-top: 6px; color: rgb(var(--v-theme-error)); }
+.fg-sr-options { display: grid; gap: 24px; margin-bottom: 24px; }
+.fg-advanced-section { border-top: 1px solid rgba(var(--v-theme-on-surface), .12); padding-top: 20px; }
+.fg-advanced-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+.fg-advanced-section .v-text-field { margin-top: 24px; }
+.fg-control-label { margin-top: 20px; margin-bottom: 14px; }
+.fg-capability { font-size: 13px; color: rgb(var(--v-theme-secondary)); margin-top: -10px; }
+.fg-scale-section { padding: 18px 0; border-block: 1px solid rgba(var(--v-theme-on-surface), .12); }
+.fg-scale-section .v-slider { margin-top: 14px; }
+.fg-option-note { font-size: 13px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); margin-top: 14px; }
+.fg-apply-feedback { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); font-size: 13px; line-height: 1.7; }
+.fg-shared-setting { margin-top: 22px; padding-left: 14px; border-left: 3px solid rgb(var(--v-theme-secondary)); font-size: 13px; line-height: 1.7; }
+.fg-shared-setting strong { font-weight: 600; }
+.fg-shared-setting p { margin-top: 6px; color: rgba(var(--v-theme-on-surface), .72); }
 .fg-actions { gap: 6px; margin-top: 18px; flex-wrap: wrap; }
 .fg-footer { border-top: 1px solid rgba(var(--v-theme-on-surface), .1); gap: 24px; padding: 12px 26px; font-size: 12px; color: rgba(var(--v-theme-on-surface), .65); flex-wrap: wrap; }
 .fg-dialog { font-family: 'Segoe UI', 'Microsoft YaHei UI', sans-serif; }
@@ -655,7 +993,11 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-steps strong, .fg-steps li div > span { display: block; }
 .fg-steps strong { font-size: 14px; font-weight: 600; }
 .fg-steps li div > span { font-size: 12px; margin-top: 3px; }
-.fg-install-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.fg-install-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.fg-install-actions .fg-utility-button { padding: 0 16px; border: 1px solid rgba(var(--v-theme-on-surface), .28); border-radius: 8px; background: rgba(var(--v-theme-on-surface), .07); color: rgb(var(--v-theme-on-surface)); font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; transition: background-color .16s ease, border-color .16s ease; }
+.fg-utility-button :deep(.v-icon) { color: rgb(var(--v-theme-secondary)); font-size: 20px; }
+.fg-install-actions .fg-utility-button:hover:not(:disabled) { background: rgba(var(--v-theme-secondary), .12); border-color: rgba(var(--v-theme-secondary), .65); }
+.fg-install-actions .fg-utility-button:focus-visible { outline: 2px solid rgb(var(--v-theme-secondary)); outline-offset: 3px; }
 .fg-next-step { max-width: 68ch; }
 .fg-install-hint { color: rgba(var(--v-theme-on-surface), .7); }
 .fg-awaiting { padding: 16px 26px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); font-size: 13px; line-height: 1.7; color: rgba(var(--v-theme-on-surface), .72); }
@@ -665,10 +1007,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-launch { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 20px; margin-top: 24px; border-radius: 10px; background: rgba(var(--v-theme-primary), .1); border: 1px solid rgba(var(--v-theme-primary), .3); }
 .fg-launch .v-btn { flex-shrink: 0; }
 .fg-maintenance { margin-top: 18px; }
-.fg-maintenance summary, .fg-motion-setting summary { cursor: pointer; padding: 10px 0; font-size: 13px; }
-.fg-motion-setting[open] summary { margin-bottom: 8px; }
+.fg-maintenance summary { cursor: pointer; padding: 10px 0; font-size: 13px; }
 summary:focus-visible { outline: 2px solid rgb(var(--v-theme-secondary)); outline-offset: 4px; border-radius: 3px; }
 @media (max-width: 650px) { .fg-steps { grid-template-columns: 1fr; }.fg-steps li { padding: 10px 0; gap: 10px; }.fg-launch { flex-direction: column; align-items: stretch; gap: 16px; } }
 @media (max-width: 800px) { .fg-footer { gap: 8px 18px; } }
-@media (max-width: 450px) { .fg-intro { padding: 20px 18px 0; }.fg-body { padding: 20px 18px; }.fg-footer { padding: 12px 18px; }.fg-title-line h2 { font-size: 21px; }.fg-actions { align-items: stretch; flex-direction: column; }.fg-deployment > div { grid-template-columns: 1fr; gap: 3px; } }
+@media (max-width: 450px) { .fg-intro { padding: 20px 18px 0; }.fg-body { padding: 20px 18px; }.fg-footer { padding: 12px 18px; }.fg-title-line h2 { font-size: 21px; }.fg-actions, .fg-install-actions { align-items: stretch; flex-direction: column; }.fg-deployment > div { grid-template-columns: 1fr; gap: 3px; } }
+@media (prefers-reduced-motion: reduce) { .fg-install-actions .fg-utility-button { transition: none; } }
 </style>

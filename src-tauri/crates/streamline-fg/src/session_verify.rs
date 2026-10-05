@@ -9,10 +9,17 @@ use std::{
 };
 #[path = "nr_combinations.rs"]
 mod nr_combinations;
+#[path = "nr_look_evidence.rs"]
+mod nr_look_evidence;
+#[path = "nr_pass_evidence.rs"]
+mod nr_pass_evidence;
 
 // NR execution and full game acceptance are separate gates. Keep evidence even
 // when the emulator or the shared SDK reports a validation error.
 fn analyze_temporal(frames: &[&Value]) -> Value {
+    let source_frames = frames.iter().any(|r| {
+        !r["details"]["source_frame_basis"].is_null() || !r["details"]["source_frame_id"].is_null()
+    });
     let checked = frames
         .iter()
         .any(|r| !r["details"]["source_identity"].is_null());
@@ -27,6 +34,22 @@ fn analyze_temporal(frames: &[&Value]) -> Value {
     for row in frames {
         let d = &row["details"];
         if d["evaluated"] == true {
+            if source_frames {
+                valid &= d["active"] == true
+                    && d["output_reused"] == false
+                    && d["source_frame_basis"] == "exact_nr_gamma_input"
+                    && d["source_frame_id"].as_u64().is_some_and(|id| id != 0);
+                if let Some(old) = previous.filter(|old| {
+                    old["source_identity"] == d["source_identity"]
+                        && old["mapping"] == d["mapping"]
+                        && (old["evaluated"] == true || old["output_reused"] == true)
+                }) {
+                    valid &= old["source_frame_id"]
+                        .as_u64()
+                        .and_then(|id| id.checked_add(1))
+                        == d["source_frame_id"].as_u64();
+                }
+            }
             let identity = d["source_identity"].as_u64().filter(|v| *v != 0);
             if checked {
                 valid &= identity.is_some();
@@ -47,16 +70,29 @@ fn analyze_temporal(frames: &[&Value]) -> Value {
                 continuous += 1;
                 longest = longest.max(continuous);
                 if checked {
-                    valid &= d["reset_reason"] == "Continuous"
-                        && previous.is_some_and(|old| {
-                            old["evaluated"] == true
-                                && old["frame"].as_u64().and_then(|f| f.checked_add(1))
+                    valid &= matches!(
+                        d["reset_reason"].as_str(),
+                        Some("Continuous" | "LookChanged" | "SecondPassChanged")
+                    ) && previous.is_some_and(|old| {
+                        (old["evaluated"] == true || old["output_reused"] == true)
+                            && if d["source_frame_id"].is_u64() {
+                                old["source_frame_id"]
+                                    .as_u64()
+                                    .and_then(|f| f.checked_add(1))
+                                    == d["source_frame_id"].as_u64()
+                            } else {
+                                old["frame"].as_u64().and_then(|f| f.checked_add(1))
                                     == d["frame"].as_u64()
-                                && old["source_identity"] == d["source_identity"]
-                                && old["mapping"] == d["mapping"]
-                                && old["input"] == d["input"]
-                                && old["intensity"] == d["intensity"]
-                        });
+                            }
+                            && old["source_identity"] == d["source_identity"]
+                            && old["mapping"] == d["mapping"]
+                            && old["input"] == d["input"]
+                            && if d["applied_intensity"].is_number() {
+                                old["applied_intensity"] == d["applied_intensity"]
+                            } else {
+                                old["intensity"] == d["intensity"]
+                            }
+                    });
                     rotations += usize::from(
                         previous.is_some_and(|old| old["source_image"] != d["source_image"]),
                     );
@@ -64,6 +100,20 @@ fn analyze_temporal(frames: &[&Value]) -> Value {
             } else {
                 continuous = 0;
             }
+        } else if d["output_reused"] == true {
+            valid &= d["active"] == true
+                && d["reset"] == false
+                && d["motion_valid"] == true
+                && d["source_frame_basis"] == "exact_nr_gamma_input"
+                && d["source_frame_id"].as_u64().is_some_and(|id| id != 0)
+                && previous.is_some_and(|old| {
+                    (old["evaluated"] == true || old["output_reused"] == true)
+                        && old["source_frame_id"] == d["source_frame_id"]
+                        && old["source_identity"] == d["source_identity"]
+                        && old["mapping"] == d["mapping"]
+                        && old["input"] == d["input"]
+                        && old["applied_intensity"] == d["applied_intensity"]
+                });
         } else {
             continuous = 0;
         }
@@ -242,6 +292,8 @@ fn analyze_nr(rows: &[Value]) -> Value {
     let frames = events("target_nr_frame");
     let combinations = nr_combinations::analyze(rows);
     let temporal = analyze_temporal(&frames);
+    let passes = nr_pass_evidence::analyze(rows);
+    let look_history = nr_look_evidence::analyze(rows);
     let submissions = events("target_nr_submission");
     let evaluations = events("target_nr_evaluate");
     let reads = events("target_nr_readback");
@@ -250,7 +302,9 @@ fn analyze_nr(rows: &[Value]) -> Value {
     let mut previous_frame = None;
     for row in &frames {
         let d = &row["details"];
-        let frame = d["frame"].as_u64();
+        let frame = d["source_frame_id"]
+            .as_u64()
+            .or_else(|| d["frame"].as_u64());
         if d["evaluated"] == true {
             consecutive = if previous_frame.is_some_and(|v: u64| Some(v + 1) == frame) {
                 consecutive + 1
@@ -259,7 +313,7 @@ fn analyze_nr(rows: &[Value]) -> Value {
             };
             longest = longest.max(consecutive);
             previous_frame = frame;
-        } else {
+        } else if d["output_reused"] != true {
             consecutive = 0;
             previous_frame = None;
         }
@@ -333,14 +387,23 @@ fn analyze_nr(rows: &[Value]) -> Value {
         && events("target_nr_core_deferred").last().is_some_and(|r| {
             r["details"]["all_features_released"] == true && r["details"]["owner"] == "Streamline"
         });
+    let evaluated_submissions = submissions
+        .iter()
+        .filter(|r| r["details"]["evaluated"] != false)
+        .collect::<Vec<_>>();
     let count_matches =
-        evaluated > 0 && evaluated == submissions.len() && evaluated == evaluations.len();
+        evaluated > 0 && evaluated == evaluated_submissions.len() && evaluated == evaluations.len();
     let reset_matches = temporal["checked"] != true
         || frames
             .iter()
             .filter(|r| r["details"]["evaluated"] == true)
-            .zip(&submissions)
-            .all(|(frame, submit)| frame["details"]["reset"] == submit["details"]["history_reset"]);
+            .zip(&evaluated_submissions)
+            .all(|(frame, submit)| {
+                frame["details"]["reset"] == submit["details"]["history_reset"]
+                    && (frame["details"]["source_frame_id"].is_null()
+                        || frame["details"]["source_frame_id"]
+                            == submit["details"]["source_frame_id"])
+            });
     let call_chain = success("target_nr_core_init")
         && success("target_nr_snippet_init")
         && success("target_nr_create_feature")
@@ -352,7 +415,9 @@ fn analyze_nr(rows: &[Value]) -> Value {
         && handoff_valid
         && reset_matches
         && combinations["valid"] != false
-        && temporal["valid"] != false;
+        && temporal["valid"] != false
+        && passes["valid"] != false
+        && look_history["valid"] != false;
     let execution = call_chain && readbacks_valid && output_changed;
     let mut reset_reasons = std::collections::BTreeMap::<String, usize>::new();
     for r in &frames {
@@ -367,7 +432,7 @@ fn analyze_nr(rows: &[Value]) -> Value {
                 .or_default() += 1;
         }
     }
-    json!({"execution_verified":execution,"call_chain_completed":call_chain,"temporal_history":temporal,"combinations":combinations,"evaluate_successes":evaluated,"count_matches":count_matches,"reset_matches_submission":reset_matches,"longest_consecutive_evaluations":longest,"valid_motion_only":valid_motion,"submissions_fenced":fenced,"readbacks":reads.len(),"readbacks_valid":readbacks_valid,"nonzero_intensity_changed_output":output_changed,"off_frames":frames.iter().filter(|r|r["details"]["requested"]==false).count(),"zero_motion_paused_frames":frames.iter().filter(|r|r["details"]["requested"]==true&&r["details"]["motion_valid"]==false&&r["details"]["evaluated"]==false).count(),"reset_reasons":reset_reasons,"nr_to_sr_frames":handoffs,"nr_to_sr_handoff_valid":handoff_valid,"clean_nr_shutdown":clean_nr_shutdown,"fg_requested_frames":events("target_fg_frame").iter().filter(|r|r["details"]["requested_on"]==true).count(),"synthetic_depth":true,"p1_passed":false,"p2_passed":false,"visual_quality_verified":false,"performance_verified":false})
+    json!({"execution_verified":execution,"call_chain_completed":call_chain,"temporal_history":temporal,"passes":passes,"look_history":look_history,"combinations":combinations,"evaluate_successes":evaluated,"count_matches":count_matches,"reset_matches_submission":reset_matches,"longest_consecutive_evaluations":longest,"valid_motion_only":valid_motion,"submissions_fenced":fenced,"readbacks":reads.len(),"readbacks_valid":readbacks_valid,"nonzero_intensity_changed_output":output_changed,"off_frames":frames.iter().filter(|r|r["details"]["requested"]==false).count(),"zero_motion_paused_frames":frames.iter().filter(|r|r["details"]["requested"]==true&&r["details"]["motion_valid"]==false&&r["details"]["evaluated"]==false).count(),"reset_reasons":reset_reasons,"nr_to_sr_frames":handoffs,"nr_to_sr_handoff_valid":handoff_valid,"clean_nr_shutdown":clean_nr_shutdown,"fg_requested_frames":events("target_fg_frame").iter().filter(|r|r["details"]["requested_on"]==true).count(),"synthetic_depth":true,"p1_passed":false,"p2_passed":false,"visual_quality_verified":false,"performance_verified":false})
 }
 
 fn analyze(rows: &[Value], fg: bool, sdk: bool) -> Result<Value> {
@@ -557,7 +622,11 @@ fn verification_event(event: Option<&str>) -> bool {
 pub(super) fn verify(session: &Path) -> Result<()> {
     let inputs: Value = serde_json::from_slice(&fs::read(session.join("target-inputs.json"))?)?;
     let exit: Value = serde_json::from_slice(&fs::read(session.join("target-exit.json"))?)?;
-    if exit["success"] != true && inputs["nr_requested"] != true {
+    // A live NR session may start with NR disabled. Its initial control state
+    // must not bypass NR evidence or discard the report after a failed exit.
+    // Keep nr_requested for sessions recorded before nr_available existed.
+    let native_nr = inputs["nr_available"] == true || inputs["nr_requested"] == true;
+    if exit["success"] != true && !native_nr {
         return Err("target process did not exit successfully".into());
     }
     let fg = inputs["fg_experiment_requested"] == true;
@@ -569,7 +638,7 @@ pub(super) fn verify(session: &Path) -> Result<()> {
             rows.push(row);
         }
     }
-    if inputs["nr_requested"] == true {
+    if native_nr {
         let nr = analyze_nr(&rows);
         let mut chain = analyze(&rows, fg, sdk);
         if inputs["nr_performance"] == true {
@@ -681,6 +750,78 @@ mod tests {
     use super::*;
     fn temporal_rows() -> Vec<Value> {
         (0..4).map(|f|json!({"details":{"frame":f,"evaluated":true,"source_identity":2,"source_image":if f%2==0 {42}else{52},"source_generation":if f%2==0 {1}else{2},"source_group_size":2,"mapping":7,"input":[1920,1080],"intensity":1.0,"reset":f==0,"reset_reason":if f==0 {"Created"}else{"Continuous"}}})).collect()
+    }
+    #[test]
+    fn source_color_repeats_preserve_history_and_reject_forged_ids() {
+        let mut rows = temporal_rows();
+        for (i, row) in rows.iter_mut().enumerate() {
+            let d = &mut row["details"];
+            d["active"] = json!(true);
+            d["source_frame_id"] = json!(i + 1);
+            d["source_frame_basis"] = json!("exact_nr_gamma_input");
+            d["output_reused"] = json!(false);
+            d["motion_valid"] = json!(true);
+            d["applied_intensity"] = json!(1.0);
+        }
+        let mut repeated = rows[1].clone();
+        repeated["details"]["evaluated"] = json!(false);
+        repeated["details"]["output_reused"] = json!(true);
+        // Requested changes remain pending; the completed output still has
+        // the old strength. Present gaps alone do not advance source history.
+        repeated["details"]["intensity"] = json!(0.5);
+        repeated["details"]["frame"] = json!(100);
+        rows.insert(2, repeated);
+        let report = analyze_temporal(&rows.iter().collect::<Vec<_>>());
+        assert_eq!(report["valid"], true);
+        assert_eq!(report["continuous_evaluations"], 3);
+        assert_eq!(report["longest_without_reset"], 3);
+        for (index, field, value) in [
+            (2, "source_frame_id", json!(3)),
+            (2, "reset", json!(true)),
+            (2, "active", json!(false)),
+            (2, "motion_valid", json!(false)),
+            (2, "mapping", json!(9)),
+            (2, "applied_intensity", json!(0.5)),
+            (3, "source_frame_id", json!(2)),
+            (3, "source_frame_id", Value::Null),
+        ] {
+            let mut invalid = rows.clone();
+            invalid[index]["details"][field] = value;
+            assert_eq!(
+                analyze_temporal(&invalid.iter().collect::<Vec<_>>())["valid"],
+                false,
+                "{index}/{field}"
+            );
+        }
+        let mut twice = rows.clone();
+        twice[3]["details"]["source_frame_id"] = json!(2);
+        twice[3]["details"]["reset"] = json!(true);
+        assert_eq!(
+            analyze_temporal(&twice.iter().collect::<Vec<_>>())["valid"],
+            false
+        );
+    }
+    #[test]
+    fn cached_output_submissions_do_not_count_as_ngx_evaluations() {
+        let mut rows = nr_valid();
+        let position = rows
+            .iter()
+            .position(|r| r["event"] == "target_nr_release_feature")
+            .unwrap();
+        rows.splice(position..position, [
+            json!({"event":"target_nr_submission","details":{"evaluated":false,"output_reused":true,"output_image":99,"output_to":"SR","fence_completed":true}}),
+            json!({"event":"target_nr_frame","details":{"frame":11,"active":true,"evaluated":false,"output_reused":true,"pending_sr_reset":false}}),
+            json!({"event":"target_sr_frame","details":{"source":"nr_output","color_image":99,"history_reset":false}}),
+        ]);
+        let report = analyze_nr(&rows);
+        assert_eq!(report["evaluate_successes"], 1);
+        assert_eq!(report["count_matches"], true);
+        assert_eq!(report["submissions_fenced"], true);
+        assert_eq!(report["nr_to_sr_frames"], 2);
+        // Unknown legacy source identity cannot prove temporal continuity.
+        assert_eq!(report["temporal_history"]["valid"], Value::Null);
+        rows[position]["details"]["fence_completed"] = json!(false);
+        assert_eq!(analyze_nr(&rows)["submissions_fenced"], false);
     }
     #[test]
     fn temporal_evidence_requires_consecutive_unchanged_logical_contracts() {
@@ -997,6 +1138,32 @@ mod tests {
         assert_eq!(report["validation"]["complete"], false);
         assert_eq!(report["session_verified"], false);
         assert_eq!(report["target_exit"]["success"], false);
+        // Initial-off launches still use the strict NR path after live enable,
+        // including when process exit succeeds but validation does not.
+        for success in [false, true] {
+            fs::write(
+                dir.join("target-inputs.json"),
+                b"{\"nr_requested\":false,\"nr_available\":true,\"layer_only\":false}",
+            )
+            .unwrap();
+            fs::write(
+                dir.join("target-exit.json"),
+                serde_json::to_vec(&json!({"success":success})).unwrap(),
+            )
+            .unwrap();
+            assert!(verify(&dir).is_err());
+            let report: Value =
+                serde_json::from_slice(&fs::read(dir.join("target-result.json")).unwrap()).unwrap();
+            assert_eq!(report["nr"]["call_chain_completed"], true);
+            assert_eq!(report["validation"]["errors"], 1);
+            assert_eq!(report["session_verified"], false);
+            assert_eq!(report["target_exit"]["success"], success);
+        }
+        fs::write(
+            dir.join("target-exit.json"),
+            b"{\"success\":false,\"code\":-532462766}",
+        )
+        .unwrap();
         // Even stale passing validation evidence cannot bless a timing run.
         fs::write(
             dir.join("target-inputs.json"),

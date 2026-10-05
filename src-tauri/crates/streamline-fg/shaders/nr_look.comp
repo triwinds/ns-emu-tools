@@ -1,0 +1,89 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#include "nr_look_common.glsl"
+// Per-texel composition; optional neighbourhood data comes from a prior
+// read-only NR band dispatch, never from concurrently modified output.
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0, rgba16f) uniform readonly image2D original;
+layout(set = 0, binding = 1, rgba16f) uniform image2D rendered;
+layout(set = 0, binding = 2, rgba16f) uniform readonly image2D band;
+layout(set = 0, binding = 3, rgba16f) uniform readonly image2D temporal_delta;
+layout(push_constant) uniform Controls {
+    vec4 gains; // amount, brighten, darken, brighten cap (stops)
+    vec4 chroma; // darken cap, color, hue, shadows
+    vec4 zones; // midtones, highlights, spatial active, temporal active
+    vec4 spatial; // lighting, detail, radius (working pixels), halo
+} controls;
+vec3 encode(vec3 c) {
+    vec3 result = mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, greaterThan(c, vec3(0.0031308)));
+    return mix(result, vec3(1.0), greaterThanEqual(c, vec3(1.0)));
+}
+float limit_change(float e, float cap) {
+    return cap > 0.0 ? cap * tanh(e / cap) : e;
+}
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    if (any(greaterThanEqual(pixel, imageSize(original)))) return;
+    vec4 p = imageLoad(original, pixel);
+    vec4 n = imageLoad(rendered, pixel);
+    // Preserve alpha from NR, including when amount=0 selects original RGB.
+    if (controls.gains.x == 0.0) {
+        imageStore(rendered, pixel, vec4(p.rgb, n.a));
+        return;
+    }
+    // Invalid model texels are rejected; never propagate NaNs into composition.
+    if (any(isnan(n.rgb)) || any(isinf(n.rgb))) {
+        imageStore(rendered, pixel, vec4(p.rgb, n.a));
+        return;
+    }
+    // Zero model change is exact, including white and subnormal endpoints.
+    if (all(equal(p.rgb, n.rgb))) return;
+    vec3 P = decode(clamp(p.rgb, 0.0, 1.0));
+    vec3 N = decode(clamp(n.rgb, 0.0, 1.0));
+    vec3 base = log2(max(P, vec3(1e-6)));
+    vec3 e = log2(max(N, vec3(1e-6))) - base;
+    if (controls.zones.w != 0.0) {
+        vec4 history = imageLoad(temporal_delta, pixel);
+        // Rejected/first-frame history preserves neutral NR output exactly.
+        if (history.a <= 0.0 && all(equal(controls.gains,vec4(1,1,1,0)))
+            && all(equal(controls.chroma,vec4(0,1,1,1)))
+            && all(equal(controls.zones.xy,vec2(1))) && controls.zones.z == 0.0) return;
+        if (history.a > 0.0 && finite_rgb(history.rgb)) e = history.rgb;
+    }
+    float light = dot(e, LUMA);
+    if (controls.zones.z != 0.0) {
+        vec2 bands = imageLoad(band, pixel).rg;
+        float detail = light - bands.r;
+        if (light < -0.05 && detail < -0.05) {
+            // Remove only a negative local residual, never turn a darkening
+            // delta into a bright outline when spatial gains are neutral.
+            detail += min(-detail, -light) * controls.spatial.w * bands.g;
+        }
+        light = bands.r * controls.spatial.x + detail * controls.spatial.y;
+    }
+    float luminance = dot(P, LUMA);
+    float shadow = 1.0 - smoothstep(0.02, 0.18, luminance);
+    float highlight = smoothstep(0.35, 0.8, luminance);
+    float zone = shadow * controls.chroma.w + highlight * controls.zones.y
+        + (1.0 - shadow - highlight) * controls.zones.x;
+    float scale = controls.gains.x * zone;
+    float adjusted_light = light >= 0.0
+        ? limit_change(light * controls.gains.y * scale, controls.gains.w)
+        : -limit_change(-light * controls.gains.z * scale, controls.chroma.x);
+    // Log opponent coordinates: radial change controls color; the perpendicular
+    // component controls hue. Hue is undefined for neutral inputs, where all
+    // chroma changes use the color gain instead.
+    vec2 basis = vec2(base.r - base.g, base.b - base.g);
+    vec2 delta = vec2(e.r - e.g, e.b - e.g);
+    float length2 = dot(basis, basis);
+    vec2 radial = length2 > 1e-4 ? basis * dot(delta, basis) / length2 : delta;
+    vec2 adjusted_chroma = (radial * controls.chroma.y + (delta - radial) * controls.chroma.z) * scale;
+    float green = adjusted_light - LUMA.r * adjusted_chroma.x - LUMA.b * adjusted_chroma.y;
+    vec3 adjusted = vec3(green + adjusted_chroma.x, green, green + adjusted_chroma.y);
+    // Confidence protects near-black ratios, both by pixel and channel. Retain
+    // the NR value there rather than amplify epsilon-driven chromatic changes.
+    vec3 confidence = smoothstep(vec3(1e-6), vec3(1e-4), P)
+        * smoothstep(1e-5, 1e-3, luminance);
+    vec3 result = mix(N, P * exp2(clamp(adjusted, -32.0, 32.0)), confidence);
+    imageStore(rendered, pixel, vec4(encode(clamp(result, 0.0, 1.0)), n.a));
+}

@@ -132,6 +132,8 @@ unsafe extern "C" {
         height: u32,
         mode: u32,
         preset: u32,
+        auto_exposure: u32,
+        exposure: f32,
         input: *mut u32,
     ) -> i32;
     fn target_sr_evaluate(
@@ -185,6 +187,7 @@ impl Sr {
         mode: u32,
         scale: u16,
         preset: crate::sr_preset::StreamlineSrPreset,
+        options: crate::advanced_settings::SrOptions,
         native: Option<crate::source_auto::Source>,
     ) -> Result<Self> {
         let mut this = Self {
@@ -236,6 +239,8 @@ impl Sr {
                 work.height,
                 mode,
                 preset.sdk_value(),
+                u32::from(options.auto_exposure),
+                f32::from(options.exposure) / 100.0,
                 size.as_mut_ptr(),
             ),
             "SR ratio unsupported by SDK",

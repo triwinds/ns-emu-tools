@@ -184,6 +184,8 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::graphics_components::validate_nr_preset,
+            commands::graphics_components::nr_preset_environment,
             commands::graphics_components::list_graphics_component_targets,
             commands::graphics_components::detect_streamline_fg,
             commands::graphics_components::live_streamline_fg,

@@ -1,4 +1,5 @@
 import type {AppConfig} from "@/types";
+import { graphicsAdvanced } from '@/utils/graphicsAdvanced'
 
 // 注意：这些是示例默认值，实际路径会根据运行平台自动设置
 // Windows: D:\Yuzu, D:\Ryujinx
@@ -45,7 +46,10 @@ export const defaultConfig: AppConfig = {
       "streamline_fg": true,
       "streamline_nr": false,
       "streamline_nr_intensity": 100,
-      "streamline_sr_mode": "quality"
+      "streamline_sr_mode": "balanced",
+      "streamline_sr_preset": "j",
+      "streamline_advanced": graphicsAdvanced(),
+      "streamline_nr_presets": []
     }
   }
 }

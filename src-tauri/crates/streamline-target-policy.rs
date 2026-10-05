@@ -1,10 +1,14 @@
-//! Shared build classification for the manager and diagnostic launcher.
+//! Shared adaptation policy and exact-build evidence for the manager and launcher.
 use std::{
     fs::File,
     io::{Read, Seek, SeekFrom},
     path::Path,
 };
 pub const VERIFIED_HASH: &str = "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85";
+const EDEN_TESTED_HASH: &str = "df08b0fe90ec07988e9bfbe598b32a6dbda3e4e81e35ed2120793e42dd67f565";
+const EDEN_NIGHTLY_TESTED_HASH: &str =
+    "46e710d93bee1507764b6ddf825cf13baea99edd51987b34ed18ff7773c2e7e0";
+const CITRON_TESTED_HASH: &str = "059c7a4d4dc361e042eaf3654e966da2dc6902ec12d3b86ce101f85b613e1ba6";
 pub const YUZU_NAMES: &[&str] = &[
     "yuzu.exe",
     "eden.exe",
@@ -17,7 +21,7 @@ pub const YUZU_NAMES: &[&str] = &[
 ];
 pub const RYUJINX_NAMES: &[&str] = &["Ryujinx.exe", "Ryujinx.Ava.exe"];
 
-/// A launch-protocol hint, never evidence that a build has been verified.
+/// Selects the adapted launch protocol; names never establish build-test evidence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TargetFamily {
     Yuzu,
@@ -28,6 +32,12 @@ impl TargetFamily {
     pub fn detect(path: &Path, hash: &str) -> Self {
         if hash == VERIFIED_HASH {
             return Self::Ryujinx;
+        }
+        if matches!(
+            hash,
+            EDEN_TESTED_HASH | EDEN_NIGHTLY_TESTED_HASH | CITRON_TESTED_HASH
+        ) {
+            return Self::Yuzu;
         }
         let name = path.file_name().unwrap_or_default().to_string_lossy();
         if YUZU_NAMES.iter().any(|n| name.eq_ignore_ascii_case(n)) {
@@ -67,7 +77,10 @@ impl TargetFamily {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Compatibility {
+    /// The pinned Ryujinx build also has a fingerprinted native-source contract.
     Verified,
+    /// A recognized emulator can use the generic present-image path.
+    Adapted,
     Unverified,
     Incompatible,
 }
@@ -75,27 +88,59 @@ impl Compatibility {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Verified => "verified",
+            Self::Adapted => "adapted",
             Self::Unverified => "unverified",
             Self::Incompatible => "incompatible",
         }
     }
     pub fn authorize(self, allow_unverified: bool) -> Result<(), &'static str> {
         match self {
-            Self::Verified => Ok(()),
+            Self::Verified | Self::Adapted => Ok(()),
             Self::Unverified if allow_unverified => Ok(()),
-            Self::Unverified => Err("此构建兼容性未验证，需要明确选择尝试后才能启动"),
+            Self::Unverified => Err("未识别为已适配的模拟器，需要明确选择尝试后才能启动"),
             Self::Incompatible => Err("目标不是受支持的 Windows x64 EXE，不能尝试启用 FG"),
         }
     }
 }
-pub fn classify(hash: &str, valid_x64_exe: bool) -> Compatibility {
+pub fn classify(path: &Path, hash: &str, valid_x64_exe: bool) -> Compatibility {
     if !valid_x64_exe {
         Compatibility::Incompatible
     } else if hash == VERIFIED_HASH {
         Compatibility::Verified
+    } else if TargetFamily::detect(path, hash) != TargetFamily::Unknown {
+        Compatibility::Adapted
     } else {
         Compatibility::Unverified
     }
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct BuildTest {
+    pub version: &'static str,
+    pub detail: &'static str,
+}
+/// Exact hashes describe the scope of past tests, not a generic-launch allowlist.
+pub fn build_test(hash: &str) -> Option<BuildTest> {
+    let (version, detail) = match hash {
+        VERIFIED_HASH => (
+            "Ryujinx Canary 1.3.351",
+            "已完成此构建的画面增强验证。",
+        ),
+        EDEN_TESTED_HASH => (
+            "Eden Development v0.2.1-v0.2.1",
+            "2026-10-03 在 RTX 5070 Ti、王国之泪中实测 NR、DLAA 和 FG；记录限于该配置。",
+        ),
+        EDEN_NIGHTLY_TESTED_HASH => (
+            "Eden Nightly master-d3550c4571",
+            "2026-10-03 在 RTX 5070 Ti、异度之刃 3 2.1.0 中实测 Vulkan 启动、SR 和 FG；记录限于该配置。",
+        ),
+        CITRON_TESTED_HASH => (
+            "Citron Nightly main-0237a9b88",
+            "2026-10-03 在 RTX 5070 Ti、王国之泪中实测 NR、DLAA、FG 及窗口缩放恢复；记录限于该配置。",
+        ),
+        _ => return None,
+    };
+    Some(BuildTest { version, detail })
 }
 /// Bounded PE inspection: filenames and MZ alone never establish architecture.
 pub fn validate_executable(path: &Path) -> Result<(), String> {
@@ -145,13 +190,26 @@ pub fn validate_executable(path: &Path) -> Result<(), String> {
 mod tests {
     use super::*;
     #[test]
-    fn family_hint_never_verifies_an_unknown_build() {
+    fn adapted_families_do_not_need_a_hash_allowlist_or_claim_build_tests() {
         for name in YUZU_NAMES {
             assert_eq!(
                 TargetFamily::detect(Path::new(name), "new"),
                 TargetFamily::Yuzu
             );
-            assert_eq!(classify("new", true), Compatibility::Unverified);
+            assert_eq!(
+                classify(Path::new(name), "new", true),
+                Compatibility::Adapted
+            );
+            assert!(classify(Path::new(name), "new", true)
+                .authorize(false)
+                .is_ok());
+            assert!(build_test("new").is_none());
+        }
+        for name in RYUJINX_NAMES {
+            assert_eq!(
+                classify(Path::new(name), "new", true),
+                Compatibility::Adapted
+            );
         }
         assert_eq!(
             TargetFamily::detect(Path::new("EDEN.EXE"), "new"),
@@ -197,13 +255,57 @@ mod tests {
         assert_eq!(command.get_args().count(), 0);
     }
     #[test]
-    fn explicit_trial_only_bypasses_unknown_build_not_incompatibility() {
-        assert_eq!(classify(VERIFIED_HASH, true), Compatibility::Verified);
-        assert_eq!(classify("new build", true), Compatibility::Unverified);
-        assert_eq!(classify(VERIFIED_HASH, false), Compatibility::Incompatible);
+    fn explicit_trial_only_bypasses_unknown_programs_not_incompatibility() {
+        let unknown = Path::new("other.exe");
+        assert_eq!(
+            classify(unknown, VERIFIED_HASH, true),
+            Compatibility::Verified
+        );
+        assert_eq!(
+            classify(unknown, "new build", true),
+            Compatibility::Unverified
+        );
+        assert_eq!(
+            classify(unknown, VERIFIED_HASH, false),
+            Compatibility::Incompatible
+        );
+        for name in YUZU_NAMES.iter().chain(RYUJINX_NAMES) {
+            assert_eq!(
+                classify(Path::new(name), "new", false),
+                Compatibility::Incompatible
+            );
+        }
         assert!(Compatibility::Verified.authorize(false).is_ok());
+        assert!(Compatibility::Adapted.authorize(false).is_ok());
         assert!(Compatibility::Unverified.authorize(false).is_err());
         assert!(Compatibility::Unverified.authorize(true).is_ok());
         assert!(Compatibility::Incompatible.authorize(true).is_err());
+    }
+    #[test]
+    fn tested_yuzu_builds_never_gain_the_pinned_native_source_contract() {
+        for (hash, version) in [
+            (EDEN_TESTED_HASH, "Eden Development v0.2.1-v0.2.1"),
+            (EDEN_NIGHTLY_TESTED_HASH, "Eden Nightly master-d3550c4571"),
+            (CITRON_TESTED_HASH, "Citron Nightly main-0237a9b88"),
+        ] {
+            assert_eq!(
+                classify(Path::new("renamed.exe"), hash, true),
+                Compatibility::Adapted
+            );
+            assert_eq!(
+                TargetFamily::detect(Path::new("renamed.exe"), hash),
+                TargetFamily::Yuzu
+            );
+            assert_eq!(build_test(hash).unwrap().version, version);
+            assert_eq!(
+                classify(Path::new("eden.exe"), hash, false),
+                Compatibility::Incompatible
+            );
+        }
+        assert_eq!(
+            build_test(VERIFIED_HASH).unwrap().version,
+            "Ryujinx Canary 1.3.351"
+        );
+        assert!(build_test("another nightly build").is_none());
     }
 }

@@ -4,6 +4,7 @@
 pub struct Controls {
     pub enabled: bool,
     pub intensity: f32,
+    pub options: crate::advanced_settings::NrOptions,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Source {
@@ -22,6 +23,9 @@ pub enum Reason {
     Resumed,
     SourceChanged,
     StrengthChanged,
+    LookChanged,
+    PipelineChanged,
+    SecondPassChanged,
     Discontinuity,
     Continuous,
 }
@@ -71,8 +75,8 @@ impl History {
         frame: u64,
         motion_valid: bool,
     ) -> Result<Decision, &'static str> {
-        if !controls.intensity.is_finite() || !(0.0..=1.0).contains(&controls.intensity) {
-            return Err("NR intensity must be finite and within 0..1");
+        if !controls.intensity.is_finite() || !(0.0..=2.0).contains(&controls.intensity) {
+            return Err("NR intensity must be finite and within 0..2");
         }
         if source.extent.contains(&0) || source.identity == 0 {
             return Err("NR source identity/extent is invalid");
@@ -80,9 +84,20 @@ impl History {
         let active = controls.enabled && motion_valid;
         let first = self.controls.is_none();
         let source_changed = self.source.is_some_and(|old| old != source);
-        let strength_changed = self
+        let strength_changed = self.controls.is_some_and(|old| {
+            old.intensity != controls.intensity
+                || old.options.model_only() != controls.options.model_only()
+        });
+        let look_changed = self
             .controls
-            .is_some_and(|old| old.intensity != controls.intensity);
+            .is_some_and(|old| old.options.look != controls.options.look);
+        let second_changed = self
+            .controls
+            .is_some_and(|old| old.options.second_pass != controls.options.second_pass);
+        let graph_changed = self.controls.is_some_and(|old| {
+            old.options.second_pass.enabled != controls.options.second_pass.enabled
+                || old.options.second_pass.retry != controls.options.second_pass.retry
+        });
         let toggled = self
             .controls
             .is_some_and(|old| old.enabled != controls.enabled);
@@ -96,6 +111,7 @@ impl History {
             || toggled
             || discontinuity
             || activity_changed
+            || graph_changed
         {
             self.pending_nr = true;
             self.pending_sr = true;
@@ -103,6 +119,10 @@ impl History {
         }
         if !active {
             self.pending_nr = true;
+        }
+        if look_changed || second_changed {
+            self.pending_sr = true;
+            self.pending_fg = true;
         }
         let reason = if !controls.enabled {
             Reason::Disabled
@@ -114,10 +134,16 @@ impl History {
             Reason::SourceChanged
         } else if strength_changed {
             Reason::StrengthChanged
+        } else if graph_changed {
+            Reason::PipelineChanged
         } else if discontinuity {
             Reason::Discontinuity
         } else if !self.running || self.pending_nr {
             Reason::Resumed
+        } else if look_changed {
+            Reason::LookChanged
+        } else if second_changed {
+            Reason::SecondPassChanged
         } else {
             Reason::Continuous
         };
@@ -148,6 +174,57 @@ impl History {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn second_tuning_preserves_first_history_but_graph_changes_reset_both() {
+        let mut h = History::default();
+        let mut c = controls();
+        h.next(c, source(), 0, true).unwrap();
+        h.sr_consumed();
+        h.fg_consumed();
+        c.options.second_pass.enabled = true;
+        let graph = h.next(c, source(), 1, true).unwrap();
+        assert_eq!(graph.reason, Reason::PipelineChanged);
+        assert!(graph.reset_nr);
+        h.sr_consumed();
+        h.fg_consumed();
+        c.options.second_pass.inherit = false;
+        c.options.second_pass.intensity = 50;
+        let independent = h.next(c, source(), 2, true).unwrap();
+        assert_eq!(independent.reason, Reason::SecondPassChanged);
+        assert!(!independent.reset_nr && independent.reset_sr && independent.reset_fg);
+        c.options.second_pass.retry += 1;
+        assert!(h.next(c, source(), 3, true).unwrap().reset_nr);
+    }
+    #[test]
+    fn look_changes_keep_model_history_and_reset_only_downstream_consumers() {
+        let mut h = History::default();
+        let mut c = controls();
+        h.next(c, source(), 0, true).unwrap();
+        h.sr_consumed();
+        h.fg_consumed();
+        c.options.look.brighten = 50;
+        let changed = h.next(c, source(), 1, true).unwrap();
+        assert!(changed.evaluate && !changed.reset_nr && changed.reset_sr && changed.reset_fg);
+        assert_eq!(changed.reason, Reason::LookChanged);
+        h.sr_consumed();
+        let next = h.next(c, source(), 2, true).unwrap();
+        assert!(!next.reset_nr && !next.reset_sr && next.reset_fg);
+        h.fg_consumed();
+        c.options.look.enabled = false;
+        let bypass = h.next(c, source(), 3, true).unwrap();
+        assert!(!bypass.reset_nr && bypass.reset_sr && bypass.reset_fg);
+        c.options.look.enabled = true;
+        let paused = h.next(c, source(), 4, false).unwrap();
+        assert!(!paused.evaluate && paused.reset_sr && paused.reset_fg);
+        assert!(h.next(c, source(), 5, true).unwrap().reset_nr);
+        h.sr_consumed();
+        h.fg_consumed();
+        c.options.look.spatial.enabled = true;
+        c.options.look.spatial.halo = 50;
+        let spatial = h.next(c, source(), 6, true).unwrap();
+        assert_eq!(spatial.reason, Reason::LookChanged);
+        assert!(!spatial.reset_nr && spatial.reset_sr && spatial.reset_fg);
+    }
     fn source() -> Source {
         Source {
             identity: 7,
@@ -159,7 +236,28 @@ mod tests {
         Controls {
             enabled: true,
             intensity: 1.0,
+            options: Default::default(),
         }
+    }
+    #[test]
+    fn model_and_independent_strength_changes_reset_every_consumer() {
+        let mut history = History::default();
+        let mut control = controls();
+        history.next(control, source(), 0, true).unwrap();
+        history.sr_consumed();
+        history.fg_consumed();
+        assert!(!history.next(control, source(), 1, true).unwrap().reset_nr);
+        control.options.style = crate::advanced_settings::NrStyle::C;
+        let changed = history.next(control, source(), 2, true).unwrap();
+        assert_eq!(changed.reason, Reason::StrengthChanged);
+        assert!(changed.reset_nr && changed.reset_sr && changed.reset_fg);
+        history.sr_consumed();
+        history.fg_consumed();
+        control.options.local_tone = Some(25);
+        let paused = history.next(control, source(), 3, false).unwrap();
+        assert!(!paused.evaluate && paused.reset_sr && paused.reset_fg);
+        let resumed = history.next(control, source(), 4, true).unwrap();
+        assert!(resumed.reset_nr && resumed.reset_sr && resumed.reset_fg);
     }
     #[test]
     fn missing_motion_pauses_and_recovery_resets_without_stale_motion() {

@@ -1,3 +1,4 @@
+pub use streamline_probe_layer::advanced_settings;
 #[cfg(windows)]
 mod host;
 #[cfg(windows)]

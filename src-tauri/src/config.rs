@@ -12,6 +12,10 @@ use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, warn};
 
+#[path = "../crates/streamline-advanced-settings.rs"]
+pub mod advanced_settings;
+pub mod nr_presets;
+
 /// 应用程序版本（自动从 Cargo.toml 读取）
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -547,6 +551,10 @@ pub struct OtherSetting {
     pub streamline_sr_scale: Option<u16>,
     #[serde(default)]
     pub streamline_sr_preset: StreamlineSrPreset,
+    #[serde(default)]
+    pub streamline_advanced: advanced_settings::AdvancedSettings,
+    #[serde(default, deserialize_with = "nr_presets::deserialize_library")]
+    pub streamline_nr_presets: Vec<nr_presets::NrPreset>,
 }
 
 impl Default for OtherSetting {
@@ -561,6 +569,8 @@ impl Default for OtherSetting {
             streamline_sr_mode: StreamlineSrMode::Balanced,
             streamline_sr_scale: None,
             streamline_sr_preset: StreamlineSrPreset::J,
+            streamline_advanced: advanced_settings::AdvancedSettings::default(),
+            streamline_nr_presets: Vec::new(),
         }
     }
 }
@@ -570,8 +580,8 @@ fn default_nr_intensity() -> u8 {
 }
 fn deserialize_nr_intensity<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8, D::Error> {
     let value = u8::deserialize(d)?;
-    if value > 100 {
-        return Err(serde::de::Error::custom("NR 强度必须为 0～100"));
+    if value > 200 {
+        return Err(serde::de::Error::custom("NR 强度必须为 0～200"));
     }
     Ok(value)
 }
@@ -893,7 +903,7 @@ mod streamline_sr_config_tests {
     use super::*;
     #[test]
     fn nr_strength_roundtrips_and_rejects_invalid_configuration() {
-        for strength in [0, 50, 100] {
+        for strength in [0, 50, 100, 200] {
             let mut settings = OtherSetting::default();
             settings.streamline_fg = false;
             settings.streamline_nr = true;
@@ -904,7 +914,7 @@ mod streamline_sr_config_tests {
                 settings
             );
         }
-        for value in ["-1", "101", "256", "0.5", "null", "\"50\""] {
+        for value in ["-1", "201", "256", "0.5", "null", "\"50\""] {
             let encoded = format!(r#"{{"streamline_nr_intensity":{value}}}"#);
             assert!(serde_json::from_str::<OtherSetting>(&encoded).is_err());
         }

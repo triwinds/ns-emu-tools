@@ -1,0 +1,24 @@
+#version 450
+layout(local_size_x=8, local_size_y=8) in;
+layout(binding=0, rgba16f) readonly uniform image2D currentColor;
+layout(binding=1, rgba16f) readonly uniform image2D previousColor;
+layout(std430, binding=2) buffer Flags { uint changed; } flags;
+shared uint groupChanged;
+void main() {
+    if (gl_LocalInvocationIndex == 0) groupChanged = 0;
+    barrier();
+    ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+    if (all(lessThan(p, imageSize(currentColor)))) {
+        vec4 current = imageLoad(currentColor, p);
+        vec4 previous = imageLoad(previousColor, p);
+        // Nonfinite inputs are never eligible for output reuse. Include alpha
+        // and preserve the sign of zero in the finite FP16 comparison.
+        if (any(isnan(current)) || any(isinf(current)) ||
+            any(isnan(previous)) || any(isinf(previous)) ||
+            any(notEqual(floatBitsToUint(current), floatBitsToUint(previous))))
+            atomicOr(groupChanged, 1);
+    }
+    barrier();
+    if (gl_LocalInvocationIndex == 0 && groupChanged != 0)
+        atomicOr(flags.changed, 1);
+}

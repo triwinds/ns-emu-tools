@@ -40,7 +40,7 @@ pub(super) fn analyze(rows: &[Value]) -> Value {
             continue;
         };
         let sr = d["frame"].as_u64().and_then(|f| sr_frames.get(&f));
-        let nr_on = nr["evaluated"] == true;
+        let nr_on = nr["active"].as_bool().unwrap_or(nr["evaluated"] == true);
         let sr_on = sr.is_some();
         let fg_on = d["requested_on"] == true;
         let fg_generated = fg_on
@@ -56,7 +56,16 @@ pub(super) fn analyze(rows: &[Value]) -> Value {
             "original_present"
         };
         let mut frame_valid = d["composition_version"] == 1
-            && d["nr_evaluated"] == nr_on
+            && d["nr_evaluated"] == nr["evaluated"]
+            && if nr["active"].is_boolean() {
+                d["nr_active"] == nr_on
+                    && d["nr_output_reused"] == nr["output_reused"]
+                    && nr_on == (nr["evaluated"] == true || nr["output_reused"] == true)
+                    && !(nr["evaluated"] == true && nr["output_reused"] == true)
+                    && (!nr_on || nr["source_frame_id"].as_u64().is_some_and(|id| id != 0))
+            } else {
+                true
+            }
             && d["sr_evaluated"] == sr_on
             && d["color_source"] == color
             && d["fg_control_requested"].is_boolean()
@@ -72,7 +81,7 @@ pub(super) fn analyze(rows: &[Value]) -> Value {
             && nr["pending_fg_reset"].is_boolean()
             && nr["intensity"]
                 .as_f64()
-                .is_some_and(|v| (0.0..=1.0).contains(&v))
+                .is_some_and(|v| (0.0..=2.0).contains(&v))
             && d["state"]["status"] == 0
             && (!fg_on || d["fg_control_requested"] == true);
         if let Some(sr) = sr {
@@ -163,6 +172,27 @@ mod tests {
         }
         rows.push(json!({"event":"target_fg_frame","details":{"frame":id,"swapchain":9,"composition_version":1,"fg_control_requested":fg,"fg_revision":1,"sr_mode":if sr {6} else {0},"sr_revision":1,"nr_evaluated":nr,"sr_evaluated":sr,"color_source":if sr {"sr_output"} else if nr {"nr_output"} else {"original_present"},"requested_on":fg,"history_reset":true,"input_wait_completed":true,"state":{"presented":if fg {2} else {1},"status":0,"fence":10,"value":id+1}}}));
         rows
+    }
+    #[test]
+    fn reused_nr_output_remains_an_active_consumer_without_an_evaluate() {
+        for mask in [1, 3, 5, 7] {
+            let mut rows = frame(2, mask);
+            let nr = &mut rows[0]["details"];
+            nr["active"] = json!(true);
+            nr["evaluated"] = json!(false);
+            nr["output_reused"] = json!(true);
+            nr["source_frame_id"] = json!(1);
+            nr["intensity"] = json!(2.0);
+            let composition = &mut rows.last_mut().unwrap()["details"];
+            composition["nr_active"] = json!(true);
+            composition["nr_evaluated"] = json!(false);
+            composition["nr_output_reused"] = json!(true);
+            let report = analyze(&rows);
+            assert_eq!(report["valid"], true);
+            assert_eq!(report["combinations"][mask as usize]["frames"], 1);
+            rows.last_mut().unwrap()["details"]["nr_evaluated"] = json!(true);
+            assert_eq!(analyze(&rows)["valid"], false);
+        }
     }
     #[test]
     fn all_eight_combinations_require_real_consumers() {

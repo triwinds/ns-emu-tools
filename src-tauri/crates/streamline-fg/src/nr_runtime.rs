@@ -10,7 +10,7 @@ use std::{
     ffi::{c_char, c_void, CStr},
     mem::ManuallyDrop,
     path::PathBuf,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
     sync::{Arc, Mutex, OnceLock},
 };
 
@@ -20,6 +20,7 @@ pub(super) fn requested() -> bool {
 static SESSION: OnceLock<Arc<Mutex<Session>>> = OnceLock::new();
 static FAILURE: OnceLock<String> = OnceLock::new();
 static CLOSED: AtomicBool = AtomicBool::new(false);
+static FEATURE_ID: AtomicU64 = AtomicU64::new(1);
 struct Session {
     api: nr_api::Api,
     device: vk::Device,
@@ -174,17 +175,38 @@ pub(super) struct Feature {
     session: Arc<Mutex<Session>>,
     parameters: usize,
     handle: usize,
+    pass: u8,
+    instance: u64,
+}
+fn feature_checked(pass: u8, operation: &str, result: u32) -> Result<()> {
+    checked(
+        &format!(
+            "target_nr_{}{operation}",
+            if pass == 2 { "second_" } else { "" }
+        ),
+        result,
+    )
 }
 impl Feature {
-    pub(super) unsafe fn allocate() -> Result<Self> {
+    pub(super) fn instance(&self) -> u64 {
+        self.instance
+    }
+    pub(super) fn identity(&self) -> (u64, u64) {
+        (self.parameters as u64, self.handle as u64)
+    }
+    pub(super) unsafe fn allocate(pass: u8) -> Result<Self> {
+        if !(1..=2).contains(&pass) {
+            return Err("invalid NR pass index".into());
+        }
         let session = SESSION.get().ok_or("NR session is not ready")?.clone();
         let mut s = session.lock().unwrap();
         if CLOSED.load(Ordering::Acquire) {
             return Err("NR session closed".into());
         }
         let mut params = std::ptr::null_mut();
-        checked(
-            "target_nr_allocate_parameters",
+        feature_checked(
+            pass,
+            "allocate_parameters",
             nr_api::NVSDK_NGX_VULKAN_AllocateParameters(&mut params),
         )?;
         if params.is_null() {
@@ -193,9 +215,10 @@ impl Feature {
         let mut call = nr_api::empty_call(1);
         call.parameters = params;
         let result = s.api.call(call);
-        if let Err(error) = checked("target_nr_populate_parameters", result) {
-            checked(
-                "target_nr_destroy_unused_parameters",
+        if let Err(error) = feature_checked(pass, "populate_parameters", result) {
+            feature_checked(
+                pass,
+                "destroy_unused_parameters",
                 nr_api::NVSDK_NGX_VULKAN_DestroyParameters(params),
             )?;
             return Err(error);
@@ -206,6 +229,8 @@ impl Feature {
             session,
             parameters: params as usize,
             handle: 0,
+            pass,
+            instance: FEATURE_ID.fetch_add(1, Ordering::Relaxed),
         })
     }
     pub(super) unsafe fn record(
@@ -213,6 +238,7 @@ impl Feature {
         command: vk::CommandBuffer,
         resources: &mut [ResourceVk; 4],
         intensity: f32,
+        options: crate::advanced_settings::NrOptions,
         reset: bool,
         uv_scale: [f32; 2],
     ) -> Result<()> {
@@ -230,12 +256,15 @@ impl Feature {
             call.output = &mut handle;
             let result = s.api.call(call);
             self.handle = handle as usize;
-            checked("target_nr_create_feature", result)?;
+            feature_checked(self.pass, "create_feature", result)?;
             if handle.is_null() {
                 return Err("NR feature is null".into());
             }
         }
-        if uv_scale == [1.0, 1.0] {
+        let options = options.model_only();
+        if options != Default::default() {
+            nr_api::set_frame_tuned(params, resources, intensity, reset, uv_scale, options);
+        } else if uv_scale == [1.0, 1.0] {
             nr_api::set_frame(params, resources, intensity, reset);
         } else {
             nr_api::set_frame_scaled(params, resources, intensity, reset, uv_scale);
@@ -244,7 +273,7 @@ impl Feature {
         call.command = command.as_raw() as VkHandle;
         call.parameters = params;
         call.feature = self.handle as *mut c_void;
-        checked("target_nr_evaluate", s.api.call(call))
+        feature_checked(self.pass, "evaluate", s.api.call(call))
     }
 }
 impl Drop for Feature {
@@ -255,11 +284,12 @@ impl Drop for Feature {
             if self.handle != 0 {
                 let mut call = nr_api::empty_call(4);
                 call.feature = self.handle as *mut c_void;
-                checked("target_nr_release_feature", s.api.call(call))
+                feature_checked(self.pass, "release_feature", s.api.call(call))
                     .unwrap_or_else(|_| std::process::abort());
             }
-            checked(
-                "target_nr_destroy_parameters",
+            feature_checked(
+                self.pass,
+                "destroy_parameters",
                 nr_api::NVSDK_NGX_VULKAN_DestroyParameters(self.parameters as *mut c_void),
             )
             .unwrap_or_else(|_| std::process::abort());

@@ -1,6 +1,29 @@
 //! Process-scoped FG Vulkan layer; transparent unless explicitly enabled by the launcher.
 #![allow(clippy::missing_safety_doc)]
 mod abi;
+#[path = "../../streamline-advanced-settings.rs"]
+pub mod advanced_settings;
+// The toolbox checks the verified DLL for this marker before a tuned launch.
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuGraphicsAdvancedV1: [u8; 27] = *b"NS_EMU_GRAPHICS_ADVANCED_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrLookV1: [u8; 17] = *b"NS_EMU_NR_LOOK_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrSpatialLookV1: [u8; 25] = *b"NS_EMU_NR_SPATIAL_LOOK_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrTwoPassV1: [u8; 21] = *b"NS_EMU_NR_TWO_PASS_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrTemporalLookV1: [u8; 26] = *b"NS_EMU_NR_TEMPORAL_LOOK_V1";
 mod capture;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod live;
@@ -10,11 +33,18 @@ mod nr_abi;
 mod nr_api;
 pub mod nr_history;
 #[cfg(all(windows, feature = "native-nr"))]
+mod nr_input_difference;
+#[cfg(all(windows, feature = "native-nr"))]
 mod nr_layout;
 #[cfg(all(windows, feature = "native-nr"))]
+mod nr_look;
+pub mod nr_look_history;
+#[cfg(all(windows, feature = "native-nr"))]
 mod nr_package;
+pub mod nr_pass_history;
 #[cfg(all(windows, feature = "native-nr"))]
 mod nr_runtime;
+pub mod nr_source_frames;
 #[cfg(all(windows, feature = "native-nr"))]
 mod nr_validation;
 #[cfg(all(windows, feature = "native-nr"))]
@@ -33,6 +63,8 @@ mod scale_probe;
 mod sdk_layout_trace;
 mod sdk_output_layout;
 mod sdk_transfer_access;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod sdk_validation_log;
 mod source_auto;
 mod source_model;
 #[cfg(any(test, all(windows, feature = "sdk-bridge")))]
@@ -204,6 +236,8 @@ pub unsafe extern "system" fn vkDestroyInstance(
         nr_validation::before_destroy(handle);
     }
     next(handle, alloc);
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    sdk_validation_log::after_destroy_instance(handle);
     state().instances.remove(&k);
     #[cfg(all(windows, feature = "native-nr"))]
     if nr_validation::enabled() {
@@ -522,6 +556,12 @@ pub unsafe extern "system" fn probeRouteGipa(
         "route_gipa",
         json!({"handle":handle.as_raw(),"name":CStr::from_ptr(name).to_string_lossy(),"next":address(next)}),
     );
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    {
+        next?;
+        return sdk_validation_log::intercept(CStr::from_ptr(name)).or(next);
+    }
+    #[cfg(not(all(windows, feature = "sdk-bridge")))]
     next
 }
 #[no_mangle]

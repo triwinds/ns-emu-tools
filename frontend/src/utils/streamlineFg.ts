@@ -1,4 +1,7 @@
 import { graphicsCommand, type GraphicsApi } from './graphics'
+export interface NrLookStatus { temporal?: { active: boolean; requested: boolean; evaluated?: boolean; reason: string; error?: string | null; textureCount: number; allocationBytes: number; sourceFrameId?: number | null; intervalMs?: number | null; maximumHistoryWeight?: number | null; resetReason?: string | null } | null; active: boolean; requested: boolean; reason: string; error?: string | null; codec: string; spatial?: { active: boolean; requested: boolean; error?: string | null; reason: string; radiusPixels: number; textureCount: number; allocationBytes: number } | null }
+export interface NrPipelineStatus { requestedPasses: number; actualPasses: number; secondActive: boolean; secondEvaluated: boolean; error?: string | null; reason: string; retry: number; passes?: { pass: number; evaluated: boolean; reset: boolean; sourceFrameId: number; intensity: number }[] }
+import type { GraphicsAdvanced, FgOptions } from './graphicsAdvanced'
 
 export interface FgCheck {
   id: string
@@ -10,7 +13,9 @@ export interface FgPreflight {
   executable: string
   checkedAt: string
   targetVersion: string | null
-  compatibility: 'verified' | 'unverified' | 'incompatible'
+  targetFamily: 'yuzu' | 'ryujinx' | 'unknown'
+  buildTest: { version: string; detail: string } | null
+  compatibility: 'verified' | 'adapted' | 'unverified' | 'incompatible'
   requiresTrialConfirmation: boolean
   targetSha256: string | null
   checks: FgCheck[]
@@ -31,9 +36,14 @@ export function operateStreamlineFg(action: 'install' | 'launch' | 'uninstall', 
 
 export interface FgSample { time: number; appFps: number | null; presentFps: number | null }
 export interface FgLive {
+  advancedSettingsSupported?: boolean
+  nrLookSupported?: boolean
+  nrSpatialLookSupported?: boolean; nrTwoPassSupported?: boolean
+  nrTemporalLookSupported?: boolean
+  fg?: { maximumGenerated?: number; options?: FgOptions; unsupportedMultiplier?: boolean } | null
   nrLiveSupported?: boolean
   sentNrRevision?: number
-  nr?: { active: boolean; requested?: boolean; appliedRevision?: number; intensity?: number; reason?: string; source?: string; depth?: string; motionValid?: boolean; input?: number[]; error?: string; reset?: boolean; resetReason?: string } | null
+  nr?: { pipeline?: NrPipelineStatus | null; look?: NrLookStatus | null; active: boolean; requested?: boolean; appliedRevision?: number | null; intensity?: number; appliedIntensity?: number | null; evaluated?: boolean; outputReused?: boolean; sourceFrameId?: number | null; sourceFrameBasis?: string; controlsPending?: boolean; reason?: string; source?: string; depth?: string; motionValid?: boolean; input?: number[]; error?: string; reset?: boolean; resetReason?: string } | null
   srLiveSupported?: boolean
   srPresetSupported?: boolean
   sentSrRevision?: number
@@ -49,8 +59,8 @@ export interface FgLive {
   sentRevision?: number
   samples?: FgSample[]
 }
-export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string, nrEnabled?: boolean, nrIntensity?: number) {
-  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset, nrEnabled, nrIntensity })
+export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string, nrEnabled?: boolean, nrIntensity?: number, advanced?: Partial<GraphicsAdvanced>) {
+  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset, nrEnabled, nrIntensity, advanced })
 }
 
 export interface NativeNrComponent {

@@ -10,7 +10,9 @@ use std::path::{Path, PathBuf};
 
 #[path = "../../../crates/streamline-target-policy.rs"]
 pub(super) mod target_policy;
-use target_policy::{classify, validate_executable, Compatibility, TargetFamily};
+use target_policy::{
+    build_test, classify, validate_executable, BuildTest, Compatibility, TargetFamily,
+};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,6 +37,8 @@ pub struct FgPreflight {
     executable: PathBuf,
     checked_at: String,
     target_version: Option<&'static str>,
+    target_family: &'static str,
+    build_test: Option<BuildTest>,
     compatibility: &'static str,
     requires_trial_confirmation: bool,
     target_sha256: Option<String>,
@@ -165,25 +169,47 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
     let hash = file_digest(&executable)?;
     let family = TargetFamily::detect(&executable, &hash);
     let validation = validate_executable(&executable);
-    let compatibility = classify(&hash, validation.is_ok());
+    let compatibility = classify(&executable, &hash, validation.is_ok());
+    let build_test = validation.is_ok().then(|| build_test(&hash)).flatten();
     let requires_trial_confirmation =
         compatibility == Compatibility::Unverified && compatibility.authorize(false).is_err();
     check(
         "target",
-        "模拟器版本",
+        "模拟器适配",
         match compatibility {
-            Compatibility::Verified => CheckStatus::Passed,
+            Compatibility::Verified | Compatibility::Adapted => CheckStatus::Passed,
             Compatibility::Unverified => CheckStatus::Pending,
             Compatibility::Incompatible => CheckStatus::Blocked,
         },
         match compatibility {
-            Compatibility::Verified => "已验证构建：Ryujinx Canary 1.3.351".into(),
+            Compatibility::Verified | Compatibility::Adapted => format!(
+                "已适配 {} 系列的画面增强启动。版本更新无需匹配实测哈希；启动时仍检查显卡、Vulkan 和运行条件。",
+                if family == TargetFamily::Yuzu { "Eden / Citron / yuzu" } else { "Ryujinx" }
+            ),
             Compatibility::Unverified => {
-                "兼容性未验证。可明确选择尝试，启动时仍需通过显卡能力和运行条件检查".into()
+                "未识别为已适配的模拟器。可明确选择尝试，启动时仍需通过显卡能力和运行条件检查".into()
             }
             Compatibility::Incompatible => validation.unwrap_err(),
         },
     );
+    if matches!(
+        compatibility,
+        Compatibility::Verified | Compatibility::Adapted
+    ) {
+        check(
+            "build-test",
+            "具体版本实测记录",
+            if build_test.is_some() {
+                CheckStatus::Passed
+            } else {
+                CheckStatus::Pending
+            },
+            match &build_test {
+                Some(record) => format!("本版本实测通过：{}。{}", record.version, record.detail),
+                None => "当前版本尚无实测记录；已适配的通用增强路径可直接安装和启动。".into(),
+            },
+        );
+    }
     check(
         "api",
         "图形接口",
@@ -245,8 +271,9 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
         installation_state: streamline_install::state(&executable),
         executable,
         checked_at: chrono::Utc::now().to_rfc3339(),
-        target_version: (compatibility == Compatibility::Verified)
-            .then_some("Ryujinx Canary 1.3.351"),
+        target_version: build_test.as_ref().map(|record| record.version),
+        target_family: family.as_str(),
+        build_test,
         compatibility: compatibility.as_str(),
         requires_trial_confirmation,
         target_sha256: Some(hash),
@@ -264,6 +291,25 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[cfg(all(windows, target_arch = "x86_64"))]
+    #[ignore = "Read-only preflight and authorization of actual EXEs from FG_SUPPORT_TARGETS"]
+    fn local_adapted_target_reports() {
+        let targets = std::env::var_os("FG_SUPPORT_TARGETS").expect("FG_SUPPORT_TARGETS");
+        for target in std::env::split_paths(&targets) {
+            let report = detect(target, GraphicsApi::Vulkan).unwrap();
+            assert!(matches!(report.compatibility, "verified" | "adapted"));
+            assert!(!report.requires_trial_confirmation);
+            streamline_install::authorize(
+                &report.executable,
+                GraphicsApi::Vulkan,
+                false,
+                report.target_sha256.as_deref().unwrap(),
+            )
+            .unwrap();
+            println!("{}", serde_json::to_string_pretty(&report).unwrap());
+        }
+    }
     #[tokio::test]
     #[ignore = "Read-only preflight timing using FG_CHECK_TARGET and optional FG_CHECK_CONFIG"]
     async fn local_preflight_timing() {
@@ -307,6 +353,8 @@ mod tests {
             executable: std::env::temp_dir().join("unused-preflight-test.exe"),
             checked_at: String::new(),
             target_version: None,
+            target_family: "ryujinx",
+            build_test: None,
             compatibility: "verified",
             requires_trial_confirmation: false,
             target_sha256: None,
@@ -343,9 +391,9 @@ mod tests {
         ));
     }
     #[test]
-    fn new_x64_build_is_unverified_but_dll_and_x86_are_incompatible() {
+    fn unknown_x64_program_needs_confirmation_but_dll_and_x86_are_incompatible() {
         let dir = tempfile::tempdir().unwrap();
-        let exe = dir.path().join("Ryujinx.exe");
+        let exe = dir.path().join("other.exe");
         let mut bytes = vec![0u8; 512];
         bytes[..2].copy_from_slice(b"MZ");
         bytes[60..64].copy_from_slice(&64u32.to_le_bytes());
@@ -391,15 +439,41 @@ mod tests {
         assert!(detect(dir.path().join("missing.exe"), GraphicsApi::Vulkan).is_err());
     }
     #[test]
-    fn eden_and_citron_trials_report_present_input_without_claiming_verified_builds() {
+    fn adapted_builds_can_install_without_claiming_version_tests_or_gpu_support() {
         let dir = tempfile::tempdir().unwrap();
-        for name in ["eden.exe", "citron.exe"] {
+        for name in ["eden.exe", "citron.exe", "Ryujinx.exe"] {
             let exe = dir.path().join(name);
             std::fs::write(&exe, super::super::tests::pe(0x8664, 0x20b)).unwrap();
             let report = detect(exe, GraphicsApi::Vulkan).unwrap();
-            assert_eq!(report.compatibility, "unverified");
-            assert!(report.requires_trial_confirmation);
+            assert_eq!(report.compatibility, "adapted");
+            assert!(!report.requires_trial_confirmation);
             assert!(report.target_version.is_none());
+            assert!(report.build_test.is_none());
+            assert!(matches!(
+                report
+                    .checks
+                    .iter()
+                    .find(|c| c.id == "target")
+                    .unwrap()
+                    .status,
+                CheckStatus::Passed
+            ));
+            assert!(matches!(
+                report
+                    .checks
+                    .iter()
+                    .find(|c| c.id == "build-test")
+                    .unwrap()
+                    .status,
+                CheckStatus::Pending
+            ));
+            assert!(matches!(
+                report.checks.iter().find(|c| c.id == "gpu").unwrap().status,
+                CheckStatus::Pending
+            ));
+            if name == "Ryujinx.exe" {
+                continue;
+            }
             let source = report.checks.iter().find(|c| c.id == "source").unwrap();
             assert!(matches!(source.status, CheckStatus::Pending));
             assert!(source.detail.contains("最终呈现画面"));

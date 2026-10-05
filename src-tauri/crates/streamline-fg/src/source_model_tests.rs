@@ -359,6 +359,7 @@ fn observed_live_rotation_preserves_nr_history_and_new_members_reset_once() {
     let controls = Controls {
         enabled: true,
         intensity: 1.0,
+        options: Default::default(),
     };
     let mut identities = Vec::new();
     for (frame, image, expected) in [

@@ -5,6 +5,28 @@ use crate::services::graphics_components;
 use std::path::PathBuf;
 
 #[tauri::command]
+pub fn validate_nr_preset(json: String) -> ApiResponse<crate::config::nr_presets::ImportResult> {
+    match crate::config::nr_presets::import(&json) {
+        Ok(result) => ApiResponse::success(result),
+        Err(error) => ApiResponse::fail(error),
+    }
+}
+
+#[tauri::command]
+pub async fn nr_preset_environment(
+    executable: PathBuf,
+) -> ApiResponse<crate::config::nr_presets::Environment> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::nr_presets::environment(&executable)
+    })
+    .await
+    {
+        Ok(result) => ApiResponse::success(result),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+
+#[tauri::command]
 pub async fn list_graphics_component_targets() -> ApiResponse<Vec<GraphicsTargetCandidate>> {
     match tauri::async_runtime::spawn_blocking(graphics_components::list_targets).await {
         Ok(Ok(targets)) => ApiResponse::success(targets),
@@ -124,6 +146,7 @@ pub async fn live_streamline_fg(
     sr_preset: Option<String>,
     nr_enabled: Option<bool>,
     nr_intensity: Option<f32>,
+    advanced: Option<crate::config::advanced_settings::AdvancedUpdate>,
 ) -> ApiResponse<serde_json::Value> {
     match tauri::async_runtime::spawn_blocking(move || {
         graphics_components::streamline_install::live(
@@ -134,6 +157,7 @@ pub async fn live_streamline_fg(
             sr_preset,
             nr_enabled,
             nr_intensity,
+            advanced,
         )
     })
     .await

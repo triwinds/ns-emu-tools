@@ -96,11 +96,11 @@ pub fn status() -> Component {
         .and_then(|p| p.as_ref())
         .and_then(|p| file_digest(p).ok());
     let message = if !supported {
-        "原生 NR 仅支持 Windows x64".into()
+        "NR 仅支持 Windows x64".into()
     } else if let Err(e) = runtime {
         e
     } else if installed {
-        "已安装原生 NR 运行库。使用合成深度和硬件光流，画质兼容性仍属实验。".into()
+        "已安装 NR（DLSS 5）运行库。使用合成深度和硬件光流，画质兼容性仍属实验。".into()
     } else if bridge.is_err() && !super::streamline_download::available() {
         bridge.as_ref().unwrap_err().clone()
     } else {
@@ -155,7 +155,7 @@ pub fn import(source: PathBuf) -> Result<Component, String> {
         .map_err(|e| e.to_string())?;
     let _store = streamline_install::lock_store()?;
     if !cfg!(all(windows, target_arch = "x86_64")) {
-        return Err("原生 NR 仅支持 Windows x64".into());
+        return Err("NR 仅支持 Windows x64".into());
     }
     let bridge = streamline_install::native_bridge()?;
     digest(&bridge, &[contract::BRIDGE])?;
@@ -182,7 +182,7 @@ pub(super) fn import_package(
     super::streamline_update::validate_selected(package)?;
     streamline_install::verify_artifacts(source, &package.files)?;
     if !package.native_nr {
-        return Err("组件包未包含原生 NR".into());
+        return Err("组件包未包含 NR".into());
     }
     import_at(
         &base(),

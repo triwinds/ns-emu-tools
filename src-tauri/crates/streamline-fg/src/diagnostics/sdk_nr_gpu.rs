@@ -9,6 +9,8 @@ use ash::vk::{self, Handle};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{ffi::c_void, fs, path::Path};
+#[path = "sdk_nr_two_pass.rs"]
+mod two_pass;
 
 fn range() -> vk::ImageSubresourceRange {
     vk::ImageSubresourceRange::default()
@@ -287,6 +289,9 @@ pub(super) unsafe fn exercise(
     params: *mut c_void,
     mut after_frame: Option<&mut dyn FnMut(u32, u32) -> Result<()>>,
 ) -> Result<Value> {
+    if options.two_pass {
+        return two_pass::exercise(options, api, instance, physical, device, family, params);
+    }
     let width = options.width;
     let height = options.height;
     let props = instance.get_physical_device_memory_properties(physical);
@@ -409,7 +414,11 @@ pub(super) unsafe fn exercise(
             let (offset, valid_motion, experimental_reset, experimental_reason) =
                 motion_state(frame, frames);
             let decision = history.next(
-                crate::nr_history::Controls { enabled, intensity },
+                crate::nr_history::Controls {
+                    enabled,
+                    intensity,
+                    options: Default::default(),
+                },
                 crate::nr_history::Source {
                     identity: resources[0].image,
                     extent: [width, height],

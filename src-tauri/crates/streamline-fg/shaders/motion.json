@@ -6,5 +6,15 @@
   "frame_difference.comp": "e7830c9488683e8385fe80ce8eecd0e6b21f1ba9fb166db9c482356d133a259a",
   "frame_difference.spv": "0cb4ab39680fdc0be60a0d92ba92f6f31dfb208449f9f58e1512ef50cc423c42",
   "sr_motion.comp": "2fe320003abaf7d09202d29b35f0e885dc0d5dfe51debbfcf982ac44089472e9",
-  "sr_motion.spv": "b64fc879358953a3e524e04524b03d3d046a665eb7d31d20d29abe91f2a395e3"
+  "sr_motion.spv": "b64fc879358953a3e524e04524b03d3d046a665eb7d31d20d29abe91f2a395e3",
+  "nr_look.comp": "2b0be04fe3be26f910062fa6229d03cf88dba00b0e056fc56627affb67a251bd",
+  "nr_look.spv": "848f93a7f78adce9b489b6e583d6d053ce1c90ee317b49dfd00b261ebc1c7d9e",
+  "nr_look_band.comp": "ba932bd02fa3e3f5e2d29bba4265eb08b258e71ec483b3d0a6bfb6d548a5a78e",
+  "nr_look_band.spv": "b436e35367be3310c6bcb17962e49628ff637a3b2c5cbc98ecab2afd28be4f86",
+  "nr_look_common.glsl": "3bfd7c3e999ef978d1717909ece2fb10b7a789e0dddd754608bf810eb0f526c4",
+  "nr_input_difference.comp": "e57b76a90ba6c0cc018c74f2182873c33f5a4a59854b95d0398ace701ecb810b",
+  "nr_input_difference.spv": "51079accbcf1f85aa61dde14ce2eabffc59f8f011a643dbde5b455f84e65f5e2",
+  "nr_look_temporal.comp": "605e90e561a2ab8013cf20090d72321336463ada4899ea1bfb40344916728823",
+  "nr_look_temporal.spv": "b845a961f901e3712a94686ff5b4b0245d9ff6226f0af3a4f2a50be72d205d47",
+  "nr_look_temporal_fp16.spv": "8d13b07793d11d86101b7b28554c407fefc0401768ad483b0fbb849c5e3a2437"
 }

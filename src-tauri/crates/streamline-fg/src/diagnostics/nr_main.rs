@@ -1,3 +1,4 @@
+pub use streamline_probe_layer::advanced_settings;
 #[cfg(all(windows, feature = "nr-coexistence"))]
 #[path = "../fg_api.rs"]
 // Reuse its resource helpers; this binary deliberately does not activate FG.

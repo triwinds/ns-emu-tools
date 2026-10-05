@@ -21,6 +21,17 @@ struct Timing {
     period: f32,
 }
 impl Timing {
+    unsafe fn read_passes(&self, device: &ash::Device) -> Option<[f64; 2]> {
+        let mut ticks = [0u64; 4];
+        device
+            .get_query_pool_results(self.pool, 6, &mut ticks, vk::QueryResultFlags::TYPE_64)
+            .ok()?;
+        Some(std::array::from_fn(|i| {
+            (ticks[i * 2 + 1].wrapping_sub(ticks[i * 2]) & (u64::MAX >> (64 - self.bits))) as f64
+                * f64::from(self.period)
+                / 1000.0
+        }))
+    }
     unsafe fn mark(&self, device: &ash::Device, command: vk::CommandBuffer, index: u32) {
         device.cmd_write_timestamp(
             command,
@@ -29,14 +40,14 @@ impl Timing {
             index,
         );
     }
-    unsafe fn read(&self, device: &ash::Device) -> Option<[f64; 3]> {
-        let mut ticks = [0u64; 5];
+    unsafe fn read(&self, device: &ash::Device) -> Option<[f64; 4]> {
+        let mut ticks = [0u64; 6];
         // Read only after the existing completion fence; add no query WAIT.
         device
             .get_query_pool_results(self.pool, 0, &mut ticks, vk::QueryResultFlags::TYPE_64)
             .ok()?;
         Some(std::array::from_fn(|i| {
-            let (a, b) = [(0, 1), (2, 3), (3, 4)][i];
+            let (a, b) = [(0, 1), (2, 3), (3, 4), (4, 5)][i];
             (ticks[b].wrapping_sub(ticks[a]) & (u64::MAX >> (64 - self.bits))) as f64
                 * f64::from(self.period)
                 / 1000.0
@@ -133,6 +144,7 @@ fn descriptor(r: Resource, write: bool) -> ResourceVk {
 }
 pub(super) struct Nr {
     device: ash::Device,
+    swapchain: vk::SwapchainKHR,
     window: vk::Extent2D,
     size: vk::Extent2D,
     raw_extent: Option<vk::Extent2D>,
@@ -142,6 +154,7 @@ pub(super) struct Nr {
     pool: vk::CommandPool,
     command: vk::CommandBuffer,
     evaluate_command: vk::CommandBuffer,
+    second_command: vk::CommandBuffer,
     input_fence: vk::Fence,
     fence: vk::Fence,
     ready: vk::Semaphore,
@@ -151,13 +164,169 @@ pub(super) struct Nr {
     readback: Option<(vk::Buffer, vk::DeviceMemory)>,
     captures: u32,
     frame_capture: Option<crate::frame_capture::Capture>,
-    capture_controls: Option<(u32, bool)>,
+    capture_controls: Option<(u32, bool, crate::advanced_settings::NrOptions)>,
     timing: Option<Timing>,
+    look: Option<crate::nr_look::Look>,
+    look_failure: Option<String>,
+    look_srgb: bool,
+    look_memory: vk::PhysicalDeviceMemoryProperties,
+    previous_input: Option<Resource>,
+    difference: Option<crate::nr_input_difference::Difference>,
+    source_frames: crate::nr_source_frames::SourceFrames,
+    second: Option<Second>,
+    second_failure: Option<String>,
+    second_retry: u16,
+    last_passes: u8,
+    last_output: Option<Resource>,
+    last_pass_details: Vec<serde_json::Value>,
+    look_origin: Instant,
+}
+struct Second {
+    device: ash::Device,
+    allocation_bytes: u64,
+    output: Option<Resource>,
+    feature: Option<nr_runtime::Feature>,
+    history: crate::nr_pass_history::History,
+    initialized: bool,
+    look: Option<crate::nr_look::Look>,
+    look_failure: Option<String>,
+    capture: Option<crate::frame_capture::Capture>,
+}
+impl Second {
+    unsafe fn new(
+        device: &ash::Device,
+        memory: &vk::PhysicalDeviceMemoryProperties,
+        input: Resource,
+    ) -> Result<Self> {
+        let mut second = Self {
+            device: device.clone(),
+            allocation_bytes: 0,
+            output: None,
+            feature: None,
+            history: Default::default(),
+            initialized: false,
+            look: None,
+            look_failure: None,
+            capture: None,
+        };
+        second.output = Some(fg_api::texture_with_usage(
+            device,
+            memory,
+            vk::Extent2D {
+                width: input.width,
+                height: input.height,
+            },
+            vk::Format::R16G16B16A16_SFLOAT,
+            vk::ImageUsageFlags::SAMPLED
+                | vk::ImageUsageFlags::STORAGE
+                | vk::ImageUsageFlags::TRANSFER_SRC
+                | vk::ImageUsageFlags::TRANSFER_DST,
+        )?);
+        second.allocation_bytes = device
+            .get_image_memory_requirements(vk::Image::from_raw(second.output.unwrap().image))
+            .size;
+        second.feature = Some(nr_runtime::Feature::allocate(2)?);
+        second.capture =
+            crate::frame_capture::Capture::new(device, memory, &[input, second.output.unwrap()])?;
+        Ok(second)
+    }
+}
+impl Drop for Second {
+    fn drop(&mut self) {
+        unsafe {
+            // Owner retires submitted work or discards an unsubmitted recording.
+            drop(self.feature.take());
+            drop(self.look.take());
+            drop(self.capture.take());
+            if let Some(r) = self.output.take() {
+                self.device
+                    .destroy_image_view(vk::ImageView::from_raw(r.view), None);
+                self.device
+                    .destroy_image(vk::Image::from_raw(r.image), None);
+                self.device
+                    .free_memory(vk::DeviceMemory::from_raw(r.memory), None);
+            }
+        }
+    }
+}
+fn look_status(
+    look: Option<&crate::nr_look::Look>,
+    failure: Option<&str>,
+    options: crate::advanced_settings::LookOptions,
+    passes: u8,
+) -> serde_json::Value {
+    let active = look.is_some_and(|look| look.active(options));
+    let temporal = look.map(|look| look.temporal_status(options));
+    let temporal_active = temporal
+        .as_ref()
+        .is_some_and(|status| status["active"] == true);
+    json!({"requested":!options.bypass(),"active":active,
+        "reason":if options.bypass() {"bypassed"} else if failure.is_some() {"preparation_failed"} else if !active {"look_stage_fallback"} else {"active"},
+        "error":failure,"spatial":look.map(|look|look.spatial_status(options)),"temporal":temporal,"codec":"sdr_srgb_rgba16f","history":if temporal_active{"model_delta_only"}else{"none"},"passes":passes})
+}
+pub(super) struct Output {
+    pub(super) resource: Resource,
+    pub(super) source_frame: crate::nr_source_frames::Frame,
+    pub(super) applied_revision: u64,
 }
 impl Nr {
+    pub(super) fn look_status(
+        &self,
+        options: crate::advanced_settings::LookOptions,
+    ) -> serde_json::Value {
+        if self.last_passes == 2 {
+            if let Some(second) = &self.second {
+                return look_status(
+                    second.look.as_ref(),
+                    second.look_failure.as_deref(),
+                    options,
+                    2,
+                );
+            }
+        }
+        look_status(self.look.as_ref(), self.look_failure.as_deref(), options, 1)
+    }
+    pub(super) fn pipeline_status(
+        &self,
+        options: crate::advanced_settings::NrOptions,
+        evaluated: bool,
+    ) -> serde_json::Value {
+        let mut passes = self.last_pass_details.clone();
+        if !evaluated {
+            for pass in &mut passes {
+                pass["evaluated"] = json!(false);
+                pass["reset"] = json!(false);
+                pass["outputReused"] = json!(true);
+            }
+        }
+        json!({"requestedPasses":if options.second_pass.enabled {2} else {1},"actualPasses":self.last_passes,
+            "secondActive":self.last_passes == 2,"secondEvaluated":evaluated && self.last_passes == 2,
+            "reason":if !options.second_pass.enabled {"disabled"} else if self.second_failure.is_some() {"first_pass_fallback"} else if self.last_passes == 2 {"active"} else {"waiting"},
+            "error":self.second_failure,"retry":self.second_retry,"retryPolicy":"explicit_retry_toggle_or_recreation",
+            "secondTextureCount":usize::from(self.second.is_some()),
+            "secondAllocationBytes":self.second.as_ref().map_or(0, |s| s.allocation_bytes),
+            "activeFeatureCount":usize::from(self.feature.as_ref().is_some_and(|f| f.identity().1 != 0))
+                + usize::from(self.second.as_ref().and_then(|s| s.feature.as_ref()).is_some_and(|f| f.identity().1 != 0)),
+            "privateTextureCount":self.resources.len()+usize::from(self.previous_input.is_some())+usize::from(self.second.is_some()),
+            "lookCacheResources":{"first":self.look.as_ref().map(|look|look.resource_status()),"second":self.second.as_ref().and_then(|s|s.look.as_ref()).map(|look|look.resource_status())},"sdkMemoryBytes":serde_json::Value::Null,"passes":passes})
+    }
     pub(super) fn matches(&self, native: Option<Source>) -> bool {
         self.size == extent(self.window, native)
             && self.raw_extent == native.filter(|n| n.raw_copy).map(|n| n.extent)
+    }
+    pub(super) fn retire_second(
+        &mut self,
+        options: crate::advanced_settings::NrOptions,
+    ) -> Result<()> {
+        if !options.second_pass.enabled || self.second_retry != options.second_pass.retry {
+            if self.in_flight || self.pending.is_some() {
+                return Err("NR secondary retirement requires completed work".into());
+            }
+            drop(self.second.take());
+            self.second_failure = None;
+        }
+        self.second_retry = options.second_pass.retry;
+        Ok(())
     }
     pub(super) unsafe fn new(
         instance: &ash::Instance,
@@ -166,6 +335,7 @@ impl Nr {
         swapchain: vk::SwapchainKHR,
         window: vk::Extent2D,
         native: Option<Source>,
+        look_srgb: bool,
     ) -> Result<Self> {
         let size = extent(window, native);
         viewport(window, native)?;
@@ -177,6 +347,7 @@ impl Nr {
         }
         let mut nr = Self {
             device: device.clone(),
+            swapchain,
             window,
             size,
             raw_extent: native.filter(|n| n.raw_copy).map(|n| n.extent),
@@ -186,6 +357,7 @@ impl Nr {
             pool: vk::CommandPool::null(),
             command: vk::CommandBuffer::null(),
             evaluate_command: vk::CommandBuffer::null(),
+            second_command: vk::CommandBuffer::null(),
             input_fence: vk::Fence::null(),
             fence: vk::Fence::null(),
             ready: vk::Semaphore::null(),
@@ -197,6 +369,20 @@ impl Nr {
             frame_capture: None,
             capture_controls: None,
             timing: None,
+            look: None,
+            look_failure: None,
+            look_srgb,
+            look_memory: instance.get_physical_device_memory_properties(physical),
+            previous_input: None,
+            difference: None,
+            source_frames: Default::default(),
+            second: None,
+            second_failure: None,
+            second_retry: 0,
+            last_passes: 1,
+            last_output: None,
+            last_pass_details: Vec::new(),
+            look_origin: Instant::now(),
         };
         if std::env::var("NS_STREAMLINE_NR_TIMING").as_deref() == Ok("1") {
             let bits = instance.get_physical_device_queue_family_properties(physical)[0]
@@ -206,7 +392,7 @@ impl Nr {
                     pool: device.create_query_pool(
                         &vk::QueryPoolCreateInfo::default()
                             .query_type(vk::QueryType::TIMESTAMP)
-                            .query_count(5),
+                            .query_count(10),
                         None,
                     )?,
                     bits,
@@ -277,6 +463,19 @@ impl Nr {
                 usage,
             )?);
         }
+        nr.previous_input = Some(fg_api::texture_with_usage(
+            device,
+            &props,
+            size,
+            vk::Format::R16G16B16A16_SFLOAT,
+            usage,
+        )?);
+        nr.difference = Some(crate::nr_input_difference::Difference::new(
+            device,
+            &props,
+            nr.resources[0],
+            nr.previous_input.unwrap(),
+        )?);
         let get: vk::PFN_vkGetSwapchainImagesKHR = std::mem::transmute(
             crate::target_runtime::device_proc(device.handle(), c"vkGetSwapchainImagesKHR")
                 .ok_or("NR swapchain query missing")?,
@@ -302,14 +501,15 @@ impl Nr {
             &vk::CommandBufferAllocateInfo::default()
                 .command_pool(nr.pool)
                 .level(vk::CommandBufferLevel::PRIMARY)
-                .command_buffer_count(2),
+                .command_buffer_count(3),
         )?;
         nr.command = commands[0];
         nr.evaluate_command = commands[1];
+        nr.second_command = commands[2];
         nr.input_fence = device.create_fence(&vk::FenceCreateInfo::default(), None)?;
         nr.fence = device.create_fence(&vk::FenceCreateInfo::default(), None)?;
         nr.ready = device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?;
-        nr.feature = Some(nr_runtime::Feature::allocate()?);
+        nr.feature = Some(nr_runtime::Feature::allocate(1)?);
         nr.frame_capture = crate::frame_capture::Capture::new(device, &props, &nr.resources[..2])?;
         if std::env::var("NS_STREAMLINE_NR_READBACK").as_deref() == Ok("1") {
             let bytes = u64::from(size.width) * u64::from(size.height) * 16;
@@ -360,11 +560,14 @@ impl Nr {
         motion: Resource,
         native: Option<Source>,
         intensity: f32,
+        options: crate::advanced_settings::NrOptions,
         reset: bool,
+        source_boundary: bool,
+        revision: u64,
         write_present: bool,
         defer_tail: bool,
         frame: u32,
-    ) -> Result<Resource> {
+    ) -> Result<Output> {
         let frame_capture = crate::frame_capture::selected(frame) && self.frame_capture.is_some();
         let defer_tail = defer_tail && !frame_capture;
         if self.in_flight || self.pending.is_some() {
@@ -375,18 +578,109 @@ impl Nr {
         {
             return Err("invalid NR Present inputs".into());
         }
+        self.retire_second(options)?;
+        if options.second_pass.enabled && self.second.is_none() && self.second_failure.is_none() {
+            match Second::new(&self.device, &self.look_memory, self.resources[1]) {
+                Ok(second) => self.second = Some(second),
+                Err(error) => {
+                    self.second_failure = Some(error.to_string());
+                    trace::event!(
+                        "target_nr_second_fallback",
+                        json!({"stage":"prepare_before_submit","error":self.second_failure,"output":"first_pass","retry":"explicit_retry_toggle_or_recreation"})
+                    );
+                }
+            }
+        }
+        if let Some(second) = &mut self.second {
+            if !options.look.bypass() && second.look.is_none() && second.look_failure.is_none() {
+                let prepared = if self.look_srgb {
+                    crate::nr_look::Look::new(
+                        &self.device,
+                        self.look_memory,
+                        self.resources[1],
+                        second.output.unwrap(),
+                    )
+                } else {
+                    Err("Look supports only the SDR sRGB nonlinear color contract".into())
+                };
+                match prepared {
+                    Ok(look) => second.look = Some(look),
+                    Err(error) => {
+                        second.look_failure = Some(error.to_string());
+                        trace::event!(
+                            "target_nr_look_fallback",
+                            json!({"pass":2,"error":second.look_failure,"output":"unmodified_second_nr","retry":"recreation"})
+                        );
+                    }
+                }
+            }
+            if let Some(look) = &mut second.look {
+                if let Err(error) = look.prepare_temporal(options.look, self.resources[3]) {
+                    trace::event!(
+                        "target_nr_temporal_look_fallback",
+                        json!({"pass":2,"error":error.to_string(),"output":"spatial_or_basic_look","retry":"recreation"})
+                    );
+                }
+                if let Err(error) = look.prepare_spatial(options.look) {
+                    trace::event!(
+                        "target_nr_spatial_look_fallback",
+                        json!({"pass":2,"error":error.to_string(),"output":"basic_look_or_unmodified_second_nr","retry":"recreation"})
+                    );
+                }
+            }
+        }
+        // Allocate only at a quiescent boundary; retain failure until resize or
+        // relaunch, avoiding repeated attempts on every frame.
+        if !options.look.bypass() && self.look.is_none() && self.look_failure.is_none() {
+            let prepared = if self.look_srgb {
+                crate::nr_look::Look::new(
+                    &self.device,
+                    self.look_memory,
+                    self.resources[0],
+                    self.resources[1],
+                )
+            } else {
+                Err("Look supports only the SDR sRGB nonlinear color contract".into())
+            };
+            match prepared {
+                Ok(look) => self.look = Some(look),
+                Err(error) => {
+                    self.look_failure = Some(error.to_string());
+                    trace::event!(
+                        "target_nr_look_fallback",
+                        json!({"error":self.look_failure,"output":"unmodified_nr","retry":"resize_or_relaunch"})
+                    );
+                }
+            }
+        }
+        if let Some(look) = self.look.as_mut() {
+            if let Err(error) = look.prepare_temporal(options.look, self.resources[3]) {
+                trace::event!(
+                    "target_nr_temporal_look_fallback",
+                    json!({"pass":1,"error":error.to_string(),"output":"spatial_or_basic_look","retry":"recreation"})
+                );
+            }
+            if let Err(error) = look.prepare_spatial(options.look) {
+                trace::event!(
+                    "target_nr_spatial_look_fallback",
+                    json!({"error":error.to_string(),"output":"basic_look_or_unmodified_nr","retry":"resize_or_relaunch"})
+                );
+            }
+        }
         let source = *self
             .images
             .get(*info.p_image_indices as usize)
             .ok_or("invalid NR present index")?;
         let v = viewport(self.window, native)?;
-        let contract = (intensity.to_bits(), write_present);
+        let contract = (intensity.to_bits(), write_present, options);
         if self.capture_controls != Some(contract) {
             self.capture_controls = Some(contract);
             self.captures = 0;
         }
         let capture = self.readback.filter(|_| self.captures < 3);
-        let split_inputs = defer_tail && !write_present && native.is_some() && capture.is_none();
+        let tail_deferred = defer_tail && !write_present && native.is_some() && capture.is_none();
+        // The comparison needs only one word after this bounded input fence.
+        // It also retires borrowed game images before a deferred NR/SR tail.
         let original_waits = if info.wait_semaphore_count == 0 {
             &[][..]
         } else {
@@ -399,9 +693,75 @@ impl Nr {
         d.reset_fences(&[self.fence])?;
         d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())?;
         if let Some(t) = &self.timing {
-            d.cmd_reset_query_pool(cmd, t.pool, 0, 5);
+            d.cmd_reset_query_pool(cmd, t.pool, 0, 10);
             t.mark(d, cmd, 0);
         }
+        let previous = vk::Image::from_raw(
+            self.previous_input
+                .ok_or("NR previous input missing")?
+                .image,
+        );
+        fg_api::transition(
+            d,
+            cmd,
+            previous,
+            if self.initialized {
+                vk::ImageLayout::GENERAL
+            } else {
+                vk::ImageLayout::UNDEFINED
+            },
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+        );
+        if self.initialized {
+            let input = vk::Image::from_raw(self.resources[0].image);
+            fg_api::transition(
+                d,
+                cmd,
+                input,
+                vk::ImageLayout::GENERAL,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            );
+            let layers = vk::ImageSubresourceLayers::default()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .layer_count(1);
+            d.cmd_copy_image(
+                cmd,
+                input,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                previous,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &[vk::ImageCopy::default()
+                    .src_subresource(layers)
+                    .dst_subresource(layers)
+                    .extent(vk::Extent3D {
+                        width: self.size.width,
+                        height: self.size.height,
+                        depth: 1,
+                    })],
+            );
+            fg_api::transition(
+                d,
+                cmd,
+                input,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                vk::ImageLayout::GENERAL,
+            );
+        } else {
+            d.cmd_clear_color_image(
+                cmd,
+                previous,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &vk::ClearColorValue { float32: [0.0; 4] },
+                &[fg_api::range()],
+            );
+        }
+        fg_api::transition(
+            d,
+            cmd,
+            previous,
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            vk::ImageLayout::GENERAL,
+        );
         for r in &self.resources {
             fg_api::transition(
                 d,
@@ -491,15 +851,6 @@ impl Nr {
             &vk::ClearColorValue { float32: [0.5; 4] },
             &[fg_api::range()],
         );
-        d.cmd_clear_color_image(
-            cmd,
-            vk::Image::from_raw(self.resources[1].image),
-            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-            &vk::ClearColorValue {
-                float32: [-16.0, 0.0, -16.0, 1.0],
-            },
-            &[fg_api::range()],
-        );
         let motion_image = vk::Image::from_raw(motion.image);
         fg_api::transition(
             d,
@@ -542,55 +893,287 @@ impl Nr {
                 vk::ImageLayout::GENERAL,
             );
         }
+        self.difference
+            .as_ref()
+            .ok_or("NR input comparison missing")?
+            .record(cmd, self.size);
         let mut resources = std::array::from_fn(|i| descriptor(self.resources[i], i == 1));
         if let Some(t) = &self.timing {
             t.mark(d, cmd, 1);
         }
         let input_started = Instant::now();
-        if split_inputs {
-            // Finish every access to borrowed game images before returning to
-            // the emulator. Only private resources remain in flight afterwards.
-            d.end_command_buffer(cmd)?;
-            d.reset_fences(&[self.input_fence])?;
-            let stages = vec![vk::PipelineStageFlags::ALL_COMMANDS; original_waits.len()];
-            self.in_flight = true;
-            d.queue_submit(
-                queue,
-                &[vk::SubmitInfo::default()
-                    .command_buffers(&[cmd])
-                    .wait_semaphores(original_waits)
-                    .wait_dst_stage_mask(&stages)],
-                self.input_fence,
-            )?;
-            d.wait_for_fences(&[self.input_fence], true, 10_000_000_000)?;
-            self.in_flight = false;
-            cmd = self.evaluate_command;
-            d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())?;
-        }
-        let input_wait_us = if split_inputs {
-            input_started.elapsed().as_micros()
-        } else {
-            0
+        // Finish every access to borrowed game images before returning to
+        // the emulator. Only private resources remain in flight afterwards.
+        d.end_command_buffer(cmd)?;
+        d.reset_fences(&[self.input_fence])?;
+        let stages = vec![vk::PipelineStageFlags::ALL_COMMANDS; original_waits.len()];
+        self.in_flight = true;
+        d.queue_submit(
+            queue,
+            &[vk::SubmitInfo::default()
+                .command_buffers(&[cmd])
+                .wait_semaphores(original_waits)
+                .wait_dst_stage_mask(&stages)],
+            self.input_fence,
+        )?;
+        d.wait_for_fences(&[self.input_fence], true, 10_000_000_000)?;
+        self.in_flight = false;
+        cmd = self.evaluate_command;
+        d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())?;
+        let input_wait_us = input_started.elapsed().as_micros();
+        let requested = crate::nr_source_frames::Controls {
+            intensity,
+            options,
+            revision,
         };
+        let mut source_frame = self.source_frames.plan(
+            self.difference.as_ref().unwrap().identical(),
+            source_boundary,
+            reset,
+            requested,
+        )?;
+        let look_now_ms = self.look_origin.elapsed().as_millis() as u64;
+        let mut look_reset = source_frame.reset;
+        let capture = capture.filter(|_| source_frame.evaluate);
         if let Some(t) = &self.timing {
             t.mark(d, cmd, 2);
         }
         let evaluate_started = Instant::now();
-        self.feature.as_mut().ok_or("NR feature missing")?.record(
-            cmd,
-            &mut resources,
-            intensity,
-            reset,
-            [
-                self.window.width as f32 / v[2],
-                self.window.height as f32 / v[3],
-            ],
-        )?;
-        let evaluate_cpu_us = evaluate_started.elapsed().as_micros();
+        let mut actual_passes = self.last_passes;
+        let mut output = self.last_output.unwrap_or(self.resources[1]);
+        let mut look_input = if actual_passes == 2 {
+            self.resources[1]
+        } else {
+            self.resources[0]
+        };
+        let (second_intensity, second_options) = options.second_pass.resolve(intensity, options);
+        let mut intermediate_wait_us = 0;
+        let mut second_call_us = 0;
+        let mut pass_details = Vec::new();
+        if let Some(t) = &self.timing {
+            t.mark(d, cmd, 6);
+        }
+        if source_frame.evaluate {
+            let output = vk::Image::from_raw(self.resources[1].image);
+            fg_api::transition(
+                d,
+                cmd,
+                output,
+                vk::ImageLayout::GENERAL,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            );
+            d.cmd_clear_color_image(
+                cmd,
+                output,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &vk::ClearColorValue {
+                    float32: [-16.0, 0.0, -16.0, 1.0],
+                },
+                &[fg_api::range()],
+            );
+            fg_api::transition(
+                d,
+                cmd,
+                output,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::ImageLayout::GENERAL,
+            );
+            self.feature.as_mut().ok_or("NR feature missing")?.record(
+                cmd,
+                &mut resources,
+                intensity,
+                options,
+                source_frame.reset,
+                [
+                    self.window.width as f32 / v[2],
+                    self.window.height as f32 / v[3],
+                ],
+            )?;
+            let (parameters, feature) = self.feature.as_ref().unwrap().identity();
+            pass_details.push(json!({"instance":self.feature.as_ref().unwrap().instance(),"pass":1,"evaluated":true,"outputReused":false,"reset":source_frame.reset,
+                "sourceFrameId":source_frame.id,"intensity":intensity,"options":options.model_only(),
+                "parameters":parameters,"feature":feature,"inputImage":self.resources[0].image,"outputImage":self.resources[1].image,
+                "depthImage":self.resources[2].image,"motionImage":self.resources[3].image}));
+        }
+        let first_call_us = evaluate_started.elapsed().as_micros();
+        if let Some(t) = &self.timing {
+            t.mark(d, cmd, 7);
+            // Defaults cover repeats and a discarded/disabled second pass.
+            t.mark(d, cmd, 8);
+            t.mark(d, cmd, 9);
+        }
+        if source_frame.evaluate {
+            actual_passes = 1;
+            output = self.resources[1];
+            look_input = self.resources[0];
+            if let Some(second) = &mut self.second {
+                // Complete pass one before asking the SDK to record pass two.
+                // Any failed second recording can then be discarded in full.
+                d.end_command_buffer(cmd)?;
+                d.reset_fences(&[self.input_fence])?;
+                self.in_flight = true;
+                let wait_started = Instant::now();
+                d.queue_submit(
+                    queue,
+                    &[vk::SubmitInfo::default().command_buffers(&[cmd])],
+                    self.input_fence,
+                )?;
+                d.wait_for_fences(&[self.input_fence], true, 10_000_000_000)?;
+                self.in_flight = false;
+                intermediate_wait_us = wait_started.elapsed().as_micros();
+                cmd = self.second_command;
+                d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())?;
+                let second_output = second.output.unwrap();
+                fg_api::transition(
+                    d,
+                    cmd,
+                    vk::Image::from_raw(second_output.image),
+                    if second.initialized {
+                        vk::ImageLayout::GENERAL
+                    } else {
+                        vk::ImageLayout::UNDEFINED
+                    },
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                );
+                d.cmd_clear_color_image(
+                    cmd,
+                    vk::Image::from_raw(second_output.image),
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &vk::ClearColorValue {
+                        float32: [-16.0, 0.0, -16.0, 1.0],
+                    },
+                    &[fg_api::range()],
+                );
+                fg_api::transition(
+                    d,
+                    cmd,
+                    vk::Image::from_raw(second_output.image),
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    vk::ImageLayout::GENERAL,
+                );
+                d.cmd_pipeline_barrier(
+                    cmd,
+                    vk::PipelineStageFlags::ALL_COMMANDS,
+                    vk::PipelineStageFlags::ALL_COMMANDS,
+                    vk::DependencyFlags::empty(),
+                    &[vk::MemoryBarrier::default()
+                        .src_access_mask(vk::AccessFlags::MEMORY_WRITE)
+                        .dst_access_mask(
+                            vk::AccessFlags::MEMORY_READ | vk::AccessFlags::MEMORY_WRITE,
+                        )],
+                    &[],
+                    &[],
+                );
+                let second_reset = second.history.reset(
+                    source_frame.id,
+                    second_intensity,
+                    second_options,
+                    source_frame.reset,
+                );
+                let mut second_resources = [
+                    descriptor(self.resources[1], false),
+                    descriptor(second_output, true),
+                    descriptor(self.resources[2], false),
+                    descriptor(self.resources[3], false),
+                ];
+                let call_started = Instant::now();
+                if let Some(t) = &self.timing {
+                    d.cmd_reset_query_pool(cmd, t.pool, 8, 2);
+                    t.mark(d, cmd, 8);
+                }
+                let result = second
+                    .feature
+                    .as_mut()
+                    .ok_or("NR second feature missing")?
+                    .record(
+                        cmd,
+                        &mut second_resources,
+                        second_intensity,
+                        second_options,
+                        second_reset,
+                        [
+                            self.window.width as f32 / v[2],
+                            self.window.height as f32 / v[3],
+                        ],
+                    );
+                second_call_us = call_started.elapsed().as_micros();
+                match result {
+                    Ok(()) => {
+                        look_reset |= second_reset;
+                        if let Some(t) = &self.timing {
+                            t.mark(d, cmd, 9);
+                        }
+                        actual_passes = 2;
+                        output = second_output;
+                        look_input = self.resources[1];
+                        let (parameters, feature) = second.feature.as_ref().unwrap().identity();
+                        pass_details.push(json!({"instance":second.feature.as_ref().unwrap().instance(),"pass":2,"evaluated":true,"outputReused":false,"reset":second_reset,
+                            "sourceFrameId":source_frame.id,"intensity":second_intensity,"options":second_options,
+                            "parameters":parameters,"feature":feature,"inputImage":self.resources[1].image,"outputImage":second_output.image,
+                            "depthImage":self.resources[2].image,"motionImage":self.resources[3].image}));
+                    }
+                    Err(error) => {
+                        // No second-pass command has been submitted. Reset it
+                        // before releasing SDK/images referenced by that recording.
+                        d.reset_command_buffer(
+                            cmd,
+                            vk::CommandBufferResetFlags::RELEASE_RESOURCES,
+                        )?;
+                        drop(self.second.take());
+                        self.second_failure = Some(error.to_string());
+                        trace::event!(
+                            "target_nr_second_fallback",
+                            json!({"stage":"discard_unsubmitted_recording","source_frame_id":source_frame.id,
+                            "error":self.second_failure,"first_pass_fenced":true,"second_submitted":false,"output":"first_pass","retry":"explicit_retry_toggle_or_recreation"})
+                        );
+                        d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())?;
+                    }
+                }
+            }
+            source_frame.reset_consumers |= self.last_passes != actual_passes;
+        }
+        let evaluate_cpu_us = first_call_us + second_call_us;
         if let Some(t) = &self.timing {
             t.mark(d, cmd, 3);
         }
-        let output = self.resources[1];
+        if source_frame.evaluate && !options.look.bypass() {
+            if actual_passes == 2 {
+                if let Some(look) = self.second.as_mut().and_then(|s| s.look.as_mut()) {
+                    look.record_with_context(
+                        cmd,
+                        self.size,
+                        options.look,
+                        Some(crate::nr_look_history::Context {
+                            source_frame_id: source_frame.id,
+                            now_ms: look_now_ms,
+                            reset: look_reset,
+                            uv_scale: [
+                                self.window.width as f32 / v[2],
+                                self.window.height as f32 / v[3],
+                            ],
+                        }),
+                    );
+                }
+            } else if let Some(look) = &mut self.look {
+                look.record_with_context(
+                    cmd,
+                    self.size,
+                    options.look,
+                    Some(crate::nr_look_history::Context {
+                        source_frame_id: source_frame.id,
+                        now_ms: look_now_ms,
+                        reset: look_reset,
+                        uv_scale: [
+                            self.window.width as f32 / v[2],
+                            self.window.height as f32 / v[3],
+                        ],
+                    }),
+                );
+            }
+        }
+        if let Some(t) = &self.timing {
+            t.mark(d, cmd, 4);
+        }
         if write_present {
             let image = vk::Image::from_raw(output.image);
             fg_api::transition(
@@ -652,8 +1235,8 @@ impl Nr {
         // previous contract's evidence after a resize or control transition.
         let bytes = u64::from(self.size.width) * u64::from(self.size.height) * 8;
         if let Some((buffer, _)) = capture {
-            for index in 0..2 {
-                let image = vk::Image::from_raw(self.resources[index].image);
+            for (index, resource) in [look_input, output].into_iter().enumerate() {
+                let image = vk::Image::from_raw(resource.image);
                 fg_api::transition(
                     d,
                     cmd,
@@ -700,22 +1283,26 @@ impl Nr {
             );
         }
         if let Some(t) = &self.timing {
-            t.mark(d, cmd, 4);
+            t.mark(d, cmd, 5);
         }
         if frame_capture {
-            self.frame_capture.as_ref().unwrap().record(cmd);
+            if actual_passes == 2 {
+                self.second
+                    .as_ref()
+                    .unwrap()
+                    .capture
+                    .as_ref()
+                    .ok_or("second NR capture missing")?
+                    .record(cmd);
+            } else {
+                self.frame_capture.as_ref().unwrap().record(cmd);
+            }
         }
         d.end_command_buffer(cmd)?;
         let record_cpu_us = started.elapsed().as_micros();
-        let waits = if split_inputs || info.wait_semaphore_count == 0 {
-            &[][..]
-        } else {
-            std::slice::from_raw_parts(info.p_wait_semaphores, info.wait_semaphore_count as usize)
-        };
-        let stages = vec![vk::PipelineStageFlags::ALL_COMMANDS; waits.len()];
         // Keep captures and NR-only synchronous. SR consumes this semaphore and
         // waits its own fence before the chain may reuse any NR resource.
-        let deferred = split_inputs
+        let deferred = tail_deferred
             || (!write_present
                 && !frame_capture
                 && capture.is_none()
@@ -727,8 +1314,6 @@ impl Nr {
             queue,
             &[vk::SubmitInfo::default()
                 .command_buffers(&[cmd])
-                .wait_semaphores(waits)
-                .wait_dst_stage_mask(&stages)
                 .signal_semaphores(&signals)],
             self.fence,
         )?;
@@ -740,9 +1325,53 @@ impl Nr {
         let wait_cpu_us = wait_started.elapsed().as_micros();
         self.in_flight = deferred;
         if frame_capture {
-            self.frame_capture.as_ref().unwrap().save("nr", frame)?;
+            if actual_passes == 2 {
+                self.second
+                    .as_ref()
+                    .unwrap()
+                    .capture
+                    .as_ref()
+                    .unwrap()
+                    .save("nr", frame)?;
+            } else {
+                self.frame_capture.as_ref().unwrap().save("nr", frame)?;
+            }
         }
         self.initialized = true;
+        if source_frame.evaluate {
+            if actual_passes == 2 {
+                let second = self.second.as_mut().unwrap();
+                second.initialized = true;
+                second
+                    .history
+                    .submitted(source_frame.id, second_intensity, second_options);
+            }
+            self.last_passes = actual_passes;
+            self.last_output = Some(output);
+            self.last_pass_details = pass_details;
+            let source_identity = identity(self.swapchain, self.window, native);
+            for details in &self.last_pass_details {
+                let mut details = details.clone();
+                details["presentFrame"] = json!(frame);
+                details["sourceIdentity"] = json!(source_identity.identity);
+                details["mapping"] = json!(source_identity.mapping);
+                trace::event!("target_nr_pass_frame", details);
+            }
+        }
+        self.source_frames.submitted(source_frame, requested);
+        if source_frame.evaluate {
+            if actual_passes == 2 {
+                if let Some(look) = self.second.as_mut().and_then(|s| s.look.as_mut()) {
+                    look.submitted();
+                }
+            } else if let Some(look) = &mut self.look {
+                look.submitted();
+            }
+        }
+        let applied = self
+            .source_frames
+            .applied()
+            .ok_or("NR applied controls missing")?;
         let gpu = (!deferred)
             .then(|| self.timing.as_ref().and_then(|t| t.read(d)))
             .flatten();
@@ -800,14 +1429,17 @@ impl Nr {
             }
             trace::event!(
                 "target_nr_readback",
-                json!({"capture":capture_id,"files":files,"extent":[self.size.width,self.size.height],"finite":finite,"sentinel_pixels":sentinel,"mean_absolute_input_difference":difference,"output_sha256":output_hash,"intensity":intensity,"fence_completed":true})
+                json!({"capture":capture_id,"files":files,"extent":[self.size.width,self.size.height],"finite":finite,"sentinel_pixels":sentinel,"mean_absolute_input_difference":difference,"output_sha256":output_hash,"intensity":if actual_passes == 2 {second_intensity} else {intensity},"actual_passes":actual_passes,"fence_completed":true})
             );
             self.captures += 1;
             if !finite || sentinel != 0 {
                 return Err("NR readback is nonfinite or retained sentinel".into());
             }
         }
-        let profile = json!({"gpu_us":gpu,"gpu_stages":["prepare","evaluate","output_and_optional_readback"],"cpu_record_us":record_cpu_us,"cpu_input_submit_wait_us":input_wait_us,"cpu_evaluate_call_us":evaluate_cpu_us,"cpu_submit_us":submit_cpu_us,"cpu_fence_wait_us":if deferred {0} else {wait_cpu_us},"cpu_readback_us":readback_started.elapsed().as_micros(),"readback":capture.is_some(),"input":[self.size.width,self.size.height],"gpu_handoff":deferred,"tail_deferred":split_inputs});
+        let pass_gpu = (!deferred && source_frame.evaluate)
+            .then(|| self.timing.as_ref().and_then(|t| t.read_passes(d)))
+            .flatten();
+        let profile = json!({"look":self.look_status(applied.options.look),"pipeline":self.pipeline_status(applied.options,source_frame.evaluate),"cpu_intermediate_fence_wait_us":intermediate_wait_us,"cpu_pass_evaluate_call_us":[first_call_us,second_call_us],"gpu_pass_us":pass_gpu,"source_frame_id":source_frame.id,"actual_passes":actual_passes,"evaluated":source_frame.evaluate,"output_reused":!source_frame.evaluate,"controls_pending":source_frame.controls_pending,"gpu_us":gpu,"gpu_stages":["prepare","evaluate_including_intermediate_gap","look","output_and_optional_readback"],"cpu_record_us":record_cpu_us,"cpu_input_submit_wait_us":input_wait_us,"cpu_evaluate_call_us":evaluate_cpu_us,"cpu_submit_us":submit_cpu_us,"cpu_fence_wait_us":if deferred {0} else {wait_cpu_us},"cpu_readback_us":readback_started.elapsed().as_micros(),"readback":capture.is_some(),"input":[self.size.width,self.size.height],"gpu_handoff":deferred,"tail_deferred":tail_deferred});
         if deferred {
             self.pending = Some((output, profile));
         } else if self.timing.is_some() {
@@ -815,9 +1447,19 @@ impl Nr {
         }
         trace::event!(
             "target_nr_submission",
-            json!({"evaluated":true,"input":[self.size.width,self.size.height],"source":if native.is_some(){"native_source"}else{"present_source"},"output_image":output.image,"history_reset":reset,"intensity":intensity,"synthetic_depth":true,"motion":"nvof_present_uv","motion_uv_basis_scale":[self.window.width as f32/v[2],self.window.height as f32/v[3]],"fence_completed":!deferred,"ready_semaphore":if deferred {self.ready.as_raw()} else {0},"tail_deferred":split_inputs,"borrowed_inputs_completed":split_inputs || !deferred,"consumed_wait_count":original_waits.len(),"output_to":if write_present{"swapchain"}else{"SR"},"cpu_record_submit_wait_us":started.elapsed().as_micros()})
+            json!({"present_frame":frame,"source_frame_id":source_frame.id,"source_frame_basis":"exact_nr_gamma_input","actual_passes":actual_passes,"evaluated":source_frame.evaluate,"output_reused":!source_frame.evaluate,"controls_pending":source_frame.controls_pending,"applied_revision":applied.revision,"input":[self.size.width,self.size.height],"source":if native.is_some(){"native_source"}else{"present_source"},"output_image":output.image,"history_reset":source_frame.reset,"intensity":applied.intensity,"synthetic_depth":true,"motion":"nvof_present_uv","motion_uv_basis_scale":[self.window.width as f32/v[2],self.window.height as f32/v[3]],"fence_completed":!deferred,"ready_semaphore":if deferred {self.ready.as_raw()} else {0},"tail_deferred":tail_deferred,"borrowed_inputs_completed":true,"consumed_wait_count":original_waits.len(),"output_to":if write_present{"swapchain"}else{"SR"},"cpu_record_submit_wait_us":started.elapsed().as_micros()})
         );
-        Ok(output)
+        Ok(Output {
+            resource: output,
+            source_frame,
+            applied_revision: applied.revision,
+        })
+    }
+    pub(super) fn applied_options(&self) -> Option<crate::advanced_settings::NrOptions> {
+        self.source_frames.applied().map(|c| c.options)
+    }
+    pub(super) fn applied_intensity(&self) -> Option<f32> {
+        self.source_frames.applied().map(|c| c.intensity)
     }
     pub(super) fn ready_semaphore(&self) -> Option<vk::Semaphore> {
         self.pending.as_ref().map(|_| self.ready)
@@ -840,6 +1482,9 @@ impl Nr {
         self.in_flight = false;
         if let Some(t) = &self.timing {
             profile["gpu_us"] = json!(t.read(&self.device));
+            if profile["evaluated"] == true {
+                profile["gpu_pass_us"] = json!(t.read_passes(&self.device));
+            }
             trace::event!("target_nr_profile", profile);
         }
         trace::event!(
@@ -883,6 +1528,9 @@ impl Drop for Nr {
             // The chain owner waits for quiescence before resize/retirement; normal
             // run completion already fenced every submission.
             drop(self.feature.take());
+            drop(self.look.take());
+            drop(self.second.take());
+            drop(self.difference.take());
             if let Some(t) = self.timing.take() {
                 self.device.destroy_query_pool(t.pool, None);
             }
@@ -890,7 +1538,7 @@ impl Drop for Nr {
                 self.device.destroy_buffer(buffer, None);
                 self.device.free_memory(memory, None);
             }
-            for r in self.resources.drain(..) {
+            for r in self.resources.drain(..).chain(self.previous_input.take()) {
                 self.device
                     .destroy_image_view(vk::ImageView::from_raw(r.view), None);
                 self.device

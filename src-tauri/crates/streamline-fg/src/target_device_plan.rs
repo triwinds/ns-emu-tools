@@ -2,7 +2,49 @@
 use crate::abi::DeviceChain;
 use ash::vk;
 use std::collections::HashSet;
-use std::ffi::c_void;
+use std::ffi::{c_void, CStr, CString};
+
+/// SDK requirement lists are not a transitive Vulkan extension dependency list.
+/// Low-latency2 needs either present-ID extension even when the app uses neither.
+pub(super) fn complete_present_id_dependency(
+    names: &mut Vec<CString>,
+    available: &[&CStr],
+) -> Result<Option<&'static CStr>, &'static str> {
+    if !names.iter().any(|n| n.as_c_str() == c"VK_NV_low_latency2")
+        || names
+            .iter()
+            .any(|n| [c"VK_KHR_present_id", c"VK_KHR_present_id2"].contains(&n.as_c_str()))
+    {
+        return Ok(None);
+    }
+    let dependency = [c"VK_KHR_present_id", c"VK_KHR_present_id2"]
+        .into_iter()
+        .find(|n| available.contains(n))
+        .ok_or("VK_NV_low_latency2 requires VK_KHR_present_id or VK_KHR_present_id2")?;
+    names.push(dependency.to_owned());
+    Ok(Some(dependency))
+}
+
+/// Vulkan 1.2 satisfies quad-control's memory-model dependency, but its
+/// maximal-reconvergence extension still has to be explicitly enabled.
+pub(super) fn complete_quad_control_dependency(
+    names: &mut Vec<CString>,
+    available: &[&CStr],
+) -> Result<Option<&'static CStr>, &'static str> {
+    let dependency = c"VK_KHR_shader_maximal_reconvergence";
+    if !names
+        .iter()
+        .any(|n| n.as_c_str() == c"VK_KHR_shader_quad_control")
+        || names.iter().any(|n| n.as_c_str() == dependency)
+    {
+        return Ok(None);
+    }
+    if !available.contains(&dependency) {
+        return Err("VK_KHR_shader_quad_control requires VK_KHR_shader_maximal_reconvergence");
+    }
+    names.push(dependency.to_owned());
+    Ok(Some(dependency))
+}
 
 pub(super) struct FeatureChain {
     storage: Vec<Box<[u64]>>,
@@ -47,6 +89,7 @@ impl FeatureChain {
                     vk::PhysicalDeviceShaderFloat16Int8Features,
                     vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
                     vk::PhysicalDeviceVariablePointersFeatures,
+                    vk::PhysicalDeviceVulkanMemoryModelFeatures,
                     vk::PhysicalDeviceDescriptorIndexingFeatures,
                     vk::PhysicalDeviceHostQueryResetFeatures,
                     vk::PhysicalDeviceTimelineSemaphoreFeatures,
@@ -77,6 +120,10 @@ impl FeatureChain {
                     vk::PhysicalDeviceFragmentShadingRateFeaturesKHR,
                     vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
                     vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
+                    vk::PhysicalDeviceBorderColorSwizzleFeaturesEXT,
+                    vk::PhysicalDeviceColorWriteEnableFeaturesEXT,
+                    vk::PhysicalDeviceDescriptorBufferFeaturesEXT,
+                    vk::PhysicalDeviceShaderQuadControlFeaturesKHR,
                     vk::PhysicalDeviceDepthClipControlFeaturesEXT,
                     vk::PhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT,
                     vk::PhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
@@ -138,6 +185,7 @@ impl FeatureChain {
             vk::StructureType::PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES,
             vk::StructureType::PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES,
             vk::StructureType::PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+            vk::StructureType::PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES,
         ]
         .iter()
         .any(|ty| seen.contains(ty));
@@ -281,6 +329,42 @@ pub(super) fn queues(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn low_latency_extension_requires_a_supported_present_id_dependency() {
+        let original = vec![
+            c"VK_KHR_swapchain".to_owned(),
+            c"VK_NV_low_latency2".to_owned(),
+        ];
+        let mut names = original.clone();
+        assert_eq!(
+            complete_present_id_dependency(
+                &mut names,
+                &[c"VK_KHR_present_id", c"VK_KHR_present_id2"]
+            )
+            .unwrap(),
+            Some(c"VK_KHR_present_id")
+        );
+        assert_eq!(names.len(), 3);
+        assert_eq!(
+            complete_present_id_dependency(&mut names, &[]).unwrap(),
+            None
+        );
+        assert_eq!(names.len(), 3);
+        let mut alternative = original.clone();
+        assert_eq!(
+            complete_present_id_dependency(&mut alternative, &[c"VK_KHR_present_id2"]).unwrap(),
+            Some(c"VK_KHR_present_id2")
+        );
+        let mut missing = original.clone();
+        assert!(complete_present_id_dependency(&mut missing, &[]).is_err());
+        assert_eq!(missing, original);
+        let mut unrelated = vec![c"VK_KHR_swapchain".to_owned()];
+        assert_eq!(
+            complete_present_id_dependency(&mut unrelated, &[]).unwrap(),
+            None
+        );
+        assert_eq!(unrelated.len(), 1);
+    }
     unsafe fn feature<T: vk::TaggedStructure>(chain: &FeatureChain) -> &T {
         let data = chain
             .storage
@@ -288,6 +372,139 @@ mod tests {
             .find(|data| (*data.as_ptr().cast::<vk::BaseInStructure>()).s_type == T::STRUCTURE_TYPE)
             .unwrap();
         &*data.as_ptr().cast::<T>()
+    }
+
+    #[test]
+    fn quad_control_dependency_is_supported_explicit_and_idempotent() {
+        let original = vec![c"VK_KHR_shader_quad_control".to_owned()];
+        let dependency = c"VK_KHR_shader_maximal_reconvergence";
+        let mut names = original.clone();
+        assert_eq!(
+            complete_quad_control_dependency(&mut names, &[dependency]).unwrap(),
+            Some(dependency)
+        );
+        assert_eq!(names, vec![original[0].clone(), dependency.to_owned()]);
+        assert_eq!(
+            complete_quad_control_dependency(&mut names, &[]).unwrap(),
+            None
+        );
+        assert_eq!(names.len(), 2);
+        let mut unsupported = original;
+        assert!(complete_quad_control_dependency(&mut unsupported, &[]).is_err());
+        assert_eq!(unsupported.len(), 1);
+        let mut unrelated = vec![c"VK_KHR_swapchain".to_owned()];
+        assert_eq!(
+            complete_quad_control_dependency(&mut unrelated, &[]).unwrap(),
+            None
+        );
+        assert_eq!(unrelated.len(), 1);
+    }
+
+    #[test]
+    fn eden_nightly_feature_chain_preserves_new_extension_and_memory_model_flags() {
+        unsafe {
+            let mut memory = vk::PhysicalDeviceVulkanMemoryModelFeatures::default()
+                .vulkan_memory_model(true)
+                .vulkan_memory_model_device_scope(false)
+                .vulkan_memory_model_availability_visibility_chains(true);
+            let mut quad =
+                vk::PhysicalDeviceShaderQuadControlFeaturesKHR::default().shader_quad_control(true);
+            let mut descriptor = vk::PhysicalDeviceDescriptorBufferFeaturesEXT::default()
+                .descriptor_buffer(true)
+                .descriptor_buffer_capture_replay(false)
+                .descriptor_buffer_image_layout_ignored(true)
+                .descriptor_buffer_push_descriptors(false);
+            let mut color =
+                vk::PhysicalDeviceColorWriteEnableFeaturesEXT::default().color_write_enable(true);
+            let mut swizzle = vk::PhysicalDeviceBorderColorSwizzleFeaturesEXT::default()
+                .border_color_swizzle(true)
+                .border_color_swizzle_from_image(false);
+            let mut root = vk::PhysicalDeviceFeatures2::default();
+            root.p_next =
+                (&mut swizzle as *mut vk::PhysicalDeviceBorderColorSwizzleFeaturesEXT).cast();
+            swizzle.p_next =
+                (&mut color as *mut vk::PhysicalDeviceColorWriteEnableFeaturesEXT).cast();
+            color.p_next =
+                (&mut descriptor as *mut vk::PhysicalDeviceDescriptorBufferFeaturesEXT).cast();
+            descriptor.p_next =
+                (&mut quad as *mut vk::PhysicalDeviceShaderQuadControlFeaturesKHR).cast();
+            quad.p_next = (&mut memory as *mut vk::PhysicalDeviceVulkanMemoryModelFeatures).cast();
+            let original_root_next = root.p_next;
+            let original_swizzle_next = swizzle.p_next;
+            let original_color_next = color.p_next;
+            let original_descriptor_next = descriptor.p_next;
+            let original_quad_next = quad.p_next;
+            for nr in [false, true] {
+                let chain = FeatureChain::for_target_with_nr(
+                    (&root as *const vk::PhysicalDeviceFeatures2).cast(),
+                    nr,
+                )
+                .unwrap();
+                let copied_swizzle =
+                    feature::<vk::PhysicalDeviceBorderColorSwizzleFeaturesEXT>(&chain);
+                assert_eq!(copied_swizzle.border_color_swizzle, vk::TRUE);
+                assert_eq!(copied_swizzle.border_color_swizzle_from_image, vk::FALSE);
+                let copied_color = feature::<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>(&chain);
+                assert_eq!(copied_color.color_write_enable, vk::TRUE);
+                let copied_descriptor =
+                    feature::<vk::PhysicalDeviceDescriptorBufferFeaturesEXT>(&chain);
+                assert_eq!(copied_descriptor.descriptor_buffer, vk::TRUE);
+                assert_eq!(
+                    copied_descriptor.descriptor_buffer_capture_replay,
+                    vk::FALSE
+                );
+                assert_eq!(
+                    copied_descriptor.descriptor_buffer_image_layout_ignored,
+                    vk::TRUE
+                );
+                assert_eq!(
+                    copied_descriptor.descriptor_buffer_push_descriptors,
+                    vk::FALSE
+                );
+                assert_eq!(
+                    feature::<vk::PhysicalDeviceShaderQuadControlFeaturesKHR>(&chain)
+                        .shader_quad_control,
+                    vk::TRUE
+                );
+                let copied_memory = feature::<vk::PhysicalDeviceVulkanMemoryModelFeatures>(&chain);
+                assert_eq!(copied_memory.vulkan_memory_model, vk::TRUE);
+                assert_eq!(copied_memory.vulkan_memory_model_device_scope, vk::FALSE);
+                assert_eq!(
+                    copied_memory.vulkan_memory_model_availability_visibility_chains,
+                    vk::TRUE
+                );
+                assert_eq!(root.p_next, original_root_next);
+                assert_eq!(swizzle.p_next, original_swizzle_next);
+                assert_eq!(color.p_next, original_color_next);
+                assert_eq!(descriptor.p_next, original_descriptor_next);
+                assert_eq!(quad.p_next, original_quad_next);
+                assert_ne!(copied_swizzle as *const _, &swizzle as *const _);
+                assert_ne!(copied_descriptor as *const _, &descriptor as *const _);
+                assert_ne!(copied_memory as *const _, &memory as *const _);
+                assert_eq!(
+                    feature::<vk::PhysicalDeviceTimelineSemaphoreFeatures>(&chain)
+                        .timeline_semaphore,
+                    vk::TRUE
+                );
+                assert_eq!(
+                    feature::<vk::PhysicalDeviceBufferDeviceAddressFeatures>(&chain)
+                        .buffer_device_address,
+                    vk::TRUE
+                );
+                assert!(!chain.storage.iter().any(|data| (*data
+                    .as_ptr()
+                    .cast::<vk::BaseInStructure>())
+                .s_type
+                    == vk::StructureType::PHYSICAL_DEVICE_VULKAN_1_2_FEATURES));
+            }
+            let mut aggregate = vk::PhysicalDeviceVulkan12Features::default();
+            aggregate.p_next =
+                (&mut memory as *mut vk::PhysicalDeviceVulkanMemoryModelFeatures).cast();
+            assert!(FeatureChain::for_target(
+                (&aggregate as *const vk::PhysicalDeviceVulkan12Features).cast()
+            )
+            .is_err());
+        }
     }
 
     #[test]

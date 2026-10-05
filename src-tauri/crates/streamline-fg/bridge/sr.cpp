@@ -82,20 +82,23 @@ extern "C" int32_t probe_sr_free(void* function) noexcept {
 
 // Game path uses viewport 1 and shares the presentation frame token with FG.
 extern "C" int32_t target_sr_options(const ProbeFGApi* api, uint32_t width,
-    uint32_t height, uint32_t mode, uint32_t preset, uint32_t* inputSize) noexcept {
+    uint32_t height, uint32_t mode, uint32_t preset, uint32_t autoExposure,
+    float exposureScale, uint32_t* inputSize) noexcept {
     if (!api || !api->feature || !inputSize || !width || !height) return -1000;
     try {
         sl::DLSSOptions options;
         if (mode != 1 && mode != 2 && mode != 3 && mode != 6) return -1000;
         if (preset != 0 && preset != 10 && preset != 11 && preset != 12 && preset != 13) return -1000;
+        if (autoExposure > 1 || !(exposureScale >= 0.25f && exposureScale <= 4.0f)) return -1000;
         options.dlaaPreset = options.qualityPreset = options.balancedPreset =
             options.performancePreset = options.ultraPerformancePreset = options.ultraQualityPreset =
             static_cast<sl::DLSSPreset>(preset);
         options.mode = static_cast<sl::DLSSMode>(mode);
         options.outputWidth = width; options.outputHeight = height;
         options.colorBuffersHDR = sl::eFalse;
-        options.useAutoExposure = sl::eTrue;
-        options.preExposure = options.exposureScale = 1.0f;
+        options.useAutoExposure = autoExposure ? sl::eTrue : sl::eFalse;
+        options.preExposure = 1.0f;
+        options.exposureScale = exposureScale;
         // Keep the requested mode and explicit dimensions. An unsupported ratio
         // is an error; never silently substitute another mode.
         sl::DLSSOptimalSettings settings;

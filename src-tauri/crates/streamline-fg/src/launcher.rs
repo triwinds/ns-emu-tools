@@ -38,6 +38,12 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut nr_performance = false;
     let mut graphics_launch = false;
     let mut nr_initial_off = false;
+    let advanced: streamline_probe_layer::advanced_settings::AdvancedSettings =
+        match std::env::var("NS_STREAMLINE_ADVANCED_SETTINGS") {
+            Ok(value) => serde_json::from_str(&value)?,
+            Err(std::env::VarError::NotPresent) => Default::default(),
+            Err(error) => return Err(error.into()),
+        };
     let mut args = args.iter();
     while let Some(flag) = args.next() {
         if flag == "--graphics-launch" {
@@ -69,8 +75,8 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
                 .and_then(|v| v.to_str())
                 .ok_or("missing NR intensity")?
                 .parse()?;
-            if !nr_intensity.is_finite() || !(0.0..=1.0).contains(&nr_intensity) {
-                return Err("NR intensity must be 0..1".into());
+            if !nr_intensity.is_finite() || !(0.0..=2.0).contains(&nr_intensity) {
+                return Err("NR intensity must be 0..2".into());
             }
             continue;
         }
@@ -240,7 +246,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     {
         return Err("target changed since installation check".into());
     }
-    let compatibility = target_policy::classify(&target_hash, true);
+    let compatibility = target_policy::classify(&executable, &target_hash, true);
     compatibility.authorize(allow_unverified)?;
     let family = target_policy::TargetFamily::detect(&executable, &target_hash);
     if scale_copy && compatibility != target_policy::Compatibility::Verified {
@@ -252,9 +258,37 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         profile["executable"] = json!(executable);
         profile
     } else {
-        json!({"executable":executable,"sha256":target_hash,"version":null,"publisher_authenticity_verified":false})
+        json!({"executable":executable,"sha256":target_hash,"version":null,"build_test":target_policy::build_test(&target_hash),"publisher_authenticity_verified":false})
     };
     let layer = dunce::canonicalize(layer.ok_or("missing --layer")?)?;
+    if !advanced.nr.second_pass.is_default() {
+        let bytes = fs::read(&layer)?;
+        let marker = streamline_probe_layer::advanced_settings::NR_TWO_PASS_MARKER;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("selected layer does not support two-pass NR; rebuild/update it or restore second-pass defaults".into());
+        }
+    }
+    if !advanced.nr.look.is_default() {
+        let bytes = fs::read(&layer)?;
+        let temporal_marker = streamline_probe_layer::advanced_settings::NR_TEMPORAL_LOOK_MARKER;
+        if !advanced.nr.look.temporal.is_default()
+            && !bytes
+                .windows(temporal_marker.len())
+                .any(|v| v == temporal_marker)
+        {
+            return Err("selected layer does not support temporal NR Look; update it or restore temporal defaults".into());
+        }
+        let marker = streamline_probe_layer::advanced_settings::NR_LOOK_MARKER;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("selected layer does not support NR Look; rebuild/update the layer or restore neutral Look settings".into());
+        }
+        let marker = streamline_probe_layer::advanced_settings::NR_SPATIAL_LOOK_MARKER;
+        if !advanced.nr.look.spatial.is_default()
+            && !bytes.windows(marker.len()).any(|v| v == marker)
+        {
+            return Err("selected layer does not support spatial NR Look; update the layer or restore spatial defaults".into());
+        }
+    }
     #[cfg(feature = "native-nr")]
     if native_nr {
         unsafe {
@@ -421,6 +455,10 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_NR_BRIDGE", session.join("nr/nvngx.dll"))
         .env("NS_STREAMLINE_NR_INTENSITY", nr_intensity.to_string())
         .env(
+            "NS_STREAMLINE_ADVANCED_SETTINGS",
+            serde_json::to_string(&advanced)?,
+        )
+        .env(
             "NS_STREAMLINE_NR_READBACK",
             if nr_readback { "1" } else { "0" },
         )
@@ -475,7 +513,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     );
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     write_json(
         &session.join("target-command.json"),

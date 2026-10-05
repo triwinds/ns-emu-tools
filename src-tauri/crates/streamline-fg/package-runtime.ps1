@@ -126,6 +126,7 @@ foreach ($part in @(@{version=$version; files=$layerFiles}, @{version=$runtimeVe
 $release = @{version=$version; native_nr=$true; schema_version=1; launcher_protocol=1; files=$files; parts=$parts}
 $sourceFiles = @(rg --files --hidden -g '!**/target/**' -g '!**/evidence/**' (Join-Path $tauri 'crates/streamline-fg') (Join-Path $tauri 'crates/nr-call-bridge'))
 $sourceFiles += @(Join-Path $tauri 'crates/streamline-nr-contract.rs'; Join-Path $tauri 'crates/streamline-target-policy.rs'; Join-Path $tauri 'crates/streamline-sr-preset.rs'; Join-Path $repository 'LICENSE')
+$sourceFiles += Join-Path $tauri 'crates/streamline-advanced-settings.rs'
 # Keep compile-time regression fixtures without including bulk experiment logs.
 foreach ($fixture in @(
     'evidence/sdk-fg-2026-09-25/passed-002/cycle-trace.jsonl',

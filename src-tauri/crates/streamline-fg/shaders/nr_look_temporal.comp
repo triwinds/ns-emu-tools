@@ -1,0 +1,63 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#include "nr_look_common.glsl"
+layout(local_size_x=8, local_size_y=8) in;
+layout(set=0,binding=0,rgba16f) uniform readonly image2D original;
+layout(set=0,binding=1,rgba16f) uniform readonly image2D rendered;
+layout(set=0,binding=2,rgba16f) uniform readonly image2D previous_delta;
+layout(set=0,binding=3,rgba16f) uniform writeonly image2D current_delta;
+layout(set=0,binding=4,rgba16f) uniform readonly image2D previous_input;
+#ifndef NR_MOTION_FORMAT
+#define NR_MOTION_FORMAT rg32f
+#endif
+layout(set=0,binding=5,NR_MOTION_FORMAT) uniform readonly image2D motion;
+layout(push_constant) uniform Controls { vec4 history; vec4 mapping; } controls;
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy), size=imageSize(original);
+    if(any(greaterThanEqual(p,size))) return;
+    vec3 source=imageLoad(original,p).rgb, nr=imageLoad(rendered,p).rgb;
+    if(!finite_rgb(source)||!finite_rgb(nr)) { imageStore(current_delta,p,vec4(0,0,0,-1)); return; }
+    vec3 delta=log_change(source,nr), result=delta;
+    float weight=0.0;
+    vec2 mv=imageLoad(motion,p).rg*controls.mapping.xy;
+    vec2 q=vec2(p)+mv*vec2(size);
+    bool valid=controls.history.x>0.0 && !any(isnan(mv)) && !any(isinf(mv))
+        && all(lessThanEqual(abs(mv),vec2(0.25))) && all(greaterThanEqual(q,vec2(0)))
+        && all(lessThanEqual(q,vec2(size-1))) && any(notEqual(source,nr));
+    if(valid) {
+        ivec2 a=ivec2(floor(q)), b=min(a+1,size-1);
+        vec2 f=fract(q);
+        vec4 d0=imageLoad(previous_delta,a), d1=imageLoad(previous_delta,ivec2(b.x,a.y));
+        vec4 d2=imageLoad(previous_delta,ivec2(a.x,b.y)), d3=imageLoad(previous_delta,b);
+        vec3 c0=imageLoad(previous_input,a).rgb, c1=imageLoad(previous_input,ivec2(b.x,a.y)).rgb;
+        vec3 c2=imageLoad(previous_input,ivec2(a.x,b.y)).rgb, c3=imageLoad(previous_input,b).rgb;
+        valid=min(min(d0.a,d1.a),min(d2.a,d3.a))>=0.0
+            && finite_rgb(d0.rgb)&&finite_rgb(d1.rgb)&&finite_rgb(d2.rgb)&&finite_rgb(d3.rgb)
+            && finite_rgb(c0)&&finite_rgb(c1)&&finite_rgb(c2)&&finite_rgb(c3);
+        if(valid) {
+            vec3 old_delta=mix(mix(d0.rgb,d1.rgb,f.x),mix(d2.rgb,d3.rgb,f.x),f.y);
+            vec3 old_input=mix(mix(decode(clamp(c0,0,1)),decode(clamp(c1,0,1)),f.x),
+                mix(decode(clamp(c2,0,1)),decode(clamp(c3,0,1)),f.x),f.y);
+            vec3 linear=decode(clamp(source,0,1));
+            vec3 error=abs(log2(max(old_input,vec3(1e-6)))-log2(max(linear,vec3(1e-6))));
+            float confidence=(1.0-smoothstep(0.0,controls.history.y,max(max(error.r,error.g),error.b)))
+                * smoothstep(1e-5,1e-3,dot(linear,LUMA));
+            vec3 lo=delta, hi=delta;
+            float center=log2(max(dot(linear,LUMA),1e-6));
+            for(int y=-1;y<=1;++y) for(int x=-1;x<=1;++x) {
+                ivec2 r=clamp(p+ivec2(x,y),ivec2(0),size-1);
+                vec3 s=imageLoad(original,r).rgb, n=imageLoad(rendered,r).rgb;
+                if(!finite_rgb(s)||!finite_rgb(n)) continue;
+                if(abs(log2(max(dot(decode(clamp(s,0,1)),LUMA),1e-6))-center)>0.75) continue;
+                vec3 e=log_change(s,n); lo=min(lo,e); hi=max(hi,e);
+            }
+            weight=controls.history.x*confidence;
+            result=mix(delta,clamp(old_delta,lo-vec3(0.25),hi+vec3(0.25)),weight);
+            // Ignore half-history quantization when the model delta is stable.
+            vec3 difference=abs(result-delta);
+            if(max(max(difference.r,difference.g),difference.b)<0.001) { result=delta; weight=0.0; }
+        }
+    }
+    // Alpha stores actual history weight, with -1 marking invalid raw deltas.
+    imageStore(current_delta,p,vec4(result,weight));
+}

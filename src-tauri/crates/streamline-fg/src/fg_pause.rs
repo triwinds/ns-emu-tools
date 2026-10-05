@@ -58,6 +58,27 @@ struct Options {
     dynamic_fps: f32,
 }
 impl Options {
+    fn apply_tuning(
+        &mut self,
+        enabled: bool,
+        retain: bool,
+        tuning: crate::advanced_settings::FgOptions,
+    ) {
+        self.mode = if !enabled {
+            0
+        } else if tuning.mode == crate::advanced_settings::FgMode::Dynamic {
+            3
+        } else {
+            1
+        };
+        self.generated = u32::from(tuning.multiplier - 1);
+        self.dynamic_fps = if tuning.mode == crate::advanced_settings::FgMode::Dynamic {
+            f32::from(tuning.target_fps)
+        } else {
+            0.0
+        };
+        self.flags = if retain { 8 } else { 0 };
+    }
     fn paused(extent: vk::Extent2D, count: u32, motion: vk::Format) -> Self {
         Self {
             base: Base::new(
@@ -108,6 +129,27 @@ pub(super) unsafe fn configure(
     motion: vk::Format,
     frame_limit_us: u32,
 ) -> Result<()> {
+    configure_tuned(
+        api,
+        enabled,
+        retain,
+        extent,
+        count,
+        motion,
+        frame_limit_us,
+        Default::default(),
+    )
+}
+pub(super) unsafe fn configure_tuned(
+    api: &Api,
+    enabled: bool,
+    retain: bool,
+    extent: vk::Extent2D,
+    count: u32,
+    motion: vk::Format,
+    frame_limit_us: u32,
+    tuning: crate::advanced_settings::FgOptions,
+) -> Result<()> {
     type Get = unsafe extern "system" fn(u32, *const i8, *mut *mut c_void) -> i32;
     type Set = unsafe extern "system" fn(&Viewport, &Options) -> i32;
     if api.feature.is_null() {
@@ -132,7 +174,7 @@ pub(super) unsafe fn configure(
                 ],
                 1,
             ),
-            mode: 1,
+            mode: tuning.reflex.sdk_value(),
             frame_limit_us,
             optimize_markers: 0,
             virtual_key: 0,
@@ -160,13 +202,64 @@ pub(super) unsafe fn configure(
         value: 0,
     };
     let mut options = Options::paused(extent, count, motion);
-    options.mode = u32::from(enabled);
-    options.flags = if retain { 8 } else { 0 };
+    options.apply_tuning(enabled, retain, tuning);
     checked(set(&viewport, &options), "FG options / retained suspension")
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn dynamic_generation_maps_to_sdk_and_suspension_retains_tuning() {
+        use crate::advanced_settings::{FgMode, FgOptions, ReflexMode};
+        let tuning = FgOptions {
+            mode: FgMode::Dynamic,
+            multiplier: 4,
+            target_fps: 144,
+            reflex: ReflexMode::Boost,
+            input_fps: 60,
+        };
+        let mut options = Options::paused(
+            vk::Extent2D {
+                width: 1920,
+                height: 1080,
+            },
+            3,
+            vk::Format::R16G16_SFLOAT,
+        );
+        options.apply_tuning(true, false, tuning);
+        assert_eq!(
+            (
+                options.mode,
+                options.generated,
+                options.dynamic_fps,
+                options.flags
+            ),
+            (3, 3, 144.0, 0)
+        );
+        assert_eq!(tuning.reflex.sdk_value(), 2);
+        options.apply_tuning(false, true, tuning);
+        assert_eq!(
+            (
+                options.mode,
+                options.generated,
+                options.dynamic_fps,
+                options.flags
+            ),
+            (0, 3, 144.0, 8)
+        );
+        options.apply_tuning(
+            true,
+            false,
+            FgOptions {
+                mode: FgMode::Fixed,
+                ..tuning
+            },
+        );
+        assert_eq!(
+            (options.mode, options.generated, options.dynamic_fps),
+            (1, 3, 0.0)
+        );
+    }
     #[test]
     fn pinned_x64_sdk_layout_and_suspension_flags() {
         use std::mem::{offset_of, size_of};

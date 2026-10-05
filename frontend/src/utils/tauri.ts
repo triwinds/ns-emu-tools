@@ -380,6 +380,8 @@ export interface OtherSetting {
   streamline_fg?: boolean
   streamline_nr?: boolean
   streamline_nr_intensity?: number
+  streamline_advanced?: import('./graphicsAdvanced').GraphicsAdvanced
+  streamline_nr_presets?: import('./nrPresets').NrPreset[]
   streamline_sr: boolean
   streamline_sr_mode: 'quality' | 'balanced' | 'performance' | 'dlaa'
 }

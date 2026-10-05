@@ -31,7 +31,7 @@ const state = computed(() => {
   if (!live.value.requested) return 'FG 已关闭'
   if (!live.value.fresh) return '等待游戏画面'
   if (live.value.active) return 'FG 正在运行'
-  const reasons: Record<string, string> = { background: '已暂停：游戏不在前台', warmup: '正在预热', window_operation: '已停用：窗口变化触发保护，请重新启动游戏', sdk_status: '已暂停：SDK 状态异常', below_minimum_extent: '窗口尺寸过小', user_disabled: 'FG 已关闭', frame_budget: '诊断帧数已用完' }
+  const reasons: Record<string, string> = { background: '已暂停：游戏不在前台', warmup: '正在预热', window_operation: '已停用：窗口变化触发保护，请重新启动游戏', sdk_status: '已暂停：SDK 状态异常', below_minimum_extent: '窗口尺寸过小', user_disabled: 'FG 已关闭', frame_budget: '诊断帧数已用完', fg_multiplier_unsupported: '已暂停：当前 GPU / 运行库不支持所选倍数，请在 FG 高级配置中降低倍数' }
   return reasons[live.value.reason ?? ''] ?? '等待运行条件满足'
 })
 const ceiling = computed(() => Math.max(60, Math.ceil(Math.max(...samples.value.flatMap(s => [s.appFps ?? 0, s.presentFps ?? 0])) / 30) * 30))

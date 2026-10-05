@@ -1,0 +1,52 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#include "nr_look_common.glsl"
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0, rgba16f) uniform readonly image2D original;
+layout(set = 0, binding = 1, rgba16f) uniform readonly image2D rendered;
+layout(set = 0, binding = 2, rgba16f) uniform writeonly image2D band;
+layout(set = 0, binding = 3, rgba16f) uniform readonly image2D temporal_delta;
+layout(push_constant) uniform Controls {
+    vec4 gains;
+    vec4 chroma;
+    vec4 zones;
+    vec4 spatial; // broad lighting, detail, radius (working pixels), halo
+} controls;
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(original);
+    if (any(greaterThanEqual(pixel, size))) return;
+    vec3 p = imageLoad(original, pixel).rgb;
+    float center = log2(max(dot(decode(clamp(p, 0.0, 1.0)), LUMA), 1e-6));
+    float total = 0.0;
+    float weights = 0.0;
+    float darker_edge = 0.0;
+    // Bounded 5x5 sparse bilateral stencil. Radius describes the outermost
+    // sample offset at NR resolution, independent of the final display size.
+    for (int y = -2; y <= 2; ++y) {
+        for (int x = -2; x <= 2; ++x) {
+            ivec2 offset = ivec2(round(vec2(x,y) * controls.spatial.z * 0.5));
+            ivec2 q = clamp(pixel + offset, ivec2(0), size - 1);
+            vec3 source = imageLoad(original, q).rgb;
+            vec3 nr = imageLoad(rendered, q).rgb;
+            if (!finite_rgb(nr)) continue;
+            float luminance = dot(decode(clamp(source, 0.0, 1.0)), LUMA);
+            float guide = log2(max(luminance, 1e-6));
+            // Bright-side evidence: dark text/shadow pixels with only brighter
+            // neighbours do not qualify for halo suppression.
+            darker_edge = max(darker_edge, center - guide);
+            float weight = exp2(-abs(center - guide) * 8.0)
+                * exp(-0.25 * float(x*x + y*y))
+                * smoothstep(1e-5, 1e-3, luminance);
+            vec3 delta = log_change(source, nr);
+            if (controls.zones.w != 0.0) {
+                vec4 history = imageLoad(temporal_delta, q);
+                if (history.a > 0.0 && finite_rgb(history.rgb)) delta = history.rgb;
+            }
+            total += dot(delta, LUMA) * weight;
+            weights += weight;
+        }
+    }
+    imageStore(band, pixel, vec4(weights > 1e-6 ? total / weights : 0.0,
+        smoothstep(0.75, 2.0, darker_edge), 0.0, 0.0));
+}

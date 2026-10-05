@@ -40,6 +40,8 @@ unsafe extern "C" {
         height: u32,
         mode: u32,
         preset: u32,
+        auto_exposure: u32,
+        exposure: f32,
         input: *mut u32,
     ) -> i32;
     fn target_sr_evaluate(
@@ -201,6 +203,8 @@ unsafe fn run(
                     output.height,
                     2,
                     10,
+                    1,
+                    1.0,
                     input_size.as_mut_ptr(),
                 )
             } else {

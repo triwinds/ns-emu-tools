@@ -52,6 +52,8 @@ pub(super) struct Options {
     pub pause_without_motion: bool,
     #[serde(default)]
     pub record_on_worker: bool,
+    #[serde(default)]
+    pub two_pass: bool,
     pub frames: u32,
     pub width: u32,
     pub height: u32,
@@ -201,6 +203,7 @@ pub fn run() -> Result<()> {
             "  [--without-validation] [--init-only] [--trace-layouts] [--repair-internal-layouts]\n",
             "  [--resize] [--coexist-sr <absolute pinned runtime directory>] [--repair-sr-resources] [--sr-control]\n",
             "  [--pause-without-motion] [--record-on-worker] [--frames <300..10000>] [--width <64..1920>] [--height <64..1080>]\n",
+            "  [--two-pass] validates independent NR maps/handles, fenced chaining and discarded second recordings.\n",
             "Default: core and synchronization validation required, 300 frames per intensity, 640x360 SDR. Child-only layer environment; files are staged only into a new session.\n",
             "--trace-layouts requires --validation-dir, enables api-dump.txt, and limits each NR cycle to 3 frames.\n",
             "--repair-internal-layouts inserts initial barriers for matching fresh NR-owned images; default off and limited to inspected runtime hashes.\n",
@@ -232,6 +235,7 @@ pub fn run() -> Result<()> {
         repair_sr_resources: false,
         pause_without_motion: false,
         record_on_worker: false,
+        two_pass: false,
         frames: 300,
         width: 640,
         height: 360,
@@ -279,6 +283,10 @@ pub fn run() -> Result<()> {
             options.record_on_worker = true;
             continue;
         }
+        if flag == "--two-pass" {
+            options.two_pass = true;
+            continue;
+        }
         let value = iter.next().ok_or("missing option value")?;
         match flag {
             "--runtime" => options.runtime = value.into(),
@@ -311,6 +319,17 @@ pub fn run() -> Result<()> {
         }
     }
     verify(&options.runtime, &options.runtime_sha256)?;
+    if options.two_pass
+        && (options.init_only
+            || options.resize
+            || options.coexist_sr.is_some()
+            || options.pause_without_motion
+            || options.trace_layouts
+            || options.without_validation
+            || !options.repair_internal_layouts)
+    {
+        return Err("--two-pass requires isolated validated NR execution and --repair-internal-layouts; excludes init-only, resize, SR, pause and layout trace modes".into());
+    }
     if options.record_on_worker && (options.coexist_sr.is_some() || options.init_only) {
         return Err("worker recording test requires NR-only GPU execution".into());
     }
@@ -1070,7 +1089,8 @@ unsafe fn device_and_ngx(options: &Options, api: &mut nr_api::Api) -> Result<()>
             "warnings_reviewed":unreviewed == 0,"unreviewed_warnings":unreviewed,"warning_reviews":warning_reviews,
         "streamline_coexistence_verified":options.coexist_sr.is_some()&&errors==0&&unreviewed==0,"coexistence_execution_completed":options.coexist_sr.is_some(),"game_integration_verified":false,
         "resized_and_recreated":options.resize,"resize_outputs":resize_outputs,
-        "zero_motion_policy_verified":options.pause_without_motion&&!options.init_only&&errors==0&&unreviewed==0,"zero_motion_policy":if options.pause_without_motion {"pause_nr_and_reset_on_recovery"} else {"experimental_reset_each_frame"},"p0_passed":false,"layout_trace_only":options.trace_layouts,
+        "two_pass":options.two_pass,
+        "zero_motion_policy_verified":options.pause_without_motion&&!options.init_only&&errors==0&&unreviewed==0,"zero_motion_policy":if options.two_pass {"synthetic_motion_continuous_history"} else if options.pause_without_motion {"pause_nr_and_reset_on_recovery"} else {"experimental_reset_each_frame"},"p0_passed":false,"layout_trace_only":options.trace_layouts,
         "experimental_internal_layout_repair":options.repair_internal_layouts,
         "remaining_gates":remaining_gates}),
     )?;

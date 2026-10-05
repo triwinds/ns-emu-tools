@@ -70,6 +70,9 @@ pub(super) unsafe fn install(
 pub(super) struct Recording(PhantomData<Rc<()>>);
 impl Recording {
     #[cfg(any(feature = "nr-coexistence", feature = "native-nr"))]
+    // The standalone NR diagnostic also includes this module with native-nr,
+    // but only the coexistence diagnostic records SR scopes.
+    #[cfg_attr(not(feature = "nr-coexistence"), allow(dead_code))]
     pub(super) fn sr(command: vk::CommandBuffer, width: u32, height: u32) -> Self {
         let scope = Self::enter(command, width, height);
         SR.with(|sr| sr.set(true));

@@ -169,6 +169,23 @@ pub unsafe fn set_frame_scaled(
     reset: bool,
     uv_scale: [f32; 2],
 ) {
+    set_frame_tuned(
+        params,
+        resources,
+        intensity,
+        reset,
+        uv_scale,
+        Default::default(),
+    );
+}
+pub unsafe fn set_frame_tuned(
+    params: *mut c_void,
+    resources: &mut [ResourceVk; 4],
+    intensity: f32,
+    reset: bool,
+    uv_scale: [f32; 2],
+    options: crate::advanced_settings::NrOptions,
+) {
     let width = resources[0].width;
     let height = resources[0].height;
     for (index, name) in [
@@ -201,13 +218,21 @@ pub unsafe fn set_frame_scaled(
     ] {
         NVSDK_NGX_Parameter_SetUI(params, name.as_ptr(), value);
     }
+    let strengths = options.strengths(intensity);
+    NVSDK_NGX_Parameter_SetI(params, c"DLSSNR.Style".as_ptr(), options.style.sdk_value());
+    NVSDK_NGX_Parameter_SetI(
+        params,
+        c"DLSSNR.UseAutoMask".as_ptr(),
+        i32::from(options.auto_mask),
+    );
     for (name, value) in [
         (c"DLSSNR.MVecScaleX", width as f32 * uv_scale[0]),
         (c"DLSSNR.MVecScaleY", height as f32 * uv_scale[1]),
         (c"DLSSNR.Intensity", intensity),
-        (c"DLSSNR.GlobalToneStrength", intensity),
-        (c"DLSSNR.LocalToneStrength", intensity),
-        (c"DLSSNR.LocalStructureStrength", intensity),
+        (c"DLSSNR.GlobalToneStrength", strengths[0]),
+        (c"DLSSNR.LocalToneStrength", strengths[1]),
+        (c"DLSSNR.LocalStructureStrength", strengths[2]),
+        (c"DLSSNR.SkinStructureStrength", strengths[3]),
     ] {
         NVSDK_NGX_Parameter_SetF(params, name.as_ptr(), value);
     }

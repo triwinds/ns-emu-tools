@@ -366,6 +366,18 @@ pub(super) unsafe fn create_device(
         let available = instance
             .enumerate_device_extension_properties(physical)
             .map_err(|e| e.to_string())?;
+        let available_names = available
+            .iter()
+            .map(|e| CStr::from_ptr(e.extension_name.as_ptr()))
+            .collect::<Vec<_>>();
+        let present_id_dependency = crate::target_device_plan::complete_present_id_dependency(
+            &mut names,
+            &available_names,
+        )?;
+        let quad_control_dependency = crate::target_device_plan::complete_quad_control_dependency(
+            &mut names,
+            &available_names,
+        )?;
         for name in &names {
             if !available
                 .iter()
@@ -438,7 +450,7 @@ pub(super) unsafe fn create_device(
         }
         trace::event!(
             "target_device_plan",
-            json!({"family":original.queue_family_index,"application_count":plan.application_count,"sdk_graphics_start":plan.graphics_start,"sdk_compute_start":plan.compute_start,"total":plan.total,"capacity":family.queue_count,"original_api":"1.2","requested_api":"1.3","fg_enabled":false}),
+            json!({"family":original.queue_family_index,"application_count":plan.application_count,"sdk_graphics_start":plan.graphics_start,"sdk_compute_start":plan.compute_start,"total":plan.total,"capacity":family.queue_count,"original_api":"1.2","requested_api":"1.3","fg_enabled":false,"added_present_id_dependency":present_id_dependency.map(|n|n.to_string_lossy()),"added_quad_control_dependency":quad_control_dependency.map(|n|n.to_string_lossy()),"device_extensions":names.iter().map(|n|n.to_string_lossy()).collect::<Vec<_>>()}),
         );
         Ok(next(physical, &copy, alloc, out))
     })();
@@ -524,16 +536,19 @@ pub(super) unsafe fn ensure_device(device: vk::Device) {
             ),
             "register route",
         )?;
+        let set_vulkan_info = address(sdk, b"slSetVulkanInfo\0")?;
         require(
-            probe_sl_set_vulkan(
-                address(sdk, b"slSetVulkanInfo\0")?,
-                pending.parent.handle.as_raw(),
-                pending.physical.as_raw(),
-                device.as_raw(),
-                pending.family,
-                pending.application_count,
-                pending.application_count + sdk.graphics,
-            ),
+            crate::sdk_validation_log::during_sdk_init(|| {
+                probe_sl_set_vulkan(
+                    set_vulkan_info,
+                    pending.parent.handle.as_raw(),
+                    pending.physical.as_raw(),
+                    device.as_raw(),
+                    pending.family,
+                    pending.application_count,
+                    pending.application_count + sdk.graphics,
+                )
+            }),
             "set Vulkan info",
         )?;
         ACTIVE.store(device.as_raw(), std::sync::atomic::Ordering::SeqCst);
@@ -759,6 +774,7 @@ pub(super) unsafe fn create_swapchain(
                 *out,
                 copy.image_extent,
                 copy.image_format,
+                copy.image_color_space,
                 copy.min_image_count,
                 copy.queue_family_index_count,
                 surface.instance,

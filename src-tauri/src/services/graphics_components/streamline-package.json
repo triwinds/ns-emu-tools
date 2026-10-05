@@ -9,9 +9,9 @@
         "streamline-layer-probe.exe"
       ],
       "download": {
-        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-layer-957ac80ccf40-51c527289288-0f23c0fce4bc-14a362ce9469-v6/streamline-layer-957ac80ccf40-51c527289288-0f23c0fce4bc-14a362ce9469-v6.zip",
-        "name": "streamline-layer-957ac80ccf40-51c527289288-0f23c0fce4bc-14a362ce9469-v6.zip",
-        "sha256": "ed5aa9cf72bb5ec16aa7ee38a21bd6993e0c24da2c43aebb9bc54607a5694341"
+        "sha256": "25301dd22d717bf6e4bb21e9e0650edf76a8456122c68b778cf8aad71abb224f",
+        "name": "streamline-layer-dab22c1fd39f-b041b25eeb97-0f23c0fce4bc-14a362ce9469-v7.zip",
+        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-layer-dab22c1fd39f-b041b25eeb97-0f23c0fce4bc-14a362ce9469-v7/streamline-layer-dab22c1fd39f-b041b25eeb97-0f23c0fce4bc-14a362ce9469-v7.zip"
       }
     },
     {
@@ -36,15 +36,16 @@
         "SOURCE-Streamline.json"
       ],
       "download": {
-        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-runtime-14a362ce9469-v1/streamline-runtime-14a362ce9469-v1.zip",
+        "sha256": "87366a0d8e6d72a47055301dd7ec9dd63c32ef2e7c08da05b8bdd80b2f0b934e",
         "name": "streamline-runtime-14a362ce9469-v1.zip",
-        "sha256": "87366a0d8e6d72a47055301dd7ec9dd63c32ef2e7c08da05b8bdd80b2f0b934e"
+        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-runtime-14a362ce9469-v1/streamline-runtime-14a362ce9469-v1.zip"
       }
     }
   ],
+  "version": "streamline-layer-dab22c1fd39f-b041b25eeb97-0f23c0fce4bc-14a362ce9469-v7",
   "schema_version": 1,
-  "version": "streamline-layer-957ac80ccf40-51c527289288-0f23c0fce4bc-14a362ce9469-v6",
   "native_nr": true,
+  "launcher_protocol": 1,
   "files": [
     {
       "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294",
@@ -131,13 +132,12 @@
       "name": "SOURCE-Streamline.json"
     },
     {
-      "sha256": "51c527289288f5e6b3681b7e35f25a688f3827393ec60dcb78a0521db9266293",
+      "sha256": "b041b25eeb97d6dee690682866d04abe223a58f3afd18cbbe807b8fd3b9d6694",
       "name": "streamline_probe_layer.dll"
     },
     {
-      "sha256": "957ac80ccf4017c09c407ce599f74fe95193e7c0877b8c4692014a79d789ba7e",
+      "sha256": "dab22c1fd39f4affcde0a99fcd896e4bf70121559753fb4fbd2d9fe49f329894",
       "name": "streamline-layer-probe.exe"
     }
-  ],
-  "launcher_protocol": 1
+  ]
 }
