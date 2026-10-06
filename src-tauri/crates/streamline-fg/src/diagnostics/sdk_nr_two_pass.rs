@@ -1,6 +1,9 @@
 //! Isolated real-NGX validation of independent features and fenced two-pass
-//! recording. Synthetic colors/guides; no emulator or Streamline coexistence.
+//! recording, optionally consolidated. Synthetic colors/guides; no emulator
+//! or Streamline coexistence. Readback uses its own command buffer.
 use super::*;
+use std::time::Instant;
+use streamline_probe_layer::{nr_pass_history, nr_source_frames};
 
 unsafe fn create(
     api: &nr_api::Api,
@@ -104,6 +107,21 @@ unsafe fn read(
     }
     Ok(pixels)
 }
+unsafe fn submit_recorded(
+    device: &ash::Device,
+    queue: vk::Queue,
+    commands: &[vk::CommandBuffer],
+    fence: vk::Fence,
+) -> Result<()> {
+    device.reset_fences(&[fence])?;
+    device.queue_submit(
+        queue,
+        &[vk::SubmitInfo::default().command_buffers(commands)],
+        fence,
+    )?;
+    device.wait_for_fences(&[fence], true, 10_000_000_000)?;
+    Ok(())
+}
 pub(super) unsafe fn exercise(
     options: &Options,
     api: &nr_api::Api,
@@ -174,7 +192,7 @@ pub(super) unsafe fn exercise(
         &vk::CommandBufferAllocateInfo::default()
             .command_pool(pool)
             .level(vk::CommandBufferLevel::PRIMARY)
-            .command_buffer_count(2),
+            .command_buffer_count(3),
     )?;
     let queue = device.get_device_queue(family, 0);
     let fence = device.create_fence(&vk::FenceCreateInfo::default(), None)?;
@@ -199,11 +217,21 @@ pub(super) unsafe fn exercise(
     let mut output_changed = false;
     let mut recreated = 0;
     let mut output_hashes = Vec::new();
+    let mut prefix_hashes = Vec::new();
+    let mut inference_submissions = 0;
+    let mut intermediate_waits = 0;
+    let mut inference_elapsed_us = Vec::new();
     for frame in 0..options.frames {
+        let old_second = if frame == options.frames / 2 {
+            Some(read(device, queue, commands[2], fence, r[4], readback)?)
+        } else {
+            None
+        };
         let input = pattern(width, height, frame * 2);
         let mapped = device.map_memory(upload.1, 0, bytes, vk::MemoryMapFlags::empty())?;
         std::ptr::copy_nonoverlapping(input.as_ptr(), mapped.cast::<u16>(), input.len());
         device.unmap_memory(upload.1);
+        let inference_started = Instant::now();
         begin(device, commands[0])?;
         for (i, resource) in first.iter().enumerate() {
             let image = vk::Image::from_raw(resource.image);
@@ -267,14 +295,14 @@ pub(super) unsafe fn exercise(
             1.0,
             Default::default(),
         )?;
-        submit(device, queue, commands[0], fence)?;
-        first_initialized = true;
-        let first_output = read(device, queue, commands[0], fence, r[1], readback)?;
-        let old_second = if frame == options.frames / 2 {
-            Some(read(device, queue, commands[0], fence, r[4], readback)?)
+        if options.consolidated {
+            device.end_command_buffer(commands[0])?;
         } else {
-            None
-        };
+            submit(device, queue, commands[0], fence)?;
+            inference_submissions += 1;
+            intermediate_waits += 1;
+        }
+        first_initialized = true;
         begin(device, commands[1])?;
         transition(
             device,
@@ -349,13 +377,19 @@ pub(super) unsafe fn exercise(
                 commands[1],
                 vk::CommandBufferResetFlags::RELEASE_RESOURCES,
             )?;
+            if options.consolidated {
+                submit_recorded(device, queue, &[commands[0]], fence)?;
+                inference_submissions += 1;
+                intermediate_waits += 1;
+            }
+            let first_output = read(device, queue, commands[2], fence, r[1], readback)?;
             release(api, second_handle)?;
             second_handle = std::ptr::null_mut();
             second_fresh = true;
             discarded += 1;
             recreated += 1;
-            if read(device, queue, commands[0], fence, r[1], readback)? != first_output
-                || read(device, queue, commands[0], fence, r[4], readback)? != old_second
+            if read(device, queue, commands[2], fence, r[1], readback)? != first_output
+                || read(device, queue, commands[2], fence, r[4], readback)? != old_second
             {
                 return Err("discarded NGX recording modified GPU colors".into());
             }
@@ -365,11 +399,26 @@ pub(super) unsafe fn exercise(
             )?;
             continue;
         }
-        submit(device, queue, commands[1], fence)?;
+        if options.consolidated {
+            device.end_command_buffer(commands[1])?;
+            submit_recorded(device, queue, &commands[..2], fence)?;
+        } else {
+            submit(device, queue, commands[1], fence)?;
+        }
+        inference_submissions += 1;
+        inference_elapsed_us.push(inference_started.elapsed().as_micros());
         secondary_initialized = true;
         second_fresh = false;
         second_evaluations += 1;
-        let output = read(device, queue, commands[0], fence, r[4], readback)?;
+        let first_output = read(device, queue, commands[2], fence, r[1], readback)?;
+        let output = read(device, queue, commands[2], fence, r[4], readback)?;
+        prefix_hashes.push(format!(
+            "{:x}",
+            Sha256::digest(std::slice::from_raw_parts(
+                first_output.as_ptr().cast::<u8>(),
+                bytes as usize
+            ))
+        ));
         if output
             .chunks_exact(4)
             .any(|p| p == [half(-16.0), half(0.0), half(-16.0), half(1.0)])
@@ -398,6 +447,127 @@ pub(super) unsafe fn exercise(
             )?;
         }
     }
+    // Fixed input: exercise the production suffix policy with real NGX. The
+    // existing final output seeds source ID 1; no first Evaluate is added.
+    let prefix = read(device, queue, commands[0], fence, r[1], readback)?;
+    let mut controls = nr_source_frames::Controls {
+        intensity: 1.0,
+        options: Default::default(),
+        revision: 1,
+    };
+    controls.options.second_pass.enabled = true;
+    controls.options.second_pass.inherit = false;
+    controls.options.second_pass.intensity = 50;
+    controls.options.second_pass.style = crate::advanced_settings::NrStyle::B;
+    let mut sources = nr_source_frames::SourceFrames::default();
+    let seed = sources.plan(false, false, false, controls)?;
+    sources.submitted(seed, controls);
+    let mut suffix_history = nr_pass_history::History::default();
+    let (strength, model) = controls.options.second_pass.resolve(1.0, controls.options);
+    suffix_history.submitted(seed.id, strength, model);
+    let mut suffix_hashes = Vec::new();
+    for strength in [75, 100, 75] {
+        controls.options.second_pass.intensity = strength;
+        controls.revision += 1;
+        let planned = sources.plan(true, false, false, controls)?;
+        if !planned.evaluate
+            || planned.first_evaluate
+            || planned.observed
+            || !planned.model_recompute
+            || planned.id != seed.id
+        {
+            return Err(
+                "fixed-input suffix policy evaluated the cached prefix or advanced the source"
+                    .into(),
+            );
+        }
+        let (intensity, model) = controls.options.second_pass.resolve(1.0, controls.options);
+        let reset = suffix_history.reset(planned.id, intensity, model, planned.reset);
+        if !reset {
+            return Err("same-source suffix recompute did not reset the second feature".into());
+        }
+        begin(device, commands[1])?;
+        transition(
+            device,
+            commands[1],
+            vk::Image::from_raw(r[4].image),
+            vk::ImageLayout::GENERAL,
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+        );
+        device.cmd_clear_color_image(
+            commands[1],
+            vk::Image::from_raw(r[4].image),
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            &vk::ClearColorValue {
+                float32: [-16.0, 0.0, -16.0, 1.0],
+            },
+            &[range()],
+        );
+        transition(
+            device,
+            commands[1],
+            vk::Image::from_raw(r[4].image),
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            vk::ImageLayout::GENERAL,
+        );
+        transition(
+            device,
+            commands[1],
+            vk::Image::from_raw(r[1].image),
+            vk::ImageLayout::GENERAL,
+            vk::ImageLayout::GENERAL,
+        );
+        evaluate(
+            api,
+            commands[1],
+            second_params,
+            second_handle,
+            &mut second,
+            reset,
+            intensity,
+            model,
+        )?;
+        submit(device, queue, commands[1], fence)?;
+        sources.submitted(planned, controls);
+        suffix_history.submitted(planned.id, intensity, model);
+        if read(device, queue, commands[0], fence, r[1], readback)? != prefix {
+            return Err("suffix recompute changed the cached first output".into());
+        }
+        let output = read(device, queue, commands[0], fence, r[4], readback)?;
+        if output
+            .chunks_exact(4)
+            .any(|p| p == [half(-16.0), half(0.0), half(-16.0), half(1.0)])
+        {
+            return Err("suffix recompute retained sentinel".into());
+        }
+        suffix_hashes.push(format!(
+            "{:x}",
+            Sha256::digest(std::slice::from_raw_parts(
+                output.as_ptr().cast::<u8>(),
+                bytes as usize
+            ))
+        ));
+        sdk_nr::event(
+            "two_pass_suffix",
+            json!({"source_frame_id":planned.id,
+            "source_observed":false,"first_evaluated":false,"second_evaluated":true,
+            "second_reset":reset,"intensity":intensity,"prefix_unchanged":true,"finite":true}),
+        )?;
+    }
+    if suffix_hashes[0] == suffix_hashes[1] || suffix_hashes[0] != suffix_hashes[2] {
+        return Err("suffix controls did not update deterministically after reset".into());
+    }
+    let repeat = sources.plan(true, false, false, controls)?;
+    let next = sources.plan(false, false, false, controls)?;
+    let (intensity, model) = controls.options.second_pass.resolve(1.0, controls.options);
+    if repeat.evaluate
+        || !next.first_evaluate
+        || !next.observed
+        || next.id != seed.id + 1
+        || suffix_history.reset(next.id, intensity, model, false)
+    {
+        return Err("suffix submission broke repeat reuse or the next color history".into());
+    }
     release(api, second_handle)?;
     release(api, first_handle)?;
     sdk_nr::ngx_result(
@@ -416,9 +586,14 @@ pub(super) unsafe fn exercise(
     device.destroy_fence(fence, None);
     device.destroy_command_pool(pool, None);
     let summary = json!({"two_pass":true,"independent_maps":true,"independent_handles":true,"first_evaluations":options.frames,
+        "scheduling":if options.consolidated {"consolidated_experimental"} else {"fenced_passes"},
+        "moving_inference_submissions":inference_submissions,"intermediate_fence_waits":intermediate_waits,
+        "moving_inference_record_submit_wait_us":inference_elapsed_us,"timing_excludes_output_readback":true,"validation_enabled":true,
+        "prefix_hashes":prefix_hashes,
         "second_submitted_evaluations":second_evaluations,"discarded_recordings":discarded,"second_recreations":recreated,"output_changed_from_first":output_changed,
         "independent_tuning_changed_at":options.frames*3/4,"first_reset_frames":[0],"second_reset_frames":[0,options.frames/2+1,options.frames*3/4],
-        "moving_output_verified":true,"readback_complete":true,"synthetic_inputs":true,"game_integration_verified":false,"output_hashes":output_hashes});
+        "moving_output_verified":true,"readback_complete":true,"synthetic_inputs":true,"game_integration_verified":false,"output_hashes":output_hashes,
+        "suffix_recompute":{"source_frame_id":seed.id,"source_observations_added":0,"first_evaluations_added":0,"second_submitted_evaluations_added":3,"prefix_unchanged":true,"deterministic_return":true,"output_hashes":suffix_hashes,"next_color_continuous":true}});
     sdk_nr::write_json(&options.session.join("nr-output-summary.json"), &summary)?;
     if !output_changed {
         return Err("second NR did not change first output".into());

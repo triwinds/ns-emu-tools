@@ -9,7 +9,7 @@ import GraphicsAdvancedDialog from './GraphicsAdvancedDialog.vue'
 import NrPresetControls from './NrPresetControls.vue'
 import { bypassNrAdditions, cloneNrOptions, graphicsAdvanced, nrLook, nrSpatialLook, nrTemporalLook, nrSecondPass, type NrOptions } from '@/utils/graphicsAdvanced'
 
-const props = defineProps<{ executable: string; disabled: boolean; live: FgLive; refreshKey?: string }>()
+const props = defineProps<{ executable: string; disabled: boolean; supported: boolean; live: FgLive; refreshKey?: string }>()
 const emit = defineEmits<{ busy: [value: boolean] }>()
 const config = useConfigStore()
 const progress = useProgressStore()
@@ -27,6 +27,7 @@ let inspectionPending = false
 const enabled = computed(() => config.config.setting.other?.streamline_nr ?? false)
 const savedIntensity = computed(() => config.config.setting.other?.streamline_nr_intensity ?? 100)
 const intensity = ref(savedIntensity.value)
+const savedConsolidated = computed(() => config.config.setting.other?.streamline_nr_consolidated ?? false)
 const savedOptions = computed(() => graphicsAdvanced(config.config.setting.other?.streamline_advanced).nr)
 const options = ref<NrOptions>(cloneNrOptions(savedOptions.value))
 watch(savedOptions, value => { options.value = cloneNrOptions(value) })
@@ -43,6 +44,13 @@ const lookFields = [
   { key: 'midtones', label: '中间调变化' }, { key: 'highlights', label: '高光变化' },
 ] as const
 const lookCaps = [{ key: 'brightenCap', label: '提亮软上限' }, { key: 'darkenCap', label: '压暗软上限' }] as const
+const protectionFields = [{ key: 'hue', label: '色相保护' }, { key: 'shadows', label: '暗部保护' }, { key: 'highlights', label: '高光保护' }, { key: 'overcorrection', label: '过度修正抑制' }] as const
+const diagnosticViews = [
+  { title: '关闭', value: 'off' }, { title: '原图', value: 'original' }, { title: '第一遍输出', value: 'first_pass' },
+  { title: '最终模型输出', value: 'model_output' }, { title: '原始变化量', value: 'raw_delta' }, { title: '受控变化量', value: 'controlled_delta' },
+  { title: '低频明度变化', value: 'low_frequency' }, { title: '高频明度变化', value: 'high_frequency' },
+  { title: '保护保留比例', value: 'protection' }, { title: '历史有效性', value: 'history_validity' }, { title: '实际历史权重', value: 'history_weight' },
+]
 const spatialFields = [{ key: 'lighting', label: '大范围光照变化' }, { key: 'detail', label: '细节变化' }] as const
 const temporalFields = [
   { key: 'timeMs', label: '平滑时间', min: 1, max: 500, unit: 'ms' },
@@ -138,6 +146,20 @@ async function save(on: boolean, strength: number, tuning: NrOptions = savedOpti
       feedback.value = '已保存；当前组件不支持时间 Look，请更新组件后重新专用启动。'
       return
     }
+    if (on && tuning.look.scope !== 'final_pass' && !props.live.nrLookScopeSupported) {
+      feedback.value = '已保存；当前组件不支持整链 Look，请更新组件并重新专用启动。'
+      return
+    }
+    if (on && (tuning.look.algorithm !== 'log_delta' || tuning.look.diagnostic !== 'off' || Object.values(tuning.look.protection).some(value => value !== 0)) && !props.live.nrLookExperimentsSupported) {
+      throw new Error('当前组件不支持 Look 颜色保护或诊断实验，请更新组件后重新专用启动')
+    }
+    if (on && tuning.look.temporal.mode === 'optical_flow_plus' && !props.live.nrPersistenceSupported) {
+      throw new Error('当前组件不支持光流累积＋，请更新组件后重新专用启动')
+    }
+    if (on && (tuning.look.temporal.mode !== 'optical_flow' || tuning.look.temporal.sampling !== 'bilinear') && !props.live.nrTemporalModesSupported) {
+      feedback.value = '已保存；当前组件不支持所选时间模式或历史采样，请更新组件并重新专用启动。'
+      return
+    }
     const result = await liveStreamlineFg(executable, undefined, undefined, undefined, undefined, on, (on ? strength : Math.min(strength, 100)) / 100, on && props.live.advancedSettingsSupported ? { nr: tuning } : undefined)
     if (token !== generation) return
     pending.value = result.sentNrRevision ?? 0
@@ -147,6 +169,21 @@ async function save(on: boolean, strength: number, tuning: NrOptions = savedOpti
   finally { intensity.value = savedIntensity.value; options.value = cloneNrOptions(savedOptions.value); busy.value = false }
 }
 function saveOptions() { return save(enabled.value, savedIntensity.value, cloneNrOptions(options.value)) }
+async function saveScheduling(consolidated: boolean) {
+  if (working.value || props.disabled || !config.config.setting.other) return
+  if (consolidated === savedConsolidated.value) return
+  const token = generation
+  busy.value = true
+  error.value = ''
+  try {
+    const setting = config.config.setting
+    const patch = { streamline_nr_consolidated: consolidated }
+    await updateSetting({ ...setting, other: { ...setting.other, ...patch } })
+    Object.assign(config.config.setting.other, patch)
+    if (token === generation) feedback.value = '调度设置已保存；关闭游戏并重新以画面增强启动后生效。'
+  } catch (e) { if (token === generation) error.value = `调度设置保存失败：${String(e)}` }
+  finally { busy.value = false }
+}
 function bypassAdditions() {
   return save(enabled.value, savedIntensity.value, bypassNrAdditions(savedOptions.value))
 }
@@ -200,9 +237,10 @@ async function removeRuntime() {
       </v-chip>
     </div>
     <p>直接处理游戏源画面，可与抗锯齿和帧生成配合使用。依赖 NVIDIA 硬件光流，会增加 GPU 开销。</p>
+    <p>DLSS 5 需要 GeForce RTX 50 系列。{{ supported ? '请在模拟器中选择支持的 NVIDIA 显卡。' : '本机未检测到支持的显卡，NR 选项不可用。' }}</p>
     <div class="nr-controls">
       <v-switch
-        :model-value="enabled"
+        :model-value="supported && enabled"
         label="启用 NR"
         color="primary"
         density="compact"
@@ -243,7 +281,7 @@ async function removeRuntime() {
       class="nr-state"
       role="status"
     >
-      {{ state }}<span v-if="live.connected && live.fresh && live.nr?.active && live.nr.input"> · 输入 {{ live.nr.input.join(' × ') }} · 实际强度 {{ Math.round((live.nr.appliedIntensity ?? live.nr.intensity ?? 1) * 100) }}%{{ live.nr.outputReused ? ' · 复用上一张输出' : '' }}</span>
+      {{ state }}<span v-if="live.connected && live.fresh && live.nr?.active && live.nr.input"> · 输入 {{ live.nr.input.join(' × ') }} · 实际强度 {{ Math.round((live.nr.appliedIntensity ?? live.nr.intensity ?? 1) * 100) }}%{{ live.nr.modelRecomputed ? (live.nr.firstEvaluated ? ' · 模型链已重算' : ' · 第二遍已重算，复用第一遍') : live.nr.lookRecomputed ? ' · Look 已重新合成' : live.nr.outputReused ? ' · 复用上一张输出' : '' }}</span>
     </p>
     <p
       v-if="error && !advanced"
@@ -252,11 +290,17 @@ async function removeRuntime() {
     >
       {{ error }}
     </p>
+    <p
+      v-if="live.connected && live.fresh && live.nr?.active && live.nr.pipeline?.inferenceExtent"
+      class="nr-state"
+    >
+      当前推理 {{ live.nr.pipeline.inferenceExtent.join(' × ') }}{{ live.nr.pipeline.inferenceMaxEdge ? ` · 长边上限 ${live.nr.pipeline.inferenceMaxEdge} 像素` : live.nr.pipeline.inferenceScalePercent ? ` · 每边 ${live.nr.pipeline.inferenceScalePercent}%` : '' }} · {{ live.nr.pipeline.scheduling === 'consolidated_experimental' ? '集中提交' : '逐遍提交' }}
+    </p>
     <GraphicsAdvancedDialog
       v-model="advanced"
       title="NR 高级配置"
       title-id="nr-advanced-title"
-      description="调整重建风格与强度。设置自动保存；模型参数变化会重置历史，Look 调整保留 NR 历史。"
+      description="设置自动保存。重建与 Look 参数可在专用启动后实时调整；输入缩放在主面板单独设置。"
       :busy="working"
     >
       <v-select
@@ -487,8 +531,52 @@ async function removeRuntime() {
       </div>
       <div class="nr-parameter">
         <h3>Look · 控制模型变化</h3>
+        <details>
+          <summary>进阶颜色保护与诊断</summary>
+          <v-select
+            v-model="options.look.algorithm"
+            label="颜色算法"
+            :items="[{ title: 'Log 变化量（默认）', value: 'log_delta' }, { title: 'Oklab 色度分离（实验）', value: 'oklab' }]"
+            :disabled="disabled || working || !!pending || !options.look.enabled"
+            @update:model-value="saveOptions"
+          />
+          <div
+            v-for="field in protectionFields"
+            :key="field.key"
+            class="nr-parameter"
+          >
+            <div class="nr-strength-heading">
+              <label :id="`nr-protection-${field.key}`">{{ field.label }}</label><output>{{ options.look.protection[field.key] }}%</output>
+            </div>
+            <v-slider
+              v-model="options.look.protection[field.key]"
+              :min="0"
+              :max="100"
+              :step="1"
+              hide-details
+              :aria-labelledby="`nr-protection-${field.key}`"
+              :disabled="disabled || working || !!pending || !options.look.enabled"
+              @end="saveOptions"
+              @keyup="saveOptions"
+            />
+          </div>
+          <v-select
+            v-model="options.look.diagnostic"
+            label="诊断视图"
+            :items="diagnosticViews"
+            :disabled="disabled || working || !!pending || !options.look.enabled"
+            @update:model-value="saveOptions"
+          />
+          <p class="nr-dialog-note">
+            暗部/高光按范围基底的线性明度判断，不识别场景物体。过度修正抑制随变化的 stop 幅度增加。
+            Oklab 只改变色度分离，提亮/压暗和软上限仍使用 stops；中性和旁路保留原模型结果。
+            变化量视图以灰色表示 0，±4 stops 映射至黑/白。保护视图 RGB 分别为色相、明度区域和过度修正的保留比例。
+            历史权重显示逐像素实际值，不是全局上限。诊断只改变显示，下游历史在切换时重置；测性能时关闭诊断和读回。
+          </p>
+        </details>
         <p class="nr-dialog-note">
-          在 NR 输出后调整变化量。100% 保留对应变化，0% 抑制对应变化；整体幅度 0% 返回 NR 输入颜色。
+          在 NR 输出后调整所选范围的变化量。100% 保留对应变化，0% 抑制对应变化。
+          最后一遍范围的整体幅度 0% 保留第一遍 RGB；整链范围的 0% 返回原图 RGB。alpha 沿用最终模型输出。
           所有增益为 100%、软上限为 0 时直接保留 NR 输出。当前支持 SDR。
         </p>
         <v-switch
@@ -497,6 +585,13 @@ async function removeRuntime() {
           color="primary"
           hide-details
           inset
+          :disabled="disabled || working || !!pending"
+          @update:model-value="saveOptions"
+        />
+        <v-select
+          v-model="options.look.scope"
+          label="Look 作用范围"
+          :items="[{ title: '最后一遍（兼容旧配置）', value: 'final_pass' }, { title: '整条 NR 链', value: 'chain_total' }]"
           :disabled="disabled || working || !!pending"
           @update:model-value="saveOptions"
         />
@@ -565,6 +660,25 @@ async function removeRuntime() {
             :disabled="disabled || working || !!pending || !options.look.enabled"
             @update:model-value="saveOptions"
           />
+          <v-select
+            v-model="options.look.temporal.mode"
+            label="时间累积模式"
+            :items="[{ title: '光流累积（原有路径）', value: 'optical_flow' }, { title: '静态累积（固定镜头）', value: 'static' }, { title: '光流累积＋（实验）', value: 'optical_flow_plus' }]"
+            :disabled="disabled || working || !!pending || !options.look.temporal.enabled"
+            @update:model-value="saveOptions"
+          />
+          <v-select
+            v-model="options.look.temporal.sampling"
+            label="历史颜色验证"
+            :items="[{ title: '双线性后验证（原有路径）', value: 'bilinear' }, { title: '逐采样点验证（实验）', value: 'per_tap' }]"
+            :disabled="disabled || working || !!pending || !options.look.temporal.enabled"
+            @update:model-value="saveOptions"
+          />
+          <p class="nr-dialog-note">
+            静态模式不读取运动，只累积原图局部颜色与边缘稳定的区域，不用于解决运动闪烁。
+            光流失效时保留原有旁路；时间处理始终用未经 NR 修改的原图验证历史。
+            光流累积＋分开保留修正的存在支持与幅度，实验出现/消退时间为 60/180 ms，平滑时间控制条件幅度；可能改变时间均值。
+          </p>
           <div
             v-for="field in temporalFields"
             :key="field.key"
@@ -734,6 +848,32 @@ async function removeRuntime() {
       >
         {{ error }}
       </p>
+      <details class="nr-maintenance">
+        <summary>提交方式实验 · {{ savedConsolidated ? '集中提交' : '逐遍提交' }}</summary>
+        <p class="nr-dialog-note">
+          需要关闭游戏并重新以画面增强启动后生效。默认逐遍提交；实验需要新版画面增强组件。
+        </p>
+        <v-switch
+          :model-value="savedConsolidated"
+          label="集中提交多遍 NR"
+          color="primary"
+          inset
+          hide-details
+          :disabled="disabled || working"
+          @update:model-value="value => value !== null && saveScheduling(value)"
+        />
+        <p class="nr-dialog-note">
+          减少两遍之间的 CPU 等待；仍保留独立模型实例。实际收益取决于场景和 GPU。
+        </p>
+        <v-btn
+          size="small"
+          variant="text"
+          :disabled="disabled || working || !savedConsolidated"
+          @click="saveScheduling(false)"
+        >
+          恢复逐遍提交
+        </v-btn>
+      </details>
       <NrPresetControls
         :executable="executable"
         :blocked="disabled || working || !!pending"
@@ -797,7 +937,7 @@ async function removeRuntime() {
           :disabled="disabled || working || !!pending || nrDefault"
           @click="save(enabled, 100, graphicsAdvanced().nr)"
         >
-          恢复默认配置
+          恢复重建与 Look 默认配置
         </v-btn>
       </template>
     </GraphicsAdvancedDialog>

@@ -91,12 +91,17 @@ impl History {
         let look_changed = self
             .controls
             .is_some_and(|old| old.options.look != controls.options.look);
-        let second_changed = self
-            .controls
-            .is_some_and(|old| old.options.second_pass != controls.options.second_pass);
+        let second_changed = self.controls.is_some_and(|old| {
+            !old.options.second_pass.execution_eq(
+                controls.options.second_pass,
+                controls.intensity,
+                controls.options,
+            )
+        });
         let graph_changed = self.controls.is_some_and(|old| {
             old.options.second_pass.enabled != controls.options.second_pass.enabled
-                || old.options.second_pass.retry != controls.options.second_pass.retry
+                || (old.options.second_pass.enabled
+                    && old.options.second_pass.retry != controls.options.second_pass.retry)
         });
         let toggled = self
             .controls
@@ -174,6 +179,19 @@ impl History {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn inactive_second_tuning_preserves_all_active_histories() {
+        let mut h = History::default();
+        let mut c = controls();
+        h.next(c, source(), 0, true).unwrap();
+        h.sr_consumed();
+        h.fg_consumed();
+        c.options.second_pass.intensity = 50;
+        c.options.second_pass.retry = 7;
+        let d = h.next(c, source(), 1, true).unwrap();
+        assert!(!d.reset_nr && !d.reset_sr && !d.reset_fg);
+        assert_eq!(d.reason, Reason::Continuous);
+    }
     #[test]
     fn second_tuning_preserves_first_history_but_graph_changes_reset_both() {
         let mut h = History::default();

@@ -54,6 +54,8 @@ pub(super) struct Options {
     pub record_on_worker: bool,
     #[serde(default)]
     pub two_pass: bool,
+    #[serde(default)]
+    pub consolidated: bool,
     pub frames: u32,
     pub width: u32,
     pub height: u32,
@@ -204,6 +206,7 @@ pub fn run() -> Result<()> {
             "  [--resize] [--coexist-sr <absolute pinned runtime directory>] [--repair-sr-resources] [--sr-control]\n",
             "  [--pause-without-motion] [--record-on-worker] [--frames <300..10000>] [--width <64..1920>] [--height <64..1080>]\n",
             "  [--two-pass] validates independent NR maps/handles, fenced chaining and discarded second recordings.\n",
+            "  [--consolidated] requires --two-pass; submits both recordings together, with fenced prefix fallback.\n",
             "Default: core and synchronization validation required, 300 frames per intensity, 640x360 SDR. Child-only layer environment; files are staged only into a new session.\n",
             "--trace-layouts requires --validation-dir, enables api-dump.txt, and limits each NR cycle to 3 frames.\n",
             "--repair-internal-layouts inserts initial barriers for matching fresh NR-owned images; default off and limited to inspected runtime hashes.\n",
@@ -236,6 +239,7 @@ pub fn run() -> Result<()> {
         pause_without_motion: false,
         record_on_worker: false,
         two_pass: false,
+        consolidated: false,
         frames: 300,
         width: 640,
         height: 360,
@@ -287,6 +291,10 @@ pub fn run() -> Result<()> {
             options.two_pass = true;
             continue;
         }
+        if flag == "--consolidated" {
+            options.consolidated = true;
+            continue;
+        }
         let value = iter.next().ok_or("missing option value")?;
         match flag {
             "--runtime" => options.runtime = value.into(),
@@ -317,6 +325,9 @@ pub fn run() -> Result<()> {
         if !path.is_absolute() {
             return Err("all paths must be absolute".into());
         }
+    }
+    if options.consolidated && !options.two_pass {
+        return Err("--consolidated requires --two-pass".into());
     }
     verify(&options.runtime, &options.runtime_sha256)?;
     if options.two_pass
@@ -1090,6 +1101,7 @@ unsafe fn device_and_ngx(options: &Options, api: &mut nr_api::Api) -> Result<()>
         "streamline_coexistence_verified":options.coexist_sr.is_some()&&errors==0&&unreviewed==0,"coexistence_execution_completed":options.coexist_sr.is_some(),"game_integration_verified":false,
         "resized_and_recreated":options.resize,"resize_outputs":resize_outputs,
         "two_pass":options.two_pass,
+        "consolidated":options.consolidated,
         "zero_motion_policy_verified":options.pause_without_motion&&!options.init_only&&errors==0&&unreviewed==0,"zero_motion_policy":if options.two_pass {"synthetic_motion_continuous_history"} else if options.pause_without_motion {"pause_nr_and_reset_on_recovery"} else {"experimental_reset_each_frame"},"p0_passed":false,"layout_trace_only":options.trace_layouts,
         "experimental_internal_layout_repair":options.repair_internal_layouts,
         "remaining_gates":remaining_gates}),

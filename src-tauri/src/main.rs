@@ -187,6 +187,7 @@ fn main() {
             commands::graphics_components::validate_nr_preset,
             commands::graphics_components::nr_preset_environment,
             commands::graphics_components::list_graphics_component_targets,
+            commands::graphics_components::get_graphics_gpu_capabilities,
             commands::graphics_components::detect_streamline_fg,
             commands::graphics_components::live_streamline_fg,
             commands::graphics_components::get_native_nr_component,

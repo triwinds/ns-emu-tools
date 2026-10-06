@@ -3,6 +3,11 @@ use super::*;
 use crate::fg_api::*;
 use std::{sync::Arc, time::Instant};
 struct Chain {
+    input_scale: Option<crate::target_input_scale::InputScale>,
+    input_error: Option<String>,
+    input_original_extent: Option<vk::Extent2D>,
+    input_revision: u64,
+    input_sdr: bool,
     sr: Option<crate::target_sr::Sr>,
     sr_failed: bool,
     sr_allowed: bool,
@@ -48,6 +53,9 @@ unsafe fn finish_pending(chain: &mut Chain) -> Result<()> {
     crate::route_objects::drain_device(chain.device.handle())?;
     if let Some(sr) = chain.sr.as_mut() {
         sr.finish()?;
+    }
+    if let Some(input) = chain.input_scale.as_mut() {
+        input.finish()?;
     }
     #[cfg(feature = "native-nr")]
     if let Some(nr) = chain.nr.as_mut() {
@@ -101,8 +109,6 @@ pub(super) unsafe fn created(
     if format != vk::Format::B8G8R8A8_UNORM || queue_family_count > 1 {
         return Err("unsupported FG swapchain format/sharing".into());
     }
-    #[cfg(not(feature = "native-nr"))]
-    let _ = color_space;
     crate::target_window::install(hwnd)?;
     if crate::target_sr::available() && !sr_allowed {
         crate::live::sr(json!({"active":false,"reason":"当前显示表面不支持 SR 读写"}));
@@ -110,6 +116,11 @@ pub(super) unsafe fn created(
     chains().insert(
         handle.as_raw(),
         Arc::new(Mutex::new(Chain {
+            input_scale: None,
+            input_error: None,
+            input_original_extent: None,
+            input_revision: 0,
+            input_sdr: color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR,
             extent,
             sr: None,
             sr_failed: !sr_allowed,
@@ -305,12 +316,75 @@ pub(super) unsafe fn present(
             (requested, control_revision, fg_options),
             (sr_mode, sr_revision, sr_scale, sr_preset, sr_options),
             nr_applied,
+            (input_sizing, input_revision),
         ) = crate::live::frame_controls();
         #[cfg(feature = "native-nr")]
         let (nr_controls, nr_revision) = nr_applied;
         #[cfg(not(feature = "native-nr"))]
         let _ = nr_applied;
-        let native_source = crate::source_auto::select(queue, &*info);
+        let original_source = crate::source_auto::select(queue, &*info);
+        let original_extent = crate::target_input_scale::extent(chain.extent, original_source.ok());
+        let input_changed = chain.input_revision != input_revision
+            || chain.input_original_extent != Some(original_extent)
+            || chain
+                .input_scale
+                .as_ref()
+                .is_some_and(|input| !input.matches(original_source.ok()));
+        if input_changed {
+            // Retire all consumers before destroying their shared source, then
+            // rebuild the processing chain from one frame's control snapshot.
+            device.device_wait_idle()?;
+            drop(chain.sr.take());
+            chain.sr_failed = !chain.sr_allowed;
+            #[cfg(feature = "native-nr")]
+            {
+                drop(chain.nr.take());
+                chain.nr_failed = !chain.sr_allowed;
+                chain.nr_history.recreated();
+                chain.flow_identity = None;
+                chain.flow_frame = None;
+            }
+            drop(chain.input_scale.take());
+            chain.input_revision = input_revision;
+            chain.input_original_extent = Some(original_extent);
+            chain.input_error = None;
+        }
+        if chain.input_scale.is_none() && chain.input_error.is_none() {
+            let parent = instance(vk::Instance::from_raw(chain.instance))
+                .ok_or("input scaling instance missing")?;
+            let inst = ash::Instance::load_with(
+                |name| {
+                    (parent.gipa)(parent.handle, name.as_ptr())
+                        .map_or(std::ptr::null(), |f| f as *const _)
+                },
+                parent.handle,
+            );
+            match crate::target_input_scale::InputScale::new(
+                &inst,
+                d.physical,
+                &device,
+                handle,
+                chain.extent,
+                original_source.ok(),
+                chain.input_sdr && chain.sr_allowed,
+                input_sizing,
+            ) {
+                Ok(input) => chain.input_scale = input,
+                Err(error) => chain.input_error = Some(error.to_string()),
+            }
+        }
+        let native_source = match chain.input_scale.as_ref() {
+            Some(input) => Ok(input.source(original_source.ok())?),
+            None => original_source,
+        };
+        if chain.input_scale.is_none() {
+            let (percent, cap) = (input_sizing.scale_percent, input_sizing.max_edge);
+            crate::live::input_scale(
+                json!({"active":false,"scalePercent":percent,"maxEdge":cap,"mode":if cap == 0 {"percentage"} else {"max_edge"},
+                "originalExtent":[original_extent.width,original_extent.height],"inputExtent":[original_extent.width,original_extent.height],"outputExtent":[chain.extent.width,chain.extent.height],
+                "reason":if chain.input_error.is_some(){"preparation_failed"}else{"unchanged"},"error":chain.input_error,"startupOnly":false,"appliedRevision":input_revision}),
+            );
+        }
         let region = crate::target_fg_gate::presentation_region(
             native_source.ok().map(|source| source.viewport),
             [chain.extent.width, chain.extent.height],
@@ -398,18 +472,21 @@ pub(super) unsafe fn present(
         }
         let mut flow_ready = None;
         let mut reset = !chain.was_on
+            || input_changed
             || region_changed
             || boundary_reset
             || chain.fg_revision != control_revision;
-        let mut sr_reset = chain.sr.is_none() || region_changed || boundary_reset;
+        let mut sr_reset = chain.sr.is_none() || region_changed || boundary_reset || input_changed;
         #[cfg(feature = "native-nr")]
         let nr_identity = crate::target_nr::identity(handle, chain.extent, native_source.ok());
+        #[cfg(feature = "native-nr")]
+        let flow_identity = crate::target_nr::identity(handle, chain.extent, original_source.ok());
         #[cfg(feature = "native-nr")]
         let flow_reset = if crate::nr_runtime::requested() {
             // Flow analyzes consecutive unprocessed present images. Rotation of
             // equivalent native color images does not break that present pair.
             chain.flow_identity.is_none_or(|old| {
-                old.mapping != nr_identity.mapping || old.extent != nr_identity.extent
+                old.mapping != flow_identity.mapping || old.extent != flow_identity.extent
             }) || chain
                 .flow_frame
                 .is_none_or(|old| old.wrapping_add(1) != frame)
@@ -423,7 +500,7 @@ pub(super) unsafe fn present(
         // A reset flow produces zero motion for this frame. NR pauses rather
         // than consuming stale guidance, then resets on its first valid pair;
         // SR and FG receive the same boundary reset directly.
-        let flow_reset = flow_reset || boundary_reset;
+        let flow_reset = flow_reset || boundary_reset || input_changed;
         if boundary_reset {
             trace::event!(
                 "target_temporal_boundary",
@@ -444,12 +521,29 @@ pub(super) unsafe fn present(
                     duplicate = guidance.duplicate;
                     #[cfg(feature = "native-nr")]
                     {
-                        chain.flow_identity = Some(nr_identity);
+                        chain.flow_identity = Some(flow_identity);
                         chain.flow_frame = Some(frame);
                     }
                 }
             }
         }
+        let motion_ready = flow_ready.is_some();
+        let input_scaled = chain.input_scale.is_some();
+        let processing_info = if let Some(input) = chain.input_scale.as_mut() {
+            let waits = flow_ready.into_iter().collect::<Vec<_>>();
+            let source_info = if waits.is_empty() {
+                *info
+            } else {
+                (*info).wait_semaphores(&waits)
+            };
+            let changed = input.prepare(queue, &source_info, original_source.ok())?;
+            reset |= changed;
+            sr_reset |= changed;
+            flow_ready = None;
+            (*info).wait_semaphores(&[])
+        } else {
+            *info
+        };
         if sr_requested && chain.sr.is_none() {
             let parent =
                 instance(vk::Instance::from_raw(chain.instance)).ok_or("missing SR instance")?;
@@ -480,7 +574,7 @@ pub(super) unsafe fn present(
                 }
             }
         }
-        let nr_motion = if flow_ready.is_some() {
+        let nr_motion = if motion_ready {
             chain.resources.map(|r| r[1])
         } else {
             None
@@ -572,7 +666,8 @@ pub(super) unsafe fn present(
                 if let (Some(nr), Some(motion)) = (chain.nr.as_mut(), nr_motion) {
                     let output = nr.run(
                         queue,
-                        &(*info).wait_semaphores(&flow_ready.into_iter().collect::<Vec<_>>()),
+                        &processing_info
+                            .wait_semaphores(&flow_ready.into_iter().collect::<Vec<_>>()),
                         motion,
                         native_source.ok(),
                         nr_controls.intensity,
@@ -616,11 +711,11 @@ pub(super) unsafe fn present(
                 "active"
             };
             crate::live::nr(
-                json!({"requested":nr_controls.enabled,"active":nr_completed,"evaluated":nr_source_frame.is_some_and(|f|f.evaluate),"outputReused":nr_source_frame.is_some_and(|f|!f.evaluate),"sourceFrameId":nr_source_frame.map(|f|f.id),"sourceFrameBasis":"exact_nr_gamma_input","controlsPending":nr_source_frame.is_some_and(|f|f.controls_pending),"reason":reason,"intensity":nr_controls.intensity,"appliedIntensity":chain.nr.as_ref().and_then(|nr|nr.applied_intensity()),"options":nr_controls.options,"appliedOptions":chain.nr.as_ref().and_then(|nr|nr.applied_options()),"pipeline":chain.nr.as_ref().map(|nr| { let mut status = nr.pipeline_status(nr_controls.options, nr_evaluated); if !nr_completed { status["actualPasses"] = json!(0); status["secondActive"] = json!(false); status["secondEvaluated"] = json!(false); status["reason"] = json!("nr_inactive"); } status }),"look":chain.nr.as_ref().map(|nr| { let mut status = nr.look_status(nr.applied_options().map_or(nr_controls.options.look, |o|o.look)); if let Some(temporal) = status.get_mut("temporal").filter(|v|v.is_object()) { temporal["evaluated"] = json!(nr_evaluated && temporal["active"] == true); if !nr_completed {temporal["active"] = json!(false); temporal["reason"] = json!("nr_inactive");} } if !nr_completed {status["active"] = json!(false); status["reason"] = json!("nr_inactive"); if let Some(spatial) = status.get_mut("spatial").filter(|v| v.is_object()) {spatial["active"] = json!(false); spatial["reason"] = json!("nr_inactive");}} status }),"revision":nr_revision,"appliedRevision":nr_applied_revision,"sourceIdentity":nr_identity.identity,"sourceGeneration":native_source.ok().map(|s|s.generation),"sourceGroupSize":native_source.ok().map(|s|s.history_members),"sourcePathCount":native_source.ok().map(|s|s.history_paths),"historyUpdate":native_source.ok().map(|s|s.history_update),"reset":nr_source_frame.is_some_and(|f|f.reset),"resetReason":format!("{:?}",decision.reason),"pendingSrReset":decision.reset_sr,"pendingFgReset":decision.reset_fg,"motionValid":motion_valid,"depth":"synthetic_constant","source":if native_source.is_ok(){"native_source"}else{"present_source"},"input":nr_identity.extent}),
+                json!({"requested":nr_controls.enabled,"active":nr_completed,"evaluated":nr_source_frame.is_some_and(|f|f.evaluate),"firstEvaluated":nr_source_frame.is_some_and(|f|f.first_evaluate),"sourceObserved":nr_source_frame.is_some_and(|f|f.observed),"modelRecomputed":nr_source_frame.is_some_and(|f|f.model_recompute),"outputReused":nr_source_frame.is_some_and(|f|!f.evaluate),"lookRecomputed":nr_source_frame.is_some_and(|f|f.look_recompute),"finalOutputReused":nr_source_frame.is_some_and(|f|!f.evaluate && !f.look_recompute),"sourceFrameId":nr_source_frame.map(|f|f.id),"sourceFrameBasis":"exact_nr_gamma_input","controlsPending":nr_source_frame.is_some_and(|f|f.controls_pending),"reason":reason,"intensity":nr_controls.intensity,"appliedIntensity":chain.nr.as_ref().and_then(|nr|nr.applied_intensity()),"options":nr_controls.options,"appliedOptions":chain.nr.as_ref().and_then(|nr|nr.applied_options()),"pipeline":chain.nr.as_ref().map(|nr| { let mut status = nr.pipeline_status(nr_controls.options, nr_evaluated); if !nr_completed { status["actualPasses"] = json!(0); status["secondActive"] = json!(false); status["secondEvaluated"] = json!(false); status["reason"] = json!("nr_inactive"); } status }),"look":chain.nr.as_ref().map(|nr| { let mut status = nr.look_status(nr.applied_options().map_or(nr_controls.options.look, |o|o.look)); if let Some(temporal) = status.get_mut("temporal").filter(|v|v.is_object()) { temporal["evaluated"] = json!(nr_evaluated && temporal["active"] == true); if !nr_completed {temporal["active"] = json!(false); temporal["reason"] = json!("nr_inactive");} } if !nr_completed {status["active"] = json!(false); status["reason"] = json!("nr_inactive"); if let Some(spatial) = status.get_mut("spatial").filter(|v| v.is_object()) {spatial["active"] = json!(false); spatial["reason"] = json!("nr_inactive");}} status }),"revision":nr_revision,"appliedRevision":nr_applied_revision,"sourceIdentity":nr_identity.identity,"sourceGeneration":native_source.ok().map(|s|s.generation),"sourceGroupSize":native_source.ok().map(|s|s.history_members),"sourcePathCount":native_source.ok().map(|s|s.history_paths),"historyUpdate":native_source.ok().map(|s|s.history_update),"reset":nr_source_frame.is_some_and(|f|f.reset),"resetReason":format!("{:?}",decision.reason),"pendingSrReset":decision.reset_sr,"pendingFgReset":decision.reset_fg,"motionValid":motion_valid,"depth":"synthetic_constant","source":if native_source.is_ok(){"native_source"}else{"present_source"},"input":nr_identity.extent}),
             );
             trace::event!(
                 "target_nr_frame",
-                json!({"frame":frame,"requested":nr_controls.enabled,"active":nr_completed,"evaluated":nr_source_frame.is_some_and(|f|f.evaluate),"output_reused":nr_source_frame.is_some_and(|f|!f.evaluate),"source_frame_id":nr_source_frame.map(|f|f.id),"source_frame_basis":"exact_nr_gamma_input","pipeline":chain.nr.as_ref().map(|nr|nr.pipeline_status(nr_controls.options,nr_evaluated)),"controls_pending":nr_source_frame.is_some_and(|f|f.controls_pending),"applied_revision":nr_applied_revision,"reason":reason,"revision":nr_revision,"intensity":nr_controls.intensity,"applied_intensity":chain.nr.as_ref().and_then(|nr|nr.applied_intensity()),"reset":nr_source_frame.is_some_and(|f|f.reset),"reset_reason":format!("{:?}",decision.reason),"motion_valid":motion_valid,"pending_sr_reset":decision.reset_sr,"pending_fg_reset":decision.reset_fg,"source_image":native_source.map_or(handle.as_raw(), |s|s.image.as_raw()),"source_generation":native_source.ok().map(|s|s.generation),"source_identity":nr_identity.identity,"source_group_size":native_source.ok().map(|s|s.history_members),"source_path_count":native_source.ok().map(|s|s.history_paths),"history_update":native_source.ok().map(|s|s.history_update),"source_route":native_source.ok().map(|s|s.history_route),"source_usage":native_source.ok().map(|s|s.usage),"mapping":nr_identity.mapping,"input":nr_identity.extent,"nvof_wait_consumed":nr_completed})
+                json!({"frame":frame,"requested":nr_controls.enabled,"active":nr_completed,"evaluated":nr_source_frame.is_some_and(|f|f.evaluate),"first_evaluated":nr_source_frame.is_some_and(|f|f.first_evaluate),"source_observed":nr_source_frame.is_some_and(|f|f.observed),"model_recomputed":nr_source_frame.is_some_and(|f|f.model_recompute),"output_reused":nr_source_frame.is_some_and(|f|!f.evaluate),"look_recomputed":nr_source_frame.is_some_and(|f|f.look_recompute),"final_output_reused":nr_source_frame.is_some_and(|f|!f.evaluate && !f.look_recompute),"source_frame_id":nr_source_frame.map(|f|f.id),"source_frame_basis":"exact_nr_gamma_input","pipeline":chain.nr.as_ref().map(|nr|nr.pipeline_status(nr_controls.options,nr_evaluated)),"controls_pending":nr_source_frame.is_some_and(|f|f.controls_pending),"applied_revision":nr_applied_revision,"reason":reason,"revision":nr_revision,"intensity":nr_controls.intensity,"applied_intensity":chain.nr.as_ref().and_then(|nr|nr.applied_intensity()),"reset":nr_source_frame.is_some_and(|f|f.reset),"reset_reason":format!("{:?}",decision.reason),"motion_valid":motion_valid,"pending_sr_reset":decision.reset_sr,"pending_fg_reset":decision.reset_fg,"source_image":native_source.map_or(handle.as_raw(), |s|s.image.as_raw()),"source_generation":native_source.ok().map(|s|s.generation),"source_identity":nr_identity.identity,"source_group_size":native_source.ok().map(|s|s.history_members),"source_path_count":native_source.ok().map(|s|s.history_paths),"history_update":native_source.ok().map(|s|s.history_update),"source_route":native_source.ok().map(|s|s.history_route),"source_usage":native_source.ok().map(|s|s.usage),"mapping":nr_identity.mapping,"input":nr_identity.extent,"nvof_wait_consumed":nr_completed})
             );
         }
         #[cfg(not(feature = "native-nr"))]
@@ -643,11 +738,11 @@ pub(super) unsafe fn present(
         if let Some(sr) = chain.sr.as_mut() {
             let waits = flow_ready.into_iter().collect::<Vec<_>>();
             let input = if nr_completed {
-                (*info).wait_semaphores(&nr_waits)
+                processing_info.wait_semaphores(&nr_waits)
             } else if waits.is_empty() {
-                *info
+                processing_info
             } else {
-                (*info).wait_semaphores(&waits)
+                processing_info.wait_semaphores(&waits)
             };
             sr_ready = sr.run(
                 queue,
@@ -670,6 +765,12 @@ pub(super) unsafe fn present(
             sr_completed = true;
             #[cfg(feature = "native-nr")]
             chain.nr_history.sr_consumed();
+        }
+        if let Some(input) = chain.input_scale.as_mut() {
+            if !nr_completed && !sr_completed {
+                input.present(queue, &processing_info, original_source.ok())?;
+            }
+            crate::live::input_scale(input.status(nr_completed, sr_completed, input_revision));
         }
         if let Some(resources) = chain.resources {
             let mut fg_resources = resources;
@@ -753,7 +854,7 @@ pub(super) unsafe fn present(
         let present_waits = sr_ready.into_iter().collect::<Vec<_>>();
         let forwarded = if !present_waits.is_empty() {
             (*info).wait_semaphores(&present_waits)
-        } else if sr_completed || nr_completed {
+        } else if sr_completed || nr_completed || input_scaled {
             (*info).wait_semaphores(&[])
         } else if flow_waits.is_empty() {
             *info
@@ -849,7 +950,7 @@ pub(super) unsafe fn present(
         }
         trace::event!(
             "target_fg_frame",
-            json!({"frame":frame,"swapchain":handle.as_raw(),"composition_version":1,"fg_control_requested":requested,"fg_revision":control_revision,"sr_mode":sr_mode,"sr_revision":sr_revision,"nr_active":nr_completed,"nr_evaluated":nr_evaluated,"nr_output_reused":nr_completed && !nr_evaluated,"sr_evaluated":sr_completed,"color_source":if sr_completed {"sr_output"} else if nr_completed {"nr_output"} else {"original_present"},"history_reset":reset,"duplicate_color":duplicate,"interpolation_suspended":on && (duplicate || reset),"tail_deferred":sr_ready.is_some(),"present_waits":present_waits.iter().map(|s|s.as_raw()).collect::<Vec<_>>(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"retire_previous":retire_us,"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
+            json!({"frame":frame,"swapchain":handle.as_raw(),"composition_version":1,"fg_control_requested":requested,"fg_revision":control_revision,"sr_mode":sr_mode,"sr_revision":sr_revision,"nr_active":nr_completed,"nr_evaluated":nr_evaluated,"nr_output_reused":nr_completed && !nr_evaluated,"sr_evaluated":sr_completed,"color_source":if sr_completed {"sr_output"} else if nr_completed {"nr_output"} else if input_scaled {"scaled_input"} else {"original_present"},"history_reset":reset,"duplicate_color":duplicate,"interpolation_suspended":on && (duplicate || reset),"tail_deferred":sr_ready.is_some(),"present_waits":present_waits.iter().map(|s|s.as_raw()).collect::<Vec<_>>(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"retire_previous":retire_us,"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
         );
         Ok(result)
     })();
@@ -892,6 +993,8 @@ pub(super) unsafe fn after_destroy(handle: vk::Device, swapchain: vk::SwapchainK
         drop(chain.sr.take());
         #[cfg(feature = "native-nr")]
         drop(chain.nr.take());
+        drop(chain.input_scale.take());
+        crate::live::input_scale(json!({"active":false,"reason":"waiting"}));
         crate::live::sr(json!({"active":false,"reason":"waiting"}));
         drop(chain.flow.take());
         if let Some(resources) = chain.resources {

@@ -1,0 +1,901 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-05",
+  "scope": "M1 implementation, M2 static/per-tap foundations, M3 pure Look recomposition; partial plan only",
+  "plan_complete": false,
+  "game_integration_accepted": false,
+  "reference": {
+    "tag": "v0.6.9-experimental",
+    "commit": "27c5df91177a29b33be612e98274169f3d2fca49",
+    "tag_and_local_head_verified": true,
+    "license_text_observed": "GNU GPL version 3",
+    "source_copied": false,
+    "all_file_copyright_and_third_party_review_complete": false
+  },
+  "implemented": [
+    "explicit final_pass/chain_total scope",
+    "independent P0 temporal guide",
+    "explicit static temporal mode",
+    "optional per_tap validation",
+    "immutable raw model cache and paused pure Look recomposition",
+    "inactive/inherited second-pass tuning preserves active histories",
+    "scope/mode capability checks",
+    "preset schema 3 and schema 1/2 migration"
+  ],
+  "pending": [
+    "strict Vulkan game baseline M0",
+    "game-video acceptance for M1/M2/M3",
+    "optical-flow persistence",
+    "model parameter suffix recomputation",
+    "M4 protection/diagnostic views/Oklab",
+    "M5 consolidated submissions after strict baseline passes",
+    "M6 inference downscale and conditional low-frequency temporal reconstruction",
+    "long-term resource/performance and normal-retirement acceptance"
+  ],
+  "checks": {
+    "rust_fmt": {
+      "toolbox": true,
+      "component": true
+    },
+    "cargo_check": {
+      "toolbox_host": true,
+      "toolbox_windows_x64_msvc": true,
+      "component_host_all_features_all_targets": true,
+      "component_windows_x64_msvc_all_features_all_targets": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "component_regression": {
+      "passed": 216,
+      "failed": 0,
+      "ignored_hardware_tests": 5
+    },
+    "look_gpu_fixed_inputs": {
+      "passed": 1,
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_notices": 4,
+      "device": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+      "assertions": [
+        "both scopes neutral/bypass bit identity and zero/alpha contracts",
+        "independent P0/R1 guide behavior",
+        "static mode without motion texture",
+        "local guide changes reject static history",
+        "mode switch invalidation",
+        "per-tap valid/invalid support and tiny-weight rejection",
+        "12 cached recompositions without model reupload or cumulative drift",
+        "stable history clock across composition tuning",
+        "cached neutral restores raw output bit identity",
+        "validated resource destruction"
+      ]
+    },
+    "toolbox_presets": {
+      "passed": 6
+    },
+    "toolbox_shared_settings": {
+      "passed": 7
+    },
+    "frontend_presets": {
+      "passed": 7
+    },
+    "frontend_build_and_typecheck": true,
+    "changed_frontend_eslint": true,
+    "spirv_val_vulkan_1_1": {
+      "variants": 3,
+      "passed": true
+    },
+    "release_build": true
+  },
+  "sources": [
+    {
+      "path": "src-tauri/crates/streamline-advanced-settings.rs",
+      "sha256": "4fd4c54e9733902ef32aa16dcee3a6c1a9272b77a53949f070b9d4a2472962a7"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/nr_look.rs",
+      "sha256": "dfbe385acfffeb560e3af586d025baf093d57ce8d008cdff88842ce651d5b0b4"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/nr_look_history.rs",
+      "sha256": "1f178ccad022f57c103ae2ea6cf02e01ff128717d322bf65ab78ebc20115bf17"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/nr_look_temporal.rs",
+      "sha256": "5a51ace7b62c63259537d153a03f13d6bd336cdc713db30a6061341987a915ee"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/nr_look_tests.rs",
+      "sha256": "6aa739fef17ebe5ae1c8c1b2c228751e77a6d43e74678101d1928f4b5d9027a0"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/nr_source_frames.rs",
+      "sha256": "f0bdde2328fc830e4c77396559059a7ed145578debf6460e19c82b1ca31c68d8"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/target_nr.rs",
+      "sha256": "fa9630b48b889b19b115752f38404069e1e144bd353e0834f099aff0e14de303"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/trace.rs",
+      "sha256": "67c79f8430fe119a853e2b4313cc9b0b37550473f9aea45c041af93ed99dba63"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/nr_runtime.rs",
+      "sha256": "b6f269867c0a01768b75913a6fcaa725e6a288be7f5acdaa165f5d6dd9e6afa5"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/src/route_objects.rs",
+      "sha256": "10f75e4de2636f7243c0ddea42f73dd277bca686a1ecb5477ecd55d4f0621ec9"
+    }
+  ],
+  "shaders": [
+    {
+      "path": "src-tauri/crates/streamline-fg/shaders/nr_look_temporal.comp",
+      "sha256": "e541f44d434db8a5e5ec095e3557cb5c01d13d58be1083aa638c5e15542c58c3"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/shaders/nr_look_temporal.spv",
+      "sha256": "d29a54aa34f4e0fa9b642f5088552d3abe212283b1dc153b872b6e6d63af6cd4"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/shaders/nr_look_temporal_fp16.spv",
+      "sha256": "71153cf376a74e29fe1071093b5f590116303a179cd5d8597132991a98d631b0"
+    },
+    {
+      "path": "src-tauri/crates/streamline-fg/shaders/nr_look_temporal_static.spv",
+      "sha256": "f253f0422d72d3c70c8f00c6a54fb1e6c57261bf3b808491816c0d54f8fa93f7"
+    }
+  ],
+  "logs": [
+    {
+      "path": "src-tauri/target/nr-followup-host-check.log",
+      "sha256": "33c682586eac5b3d1cd4d5da4f2168eddd492db21ee092ef9e94fc05d0a055e2"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-windows-check.log",
+      "sha256": "d2d8f894f0444dad7df3b6a3a49c2a469e599369c0dd426e10581f4ce0b415d8"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-toolbox-host-check.log",
+      "sha256": "eefd0d30c9ec62b7542a3ccaaed377b554bad8df7ca8d5b103f1269ae1544750"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-toolbox-windows-check.log",
+      "sha256": "6cf8c1caab2b27daf8ce782a290d435a8c9a491966c80726cb1103c722945e21"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-regression.log",
+      "sha256": "ba98ec2b6d6e0198bfd94c2ac7460a9dc1fa2a8758061ba175fafaedbd910fa0"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-look-gpu.log",
+      "sha256": "1d5c33034eb938c8824f87530d5c1305c22eca3f8e48ecefaa1d44954d93140d"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-presets.log",
+      "sha256": "c85b8b26aa1aebde4f04957b16a200b8a265fb974ee5a71988d877efcb2d4cf8"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-toolbox-settings.log",
+      "sha256": "5a0f70101872076bd02199bf611256a6e5c7a360e950000e97551daa8a0dccaa"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-frontend-build.log",
+      "sha256": "554ba98b8a0f67f1499b98254ad134b32259d84ec5dbba785ce1ca56bfccfe9e"
+    },
+    {
+      "path": "src-tauri/target/nr-followup-release-build.log",
+      "sha256": "79475330f74e7d63f7d9955a9a9894c10335d3bd54e590d5060bfcb2a41db27b"
+    }
+  ],
+  "strict_eden_session": {
+    "path": "src-tauri/target/nr-followup-20261005/eden-strict-003",
+    "frozen_debug_layer": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-strict-001-build/streamline_probe_layer.dll",
+      "sha256": "36248e4f12a591e5e3020b0501735644bfda5865c17654db5156fb7def061d72"
+    },
+    "frozen_debug_launcher": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-strict-001-build/streamline-layer-probe.exe",
+      "sha256": "a01781a8df4d4c9753d38c3100ac8ac68392bf4dbf69cd1ec1f3293559068652"
+    },
+    "latest_source_game_tested": false,
+    "latest_source_game_test_limit": "Frozen debug preceded final history clock and applied-configuration Look preparation edits. Current fixed-input tests cover latest source.",
+    "validation_enabled": true,
+    "readback_enabled": true,
+    "timing_and_frame_traces_enabled": true,
+    "raw_validation_counts": {
+      "info": 24,
+      "errors": 53,
+      "warnings": 10
+    },
+    "raw_validation": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-strict-003/nr-validation.jsonl",
+      "sha256": "b883ae4c4f85339aa85458e42c13533a53e81d3b4148011a12e02b3eb0b491b7"
+    },
+    "target_result": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-strict-003/target-result.json",
+      "sha256": "4fa78560d592fbda1b9d3cd1a3e03810f9b1a2bbfb60d366f1b63a260075aeea"
+    },
+    "verification": {
+      "nr": {
+        "call_chain_completed": false,
+        "clean_nr_shutdown": false,
+        "combinations": {
+          "all_combinations_observed": false,
+          "checked": true,
+          "combinations": [
+            {
+              "fg": false,
+              "frames": 4247,
+              "nr": false,
+              "sr": false
+            },
+            {
+              "fg": false,
+              "frames": 4076,
+              "nr": true,
+              "sr": false
+            },
+            {
+              "fg": false,
+              "frames": 0,
+              "nr": false,
+              "sr": true
+            },
+            {
+              "fg": false,
+              "frames": 0,
+              "nr": true,
+              "sr": true
+            },
+            {
+              "fg": true,
+              "frames": 0,
+              "nr": false,
+              "sr": false
+            },
+            {
+              "fg": true,
+              "frames": 0,
+              "nr": true,
+              "sr": false
+            },
+            {
+              "fg": true,
+              "frames": 0,
+              "nr": false,
+              "sr": true
+            },
+            {
+              "fg": true,
+              "frames": 0,
+              "nr": true,
+              "sr": true
+            }
+          ],
+          "fg_enabled_frames": 0,
+          "fg_reset_checks": 0,
+          "inactive_requested_frames": 14,
+          "invalid_frames": [],
+          "nr_control_transitions": [
+            {
+              "enabled_changed": true,
+              "fg_continuous": false,
+              "fg_generated_on_transition": false,
+              "frame": 4093,
+              "reset_valid": true,
+              "sr_continuous": false,
+              "strength_changed": false
+            }
+          ],
+          "safe_failure_tested": false,
+          "sr_reset_checks": 0,
+          "valid": true,
+          "visual_quality_verified": false
+        },
+        "count_matches": true,
+        "evaluate_successes": 3940,
+        "execution_verified": false,
+        "fg_requested_frames": 0,
+        "longest_consecutive_evaluations": 1577,
+        "look_history": {
+          "cached_outputs": 137,
+          "checked": true,
+          "history_updates": 3940,
+          "pixel_acceptance_measured": false,
+          "valid": true,
+          "video_quality_verified": false
+        },
+        "nonzero_intensity_changed_output": true,
+        "nr_to_sr_frames": 0,
+        "nr_to_sr_handoff_valid": true,
+        "off_frames": 4248,
+        "p1_passed": false,
+        "p2_passed": false,
+        "passes": {
+          "checked": true,
+          "clean_second_shutdown": false,
+          "fallbacks": 0,
+          "game_quality_verified": false,
+          "second_instances_created": 2,
+          "second_instances_released": 2,
+          "submitted_passes": 7880,
+          "two_pass_frames": 3940,
+          "valid": false
+        },
+        "performance_verified": false,
+        "readbacks": 4,
+        "readbacks_valid": true,
+        "reset_matches_submission": true,
+        "reset_reasons": {
+          "Resumed": 14
+        },
+        "submissions_fenced": true,
+        "synthetic_depth": true,
+        "temporal_history": {
+          "checked": true,
+          "continuous_evaluations": 3926,
+          "logical_identities": 2,
+          "longest_without_reset": 1576,
+          "physical_rotations_without_reset": 0,
+          "valid": true,
+          "visual_quality_verified": false
+        },
+        "valid_motion_only": true,
+        "visual_quality_verified": false,
+        "zero_motion_paused_frames": 14
+      },
+      "p1_passed": false,
+      "p2_passed": false,
+      "present_chain": null,
+      "present_chain_error": "unbalanced or premature native present retirement",
+      "sdk_error_lines": 53,
+      "session_verified": false,
+      "target_exit": {
+        "code": -805306369,
+        "fg_requested": false,
+        "success": false
+      },
+      "validation": {
+        "complete": false,
+        "core_validation": true,
+        "errors": 53,
+        "game_integration_accepted": false,
+        "log_failed": false,
+        "summary_matches_log": false,
+        "synchronization_validation": true,
+        "unreviewed_warnings": 10,
+        "validation_passed": false,
+        "warnings": 10
+      }
+    },
+    "reported_fps_by_user": 6,
+    "nr_disabled_confirmed": true,
+    "observed_fps_after_disable_approx": [
+      11,
+      12
+    ],
+    "fps_limitations": "Transient prior telemetry observation, not a saved controlled sampling series; validation remained enabled. No causal performance attribution.",
+    "last_profile_single_sample": {
+      "actual_passes": 2,
+      "controls_pending": false,
+      "cpu_evaluate_call_us": 1473,
+      "cpu_fence_wait_us": 7444,
+      "cpu_input_submit_wait_us": 2922,
+      "cpu_intermediate_fence_wait_us": 7024,
+      "cpu_pass_evaluate_call_us": [
+        788,
+        685
+      ],
+      "cpu_readback_us": 150,
+      "cpu_record_us": 12299,
+      "cpu_submit_us": 102,
+      "evaluated": true,
+      "final_output_reused": false,
+      "gpu_handoff": false,
+      "gpu_pass_us": [
+        6737.664,
+        6318.24
+      ],
+      "gpu_stages": [
+        "prepare",
+        "evaluate_including_intermediate_gap",
+        "look",
+        "output_and_optional_readback"
+      ],
+      "gpu_us": [
+        1206.624,
+        14640.032,
+        762.88,
+        20.352
+      ],
+      "input": [
+        1718,
+        950
+      ],
+      "look": {
+        "active": true,
+        "base": "original_nr_input",
+        "codec": "sdr_srgb_rgba16f",
+        "error": null,
+        "guide": "original_nr_input",
+        "history": "model_delta_only",
+        "passes": 2,
+        "reason": "active",
+        "requested": true,
+        "scope": "chain_total",
+        "spatial": {
+          "active": false,
+          "allocationBytes": 0,
+          "error": null,
+          "history": "none",
+          "radiusPixels": 8,
+          "reason": "bypassed",
+          "requested": false,
+          "textureCount": 0
+        },
+        "temporal": {
+          "active": true,
+          "actualMode": "static",
+          "allocationBytes": 42270720,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "raw_log_model_delta",
+          "historyReady": true,
+          "intervalMs": 136,
+          "maximumHistoryWeight": 0.18268351256847382,
+          "pixelHistoryAcceptanceMeasured": false,
+          "reason": "active",
+          "requested": true,
+          "requestedMode": "static",
+          "resetReason": "continuous",
+          "sampling": "bilinear",
+          "sourceFrameId": 3939,
+          "textureCount": 3
+        }
+      },
+      "look_recomputed": false,
+      "output_reused": false,
+      "pipeline": {
+        "activeFeatureCount": 2,
+        "actualPasses": 2,
+        "error": null,
+        "lookCacheResources": {
+          "first": {
+            "allocationBytes": 56360960,
+            "rawModelCache": {
+              "allocationBytes": 14090240,
+              "ready": false,
+              "textureCount": 1
+            },
+            "textureCount": 4
+          },
+          "second": {
+            "allocationBytes": 56360960,
+            "rawModelCache": {
+              "allocationBytes": 14090240,
+              "ready": true,
+              "textureCount": 1
+            },
+            "textureCount": 4
+          }
+        },
+        "passes": [
+          {
+            "depthImage": 4473912813424613,
+            "evaluated": true,
+            "feature": 2979193908000,
+            "inputImage": 4467315743657951,
+            "instance": 3,
+            "intensity": 1.0,
+            "motionImage": 4477211348307944,
+            "options": {
+              "autoMask": false,
+              "globalTone": null,
+              "localStructure": null,
+              "localTone": null,
+              "skinStructure": 0,
+              "style": "a"
+            },
+            "outputImage": 4470614278541282,
+            "outputReused": false,
+            "parameters": 2979185059040,
+            "pass": 1,
+            "reset": false,
+            "sourceFrameId": 3939
+          },
+          {
+            "depthImage": 4473912813424613,
+            "evaluated": true,
+            "feature": 2979194077520,
+            "inputImage": 4470614278541282,
+            "instance": 4,
+            "intensity": 1.0,
+            "motionImage": 4477211348307944,
+            "options": {
+              "autoMask": false,
+              "globalTone": null,
+              "localStructure": null,
+              "localTone": null,
+              "skinStructure": 0,
+              "style": "a"
+            },
+            "outputImage": 4499201580863484,
+            "outputReused": false,
+            "parameters": 2979185058912,
+            "pass": 2,
+            "reset": false,
+            "sourceFrameId": 3939
+          }
+        ],
+        "privateTextureCount": 6,
+        "reason": "active",
+        "requestedPasses": 2,
+        "retry": 0,
+        "retryPolicy": "explicit_retry_toggle_or_recreation",
+        "sdkMemoryBytes": null,
+        "secondActive": true,
+        "secondAllocationBytes": 14090240,
+        "secondEvaluated": true,
+        "secondTextureCount": 1
+      },
+      "readback": false,
+      "source_frame_id": 3939,
+      "tail_deferred": false
+    },
+    "last_active_frame": {
+      "active": true,
+      "applied_intensity": 1.0,
+      "applied_revision": 0,
+      "controls_pending": false,
+      "evaluated": true,
+      "final_output_reused": false,
+      "frame": 4092,
+      "history_update": null,
+      "input": [
+        1718,
+        950
+      ],
+      "intensity": 1.0,
+      "look_recomputed": false,
+      "mapping": 9533270855064440402,
+      "motion_valid": true,
+      "nvof_wait_consumed": true,
+      "output_reused": false,
+      "pending_fg_reset": true,
+      "pending_sr_reset": true,
+      "pipeline": {
+        "activeFeatureCount": 2,
+        "actualPasses": 2,
+        "error": null,
+        "lookCacheResources": {
+          "first": {
+            "allocationBytes": 56360960,
+            "rawModelCache": {
+              "allocationBytes": 14090240,
+              "ready": false,
+              "textureCount": 1
+            },
+            "textureCount": 4
+          },
+          "second": {
+            "allocationBytes": 56360960,
+            "rawModelCache": {
+              "allocationBytes": 14090240,
+              "ready": true,
+              "textureCount": 1
+            },
+            "textureCount": 4
+          }
+        },
+        "passes": [
+          {
+            "depthImage": 4473912813424613,
+            "evaluated": true,
+            "feature": 2979193908000,
+            "inputImage": 4467315743657951,
+            "instance": 3,
+            "intensity": 1.0,
+            "motionImage": 4477211348307944,
+            "options": {
+              "autoMask": false,
+              "globalTone": null,
+              "localStructure": null,
+              "localTone": null,
+              "skinStructure": 0,
+              "style": "a"
+            },
+            "outputImage": 4470614278541282,
+            "outputReused": false,
+            "parameters": 2979185059040,
+            "pass": 1,
+            "reset": false,
+            "sourceFrameId": 3939
+          },
+          {
+            "depthImage": 4473912813424613,
+            "evaluated": true,
+            "feature": 2979194077520,
+            "inputImage": 4470614278541282,
+            "instance": 4,
+            "intensity": 1.0,
+            "motionImage": 4477211348307944,
+            "options": {
+              "autoMask": false,
+              "globalTone": null,
+              "localStructure": null,
+              "localTone": null,
+              "skinStructure": 0,
+              "style": "a"
+            },
+            "outputImage": 4499201580863484,
+            "outputReused": false,
+            "parameters": 2979185058912,
+            "pass": 2,
+            "reset": false,
+            "sourceFrameId": 3939
+          }
+        ],
+        "privateTextureCount": 6,
+        "reason": "active",
+        "requestedPasses": 2,
+        "retry": 0,
+        "retryPolicy": "explicit_retry_toggle_or_recreation",
+        "sdkMemoryBytes": null,
+        "secondActive": true,
+        "secondAllocationBytes": 14090240,
+        "secondEvaluated": true,
+        "secondTextureCount": 1
+      },
+      "reason": "active",
+      "requested": true,
+      "reset": false,
+      "reset_reason": "Continuous",
+      "revision": 0,
+      "source_frame_basis": "exact_nr_gamma_input",
+      "source_frame_id": 3939,
+      "source_generation": null,
+      "source_group_size": null,
+      "source_identity": 4335374348324711,
+      "source_image": 4335374348324711,
+      "source_path_count": null,
+      "source_route": null,
+      "source_usage": null
+    },
+    "events": {
+      "negotiate": 5,
+      "instance_request": 5,
+      "target_nr_validation": 5,
+      "vkCreateInstance": 5,
+      "target_nr_validation_summary": 4,
+      "vkDestroyInstance": 4,
+      "target_sdk_requirements": 3,
+      "vkCreateWin32SurfaceKHR": 2,
+      "vkDestroySurfaceKHR": 1,
+      "device_request": 1,
+      "target_device_plan": 1,
+      "vkCreateDevice": 1,
+      "gdpa": 16,
+      "route_gdpa": 1250,
+      "layout_probe_installed": 1,
+      "route_gipa": 98,
+      "target_nr_ngx": 39,
+      "target_nr_core_init": 1,
+      "target_nr_capability_parameters": 1,
+      "target_nr_snippet_init": 1,
+      "target_nr_runtime_ready": 1,
+      "target_sdk_ready": 1,
+      "vkCreateSwapchainKHR": 2,
+      "route_loader_data": 44,
+      "target_proxy_swapchain": 2,
+      "vkQueuePresentKHR": 8339,
+      "target_nvof_ready": 2,
+      "target_temporal_boundary": 19,
+      "target_nr_frame": 8339,
+      "route_present_submitted": 8339,
+      "route_present_retired": 8338,
+      "target_fg_region": 2,
+      "target_fg_frame": 8337,
+      "target_nr_allocate_parameters": 2,
+      "target_nr_populate_parameters": 2,
+      "target_nr_readback_memory": 2,
+      "target_nr_ready": 2,
+      "target_nr_second_allocate_parameters": 2,
+      "target_nr_second_populate_parameters": 2,
+      "layout_probe_transition": 4,
+      "target_nr_create_feature": 2,
+      "target_nr_evaluate": 3940,
+      "target_nr_second_create_feature": 2,
+      "target_nr_second_evaluate": 3940,
+      "target_nr_pass_frame": 7880,
+      "target_nr_readback": 4,
+      "target_nr_profile": 4077,
+      "target_nr_submission": 4077,
+      "target_swapchain_out_of_date": 1,
+      "target_nr_release_feature": 2,
+      "target_nr_destroy_parameters": 2,
+      "target_nr_second_release_feature": 2,
+      "target_nr_second_destroy_parameters": 2,
+      "target_fg_window_guard_rearmed": 1,
+      "target_fg_retired": 1,
+      "vkDestroySwapchainKHR": 1
+    },
+    "target_exit": {
+      "code": -805306369,
+      "fg_requested": false,
+      "success": false
+    },
+    "computer_use_stopped_by_user_escape": true,
+    "session_verified": false
+  },
+  "prepared_release": {
+    "layer": {
+      "path": "src-tauri/target/nr-followup-20261005/release-build-quiet/streamline_probe_layer.dll",
+      "sha256": "46143b37d1da83687fe020d2de9aa62af249fc65598542637cbdc9684d0f588b"
+    },
+    "launcher": {
+      "path": "src-tauri/target/nr-followup-20261005/release-build-quiet/streamline-layer-probe.exe",
+      "sha256": "ddbd9dbfc4e6eb8d2377942c26b59e4fdfe606f90bb1d2d32e2c6a63de0e7a90"
+    },
+    "launch_script": {
+      "path": "src-tauri/target/nr-followup-20261005/launch-performance.ps1",
+      "sha256": "9d05b071c75f6b27957043968a68604f9e81548ca746c81aa663a450ef5e8217"
+    },
+    "validation_and_readback_disabled": true,
+    "frame_trace_and_timestamp_switches_disabled": true,
+    "all_logging_disabled": false,
+    "default_nr": "off",
+    "dry_run_modes": [
+      "off",
+      "two"
+    ],
+    "game_launched": true,
+    "performance_accepted": false
+  },
+  "release_real_game_fps": {
+    "session": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-212620-850-off",
+    "layer_sha256": "fb61c05812c4e1d91f48e4dcaf7a3e0412b11fda967058ad50e08b92dadd6ddf",
+    "scene": "Xenoblade Chronicles 3 2.1.0, Everblight Plain opening battle and post-battle idle view; 1x, 1718x950, 30 FPS cap",
+    "conditions": {
+      "validation_enabled": false,
+      "readback_enabled": false,
+      "timing_enabled": false,
+      "sr": "off",
+      "fg": "off",
+      "look_scope": "chain_total",
+      "look_amount": 75,
+      "temporal_mode": "static"
+    },
+    "modules": {
+      "pid": 22360,
+      "layerModules": [
+        {
+          "ModuleName": "streamline_probe_layer.dll",
+          "FileName": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-followup-20261005\\release-build\\streamline_probe_layer.dll"
+        }
+      ],
+      "validationModules": [],
+      "validationModuleCount": 0
+    },
+    "phases": [
+      {
+        "phase": "off-before",
+        "revision": 1,
+        "seconds": 20.037850700005947,
+        "distinct_samples": 20,
+        "fps_mean": 30.035514152358814,
+        "fps_min": 29.765312417711318,
+        "fps_max": 30.802595406816337,
+        "fps_median": 29.788026919338993,
+        "actual_passes": [],
+        "active_temporal_samples": 0,
+        "samples_file": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-212620-850-off/fps-off-before.json",
+          "sha256": "8dac140fe8a41a1f53bf551e70311dde11a9c6894c39c1a144af0124dae6a946"
+        }
+      },
+      {
+        "phase": "one",
+        "revision": 2,
+        "seconds": 20.03899249999813,
+        "distinct_samples": 20,
+        "fps_mean": 30.080436175851684,
+        "fps_min": 29.751718930354297,
+        "fps_max": 30.828617549319823,
+        "fps_median": 29.78163512988652,
+        "actual_passes": [
+          1
+        ],
+        "active_temporal_samples": 20,
+        "samples_file": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-212620-850-off/fps-one.json",
+          "sha256": "fb028035aefa9e96faaa13d104418ba17382c76148245bc42bad90b0d38ee2b7"
+        }
+      },
+      {
+        "phase": "two",
+        "revision": 3,
+        "seconds": 20.0413292000012,
+        "distinct_samples": 20,
+        "fps_mean": 30.126805717894555,
+        "fps_min": 29.757151883478926,
+        "fps_max": 30.795049705693696,
+        "fps_median": 29.78829621213441,
+        "actual_passes": [
+          2
+        ],
+        "active_temporal_samples": 20,
+        "samples_file": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-212620-850-off/fps-two.json",
+          "sha256": "e6edadbb530c9bae9006c5064e2ee6e22c76789aa8b5405bfb4226f928f15560"
+        }
+      },
+      {
+        "phase": "off-after",
+        "revision": 4,
+        "seconds": 20.040240299997095,
+        "distinct_samples": 20,
+        "fps_mean": 30.074979236240424,
+        "fps_min": 29.744592110921154,
+        "fps_max": 30.783964295367966,
+        "fps_median": 29.789310687609625,
+        "actual_passes": [],
+        "active_temporal_samples": 0,
+        "samples_file": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-212620-850-off/fps-off-after.json",
+          "sha256": "13df89c4398b7aee1171107a11839c3194c472c22a013df1b0dffa850218fe0c"
+        }
+      }
+    ],
+    "limitations": [
+      "Initial battle ended before the one-pass snapshot. One/two/final-off views share the post-battle idle camera, with nondeterministic particles.",
+      "Cap-limited FPS does not measure spare GPU budget or prove zero NR overhead.",
+      "Debug strict session and Release game observations are not identical timing conditions; no attribution of all difference to validation alone.",
+      "This observes game-present rates, not display scanout or input latency.",
+      "No real motion video or strict acceptance."
+    ],
+    "pause": {
+      "source_id_before": 459,
+      "source_id_after": 459,
+      "amount_while_paused": 75,
+      "amount_after_resume": 50,
+      "full_emulator_pause_stops_present": true,
+      "immediate_look_while_no_present_implemented": false,
+      "first_resume_frame_reset_captured": false
+    },
+    "target_exit": {
+      "code": -1073740791,
+      "fg_requested": false,
+      "success": false
+    },
+    "exit_error_fixed": false,
+    "exit_error_excluded_by_user": true,
+    "exit_exclusion_reason": "User states the same 0xC0000409 occurs without graphics enhancements and explicitly requests no repair."
+  },
+  "latest_release_trace_check": {
+    "session": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-214004-144-two",
+    "layer_sha256": "46143b37d1da83687fe020d2de9aa62af249fc65598542637cbdc9684d0f588b",
+    "all_samples_two_pass_active": true,
+    "source_observations_advanced": 304,
+    "trace_bytes_growth": 0,
+    "suppressed_event_counts": {
+      "target_nr_evaluate": 0,
+      "target_nr_second_evaluate": 0,
+      "target_nr_pass_frame": 0,
+      "route_present_submitted": 0,
+      "route_present_retired": 0
+    },
+    "snapshot": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-performance-20261005-214004-144-two/quiet-trace-check.json",
+      "sha256": "88a2c8627e636c6007ef282020350aae254128a524c05b85309f48ce8837b766"
+    },
+    "performance_comparison": false,
+    "strict_acceptance": false,
+    "target_exit": {
+      "code": -1073740791,
+      "fg_requested": false,
+      "success": false
+    },
+    "computer_use_stopped_by_user_escape": true
+  }
+}

@@ -10,23 +10,77 @@ layout(set=0,binding=4,rgba16f) uniform readonly image2D previous_input;
 #ifndef NR_MOTION_FORMAT
 #define NR_MOTION_FORMAT rg32f
 #endif
+#ifndef NR_STATIC
 layout(set=0,binding=5,NR_MOTION_FORMAT) uniform readonly image2D motion;
+#endif
+layout(set=0,binding=6,rgba16f) uniform readonly image2D guide;
+#ifdef NR_PERSISTENT
+layout(set=0,binding=7,rgba16f) uniform writeonly image2D persistent_result;
+#endif
 layout(push_constant) uniform Controls { vec4 history; vec4 mapping; } controls;
+float compatibility(vec3 a, vec3 b) {
+    if(!finite_rgb(a)||!finite_rgb(b)) return 0.0;
+    vec3 error=abs(log2(max(decode(clamp(a,0,1)),vec3(1e-6)))
+        -log2(max(decode(clamp(b,0,1)),vec3(1e-6))));
+    return 1.0-smoothstep(0.0,controls.history.y,max(max(error.r,error.g),error.b));
+}
+float tap(ivec2 p, vec3 current, float bilinear, inout vec3 sum, inout float presence) {
+    if(bilinear<=0.0) return 0.0;
+    vec4 old=imageLoad(previous_delta,p);
+    if(old.a<0.0||!finite_rgb(old.rgb)) return 0.0;
+    float accepted=bilinear*compatibility(imageLoad(previous_input,p).rgb,current);
+    sum+=old.rgb*accepted;
+    presence+=old.a*accepted;
+    return accepted;
+}
 void main() {
     ivec2 p=ivec2(gl_GlobalInvocationID.xy), size=imageSize(original);
     if(any(greaterThanEqual(p,size))) return;
     vec3 source=imageLoad(original,p).rgb, nr=imageLoad(rendered,p).rgb;
-    if(!finite_rgb(source)||!finite_rgb(nr)) { imageStore(current_delta,p,vec4(0,0,0,-1)); return; }
+    vec3 current=imageLoad(guide,p).rgb;
+    if(!finite_rgb(source)||!finite_rgb(nr)||!finite_rgb(current)) {
+        imageStore(current_delta,p,vec4(0,0,0,-1));
+#ifdef NR_PERSISTENT
+        imageStore(persistent_result,p,vec4(0,0,0,-1));
+#endif
+        return;
+    }
     vec3 delta=log_change(source,nr), result=delta;
     float weight=0.0;
+#ifdef NR_PERSISTENT
+    // Presence is shared by RGB; conditional amplitude is never diluted by
+    // missing observations. Times are experimental SDR defaults, in ms.
+    bool present=max(max(abs(delta.r),abs(delta.g)),abs(delta.b))>=0.01;
+    float presence=present?1.0:0.0;
+    vec3 amplitude=present?delta:vec3(0);
+#endif
+#ifdef NR_STATIC
+    vec2 mv=vec2(0);
+#else
     vec2 mv=imageLoad(motion,p).rg*controls.mapping.xy;
+#endif
     vec2 q=vec2(p)+mv*vec2(size);
     bool valid=controls.history.x>0.0 && !any(isnan(mv)) && !any(isinf(mv))
         && all(lessThanEqual(abs(mv),vec2(0.25))) && all(greaterThanEqual(q,vec2(0)))
-        && all(lessThanEqual(q,vec2(size-1))) && any(notEqual(source,nr));
+        && all(lessThanEqual(q,vec2(size-1)));
+#ifndef NR_PERSISTENT
+    valid=valid && any(notEqual(source,nr));
+#endif
     if(valid) {
         ivec2 a=ivec2(floor(q)), b=min(a+1,size-1);
         vec2 f=fract(q);
+        vec3 old_delta=vec3(0);
+        float confidence=0.0;
+        float old_presence=0.0;
+        if(controls.history.z>0.5) {
+            float support=tap(a,current,(1-f.x)*(1-f.y),old_delta,old_presence)
+                +tap(ivec2(b.x,a.y),current,f.x*(1-f.y),old_delta,old_presence)
+                +tap(ivec2(a.x,b.y),current,(1-f.x)*f.y,old_delta,old_presence)
+                +tap(b,current,f.x*f.y,old_delta,old_presence);
+            // Do not magnify a single tiny accepted corner into a full sample.
+            valid=support>=0.25;
+            if(valid) { old_delta/=support; old_presence/=support; confidence=support; }
+        } else {
         vec4 d0=imageLoad(previous_delta,a), d1=imageLoad(previous_delta,ivec2(b.x,a.y));
         vec4 d2=imageLoad(previous_delta,ivec2(a.x,b.y)), d3=imageLoad(previous_delta,b);
         vec3 c0=imageLoad(previous_input,a).rgb, c1=imageLoad(previous_input,ivec2(b.x,a.y)).rgb;
@@ -35,29 +89,70 @@ void main() {
             && finite_rgb(d0.rgb)&&finite_rgb(d1.rgb)&&finite_rgb(d2.rgb)&&finite_rgb(d3.rgb)
             && finite_rgb(c0)&&finite_rgb(c1)&&finite_rgb(c2)&&finite_rgb(c3);
         if(valid) {
-            vec3 old_delta=mix(mix(d0.rgb,d1.rgb,f.x),mix(d2.rgb,d3.rgb,f.x),f.y);
+            old_delta=mix(mix(d0.rgb,d1.rgb,f.x),mix(d2.rgb,d3.rgb,f.x),f.y);
+            old_presence=mix(mix(d0.a,d1.a,f.x),mix(d2.a,d3.a,f.x),f.y);
             vec3 old_input=mix(mix(decode(clamp(c0,0,1)),decode(clamp(c1,0,1)),f.x),
                 mix(decode(clamp(c2,0,1)),decode(clamp(c3,0,1)),f.x),f.y);
-            vec3 linear=decode(clamp(source,0,1));
+            vec3 linear=decode(clamp(current,0,1));
             vec3 error=abs(log2(max(old_input,vec3(1e-6)))-log2(max(linear,vec3(1e-6))));
-            float confidence=(1.0-smoothstep(0.0,controls.history.y,max(max(error.r,error.g),error.b)))
-                * smoothstep(1e-5,1e-3,dot(linear,LUMA));
+            confidence=1.0-smoothstep(0.0,controls.history.y,max(max(error.r,error.g),error.b));
+        }
+        }
+        if(valid) {
+            vec3 linear=decode(clamp(current,0,1));
+            confidence*=smoothstep(1e-5,1e-3,dot(linear,LUMA));
+#ifdef NR_STATIC
+            // Static accumulation explicitly verifies local color/edge stability.
+            for(int y=-1;y<=1;++y) for(int x=-1;x<=1;++x) {
+                ivec2 r=clamp(p+ivec2(x,y),ivec2(0),size-1);
+                confidence=min(confidence,compatibility(imageLoad(guide,r).rgb,imageLoad(previous_input,r).rgb));
+            }
+#endif
             vec3 lo=delta, hi=delta;
             float center=log2(max(dot(linear,LUMA),1e-6));
             for(int y=-1;y<=1;++y) for(int x=-1;x<=1;++x) {
                 ivec2 r=clamp(p+ivec2(x,y),ivec2(0),size-1);
                 vec3 s=imageLoad(original,r).rgb, n=imageLoad(rendered,r).rgb;
-                if(!finite_rgb(s)||!finite_rgb(n)) continue;
-                if(abs(log2(max(dot(decode(clamp(s,0,1)),LUMA),1e-6))-center)>0.75) continue;
+                vec3 g=imageLoad(guide,r).rgb;
+                if(!finite_rgb(s)||!finite_rgb(n)||!finite_rgb(g)) continue;
+                if(abs(log2(max(dot(decode(clamp(g,0,1)),LUMA),1e-6))-center)>0.75) continue;
                 vec3 e=log_change(s,n); lo=min(lo,e); hi=max(hi,e);
             }
             weight=controls.history.x*confidence;
+#ifdef NR_PERSISTENT
+            // Opposite corrections are fresh observations, not old-colored
+            // trails. Color incompatibility also discards support immediately.
+            bool opposite=any(lessThan(old_delta*delta,vec3(-0.0001)));
+            if(confidence>0.0 && !opposite) {
+                float elapsed=controls.mapping.z;
+                float support_decay=exp(-elapsed/(present?60.0:180.0));
+                presence=mix(present?1.0:0.0,clamp(old_presence,0,1),support_decay)*confidence;
+                if(present) {
+                    // A previous absent run can retain an old conditional
+                    // amplitude; zero support prevents that amplitude revival.
+                    float amplitude_decay=exp(-elapsed/max(controls.mapping.w,1.0))*clamp(old_presence,0,1);
+                    amplitude=mix(delta,clamp(old_delta,lo-vec3(0.25),hi+vec3(0.25)),amplitude_decay);
+                } else {
+                    amplitude=old_delta;
+                }
+                if(presence<0.001) { presence=0.0; amplitude=vec3(0); }
+                result=mix(delta,amplitude*presence,weight);
+            } else {
+                weight=0.0;
+            }
+#else
             result=mix(delta,clamp(old_delta,lo-vec3(0.25),hi+vec3(0.25)),weight);
             // Ignore half-history quantization when the model delta is stable.
             vec3 difference=abs(result-delta);
             if(max(max(difference.r,difference.g),difference.b)<0.001) { result=delta; weight=0.0; }
+#endif
         }
     }
     // Alpha stores actual history weight, with -1 marking invalid raw deltas.
+#ifdef NR_PERSISTENT
+    imageStore(current_delta,p,vec4(amplitude,presence));
+    imageStore(persistent_result,p,vec4(result,weight));
+#else
     imageStore(current_delta,p,vec4(result,weight));
+#endif
 }

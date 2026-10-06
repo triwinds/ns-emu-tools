@@ -42,27 +42,31 @@ fn hot_event(name: &str) -> bool {
         && name != "vkQueuePresentKHR")
         || matches!(name, "target_nvof_frame" | "target_nvof_confidence")
 }
+fn frame_event(name: &str) -> bool {
+    matches!(
+        name,
+        "vkQueuePresentKHR"
+            | "route_present_submitted"
+            | "route_present_retired"
+            | "target_fg_frame"
+            | "target_sr_frame"
+            | "target_nr_frame"
+            | "target_nr_submission"
+            | "target_nr_completion"
+            | "target_nr_profile"
+            | "target_nr_evaluate"
+            | "target_nr_second_evaluate"
+            | "target_nr_pass_frame"
+    )
+}
+fn enabled_with(name: &str, frames: bool, verbose: bool) -> bool {
+    (frames || !frame_event(name)) && (!hot_event(name) || verbose)
+}
 pub fn enabled(name: &str) -> bool {
     static FRAMES: OnceLock<bool> = OnceLock::new();
     let frames =
         *FRAMES.get_or_init(|| std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"));
-    if !frames
-        && matches!(
-            name,
-            "vkQueuePresentKHR"
-                | "route_present_retired"
-                | "target_fg_frame"
-                | "target_sr_frame"
-                | "target_nr_frame"
-                | "target_nr_submission"
-                | "target_nr_completion"
-                | "target_nr_profile"
-                | "target_nr_evaluate"
-        )
-    {
-        return false;
-    }
-    !hot_event(name) || verbose()
+    enabled_with(name, frames, verbose())
 }
 macro_rules! event {
     ($name:expr, $details:expr $(,)?) => {{
@@ -97,16 +101,11 @@ pub fn record(name: &str, details: Value) {
             // Keep frame evidence for session_verify, but batch it off the hot path.
             // Lifecycle/error records and explicit verbose diagnostics flush promptly.
             if verbose()
-                || !matches!(
-                    name,
-                    "vkQueuePresentKHR"
-                        | "route_present_retired"
-                        | "target_fg_frame"
-                        | "target_sr_frame"
-                        | "target_sr_profile"
-                        | "target_nvof_gpu"
-                        | "target_nvof_profile"
-                )
+                || !(frame_event(name)
+                    || matches!(
+                        name,
+                        "target_sr_profile" | "target_nvof_gpu" | "target_nvof_profile"
+                    ))
             {
                 let _ = file.flush();
             }
@@ -117,6 +116,31 @@ pub fn record(name: &str, details: Value) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn frame_filter_keeps_failure_and_lifecycle_evidence() {
+        for name in [
+            "target_nr_api_failure",
+            "target_nr_second_fallback",
+            "target_nr_second_release_feature",
+            "route_present_retirement_failure",
+            "vkDestroyDevice",
+        ] {
+            assert!(enabled_with(name, false, false), "{name}");
+        }
+    }
+    #[test]
+    fn frame_filter_suppresses_both_pass_successes_and_present_bookends() {
+        for name in [
+            "target_nr_evaluate",
+            "target_nr_second_evaluate",
+            "target_nr_pass_frame",
+            "route_present_submitted",
+            "route_present_retired",
+        ] {
+            assert!(!enabled_with(name, false, true), "{name}");
+            assert!(enabled_with(name, true, false), "{name}");
+        }
+    }
     #[test]
     fn hot_path_filter_keeps_lifecycle_and_failures() {
         for name in [

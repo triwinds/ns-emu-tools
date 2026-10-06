@@ -8,12 +8,12 @@ export interface NrPresetEnvironment {
   modelVersion: string; modelSha256: string | null; targetSha256: string | null
 }
 export interface NrPreset {
-  schemaVersion: 2; name: string; emulator: NrPresetEmulator; game: string; displayMode: string
+  schemaVersion: 4; name: string; emulator: NrPresetEmulator; game: string; displayMode: string
   settings: { enabled: boolean; intensity: number; options: NrOptions }
   environment: NrPresetEnvironment
 }
 export function normalizeNrPreset(preset: NrPreset): NrPreset {
-  return { ...preset, settings: { ...preset.settings, options: cloneNrOptions({ ...graphicsAdvanced().nr, ...preset.settings.options }) }, environment: { ...preset.environment } }
+  return { ...preset, schemaVersion: 4, settings: { ...preset.settings, options: cloneNrOptions({ ...graphicsAdvanced().nr, ...preset.settings.options }) }, environment: { ...preset.environment } }
 }
 export const validateNrPreset = (json: string) => graphicsCommand<{ preset: NrPreset; migratedFrom: number | null }>('validate_nr_preset', { json })
 export const nrPresetEnvironment = (executable: string) => graphicsCommand<NrPresetEnvironment>('nr_preset_environment', { executable })
@@ -36,5 +36,9 @@ export function presetNotices(preset: NrPreset, environment: NrPresetEnvironment
   if (settings.enabled && JSON.stringify(tuning.look) !== JSON.stringify(nrLook()) && !live.nrLookSupported) notes.push('当前组件不支持此 Look 配置。')
   if (settings.enabled && JSON.stringify(tuning.look.spatial) !== JSON.stringify(nrSpatialLook()) && !live.nrSpatialLookSupported) notes.push('当前组件不支持空间 Look 配置。')
   if (settings.enabled && JSON.stringify(tuning.look.temporal) !== JSON.stringify(nrTemporalLook()) && !live.nrTemporalLookSupported) notes.push('当前组件不支持时间 Look 配置。')
+  if (settings.enabled && tuning.look.scope !== 'final_pass' && !live.nrLookScopeSupported) notes.push('当前组件不支持整链 Look 作用范围。')
+  if (settings.enabled && tuning.look.temporal.mode === 'optical_flow_plus' && !live.nrPersistenceSupported) notes.push('当前组件不支持光流累积＋。')
+  if (settings.enabled && (tuning.look.algorithm !== 'log_delta' || tuning.look.diagnostic !== 'off' || Object.values(tuning.look.protection).some(value => value !== 0)) && !live.nrLookExperimentsSupported) notes.push('当前组件不支持 Look 颜色保护或诊断实验。')
+  if (settings.enabled && (tuning.look.temporal.mode !== 'optical_flow' || tuning.look.temporal.sampling !== 'bilinear') && !live.nrTemporalModesSupported) notes.push('当前组件不支持所选时间模式或历史采样。')
   return notes
 }

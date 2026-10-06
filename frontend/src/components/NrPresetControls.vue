@@ -59,7 +59,7 @@ function saveCurrent() {
     if (library.value.length >= 64) throw new Error('最多保存 64 个预设，请先删除不再使用的预设。')
     const recorded = await nrPresetEnvironment(props.executable)
     if (token !== generation) return
-    const result = await validateNrPreset(JSON.stringify({ schemaVersion: 2, name: name.value.trim(), emulator: emulator.value, game: game.value.trim(), displayMode: displayMode.value.trim(), settings: { enabled: props.enabled, intensity: props.intensity, options: props.options }, environment: recorded }))
+    const result = await validateNrPreset(JSON.stringify({ schemaVersion: 4, name: name.value.trim(), emulator: emulator.value, game: game.value.trim(), displayMode: displayMode.value.trim(), settings: { enabled: props.enabled, intensity: props.intensity, options: props.options }, environment: recorded }))
     if (token !== generation) return
     const preset = normalizeNrPreset(result.preset)
     await persist([...library.value, preset])

@@ -4,6 +4,13 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { mdiFolderOpenOutline, mdiRefresh, mdiMonitorShimmer } from '@mdi/js'
 import { graphicsCommand, type GraphicsApi, type GraphicsTarget } from '@/utils/graphics'
 import StreamlineFgPanel from '@/components/StreamlineFgPanel.vue'
+import { useGraphicsGpu } from '@/utils/graphicsGpu'
+
+const { capabilities: gpu, error: gpuError, load: loadGpu } = useGraphicsGpu()
+async function refreshGpu() {
+  await loadGpu(true)
+  if (gpu.value?.hasNvidia) await loadTargets()
+}
 
 const selectionKey = 'ns-emu-tools:graphics-selection:v1'
 function readSelection(): { executable: string; api: GraphicsApi } {
@@ -62,7 +69,11 @@ async function browse() {
     }
   } catch (e) { error.value = message(e) }
 }
-onMounted(loadTargets)
+onMounted(async () => {
+  await loadGpu()
+  if (gpu.value?.hasNvidia) await loadTargets()
+  else loading.value = false
+})
 </script>
 
 <template>
@@ -84,6 +95,7 @@ onMounted(loadTargets)
     </header>
 
     <section
+      v-if="gpu?.hasNvidia"
       class="target-panel"
       aria-labelledby="target-title"
     >
@@ -160,11 +172,27 @@ onMounted(loadTargets)
       {{ error }}
     </v-alert>
     <StreamlineFgPanel
+      v-if="gpu?.hasNvidia"
+      :gpu="gpu"
       :executable="executable"
       :api="api"
       :disabled="loading"
       @busy="panelBusy = $event"
     />
+    <v-alert
+      v-else
+      type="info"
+      variant="tonal"
+    >
+      {{ gpuError || (gpu ? '未检测到 NVIDIA 显卡，图形增强菜单不可用。' : '正在检测本机显卡…') }}
+      <v-btn
+        v-if="gpu || gpuError"
+        variant="text"
+        @click="refreshGpu"
+      >
+        重新检测
+      </v-btn>
+    </v-alert>
   </main>
 </template>
 

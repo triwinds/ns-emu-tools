@@ -1,5 +1,5 @@
 //! Session-local control and measured rates. File I/O never runs on a Vulkan thread.
-use crate::advanced_settings::{AdvancedSettings, FgOptions, SrOptions};
+use crate::advanced_settings::{AdvancedSettings, FgOptions, InputSizing, SrOptions};
 use crate::sr_preset::StreamlineSrPreset;
 use serde_json::{json, Value};
 type SrControl = (u32, u64, u16, StreamlineSrPreset, SrOptions);
@@ -28,6 +28,47 @@ static APP: AtomicU64 = AtomicU64::new(0);
 static NATIVE: AtomicU64 = AtomicU64::new(0);
 static LAST: Mutex<Option<(Instant, bool, String, u64)>> = Mutex::new(None);
 static SR: Mutex<Option<Value>> = Mutex::new(None);
+static INPUT_SCALE: Mutex<Option<Value>> = Mutex::new(None);
+static INPUT_CONTROL: OnceLock<Mutex<(InputSizing, u64)>> = OnceLock::new();
+fn input_control() -> &'static Mutex<(InputSizing, u64)> {
+    INPUT_CONTROL.get_or_init(|| {
+        let sizing = InputSizing {
+            scale_percent: std::env::var("NS_STREAMLINE_INPUT_SCALE")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(100),
+            max_edge: std::env::var("NS_STREAMLINE_INPUT_MAX_EDGE")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
+        };
+        Mutex::new((
+            if sizing.valid() {
+                sizing
+            } else {
+                InputSizing::default()
+            },
+            0,
+        ))
+    })
+}
+fn apply_input_control(control: &mut (InputSizing, u64), value: &Value) {
+    let Some(revision) = value["inputScaleRevision"]
+        .as_u64()
+        .filter(|r| *r > control.1)
+    else {
+        return;
+    };
+    let Ok(sizing) = serde_json::from_value::<InputSizing>(value["inputSizing"].clone()) else {
+        return;
+    };
+    if sizing.valid() {
+        *control = (sizing, revision);
+    }
+}
+pub fn input_scale(status: Value) {
+    *INPUT_SCALE.lock().unwrap() = Some(status);
+}
 static NR: Mutex<Option<Value>> = Mutex::new(None);
 static FG: Mutex<Option<(Instant, Value)>> = Mutex::new(None);
 #[cfg(all(windows, feature = "sdk-bridge"))]
@@ -40,6 +81,7 @@ pub fn frame_controls() -> (
     (bool, u64, FgOptions),
     SrControl,
     (crate::nr_history::Controls, u64),
+    (InputSizing, u64),
 ) {
     requested(); // Start the worker before taking its update lock.
     let _update = CONTROL_UPDATE.lock().unwrap();
@@ -48,6 +90,7 @@ pub fn frame_controls() -> (
         (control.0, control.1, *fg_options().lock().unwrap()),
         sr_requested(),
         nr_requested(),
+        *input_control().lock().unwrap(),
     )
 }
 fn nr_control() -> &'static Mutex<(crate::nr_history::Controls, u64)> {
@@ -234,7 +277,11 @@ fn worker(dir: std::path::PathBuf) {
                     );
                     apply_sr_control(&mut sr_control().lock().unwrap(), &v);
                     apply_nr_control(&mut nr_control().lock().unwrap(), &v);
-                    sr_requested().0 != 0 || CONTROL.lock().unwrap().0 || nr_requested().0.enabled
+                    apply_input_control(&mut input_control().lock().unwrap(), &v);
+                    sr_requested().0 != 0
+                        || CONTROL.lock().unwrap().0
+                        || nr_requested().0.enabled
+                        || input_control().lock().unwrap().0 != InputSizing::default()
                 };
                 crate::source_auto::set_requested(tracking);
             }
@@ -263,10 +310,24 @@ fn worker(dir: std::path::PathBuf) {
             let status = json!({"srPresetSupported":true,"srScaleSupported":true,"srScaleBasis":"source_output","srLiveSupported":crate::target_sr::available(),"sr":SR.lock().unwrap().clone(),"protocol":1,"updatedAt":now,"fresh":fresh,"requested":control.0,"revision":control.1,"appliedRevision":applied,"active":active && fresh,"reason":if fresh {reason} else {"waiting".into()},"samples":samples});
             let mut status = status;
             status["advancedSettingsSupported"] = json!(true);
+            status["inputScalingSupported"] = json!(true);
+            status["inputScalingLiveSupported"] = json!(true);
+            status["inputScale"] = INPUT_SCALE
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap_or(serde_json::Value::Null);
             status["nrLookSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrSpatialLookSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrTemporalLookSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrLookScopeSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrTemporalModesSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrPersistenceSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrLookExperimentsSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrTwoPassSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrConsolidatedSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrInferenceScaleSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrInferenceCapSupported"] = json!(cfg!(feature = "native-nr"));
             status["fg"] = FG
                 .lock()
                 .unwrap()

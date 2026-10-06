@@ -422,8 +422,62 @@ pub fn launch(
     let (installed, package) = selected_at(&root(), &exe)?;
     owned_for(&installed, &exe, true, &package)?;
     let graphics_settings = crate::config::CONFIG.read().setting.other.clone();
+    let gpu = super::gpu::detect()?;
+    if !gpu.has_nvidia {
+        return Err("未检测到 NVIDIA 显卡，无法以画面增强启动".into());
+    }
+    if graphics_settings.streamline_nr && !gpu.nr_supported {
+        return Err("DLSS 5 需要 GeForce RTX 50 系列，请先关闭 NR".into());
+    }
+    if graphics_settings.streamline_sr && !gpu.sr_supported {
+        return Err("SR / DLAA 需要 GeForce RTX 20／30／40／50 系列，请先关闭 SR".into());
+    }
+    if graphics_settings.streamline_fg {
+        let fg = graphics_settings.streamline_advanced.fg;
+        if gpu.fg_max_multiplier < 2
+            || fg.multiplier > gpu.fg_max_multiplier
+            || (matches!(fg.mode, crate::config::advanced_settings::FgMode::Dynamic)
+                && gpu.fg_max_multiplier < 3)
+        {
+            return Err("当前显卡不支持所选 FG 配置：2× 需要 RTX 40／50 系列，更高倍数及动态模式需要 RTX 50 系列".into());
+        }
+    }
     if graphics_settings.streamline_nr_intensity > 200 {
         return Err("NR 强度必须为 0～200".into());
+    }
+    if !(50..=100).contains(&graphics_settings.streamline_input_scale) {
+        return Err("输入尺寸比例必须为 50～100".into());
+    }
+    if !crate::config::advanced_settings::valid_nr_inference_max_edge(
+        graphics_settings.streamline_input_max_edge,
+    ) {
+        return Err("输入长边上限必须为 0 或 320～8192 像素".into());
+    }
+    let nr_experiments =
+        graphics_settings.streamline_nr_consolidated && graphics_settings.streamline_nr;
+    let input_scaled = graphics_settings.streamline_input_max_edge != 0
+        || graphics_settings.streamline_input_scale != 100;
+    if nr_experiments || input_scaled {
+        let bytes =
+            fs::read(installed.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
+        for (needed, marker, name) in [
+            (
+                graphics_settings.streamline_nr_consolidated,
+                crate::config::advanced_settings::NR_CONSOLIDATED_MARKER,
+                "NR 集中提交",
+            ),
+            (
+                input_scaled,
+                crate::config::advanced_settings::INPUT_SCALING_MARKER,
+                "输入尺寸缩放",
+            ),
+        ] {
+            if needed && !bytes.windows(marker.len()).any(|v| v == marker) {
+                return Err(format!(
+                    "当前组件不支持 {name}，请更新画面增强组件或恢复启动实验默认配置"
+                ));
+            }
+        }
     }
     let advanced = graphics_settings.streamline_advanced;
     // Older verified packages ignore this environment variable. Reject tuned
@@ -438,6 +492,34 @@ pub fn launch(
         let marker = crate::config::advanced_settings::NR_LOOK_MARKER;
         let two_pass_marker = crate::config::advanced_settings::NR_TWO_PASS_MARKER;
         let temporal_marker = crate::config::advanced_settings::NR_TEMPORAL_LOOK_MARKER;
+        for (needed, marker, name) in [
+            (
+                advanced.nr.look.needs_experiments(),
+                crate::config::advanced_settings::NR_LOOK_EXPERIMENTS_MARKER,
+                "Look 颜色保护/诊断实验",
+            ),
+            (
+                advanced.nr.look.temporal.mode.persistent(),
+                crate::config::advanced_settings::NR_PERSISTENCE_MARKER,
+                "光流累积＋",
+            ),
+            (
+                !advanced.nr.look.scope.is_default(),
+                crate::config::advanced_settings::NR_LOOK_SCOPE_MARKER,
+                "Look 作用范围",
+            ),
+            (
+                advanced.nr.look.temporal.needs_extended_support(),
+                crate::config::advanced_settings::NR_TEMPORAL_MODES_MARKER,
+                "时间模式/历史采样",
+            ),
+        ] {
+            if needed && !bytes.windows(marker.len()).any(|v| v == marker) {
+                return Err(format!(
+                    "当前组件不支持 {name}，请更新组件并重新专用启动，或恢复默认配置"
+                ));
+            }
+        }
         if !advanced.nr.look.temporal.is_default()
             && !bytes
                 .windows(temporal_marker.len())
@@ -474,11 +556,14 @@ pub fn launch(
     }
     let nr_runtime = match super::native_nr::current_runtime() {
         Ok(runtime) => runtime,
-        Err(error) if graphics_settings.streamline_nr => return Err(error),
+        Err(error) if graphics_settings.streamline_nr || nr_experiments => return Err(error),
         Err(_) => None,
     };
     if graphics_settings.streamline_nr && nr_runtime.is_none() {
         return Err("请先下载并安装 NR 组件，再启用神经渲染".into());
+    }
+    if nr_experiments && nr_runtime.is_none() {
+        return Err("NR 启动实验需要已安装的 NR 组件；请安装组件或恢复启动实验默认配置".into());
     }
     let sessions = root().join("sessions");
     safe_dir(&sessions)?;
@@ -498,6 +583,11 @@ pub fn launch(
         "NS_STREAMLINE_SOURCE_TRACK_ONLY",
         "NS_STREAMLINE_SOURCE_BENCH_OFF",
         "NS_STREAMLINE_NR_TIMING",
+        "NS_STREAMLINE_NR_CONSOLIDATED",
+        "NS_STREAMLINE_NR_INFERENCE_SCALE",
+        "NS_STREAMLINE_NR_INFERENCE_MAX_EDGE",
+        "NS_STREAMLINE_INPUT_SCALE",
+        "NS_STREAMLINE_INPUT_MAX_EDGE",
         "NS_STREAMLINE_NR_READBACK",
         "NS_STREAMLINE_NR_VALIDATION",
         "NS_STREAMLINE_SDK_VALIDATION",
@@ -544,6 +634,16 @@ pub fn launch(
         if !graphics_settings.streamline_nr {
             cmd.arg("--nr-initial-off");
         }
+        if nr_experiments {
+            cmd.arg("--nr-consolidated");
+        }
+    }
+    if graphics_settings.streamline_input_max_edge != 0 {
+        cmd.arg("--input-max-edge")
+            .arg(graphics_settings.streamline_input_max_edge.to_string());
+    } else if graphics_settings.streamline_input_scale != 100 {
+        cmd.arg("--input-scale")
+            .arg(graphics_settings.streamline_input_scale.to_string());
     }
     cmd.arg("--sr-mode")
         .arg(if graphics_settings.streamline_sr {
@@ -742,6 +842,7 @@ mod tests {
             nr_enabled,
             nr_intensity,
             None,
+            None,
         )
         .unwrap();
         println!("FG_LIVE={result}");
@@ -832,6 +933,7 @@ pub fn live(
     nr_enabled: Option<bool>,
     nr_intensity: Option<f32>,
     advanced: Option<crate::config::advanced_settings::AdvancedUpdate>,
+    input_sizing: Option<crate::config::advanced_settings::InputSizing>,
 ) -> Result<serde_json::Value, String> {
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
@@ -880,6 +982,9 @@ pub fn live(
         if v["sr"].is_object() {
             v["sr"]["active"] = false.into();
         }
+        if v["inputScale"].is_object() {
+            v["inputScale"]["active"] = false.into();
+        }
     }
     if sr_scale.is_some_and(|v| !(50..=200).contains(&v)) {
         return Err("SR 倍率必须为 0.5～2.0".into());
@@ -894,6 +999,9 @@ pub fn live(
         return Err("NR 强度必须为 0～2".into());
     }
     let advanced = advanced.unwrap_or_default();
+    if input_sizing.is_some_and(|s| !s.valid()) {
+        return Err("输入比例必须为 50～100，上限必须为 0 或 320～8192 的整数像素".into());
+    }
     if enabled.is_some()
         || sr_mode.is_some()
         || sr_scale.is_some()
@@ -903,6 +1011,7 @@ pub fn live(
         || advanced.nr.is_some()
         || advanced.sr.is_some()
         || advanced.fg.is_some()
+        || input_sizing.is_some()
     {
         if !connected {
             return Err("游戏未连接，请通过工具箱重新启动游戏".into());
@@ -939,6 +1048,20 @@ pub fn live(
             control["srOptions"] = serde_json::to_value(sr).map_err(|e| e.to_string())?;
         }
         if let Some(nr) = advanced.nr {
+            if !nr.look.scope.is_default() && v["nrLookScopeSupported"] != true {
+                return Err("当前会话不支持 Look 作用范围，请更新组件并重新专用启动".into());
+            }
+            if nr.look.needs_experiments() && v["nrLookExperimentsSupported"] != true {
+                return Err(
+                    "当前组件不支持 Look 颜色保护或诊断实验，请更新组件后重新专用启动".into(),
+                );
+            }
+            if nr.look.temporal.mode.persistent() && v["nrPersistenceSupported"] != true {
+                return Err("当前组件不支持光流累积＋，请更新组件后重新专用启动".into());
+            }
+            if nr.look.temporal.needs_extended_support() && v["nrTemporalModesSupported"] != true {
+                return Err("当前会话不支持时间模式/历史采样，请更新组件并重新专用启动".into());
+            }
             if !nr.look.temporal.is_default() && v["nrTemporalLookSupported"] != true {
                 return Err("当前会话不支持时间 Look，请更新组件并重新专用启动".into());
             }
@@ -1019,6 +1142,22 @@ pub fn live(
             }
             control["nrRevision"] = revision.into();
             v["sentNrRevision"] = revision.into();
+        }
+        if let Some(sizing) = input_sizing {
+            if v["inputScalingLiveSupported"] != true {
+                return Err(
+                    "当前会话不支持实时输入缩放，请更新组件并重新以画面增强启动一次".into(),
+                );
+            }
+            let revision = now.max(
+                control["inputScaleRevision"]
+                    .as_u64()
+                    .unwrap_or(0)
+                    .saturating_add(1),
+            );
+            control["inputSizing"] = serde_json::to_value(sizing).map_err(|e| e.to_string())?;
+            control["inputScaleRevision"] = revision.into();
+            v["sentInputScaleRevision"] = revision.into();
         }
         atomic_json(&command, &control)?;
     }

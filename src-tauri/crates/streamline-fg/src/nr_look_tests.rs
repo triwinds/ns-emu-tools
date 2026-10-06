@@ -54,6 +54,8 @@ struct Gpu {
     motion: Option<Resource>,
     motion_initialized: bool,
     motion_value: [f32; 2],
+    guide_pixels: Option<Vec<[u16; 4]>>,
+    recomposing: bool,
 }
 const SIZE: vk::Extent2D = vk::Extent2D {
     width: 19,
@@ -131,7 +133,7 @@ impl Gpu {
         let usage = vk::ImageUsageFlags::STORAGE
             | vk::ImageUsageFlags::TRANSFER_SRC
             | vk::ImageUsageFlags::TRANSFER_DST;
-        let images = (0..2)
+        let images = (0..3)
             .map(|_| {
                 fg_api::texture_with_usage(
                     &device,
@@ -147,7 +149,7 @@ impl Gpu {
         let buffer = device
             .create_buffer(
                 &vk::BufferCreateInfo::default()
-                    .size(BYTES * 3)
+                    .size(BYTES * 4)
                     .usage(vk::BufferUsageFlags::TRANSFER_SRC | vk::BufferUsageFlags::TRANSFER_DST),
                 None,
             )
@@ -206,6 +208,8 @@ impl Gpu {
             motion: None,
             motion_initialized: false,
             motion_value: [0.0; 2],
+            guide_pixels: None,
+            recomposing: false,
         }
     }
     unsafe fn run(
@@ -225,15 +229,24 @@ impl Gpu {
                 .unwrap()
                 .prepare_temporal(options, motion)
                 .unwrap();
+        } else if options.temporal.mode == crate::advanced_settings::TemporalMode::Static {
+            self.look
+                .as_mut()
+                .unwrap()
+                .prepare_temporal(options, self.images[0])
+                .unwrap();
         }
         assert_eq!(input.len(), PIXELS);
         assert_eq!(nr.len(), PIXELS);
         let d = &self.device;
         let mapped = d
-            .map_memory(self.memory, 0, BYTES * 3, vk::MemoryMapFlags::empty())
+            .map_memory(self.memory, 0, BYTES * 4, vk::MemoryMapFlags::empty())
             .unwrap() as *mut [u16; 4];
         std::ptr::copy_nonoverlapping(input.as_ptr(), mapped, PIXELS);
         std::ptr::copy_nonoverlapping(nr.as_ptr(), mapped.add(PIXELS), PIXELS);
+        let guide = self.guide_pixels.as_deref().unwrap_or(input);
+        assert_eq!(guide.len(), PIXELS);
+        std::ptr::copy_nonoverlapping(guide.as_ptr(), mapped.add(PIXELS * 2), PIXELS);
         d.unmap_memory(self.memory);
         d.reset_command_pool(self.pool, vk::CommandPoolResetFlags::empty())
             .unwrap();
@@ -252,6 +265,9 @@ impl Gpu {
                 depth: 1,
             });
         for (i, r) in self.images.iter().enumerate() {
+            if i == 1 && self.recomposing {
+                continue;
+            }
             let image = vk::Image::from_raw(r.image);
             fg_api::transition(
                 d,
@@ -313,7 +329,12 @@ impl Gpu {
         if let Some(difference) = &self.difference {
             difference.record(self.command, SIZE);
         }
-        if let Some(context) = self.temporal_context {
+        if self.recomposing {
+            self.look
+                .as_mut()
+                .unwrap()
+                .recompose(self.command, SIZE, options);
+        } else if let Some(context) = self.temporal_context {
             self.look.as_mut().unwrap().record_with_context(
                 self.command,
                 SIZE,
@@ -339,7 +360,7 @@ impl Gpu {
             output,
             vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
             self.buffer,
-            &[region.buffer_offset(BYTES * 2)],
+            &[region.buffer_offset(BYTES * 3)],
         );
         fg_api::transition(
             d,
@@ -369,11 +390,13 @@ impl Gpu {
         d.wait_for_fences(&[self.fence], true, 10_000_000_000)
             .unwrap();
         self.initialized = true;
-        self.look.as_mut().unwrap().submitted();
+        if !self.recomposing {
+            self.look.as_mut().unwrap().submitted();
+        }
         let mapped = d
-            .map_memory(self.memory, 0, BYTES * 3, vk::MemoryMapFlags::empty())
+            .map_memory(self.memory, 0, BYTES * 4, vk::MemoryMapFlags::empty())
             .unwrap() as *const [u16; 4];
-        let result = std::slice::from_raw_parts(mapped.add(PIXELS * 2), PIXELS).to_vec();
+        let result = std::slice::from_raw_parts(mapped.add(PIXELS * 3), PIXELS).to_vec();
         d.unmap_memory(self.memory);
         result
     }
@@ -416,6 +439,196 @@ fn linear(v: f32) -> f32 {
         v / 12.92
     } else {
         ((v + 0.055) / 1.055).powf(2.4)
+    }
+}
+#[test]
+#[ignore = "requires a Vulkan GPU; set NS_NR_LOOK_GPU_VALIDATION=1 for strict validation"]
+fn gpu_reconstruction_preserves_full_resolution_base_and_alpha() {
+    unsafe {
+        VALIDATION.store(0, Ordering::Relaxed);
+        LOADER_NOTICES.store(0, Ordering::Relaxed);
+        let gpu = Gpu::new();
+        let d = &gpu.device;
+        let physical = gpu.instance.enumerate_physical_devices().unwrap()[0];
+        let memory = gpu.instance.get_physical_device_memory_properties(physical);
+        let full = vk::Extent2D {
+            width: 37,
+            height: 5,
+        };
+        let reconstruct =
+            crate::nr_reconstruct::Reconstruction::new(d, &memory, full, gpu.images[0]).unwrap();
+        let base = reconstruct.base.unwrap();
+        let count = (full.width * full.height) as usize;
+        assert!(count * 8 <= (BYTES * 4) as usize);
+        let original: Vec<[u16; 4]> = (0..count)
+            .map(|i| match i % 5 {
+                0 => [0x3400, 0x3a00, 0x3800, 0x3400],
+                1 => [0x3a00, 0x3400, 0x3800, 0x3800],
+                2 => [0, 0, 0, 0x3c00],
+                3 => [1, 2, 1, 0x3400],
+                _ => [0x3c00; 4],
+            })
+            .collect();
+        for (iteration, nr) in [0.5, 0.75, 0.25, 1.0, 0.0].into_iter().enumerate() {
+            let mapped = d
+                .map_memory(gpu.memory, 0, BYTES * 4, vk::MemoryMapFlags::empty())
+                .unwrap();
+            std::ptr::copy_nonoverlapping(original.as_ptr(), mapped.cast::<[u16; 4]>(), count);
+            d.unmap_memory(gpu.memory);
+            d.reset_command_pool(gpu.pool, vk::CommandPoolResetFlags::empty())
+                .unwrap();
+            d.reset_fences(&[gpu.fence]).unwrap();
+            d.begin_command_buffer(gpu.command, &vk::CommandBufferBeginInfo::default())
+                .unwrap();
+            for (r, clear) in [(gpu.images[0], 0.5), (gpu.images[1], nr)] {
+                fg_api::transition(
+                    d,
+                    gpu.command,
+                    vk::Image::from_raw(r.image),
+                    if iteration == 0 {
+                        vk::ImageLayout::UNDEFINED
+                    } else {
+                        vk::ImageLayout::GENERAL
+                    },
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                );
+                d.cmd_clear_color_image(
+                    gpu.command,
+                    vk::Image::from_raw(r.image),
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &vk::ClearColorValue {
+                        float32: [clear, clear, clear, 1.0],
+                    },
+                    &[fg_api::range()],
+                );
+                fg_api::transition(
+                    d,
+                    gpu.command,
+                    vk::Image::from_raw(r.image),
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    vk::ImageLayout::GENERAL,
+                );
+            }
+            let region = vk::BufferImageCopy::default()
+                .image_subresource(
+                    vk::ImageSubresourceLayers::default()
+                        .aspect_mask(vk::ImageAspectFlags::COLOR)
+                        .layer_count(1),
+                )
+                .image_extent(vk::Extent3D {
+                    width: full.width,
+                    height: full.height,
+                    depth: 1,
+                });
+            fg_api::transition(
+                d,
+                gpu.command,
+                vk::Image::from_raw(base.image),
+                if iteration == 0 {
+                    vk::ImageLayout::UNDEFINED
+                } else {
+                    vk::ImageLayout::GENERAL
+                },
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            );
+            d.cmd_copy_buffer_to_image(
+                gpu.command,
+                gpu.buffer,
+                vk::Image::from_raw(base.image),
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &[region],
+            );
+            fg_api::transition(
+                d,
+                gpu.command,
+                vk::Image::from_raw(base.image),
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::ImageLayout::GENERAL,
+            );
+            let output = reconstruct.record(gpu.command, gpu.images[1], iteration != 0);
+            fg_api::transition(
+                d,
+                gpu.command,
+                vk::Image::from_raw(output.image),
+                vk::ImageLayout::GENERAL,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            );
+            d.cmd_pipeline_barrier(
+                gpu.command,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::DependencyFlags::empty(),
+                &[vk::MemoryBarrier::default()
+                    .src_access_mask(vk::AccessFlags::TRANSFER_READ)
+                    .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)],
+                &[],
+                &[],
+            );
+            d.cmd_copy_image_to_buffer(
+                gpu.command,
+                vk::Image::from_raw(output.image),
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                gpu.buffer,
+                &[region],
+            );
+            fg_api::transition(
+                d,
+                gpu.command,
+                vk::Image::from_raw(output.image),
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                vk::ImageLayout::GENERAL,
+            );
+            d.cmd_pipeline_barrier(
+                gpu.command,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::PipelineStageFlags::HOST,
+                vk::DependencyFlags::empty(),
+                &[vk::MemoryBarrier::default()
+                    .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+                    .dst_access_mask(vk::AccessFlags::HOST_READ)],
+                &[],
+                &[],
+            );
+            d.end_command_buffer(gpu.command).unwrap();
+            d.queue_submit(
+                gpu.queue,
+                &[vk::SubmitInfo::default().command_buffers(&[gpu.command])],
+                gpu.fence,
+            )
+            .unwrap();
+            d.wait_for_fences(&[gpu.fence], true, 10_000_000_000)
+                .unwrap();
+            let mapped = d
+                .map_memory(gpu.memory, 0, BYTES * 4, vk::MemoryMapFlags::empty())
+                .unwrap();
+            let pixels = std::slice::from_raw_parts(mapped.cast::<[u16; 4]>(), count).to_vec();
+            d.unmap_memory(gpu.memory);
+            if nr == 0.5 {
+                assert_eq!(
+                    pixels, original,
+                    "zero delta preserves fine detail and subnormal bits"
+                );
+            }
+            for (p, o) in pixels.iter().zip(&original) {
+                assert_eq!(p[3], o[3], "original alpha remains exact");
+                for c in 0..3 {
+                    let expected = (linear(half(o[c])) + linear(nr) - linear(0.5)).clamp(0.0, 1.0);
+                    assert!(half(p[c]).is_finite());
+                    assert!(
+                        (linear(half(p[c])) - expected).abs() < 0.002,
+                        "linear correction mismatch"
+                    );
+                }
+            }
+        }
+        drop(reconstruct);
+        drop(gpu);
+        eprintln!(
+            "Reconstruction validation warnings/errors: {}; loader installation notices: {}",
+            VALIDATION.load(Ordering::Relaxed),
+            LOADER_NOTICES.load(Ordering::Relaxed)
+        );
+        assert_eq!(VALIDATION.load(Ordering::Relaxed), 0);
     }
 }
 #[test]
@@ -1081,6 +1294,433 @@ fn gpu_look_fixed_inputs() {
             gpu.run(&source, &lower, temporal),
             lower,
             "FP16 long gap resets history"
+        );
+        // M1: P0, R1 and R2 are separate resources. Scope changes the delta
+        // base, while temporal validation continues reading unmodified P0.
+        drop(gpu.look.take());
+        gpu.guide_pixels = Some(source.clone());
+        gpu.look = Some(
+            Look::with_guide(
+                &gpu.device,
+                memory,
+                gpu.images[0],
+                gpu.images[1],
+                gpu.images[2],
+            )
+            .unwrap(),
+        );
+        let first_output = lower.clone();
+        let mut zero = LookOptions {
+            amount: 0,
+            ..Default::default()
+        };
+        assert_eq!(
+            gpu.run(&first_output, &high, zero),
+            first_output
+                .iter()
+                .zip(&high)
+                .map(|(p, n)| [p[0], p[1], p[2], n[3]])
+                .collect::<Vec<_>>()
+        );
+        zero.scope = crate::advanced_settings::LookScope::ChainTotal;
+        gpu.look.as_mut().unwrap().set_input(gpu.images[2]);
+        assert_eq!(
+            gpu.run(&first_output, &high, zero),
+            source
+                .iter()
+                .zip(&high)
+                .map(|(p, n)| [p[0], p[1], p[2], n[3]])
+                .collect::<Vec<_>>()
+        );
+        zero.amount = 100;
+        assert_eq!(
+            gpu.run(&first_output, &high, zero),
+            high,
+            "chain neutral is bit-exact R2"
+        );
+        zero.enabled = false;
+        assert_eq!(
+            gpu.run(&first_output, &high, zero),
+            high,
+            "chain bypass is bit-exact R2"
+        );
+        gpu.look.as_mut().unwrap().set_input(gpu.images[0]);
+        temporal.spatial = Default::default();
+        gpu.temporal_context = Some(context(1, 100, true));
+        gpu.run(&source, &high, temporal);
+        gpu.temporal_context = Some(context(2, 116, false));
+        let varied_r1 = vec![[0x3400, 0x3400, 0x3400, 0x3c00]; PIXELS];
+        let r2 = vec![[0x3600, 0x3600, 0x3600, 0x3800]; PIXELS];
+        let original_guided = gpu.run(&varied_r1, &r2, temporal);
+        assert!(
+            original_guided[20][0] > r2[20][0],
+            "R1 variation must not reject stable P0 history"
+        );
+        gpu.guide_pixels = Some(varied_r1.clone());
+        gpu.temporal_context = Some(context(3, 132, false));
+        assert_eq!(
+            gpu.run(&varied_r1, &r2, temporal),
+            r2,
+            "a real P0 change rejects old correction"
+        );
+        // M2: static history works without a motion image and checks nearby
+        // edge changes, not just the center pixel. Switching modes retires it.
+        drop(gpu.look.take());
+        gpu.look = Some(Look::new(&gpu.device, memory, gpu.images[0], gpu.images[1]).unwrap());
+        let saved_motion = gpu.motion.take();
+        gpu.guide_pixels = None;
+        temporal.temporal.mode = crate::advanced_settings::TemporalMode::Static;
+        gpu.temporal_context = Some(context(1, 100, true));
+        assert_eq!(gpu.run(&source, &high, temporal), high);
+        gpu.temporal_context = Some(context(2, 116, false));
+        assert!(gpu.run(&source, &lower, temporal)[20][0] > lower[20][0]);
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal)["actualMode"],
+            "static"
+        );
+        let mut moving_edge = source.clone();
+        moving_edge[21] = [0x3400; 4];
+        gpu.temporal_context = Some(context(3, 132, false));
+        assert_eq!(
+            gpu.run(&moving_edge, &lower, temporal)[20],
+            lower[20],
+            "static local edge change rejects center history"
+        );
+        gpu.motion = saved_motion;
+        temporal.temporal.mode = crate::advanced_settings::TemporalMode::OpticalFlow;
+        temporal.temporal.sampling = crate::advanced_settings::HistorySampling::PerTap;
+        gpu.temporal_context = Some(context(4, 148, false));
+        assert_eq!(
+            gpu.run(&source, &high, temporal),
+            high,
+            "mode switch seeds a fresh history"
+        );
+        gpu.motion_value = [-0.25 / SIZE.width as f32, 0.0];
+        gpu.temporal_context = Some(context(5, 164, false));
+        let per_tap = gpu.run(&source, &lower, temporal);
+        assert!(per_tap[20][0] > lower[20][0]);
+        assert_eq!(
+            per_tap[0], lower[0],
+            "per-tap out-of-domain history is rejected"
+        );
+        gpu.motion_value = [0.0; 2];
+        gpu.temporal_context = Some(context(6, 180, true));
+        let mut mixed_history = high.clone();
+        mixed_history[19][0] = 0x7e00;
+        gpu.run(&source, &mixed_history, temporal);
+        gpu.motion_value = [-0.25 / SIZE.width as f32, 0.0];
+        gpu.temporal_context = Some(context(7, 196, false));
+        assert!(
+            gpu.run(&source, &lower, temporal)[20][0] > lower[20][0],
+            "a rejected quarter tap must not poison valid support"
+        );
+        gpu.motion_value = [0.0; 2];
+        gpu.temporal_context = Some(context(8, 212, true));
+        mixed_history = high.clone();
+        mixed_history[20][0] = 0x7e00;
+        gpu.run(&source, &mixed_history, temporal);
+        gpu.motion_value = [-0.1 / SIZE.width as f32, 0.0];
+        gpu.temporal_context = Some(context(9, 228, false));
+        assert_eq!(
+            gpu.run(&source, &lower, temporal)[20],
+            lower[20],
+            "tiny valid support must not be amplified"
+        );
+        // M3: repeatedly tune the existing GPU output without uploading R2,
+        // evaluating NR or adding a temporal observation.
+        gpu.motion_value = [0.0; 2];
+        gpu.temporal_context = Some(context(10, 244, true));
+        gpu.run(&source, &high, temporal);
+        gpu.temporal_context = Some(context(11, 260, false));
+        let stabilized = gpu.run(&source, &lower, temporal);
+        let history_before = gpu.look.as_ref().unwrap().temporal_status(temporal);
+        gpu.recomposing = true;
+        let mut tuned = temporal;
+        tuned.amount = 50;
+        let controlled = gpu.run(&source, &lower, tuned);
+        assert_ne!(controlled, stabilized);
+        for _ in 0..12 {
+            assert_eq!(
+                gpu.run(&source, &lower, tuned),
+                controlled,
+                "recomposition must not compound a previous gain"
+            );
+        }
+        assert_eq!(
+            gpu.run(&source, &lower, temporal),
+            stabilized,
+            "returning to original controls reuses the same delta"
+        );
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal),
+            history_before,
+            "recomposition cannot advance the observation clock/history"
+        );
+        assert_eq!(
+            gpu.run(&source, &lower, LookOptions::default()),
+            lower,
+            "neutral restores pristine model output"
+        );
+        gpu.recomposing = false;
+        // Same-source model recomputation snapshots fresh NR, clears the delta
+        // history and never publishes another Look observation.
+        gpu.temporal_context = None;
+        assert_eq!(gpu.run(&source, &high, temporal), high);
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal)["historyReady"],
+            false
+        );
+        gpu.temporal_context = Some(context(12, 276, false));
+        assert_eq!(gpu.run(&source, &lower, temporal), lower);
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal)["resetReason"],
+            "first_frame"
+        );
+        // Persistence is opt-in and has a distinct conditional amplitude and
+        // support history. A vanished model correction fades instead of adding
+        // zero observations to its conditional magnitude.
+        temporal.temporal.mode = crate::advanced_settings::TemporalMode::OpticalFlowPlus;
+        gpu.temporal_context = Some(context(20, 500, true));
+        assert_eq!(gpu.run(&source, &high, temporal), high);
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal)["textureCount"],
+            4
+        );
+        gpu.temporal_context = Some(context(21, 516, false));
+        let missing = gpu.run(&source, &source, temporal);
+        assert!(missing[20][0] > source[20][0] && missing[20][0] < high[20][0]);
+        assert_eq!(missing[20][3], source[20][3]);
+        let mut previous = missing[20][0];
+        for id in 22..=110 {
+            gpu.temporal_context = Some(context(id, 516 + (id - 21) * 16, false));
+            let absent = gpu.run(&source, &source, temporal);
+            assert!(
+                absent[20][0] <= previous,
+                "long absence must decay without revival"
+            );
+            previous = absent[20][0];
+        }
+        assert_eq!(previous, source[20][0]);
+        gpu.temporal_context = Some(context(111, 1956, false));
+        let appearing = gpu.run(&source, &high, temporal);
+        assert!(appearing[20][0] > source[20][0] && appearing[20][0] < high[20][0]);
+        gpu.temporal_context = Some(context(112, 1972, false));
+        assert_eq!(
+            gpu.run(&source, &cut, temporal),
+            cut,
+            "opposite corrections reject old support"
+        );
+        gpu.temporal_context = Some(context(113, 1988, true));
+        gpu.run(&source, &high, temporal);
+        gpu.temporal_context = Some(context(114, 2004, false));
+        assert_eq!(
+            gpu.run(&cut, &cut, temporal),
+            cut,
+            "real color changes discard persistent correction"
+        );
+        gpu.temporal_context = Some(context(115, 2020, true));
+        gpu.run(&source, &high, temporal);
+        gpu.motion_value = [f32::NAN, 0.0];
+        gpu.temporal_context = Some(context(116, 2036, false));
+        assert_eq!(
+            gpu.run(&source, &source, temporal),
+            source,
+            "invalid motion discards support immediately"
+        );
+        gpu.motion_value = [0.0; 2];
+        gpu.temporal_context = Some(context(117, 2052, true));
+        gpu.run(&source, &high, temporal);
+        gpu.temporal_context = Some(context(118, 2068, false));
+        let persisted = gpu.run(&source, &source, temporal);
+        let persistent_before = gpu.look.as_ref().unwrap().temporal_status(temporal);
+        gpu.recomposing = true;
+        assert_eq!(gpu.run(&source, &source, temporal), persisted);
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal),
+            persistent_before
+        );
+        assert_eq!(gpu.run(&source, &source, LookOptions::default()), source);
+        gpu.recomposing = false;
+        temporal.temporal.mode = crate::advanced_settings::TemporalMode::OpticalFlow;
+        gpu.temporal_context = Some(context(119, 2084, false));
+        assert_eq!(
+            gpu.run(&source, &high, temporal),
+            high,
+            "leaving persistence resets ordinary history"
+        );
+        assert_eq!(
+            gpu.look.as_ref().unwrap().temporal_status(temporal)["textureCount"],
+            3
+        );
+        // M4: color experiments stay opt-in, with exact neutral/zero/bypass.
+        gpu.temporal_context = None;
+        let mut experiments = LookOptions::default();
+        experiments.algorithm = crate::advanced_settings::ColorAlgorithm::Oklab;
+        assert_eq!(gpu.run(&p, &n, experiments), n);
+        experiments.amount = 0;
+        let zero = gpu.run(&p, &n, experiments);
+        for i in 0..PIXELS {
+            assert_eq!(&zero[i][..3], &p[i][..3]);
+            assert_eq!(zero[i][3], n[i][3]);
+        }
+        experiments.amount = 200;
+        experiments.color = 200;
+        experiments.hue = 200;
+        let lab = gpu.run(&p, &n, experiments);
+        assert!(lab.iter().flatten().all(|v| v & 0x7c00 != 0x7c00));
+        for i in 0..PIXELS {
+            assert_eq!(lab[i][3], n[i][3]);
+        }
+        experiments.enabled = false;
+        assert_eq!(gpu.run(&p, &n, experiments), n);
+        experiments = LookOptions::default();
+        experiments.protection.hue = 100;
+        let hue_protected = gpu.run(&p, &n, experiments);
+        let log_chroma = |rgb: [u16; 4]| {
+            let v = rgb.map(|v| linear(half(v)).max(1e-6).log2());
+            [v[0] - v[1], v[2] - v[1]]
+        };
+        let basis = log_chroma(p[4]);
+        let original = log_chroma(n[4]);
+        let protected = log_chroma(hue_protected[4]);
+        assert!(
+            (basis[0] * protected[1] - basis[1] * protected[0]).abs()
+                < (basis[0] * original[1] - basis[1] * original[0]).abs()
+        );
+        assert!(
+            basis[0] * protected[0] + basis[1] * protected[1] >= -0.01,
+            "hue protection also rejects a radial color reversal"
+        );
+        experiments.protection = Default::default();
+        experiments.protection.overcorrection = 100;
+        let protected = gpu.run(&source, &high, experiments);
+        assert!(protected[20][0] > source[20][0] && protected[20][0] < high[20][0]);
+        experiments.protection = Default::default();
+        experiments.protection.shadows = 100;
+        let dark = vec![[0x3000, 0x3000, 0x3000, 0x3400]; PIXELS];
+        let protected_dark = gpu.run(&dark, &lower, experiments);
+        assert_eq!(&protected_dark[20][..3], &dark[20][..3]);
+        assert_eq!(protected_dark[20][3], lower[20][3]);
+        experiments.protection = Default::default();
+        experiments.protection.highlights = 100;
+        let white = vec![[0x3c00; 4]; PIXELS];
+        assert_eq!(
+            &gpu.run(&white, &lower, experiments)[20][..3],
+            &white[20][..3]
+        );
+        experiments = LookOptions::default();
+        for view in [
+            crate::advanced_settings::LookDiagnostic::Original,
+            crate::advanced_settings::LookDiagnostic::FirstPass,
+            crate::advanced_settings::LookDiagnostic::ModelOutput,
+        ] {
+            experiments.diagnostic = view;
+            let shown = gpu.run(&source, &high, experiments);
+            let expected = if view == crate::advanced_settings::LookDiagnostic::Original {
+                &source
+            } else {
+                &high
+            };
+            for i in 0..PIXELS {
+                assert_eq!(&shown[i][..3], &expected[i][..3]);
+                assert_eq!(shown[i][3], high[i][3]);
+            }
+        }
+        for view in [
+            crate::advanced_settings::LookDiagnostic::RawDelta,
+            crate::advanced_settings::LookDiagnostic::ControlledDelta,
+            crate::advanced_settings::LookDiagnostic::LowFrequency,
+            crate::advanced_settings::LookDiagnostic::HighFrequency,
+            crate::advanced_settings::LookDiagnostic::Protection,
+            crate::advanced_settings::LookDiagnostic::HistoryValidity,
+            crate::advanced_settings::LookDiagnostic::HistoryWeight,
+        ] {
+            experiments.diagnostic = view;
+            assert!(gpu
+                .run(&source, &high, experiments)
+                .iter()
+                .flatten()
+                .all(|v| v & 0x7c00 != 0x7c00));
+        }
+        experiments.diagnostic = crate::advanced_settings::LookDiagnostic::ModelOutput;
+        drop(gpu.look.take());
+        gpu.look = Some(Look::new(&gpu.device, memory, gpu.images[0], gpu.images[1]).unwrap());
+        gpu.look.as_mut().unwrap().spatial_failure = Some("injected unavailable band stage".into());
+        experiments.diagnostic = crate::advanced_settings::LookDiagnostic::LowFrequency;
+        assert_eq!(
+            gpu.run(&source, &high, experiments),
+            high,
+            "unavailable diagnostic band falls back without touching NR"
+        );
+        assert!(!gpu.look.as_ref().unwrap().active(experiments));
+        gpu.look.as_mut().unwrap().spatial_failure = None;
+        experiments.diagnostic = crate::advanced_settings::LookDiagnostic::ModelOutput;
+        gpu.run(&source, &high, experiments);
+        gpu.recomposing = true;
+        assert_eq!(
+            gpu.run(&source, &high, LookOptions::default()),
+            high,
+            "leaving diagnostics restores raw NR without another observation"
+        );
+        gpu.recomposing = false;
+        drop(gpu.look.take());
+        gpu.look = Some(
+            Look::with_guide(
+                &gpu.device,
+                memory,
+                gpu.images[0],
+                gpu.images[1],
+                gpu.images[2],
+            )
+            .unwrap(),
+        );
+        gpu.look.as_mut().unwrap().set_first_output(gpu.images[0]);
+        gpu.look.as_mut().unwrap().set_input(gpu.images[2]);
+        gpu.guide_pixels = Some(source.clone());
+        experiments.scope = crate::advanced_settings::LookScope::ChainTotal;
+        for (view, expected) in [
+            (crate::advanced_settings::LookDiagnostic::Original, &source),
+            (
+                crate::advanced_settings::LookDiagnostic::FirstPass,
+                &first_output,
+            ),
+            (crate::advanced_settings::LookDiagnostic::ModelOutput, &r2),
+        ] {
+            experiments.diagnostic = view;
+            let shown = gpu.run(&first_output, &r2, experiments);
+            for i in 0..PIXELS {
+                assert_eq!(&shown[i][..3], &expected[i][..3]);
+                assert_eq!(shown[i][3], r2[i][3]);
+            }
+        }
+        drop(gpu.look.take());
+        let fp16 = gpu.motion.take().unwrap();
+        gpu.device
+            .destroy_image_view(vk::ImageView::from_raw(fp16.view), None);
+        gpu.device
+            .destroy_image(vk::Image::from_raw(fp16.image), None);
+        gpu.device
+            .free_memory(vk::DeviceMemory::from_raw(fp16.memory), None);
+        gpu.motion = Some(
+            fg_api::texture_with_usage(
+                &gpu.device,
+                &memory,
+                SIZE,
+                vk::Format::R32G32_SFLOAT,
+                vk::ImageUsageFlags::STORAGE | vk::ImageUsageFlags::TRANSFER_DST,
+            )
+            .unwrap(),
+        );
+        gpu.motion_initialized = false;
+        gpu.guide_pixels = None;
+        gpu.look = Some(Look::new(&gpu.device, memory, gpu.images[0], gpu.images[1]).unwrap());
+        temporal.temporal.mode = crate::advanced_settings::TemporalMode::OpticalFlowPlus;
+        gpu.temporal_context = Some(context(1, 100, true));
+        assert_eq!(gpu.run(&source, &high, temporal), high);
+        gpu.temporal_context = Some(context(2, 116, false));
+        assert!(
+            gpu.run(&source, &source, temporal)[20][0] > source[20][0],
+            "RG32F persistence variant also retains valid missing support"
         );
         drop(gpu);
         eprintln!(

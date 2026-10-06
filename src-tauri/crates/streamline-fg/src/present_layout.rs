@@ -124,6 +124,65 @@ fn adapt(barrier: &mut vk::ImageMemoryBarrier, owned: bool) -> bool {
     barrier.dst_access_mask |= vk::AccessFlags::MEMORY_READ;
     true
 }
+fn adapt2(barrier: &mut vk::ImageMemoryBarrier2, owned: bool) -> bool {
+    if !owned
+        || (barrier.old_layout != vk::ImageLayout::PRESENT_SRC_KHR
+            && barrier.new_layout != vk::ImageLayout::PRESENT_SRC_KHR)
+    {
+        return false;
+    }
+    barrier.old_layout = translated(barrier.old_layout);
+    barrier.new_layout = translated(barrier.new_layout);
+    barrier.src_stage_mask |= vk::PipelineStageFlags2::ALL_COMMANDS;
+    barrier.dst_stage_mask |= vk::PipelineStageFlags2::ALL_COMMANDS;
+    barrier.src_access_mask |= vk::AccessFlags2::MEMORY_READ | vk::AccessFlags2::MEMORY_WRITE;
+    barrier.dst_access_mask |= vk::AccessFlags2::MEMORY_READ;
+    true
+}
+unsafe fn barrier2_impl(cmd: vk::CommandBuffer, info: *const vk::DependencyInfo, name: &CStr) {
+    let Some(d) = device(cmd) else {
+        std::process::abort()
+    };
+    let next: vk::PFN_vkCmdPipelineBarrier2 =
+        std::mem::transmute((d.gdpa)(d.handle, name.as_ptr()).unwrap());
+    if info.is_null() {
+        next(cmd, info);
+        return;
+    }
+    let source = crate::scale_probe::items(
+        (*info).p_image_memory_barriers,
+        (*info).image_memory_barrier_count,
+    );
+    let copy = {
+        let proxies = PROXIES.get_or_init(Default::default).lock().unwrap();
+        if source.iter().any(|b| {
+            proxies.contains(d.handle.as_raw(), b.image.as_raw())
+                && (b.old_layout == vk::ImageLayout::PRESENT_SRC_KHR
+                    || b.new_layout == vk::ImageLayout::PRESENT_SRC_KHR)
+        }) {
+            let mut copy = source.to_vec();
+            for b in &mut copy {
+                adapt2(b, proxies.contains(d.handle.as_raw(), b.image.as_raw()));
+            }
+            Some(copy)
+        } else {
+            None
+        }
+    };
+    if let Some(images) = copy {
+        let mut dependency = *info;
+        dependency.p_image_memory_barriers = images.as_ptr();
+        next(cmd, &dependency);
+    } else {
+        next(cmd, info);
+    }
+}
+unsafe extern "system" fn barrier2(cmd: vk::CommandBuffer, info: *const vk::DependencyInfo) {
+    barrier2_impl(cmd, info, c"vkCmdPipelineBarrier2");
+}
+unsafe extern "system" fn barrier2_khr(cmd: vk::CommandBuffer, info: *const vk::DependencyInfo) {
+    barrier2_impl(cmd, info, c"vkCmdPipelineBarrier2KHR");
+}
 unsafe extern "system" fn barrier(
     cmd: vk::CommandBuffer,
     src: vk::PipelineStageFlags,
@@ -205,7 +264,12 @@ unsafe extern "system" fn barrier(
     );
 }
 pub(super) unsafe fn barrier_intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
-    (name == c"vkCmdPipelineBarrier").then(|| std::mem::transmute(barrier as *const ()))
+    match name.to_bytes() {
+        b"vkCmdPipelineBarrier" => Some(std::mem::transmute(barrier as *const ())),
+        b"vkCmdPipelineBarrier2" => Some(std::mem::transmute(barrier2 as *const ())),
+        b"vkCmdPipelineBarrier2KHR" => Some(std::mem::transmute(barrier2_khr as *const ())),
+        _ => None,
+    }
 }
 pub(super) unsafe fn intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
     match name.to_bytes() {
@@ -254,5 +318,48 @@ mod tests {
         assert!(!proxies.contains(2, 3));
         proxies.0.remove(&(1, 2));
         assert!(!proxies.contains(1, 3));
+    }
+    #[test]
+    fn synchronization2_preserves_ownership_range_and_other_dependencies() {
+        let range = vk::ImageSubresourceRange::default()
+            .base_mip_level(2)
+            .level_count(1)
+            .base_array_layer(3)
+            .layer_count(1)
+            .aspect_mask(vk::ImageAspectFlags::COLOR);
+        let mut b = vk::ImageMemoryBarrier2::default()
+            .image(vk::Image::from_raw(42))
+            .old_layout(vk::ImageLayout::GENERAL)
+            .new_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+            .src_stage_mask(vk::PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT)
+            .src_access_mask(vk::AccessFlags2::COLOR_ATTACHMENT_WRITE)
+            .src_queue_family_index(3)
+            .dst_queue_family_index(4)
+            .subresource_range(range);
+        assert!(!adapt2(&mut b, false));
+        assert_eq!(b.new_layout, vk::ImageLayout::PRESENT_SRC_KHR);
+        assert!(adapt2(&mut b, true));
+        assert_eq!(b.new_layout, vk::ImageLayout::TRANSFER_SRC_OPTIMAL);
+        assert_eq!((b.src_queue_family_index, b.dst_queue_family_index), (3, 4));
+        assert_eq!(
+            (
+                b.subresource_range.base_mip_level,
+                b.subresource_range.base_array_layer
+            ),
+            (2, 3)
+        );
+        assert!(b.src_stage_mask.contains(
+            vk::PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT
+                | vk::PipelineStageFlags2::ALL_COMMANDS
+        ));
+        assert!(b
+            .src_access_mask
+            .contains(vk::AccessFlags2::COLOR_ATTACHMENT_WRITE | vk::AccessFlags2::MEMORY_WRITE));
+        assert!(b.dst_access_mask.contains(vk::AccessFlags2::MEMORY_READ));
+        b.old_layout = vk::ImageLayout::PRESENT_SRC_KHR;
+        b.new_layout = vk::ImageLayout::GENERAL;
+        assert!(adapt2(&mut b, true));
+        assert_eq!(b.old_layout, vk::ImageLayout::TRANSFER_SRC_OPTIMAL);
+        assert!(!adapt2(&mut b, true));
     }
 }

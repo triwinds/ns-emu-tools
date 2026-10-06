@@ -7,6 +7,128 @@ pub const NR_LOOK_MARKER: &[u8] = b"NS_EMU_NR_LOOK_V1";
 pub const NR_SPATIAL_LOOK_MARKER: &[u8] = b"NS_EMU_NR_SPATIAL_LOOK_V1";
 pub const NR_TWO_PASS_MARKER: &[u8] = b"NS_EMU_NR_TWO_PASS_V1";
 pub const NR_TEMPORAL_LOOK_MARKER: &[u8] = b"NS_EMU_NR_TEMPORAL_LOOK_V1";
+pub const NR_LOOK_SCOPE_MARKER: &[u8] = b"NS_EMU_NR_LOOK_SCOPE_V1";
+pub const NR_TEMPORAL_MODES_MARKER: &[u8] = b"NS_EMU_NR_TEMPORAL_MODES_V1";
+pub const NR_PERSISTENCE_MARKER: &[u8] = b"NS_EMU_NR_PERSISTENCE_V1";
+pub const NR_LOOK_EXPERIMENTS_MARKER: &[u8] = b"NS_EMU_NR_LOOK_EXPERIMENTS_V1";
+pub const NR_CONSOLIDATED_MARKER: &[u8] = b"NS_EMU_NR_CONSOLIDATED_V1";
+pub const NR_INFERENCE_SCALE_MARKER: &[u8] = b"NS_EMU_NR_INFERENCE_SCALE_V1";
+pub const NR_INFERENCE_CAP_MARKER: &[u8] = b"NS_EMU_NR_INFERENCE_CAP_V1";
+pub const INPUT_SCALING_MARKER: &[u8] = b"NS_EMU_INPUT_SCALING_V1";
+pub const INPUT_SCALING_LIVE_MARKER: &[u8] = b"NS_EMU_INPUT_SCALING_LIVE_V1";
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InputSizing {
+    pub scale_percent: u32,
+    pub max_edge: u32,
+}
+impl Default for InputSizing {
+    fn default() -> Self {
+        Self {
+            scale_percent: 100,
+            max_edge: 0,
+        }
+    }
+}
+impl InputSizing {
+    pub fn valid(self) -> bool {
+        (50..=100).contains(&self.scale_percent) && valid_nr_inference_max_edge(self.max_edge)
+    }
+}
+
+/// Zero selects the legacy percentage mode; otherwise cap the longest edge.
+pub fn valid_nr_inference_max_edge(value: u32) -> bool {
+    value == 0 || (320..=8192).contains(&value)
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ColorAlgorithm {
+    #[default]
+    LogDelta,
+    Oklab,
+}
+impl ColorAlgorithm {
+    pub fn is_default(&self) -> bool {
+        *self == Self::LogDelta
+    }
+}
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default, rename_all = "camelCase", deny_unknown_fields)]
+pub struct ColorProtection {
+    #[serde(deserialize_with = "protection_strength")]
+    pub hue: u16,
+    #[serde(deserialize_with = "protection_strength")]
+    pub shadows: u16,
+    #[serde(deserialize_with = "protection_strength")]
+    pub highlights: u16,
+    #[serde(deserialize_with = "protection_strength")]
+    pub overcorrection: u16,
+}
+impl ColorProtection {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+fn protection_strength<'de, D: Deserializer<'de>>(d: D) -> Result<u16, D::Error> {
+    bounded(d, 0, 100, false)
+}
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum LookDiagnostic {
+    #[default]
+    Off,
+    Original,
+    FirstPass,
+    ModelOutput,
+    RawDelta,
+    ControlledDelta,
+    LowFrequency,
+    HighFrequency,
+    Protection,
+    HistoryValidity,
+    HistoryWeight,
+}
+impl LookDiagnostic {
+    pub fn is_default(&self) -> bool {
+        *self == Self::Off
+    }
+    pub fn code(self) -> u16 {
+        match self {
+            Self::Off => 0,
+            Self::Original => 1,
+            Self::FirstPass => 2,
+            Self::ModelOutput => 3,
+            Self::RawDelta => 4,
+            Self::ControlledDelta => 5,
+            Self::LowFrequency => 6,
+            Self::HighFrequency => 7,
+            Self::Protection => 8,
+            Self::HistoryValidity => 9,
+            Self::HistoryWeight => 10,
+        }
+    }
+    pub fn needs_band(self) -> bool {
+        matches!(self, Self::LowFrequency | Self::HighFrequency)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum LookScope {
+    #[default]
+    FinalPass,
+    ChainTotal,
+}
+impl LookScope {
+    pub fn is_default(&self) -> bool {
+        *self == Self::FinalPass
+    }
+    pub fn uses_original(self, successful_passes: u8) -> bool {
+        self == Self::ChainTotal || successful_passes != 2
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
@@ -136,6 +258,12 @@ impl SecondPassOptions {
             },
         )
     }
+    pub fn execution_eq(self, other: Self, intensity: f32, first: NrOptions) -> bool {
+        self.enabled == other.enabled
+            && (!self.enabled
+                || (self.retry == other.retry
+                    && self.resolve(intensity, first) == other.resolve(intensity, first)))
+    }
 }
 
 /// P2 SDR Look, applied after NR. Gains are percentages; caps are hundredths
@@ -143,6 +271,14 @@ impl SecondPassOptions {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct LookOptions {
+    #[serde(skip_serializing_if = "ColorAlgorithm::is_default")]
+    pub algorithm: ColorAlgorithm,
+    #[serde(skip_serializing_if = "ColorProtection::is_default")]
+    pub protection: ColorProtection,
+    #[serde(skip_serializing_if = "LookDiagnostic::is_default")]
+    pub diagnostic: LookDiagnostic,
+    #[serde(skip_serializing_if = "LookScope::is_default")]
+    pub scope: LookScope,
     #[serde(skip_serializing_if = "TemporalLook::is_default")]
     pub temporal: TemporalLook,
     #[serde(skip_serializing_if = "SpatialLook::is_default")]
@@ -174,6 +310,10 @@ pub struct LookOptions {
 impl Default for LookOptions {
     fn default() -> Self {
         Self {
+            algorithm: ColorAlgorithm::default(),
+            protection: ColorProtection::default(),
+            diagnostic: LookDiagnostic::default(),
+            scope: LookScope::default(),
             spatial: SpatialLook::default(),
             temporal: TemporalLook::default(),
             enabled: true,
@@ -196,9 +336,16 @@ impl LookOptions {
         *self == Self::default()
     }
     pub fn bypass(self) -> bool {
-        !self.enabled || (self.basic_neutral() && self.spatial.bypass() && !self.temporal_active())
+        !self.enabled
+            || (self.basic_neutral()
+                && self.spatial.bypass()
+                && !self.temporal_active()
+                && self.diagnostic.is_default())
     }
     pub fn basic_neutral(mut self) -> bool {
+        self.algorithm = ColorAlgorithm::default();
+        self.diagnostic = LookDiagnostic::default();
+        self.scope = LookScope::default();
         self.spatial = SpatialLook::default();
         self.temporal = TemporalLook::default();
         self.is_default()
@@ -206,11 +353,19 @@ impl LookOptions {
     pub fn spatial_active(self) -> bool {
         self.enabled && self.amount != 0 && !self.spatial.bypass()
     }
+    pub fn band_required(self) -> bool {
+        self.spatial_active() || (self.enabled && self.diagnostic.needs_band())
+    }
+    pub fn needs_experiments(self) -> bool {
+        !self.algorithm.is_default()
+            || !self.protection.is_default()
+            || !self.diagnostic.is_default()
+    }
     pub fn temporal_active(self) -> bool {
         self.enabled && self.amount != 0 && self.temporal.enabled && self.temporal.strength != 0
     }
     /// Matches the shader push-constant ABI; no exposure/tone-mapping step.
-    pub fn constants(self) -> [f32; 16] {
+    pub fn constants(self) -> [f32; 24] {
         let mut values = [
             self.amount,
             self.brighten,
@@ -222,12 +377,30 @@ impl LookOptions {
             self.shadows,
             self.midtones,
             self.highlights,
-            if self.spatial_active() { 100 } else { 0 },
+            if self.spatial_active() {
+                100
+            } else if self.band_required() {
+                200
+            } else {
+                0
+            },
             0,
             self.spatial.lighting,
             self.spatial.detail,
             0,
             self.spatial.halo,
+            self.protection.hue,
+            self.protection.shadows,
+            self.protection.highlights,
+            self.protection.overcorrection,
+            if self.algorithm == ColorAlgorithm::Oklab {
+                100
+            } else {
+                0
+            },
+            self.diagnostic.code() * 100,
+            0,
+            0,
         ]
         .map(|v| f32::from(v) / 100.0);
         values[14] = f32::from(self.spatial.radius);
@@ -238,6 +411,10 @@ impl LookOptions {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct TemporalLook {
+    #[serde(skip_serializing_if = "TemporalMode::is_default")]
+    pub mode: TemporalMode,
+    #[serde(skip_serializing_if = "HistorySampling::is_default")]
+    pub sampling: HistorySampling,
     pub enabled: bool,
     #[serde(deserialize_with = "temporal_time")]
     pub time_ms: u16,
@@ -249,6 +426,8 @@ pub struct TemporalLook {
 impl Default for TemporalLook {
     fn default() -> Self {
         Self {
+            mode: TemporalMode::default(),
+            sampling: HistorySampling::default(),
             enabled: false,
             time_ms: 80,
             strength: 75,
@@ -259,6 +438,38 @@ impl Default for TemporalLook {
 impl TemporalLook {
     pub fn is_default(&self) -> bool {
         *self == Self::default()
+    }
+    pub fn needs_extended_support(self) -> bool {
+        !self.mode.is_default() || !self.sampling.is_default()
+    }
+}
+/// `enabled` retains the legacy on/off contract; missing mode keeps NVOF.
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TemporalMode {
+    Static,
+    #[default]
+    OpticalFlow,
+    OpticalFlowPlus,
+}
+impl TemporalMode {
+    pub fn persistent(self) -> bool {
+        self == Self::OpticalFlowPlus
+    }
+    pub fn is_default(&self) -> bool {
+        *self == Self::OpticalFlow
+    }
+}
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum HistorySampling {
+    #[default]
+    Bilinear,
+    PerTap,
+}
+impl HistorySampling {
+    pub fn is_default(&self) -> bool {
+        *self == Self::Bilinear
     }
 }
 fn temporal_time<'de, D: Deserializer<'de>>(d: D) -> Result<u16, D::Error> {
@@ -433,8 +644,84 @@ fn input_fps<'de, D: Deserializer<'de>>(d: D) -> Result<u16, D::Error> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn color_experiments_preserve_legacy_neutral_and_validate_protection_bounds() {
+        let legacy: super::LookOptions = serde_json::from_str(r#"{"amount":100}"#).unwrap();
+        assert!(legacy.bypass() && !legacy.needs_experiments());
+        let lab: super::LookOptions = serde_json::from_str(r#"{"algorithm":"oklab"}"#).unwrap();
+        assert!(lab.bypass() && lab.needs_experiments());
+        for invalid in [
+            r#"{"protection":{"hue":101}}"#,
+            r#"{"protection":{"shadows":-1}}"#,
+            r#"{"algorithm":"hdr"}"#,
+            r#"{"diagnostic":"unknown"}"#,
+        ] {
+            assert!(serde_json::from_str::<super::LookOptions>(invalid).is_err());
+        }
+        let diagnostic: super::LookOptions =
+            serde_json::from_str(r#"{"diagnostic":"low_frequency"}"#).unwrap();
+        assert!(!diagnostic.bypass() && diagnostic.band_required() && !diagnostic.spatial_active());
+        assert_eq!(&lab.constants()[20..22], &[1.0, 0.0]);
+    }
     use super::*;
     use serde_json::json;
+    #[test]
+    fn scope_and_temporal_extensions_preserve_legacy_semantics() {
+        let legacy: LookOptions = serde_json::from_value(
+            json!({"temporal":{"enabled":true,"timeMs":123,"strength":80,"rejection":70}}),
+        )
+        .unwrap();
+        assert_eq!(legacy.scope, LookScope::FinalPass);
+        assert_eq!(legacy.temporal.mode, TemporalMode::OpticalFlow);
+        assert_eq!(legacy.temporal.sampling, HistorySampling::Bilinear);
+        assert_eq!(legacy.temporal.time_ms, 123);
+        let wire = serde_json::to_value(legacy).unwrap();
+        assert!(wire.get("scope").is_none());
+        assert!(wire["temporal"].get("mode").is_none());
+        assert!(wire["temporal"].get("sampling").is_none());
+        for scope in [LookScope::FinalPass, LookScope::ChainTotal] {
+            for passes in [1, 2] {
+                assert_eq!(
+                    scope.uses_original(passes),
+                    scope == LookScope::ChainTotal || passes == 1
+                );
+            }
+            let options = LookOptions {
+                scope,
+                ..Default::default()
+            };
+            assert!(
+                options.bypass(),
+                "neutral scope must not dispatch or convert colors"
+            );
+            assert!(!LookOptions {
+                amount: 0,
+                ..options
+            }
+            .bypass());
+            assert_eq!(
+                NrOptions {
+                    look: options,
+                    ..Default::default()
+                }
+                .model_only(),
+                NrOptions::default()
+            );
+        }
+        let extended: LookOptions = serde_json::from_value(json!({"scope":"chain_total","temporal":{"enabled":true,"mode":"static","sampling":"per_tap"}})).unwrap();
+        assert!(extended.temporal.needs_extended_support());
+        assert_eq!(
+            serde_json::from_value::<LookOptions>(serde_json::to_value(extended).unwrap()).unwrap(),
+            extended
+        );
+        for invalid in [
+            json!({"scope":"total"}),
+            json!({"temporal":{"mode":"off"}}),
+            json!({"temporal":{"sampling":"nearest"}}),
+        ] {
+            assert!(serde_json::from_value::<LookOptions>(invalid).is_err());
+        }
+    }
     #[test]
     fn temporal_defaults_ranges_and_model_history_contract() {
         let mut options = LookOptions::default();
@@ -535,7 +822,7 @@ mod tests {
         )
         .unwrap();
         assert!(!active.bypass() && active.spatial_active());
-        assert_eq!(&active.constants()[10..], &[1.0, 0.0, 0.0, 1.0, 4.0, 0.5]);
+        assert_eq!(&active.constants()[10..16], &[1.0, 0.0, 0.0, 1.0, 4.0, 0.5]);
         assert_eq!(
             serde_json::from_value::<LookOptions>(serde_json::to_value(active).unwrap()).unwrap(),
             active

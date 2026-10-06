@@ -16,6 +16,7 @@ pub(super) struct Look {
     pipeline_layout: vk::PipelineLayout,
     pipeline: vk::Pipeline,
     input: Resource,
+    guide: Resource,
     output: Resource,
     memory: vk::PhysicalDeviceMemoryProperties,
     spatial: Option<Spatial>,
@@ -23,15 +24,33 @@ pub(super) struct Look {
     temporal: Option<temporal::Temporal>,
     temporal_failure: Option<String>,
     temporal_recorded: bool,
+    temporal_mode: Option<crate::advanced_settings::TemporalMode>,
+    raw_output: Option<Resource>,
+    raw_initialized: bool,
+    raw_bytes: u64,
 }
 impl Look {
+    #[cfg(test)]
     pub(super) unsafe fn new(
         d: &ash::Device,
         memory: vk::PhysicalDeviceMemoryProperties,
         input: Resource,
         output: Resource,
     ) -> Result<Self> {
+        Self::with_guide(d, memory, input, output, input)
+    }
+    pub(super) unsafe fn with_guide(
+        d: &ash::Device,
+        memory: vk::PhysicalDeviceMemoryProperties,
+        input: Resource,
+        output: Resource,
+        guide: Resource,
+    ) -> Result<Self> {
         if input.image == output.image
+            || guide.image == output.image
+            || guide.width != input.width
+            || guide.height != input.height
+            || guide.format != input.format
             || input.width != output.width
             || input.height != output.height
             || [input.format, output.format] != [vk::Format::R16G16B16A16_SFLOAT.as_raw() as u32; 2]
@@ -47,6 +66,7 @@ impl Look {
             pipeline_layout: vk::PipelineLayout::null(),
             pipeline: vk::Pipeline::null(),
             input,
+            guide,
             output,
             memory,
             spatial: None,
@@ -54,8 +74,12 @@ impl Look {
             temporal: None,
             temporal_failure: None,
             temporal_recorded: false,
+            temporal_mode: None,
+            raw_output: None,
+            raw_initialized: false,
+            raw_bytes: 0,
         };
-        let bindings = [0, 1, 2, 3].map(|binding| {
+        let bindings = [0, 1, 2, 3, 4, 5, 6].map(|binding| {
             vk::DescriptorSetLayoutBinding::default()
                 .binding(binding)
                 .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
@@ -71,7 +95,7 @@ impl Look {
                 .max_sets(2)
                 .pool_sizes(&[vk::DescriptorPoolSize {
                     ty: vk::DescriptorType::STORAGE_IMAGE,
-                    descriptor_count: 8,
+                    descriptor_count: 14,
                 }]),
             None,
         )?;
@@ -104,7 +128,7 @@ impl Look {
                 .set_layouts(&[look.layout])
                 .push_constant_ranges(&[vk::PushConstantRange::default()
                     .stage_flags(vk::ShaderStageFlags::COMPUTE)
-                    .size(64)]),
+                    .size(96)]),
             None,
         )?;
         look.pipeline = pipeline(
@@ -112,18 +136,160 @@ impl Look {
             look.pipeline_layout,
             include_bytes!("../shaders/nr_look.spv"),
         )?;
+        look.raw_output = Some(fg_api::texture_with_usage(
+            d,
+            &memory,
+            vk::Extent2D {
+                width: output.width,
+                height: output.height,
+            },
+            vk::Format::R16G16B16A16_SFLOAT,
+            vk::ImageUsageFlags::STORAGE
+                | vk::ImageUsageFlags::TRANSFER_SRC
+                | vk::ImageUsageFlags::TRANSFER_DST,
+        )?);
+        look.raw_bytes = d
+            .get_image_memory_requirements(vk::Image::from_raw(look.raw_output.unwrap().image))
+            .size;
+        for (binding, r) in [
+            (4, guide),
+            (5, look.raw_output.unwrap()),
+            (6, look.raw_output.unwrap()),
+        ] {
+            let image = [vk::DescriptorImageInfo::default()
+                .image_view(vk::ImageView::from_raw(r.view))
+                .image_layout(vk::ImageLayout::GENERAL)];
+            d.update_descriptor_sets(
+                &[vk::WriteDescriptorSet::default()
+                    .dst_set(look.set)
+                    .dst_binding(binding)
+                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                    .image_info(&image)],
+                &[],
+            );
+        }
         Ok(look)
+    }
+    pub(super) unsafe fn set_first_output(&mut self, first: Resource) {
+        let image = [vk::DescriptorImageInfo::default()
+            .image_view(vk::ImageView::from_raw(first.view))
+            .image_layout(vk::ImageLayout::GENERAL)];
+        self.device.update_descriptor_sets(
+            &[vk::WriteDescriptorSet::default()
+                .dst_set(self.set)
+                .dst_binding(5)
+                .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                .image_info(&image)],
+            &[],
+        );
+    }
+    unsafe fn copy_raw(&mut self, cmd: vk::CommandBuffer, restore: bool) {
+        let raw = self.raw_output.unwrap();
+        let (source, destination) = if restore {
+            (raw, self.output)
+        } else {
+            (self.output, raw)
+        };
+        fg_api::transition(
+            &self.device,
+            cmd,
+            vk::Image::from_raw(source.image),
+            vk::ImageLayout::GENERAL,
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+        );
+        fg_api::transition(
+            &self.device,
+            cmd,
+            vk::Image::from_raw(destination.image),
+            if !restore && !self.raw_initialized {
+                vk::ImageLayout::UNDEFINED
+            } else {
+                vk::ImageLayout::GENERAL
+            },
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+        );
+        let sub = vk::ImageSubresourceLayers::default()
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
+            .layer_count(1);
+        self.device.cmd_copy_image(
+            cmd,
+            vk::Image::from_raw(source.image),
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            vk::Image::from_raw(destination.image),
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            &[vk::ImageCopy::default()
+                .src_subresource(sub)
+                .dst_subresource(sub)
+                .extent(vk::Extent3D {
+                    width: source.width,
+                    height: source.height,
+                    depth: 1,
+                })],
+        );
+        fg_api::transition(
+            &self.device,
+            cmd,
+            vk::Image::from_raw(source.image),
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            vk::ImageLayout::GENERAL,
+        );
+        fg_api::transition(
+            &self.device,
+            cmd,
+            vk::Image::from_raw(destination.image),
+            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            vk::ImageLayout::GENERAL,
+        );
+        self.raw_initialized = true;
+    }
+    /// Update only at the owner's fenced boundary. Scope never recreates NGX.
+    pub(super) unsafe fn set_input(&mut self, input: Resource) {
+        if self.input.image == input.image {
+            return;
+        }
+        self.input = input;
+        self.temporal_recorded = false;
+        let image = [vk::DescriptorImageInfo::default()
+            .image_view(vk::ImageView::from_raw(input.view))
+            .image_layout(vk::ImageLayout::GENERAL)];
+        for set in [self.set, self.band_set] {
+            self.device.update_descriptor_sets(
+                &[vk::WriteDescriptorSet::default()
+                    .dst_set(set)
+                    .dst_binding(0)
+                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                    .image_info(&image)],
+                &[],
+            );
+        }
+        if let Some(t) = &mut self.temporal {
+            t.set_input(input);
+        }
     }
     pub(super) unsafe fn prepare_temporal(
         &mut self,
         options: LookOptions,
         motion: Resource,
     ) -> Result<()> {
+        if self.temporal_mode != Some(options.temporal.mode) {
+            self.temporal = None;
+            self.temporal_recorded = false;
+            self.temporal_failure = None;
+            self.temporal_mode = Some(options.temporal.mode);
+        }
         if !options.temporal_active() || self.temporal.is_some() || self.temporal_failure.is_some()
         {
             return Ok(());
         }
-        match temporal::Temporal::new(&self.device, &self.memory, self.input, self.output, motion) {
+        match temporal::Temporal::new(
+            &self.device,
+            &self.memory,
+            self.input,
+            self.output,
+            self.guide,
+            motion,
+            options.temporal.mode,
+        ) {
             Ok(t) => {
                 self.temporal = Some(t);
                 Ok(())
@@ -141,8 +307,8 @@ impl Look {
     }
     pub(super) fn resource_status(&self) -> serde_json::Value {
         let temporal = self.temporal_status(LookOptions::default());
-        serde_json::json!({"textureCount":usize::from(self.spatial.is_some())+temporal["textureCount"].as_u64().unwrap_or(0) as usize,
-            "allocationBytes":self.spatial.as_ref().map_or(0,|s|s.bytes)+temporal["allocationBytes"].as_u64().unwrap_or(0)})
+        serde_json::json!({"textureCount":1+usize::from(self.spatial.is_some())+temporal["textureCount"].as_u64().unwrap_or(0) as usize,
+            "allocationBytes":self.raw_bytes+self.spatial.as_ref().map_or(0,|s|s.bytes)+temporal["allocationBytes"].as_u64().unwrap_or(0),"rawModelCache":{"textureCount":1,"allocationBytes":self.raw_bytes,"ready":self.raw_initialized}})
     }
     pub(super) fn temporal_status(&self, options: LookOptions) -> serde_json::Value {
         let mut status = self.temporal.as_ref().map_or_else(
@@ -161,11 +327,19 @@ impl Look {
             "active"
         });
         status["error"] = serde_json::json!(self.temporal_failure);
+        status["requestedMode"] = serde_json::json!(options.temporal.mode);
+        status["actualMode"] = if options.temporal_active() && self.temporal_recorded {
+            serde_json::json!(options.temporal.mode)
+        } else {
+            serde_json::Value::Null
+        };
+        status["guide"] = serde_json::json!("original_nr_input");
+        status["sampling"] = serde_json::json!(options.temporal.sampling);
         status
     }
     /// Called only after the owner's completion fence, before recording.
     pub(super) unsafe fn prepare_spatial(&mut self, options: LookOptions) -> Result<()> {
-        if !options.spatial_active() || self.spatial.is_some() || self.spatial_failure.is_some() {
+        if !options.band_required() || self.spatial.is_some() || self.spatial_failure.is_some() {
             return Ok(());
         }
         match Spatial::new(&self.device, &self.memory, self.input, self.pipeline_layout) {
@@ -206,12 +380,15 @@ impl Look {
     pub(super) fn spatial_status(&self, options: LookOptions) -> serde_json::Value {
         serde_json::json!({"requested":options.spatial_active(),"active":options.spatial_active() && self.spatial.is_some(),
             "reason":if !options.spatial_active(){"bypassed"}else if self.spatial_failure.is_some(){"preparation_failed"}else if self.spatial.is_none(){"waiting"}else{"active"},
-            "error":self.spatial_failure,"radiusPixels":options.spatial.radius,"textureCount":usize::from(self.spatial.is_some()),
+            "error":self.spatial_failure,"diagnosticBand":options.diagnostic.needs_band() && self.spatial.is_some(),"radiusPixels":options.spatial.radius,"textureCount":usize::from(self.spatial.is_some()),
             "allocationBytes":self.spatial.as_ref().map_or(0, |s|s.bytes),"history":"none"})
     }
     pub(super) fn active(&self, mut options: LookOptions) -> bool {
         if self.spatial.is_none() {
             options.spatial.enabled = false;
+            if options.diagnostic.needs_band() {
+                options.diagnostic = Default::default();
+            }
         }
         if !self.temporal_recorded {
             options.temporal.enabled = false;
@@ -231,19 +408,55 @@ impl Look {
         &mut self,
         cmd: vk::CommandBuffer,
         size: vk::Extent2D,
-        mut options: LookOptions,
+        options: LookOptions,
         context: Option<crate::nr_look_history::Context>,
     ) {
-        self.temporal_recorded =
-            options.temporal_active() && context.is_some() && self.temporal.is_some();
+        self.copy_raw(cmd, false);
+        self.record_impl(cmd, size, options, context, false);
+    }
+    pub(super) unsafe fn recompose(
+        &mut self,
+        cmd: vk::CommandBuffer,
+        size: vk::Extent2D,
+        options: LookOptions,
+    ) {
+        if !self.raw_initialized {
+            self.copy_raw(cmd, false);
+        }
+        self.copy_raw(cmd, true);
+        self.record_impl(cmd, size, options, None, true);
+    }
+    unsafe fn record_impl(
+        &mut self,
+        cmd: vk::CommandBuffer,
+        size: vk::Extent2D,
+        mut options: LookOptions,
+        context: Option<crate::nr_look_history::Context>,
+        recompose: bool,
+    ) {
+        let cached_delta = if recompose {
+            self.temporal.as_ref().and_then(|t| t.latest(options))
+        } else {
+            None
+        };
+        if recompose && cached_delta.is_none() {
+            if let Some(t) = &mut self.temporal {
+                t.invalidate();
+            }
+        }
+        self.temporal_recorded = options.temporal_active()
+            && ((context.is_some() && self.temporal.is_some()) || cached_delta.is_some());
         if !self.temporal_recorded {
             options.temporal.enabled = false;
-            if let Some(t) = &mut self.temporal {
+            if let Some(t) = self.temporal.as_mut().filter(|_| !recompose) {
                 t.invalidate();
             }
         }
         if self.spatial.is_none() {
             options.spatial.enabled = false;
+        }
+        if self.spatial.is_none() && options.diagnostic.needs_band() {
+            options.diagnostic = Default::default();
         }
         if options.bypass() {
             return;
@@ -261,11 +474,17 @@ impl Look {
             &[],
         );
         if self.temporal_recorded {
-            let delta =
-                self.temporal
-                    .as_mut()
-                    .unwrap()
-                    .record(cmd, self.input, options, context.unwrap());
+            let delta = if let Some(delta) = cached_delta {
+                delta
+            } else {
+                self.temporal.as_mut().unwrap().record(
+                    cmd,
+                    self.input,
+                    self.guide,
+                    options,
+                    context.unwrap(),
+                )
+            };
             let image = [vk::DescriptorImageInfo::default()
                 .image_view(vk::ImageView::from_raw(delta.view))
                 .image_layout(vk::ImageLayout::GENERAL)];
@@ -282,8 +501,14 @@ impl Look {
         }
         d.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::COMPUTE, self.pipeline);
         let mut constants = options.constants();
-        constants[11] = if self.temporal_recorded { 1.0 } else { 0.0 };
-        let bytes = std::slice::from_raw_parts(constants.as_ptr().cast::<u8>(), 64);
+        constants[11] = if !self.temporal_recorded {
+            0.0
+        } else if options.temporal.mode.persistent() {
+            2.0
+        } else {
+            1.0
+        };
+        let bytes = std::slice::from_raw_parts(constants.as_ptr().cast::<u8>(), 96);
         d.cmd_push_constants(
             cmd,
             self.pipeline_layout,
@@ -291,7 +516,7 @@ impl Look {
             0,
             bytes,
         );
-        if options.spatial_active() {
+        if options.band_required() {
             let spatial = self.spatial.as_mut().unwrap();
             let image = vk::Image::from_raw(spatial.image.unwrap().image);
             fg_api::transition(
@@ -358,6 +583,14 @@ impl Drop for Look {
         unsafe {
             drop(self.spatial.take());
             drop(self.temporal.take());
+            if let Some(r) = self.raw_output.take() {
+                self.device
+                    .destroy_image_view(vk::ImageView::from_raw(r.view), None);
+                self.device
+                    .destroy_image(vk::Image::from_raw(r.image), None);
+                self.device
+                    .free_memory(vk::DeviceMemory::from_raw(r.memory), None);
+            }
             self.device.destroy_pipeline(self.pipeline, None);
             self.device
                 .destroy_pipeline_layout(self.pipeline_layout, None);

@@ -3,9 +3,34 @@ import { bypassNrAdditions, graphicsAdvanced, type NrOptions } from '../src/util
 import { normalizeNrPreset, presetNotices, type NrPreset } from '../src/utils/nrPresets'
 
 function fixture(): NrPreset {
-  return { schemaVersion: 2, name: 'test', emulator: 'eden', game: '', displayMode: 'SDR', settings: { enabled: true, intensity: 150, options: graphicsAdvanced().nr }, environment: { toolboxVersion: '0.6.3', componentVersion: 'test', componentSha256: 'a'.repeat(64), modelVersion: '310.8.0', modelSha256: 'b'.repeat(64), targetSha256: 'c'.repeat(64) } }
+  return { schemaVersion: 4, name: 'test', emulator: 'eden', game: '', displayMode: 'SDR', settings: { enabled: true, intensity: 150, options: graphicsAdvanced().nr }, environment: { toolboxVersion: '0.6.3', componentVersion: 'test', componentSha256: 'a'.repeat(64), modelVersion: '310.8.0', modelSha256: 'b'.repeat(64), targetSha256: 'c'.repeat(64) } }
 }
 describe('NR preset integration', () => {
+  test('persistence is versioned and requires its own capability even with older temporal modes', () => {
+    const preset = fixture()
+    preset.settings.options.look.temporal.mode = 'optical_flow_plus'
+    const draft = normalizeNrPreset(preset)
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true, nrTemporalLookSupported: true, nrTemporalModesSupported: true }
+    expect(draft.schemaVersion).toBe(4)
+    expect(draft.settings.options.look.temporal.mode).toBe('optical_flow_plus')
+    expect(presetNotices(draft, draft.environment, live)).toEqual(['当前组件不支持光流累积＋。'])
+    expect(presetNotices(draft, draft.environment, { ...live, nrPersistenceSupported: true })).toEqual([])
+  })
+  test('scope/modes survive cloning and require their own component capabilities', () => {
+    const preset = fixture()
+    preset.settings.options.look.scope = 'chain_total'
+    preset.settings.options.look.temporal.mode = 'static'
+    preset.settings.options.look.temporal.sampling = 'per_tap'
+    const draft = normalizeNrPreset(preset)
+    expect(draft.schemaVersion).toBe(4)
+    expect(draft.settings.options.look).toEqual(preset.settings.options.look)
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true, nrTemporalLookSupported: true }
+    expect(presetNotices(draft, draft.environment, live).some(note => note.includes('作用范围'))).toBe(true)
+    expect(presetNotices(draft, draft.environment, live).some(note => note.includes('历史采样'))).toBe(true)
+    expect(presetNotices(draft, draft.environment, { ...live, nrLookScopeSupported: true, nrTemporalModesSupported: true })).toEqual([])
+    draft.settings.options.look.temporal.mode = 'optical_flow'
+    expect(preset.settings.options.look.temporal.mode).toBe('static')
+  })
   test('old neutral wire options restore omitted defaults without losing zero', () => {
     const preset = fixture()
     preset.settings.options = { style: 'b', globalTone: 0, localTone: null, localStructure: 150, skinStructure: 0, autoMask: false } as NrOptions
@@ -19,6 +44,7 @@ describe('NR preset integration', () => {
     const preset = fixture()
     const draft = normalizeNrPreset(preset)
     draft.settings.options.look.temporal.timeMs = 100
+    draft.settings.options.look.protection.hue = 100
     draft.settings.options.look.spatial.radius = 15
     draft.settings.options.secondPass.intensity = 50
     draft.environment.componentVersion = 'changed'

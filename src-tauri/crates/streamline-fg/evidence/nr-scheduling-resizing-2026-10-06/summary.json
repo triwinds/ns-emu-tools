@@ -1,0 +1,1379 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "code_handoff": {
+    "testing_owner": "user",
+    "functional_tests_run_this_followup": false,
+    "toolbox_integration_completed": true,
+    "defaults": {
+      "consolidated": false,
+      "inference_scale_percent": 100
+    },
+    "startup_only": true,
+    "component_and_toolbox_host_windows_check": "passed, zero warnings/errors",
+    "frontend_app_and_node_type_check": "passed with no incremental output",
+    "frontend_production_build": "passed",
+    "component_and_toolbox_release_build": "passed",
+    "static_lint_scope": "NativeNrControls.vue, streamlineFg.ts, types/index.ts and DefaultConfig.ts passed. tauri.ts has three pre-existing no-explicit-any errors on unchanged lines.",
+    "replaces_previous_game_build": false,
+    "installed_packages_changed": false,
+    "artifacts": [
+      {
+        "path": "src-tauri/target/nr-code-handoff-20261006/NsEmuTools.exe",
+        "sha256": "d02922c9761d547f21099062ccfa58f500111d881789310922142c7bbc0598fa"
+      },
+      {
+        "path": "src-tauri/target/nr-code-handoff-20261006/streamline_probe_layer.dll",
+        "sha256": "66d9ad2c393ebf2eb13412fa5b004fa9336c02ad8d31916c41a29f9ef4efdf00"
+      },
+      {
+        "path": "src-tauri/target/nr-code-handoff-20261006/streamline-layer-probe.exe",
+        "sha256": "1f46013a4010cc56f52f8ad201b14ca51477958b98518a692b0846614c0941ab"
+      },
+      {
+        "path": "src-tauri/target/nr-code-handoff-20261006/streamline-nr-diagnostics.exe",
+        "sha256": "f5a7e54c1525627ff9311db96bc1a91b9c9414d3aa253d54755e665fcba5701f"
+      }
+    ]
+  },
+  "plan_complete": false,
+  "user_scope_correction": "Stop repeated known emulator baseline errors; retain raw records; continue M5/M6. Eden 0xC0000409 remains excluded.",
+  "known_emulator_errors_block_implementation": false,
+  "game_video_accepted": false,
+  "game_performance_accepted": false,
+  "normal_core_retirement_accepted": false,
+  "default_changes": false,
+  "implemented": [
+    "opt-in consolidated inference submission with fenced valid-prefix fallback",
+    "opt-in inference resizing: retain full P0; one downsample; common low-resolution NR/Look; normalized UV guidance",
+    "linear SDR total delta reconstruction onto original base; exact alpha/zero delta",
+    "capability gates and default-off experimental launcher flags"
+  ],
+  "isolated_gpu_experiments": [
+    {
+      "session": "nr-consolidated-split-001",
+      "execution_verified": true,
+      "normal_retirement_passed": false,
+      "process": {
+        "p0_passed": false,
+        "timeout": true,
+        "timeout_seconds": 240
+      },
+      "scheduling": "fenced_passes",
+      "dimensions": [
+        640,
+        360
+      ],
+      "frames": 300,
+      "output_hash_count": 299,
+      "submissions": 599,
+      "intermediate_fence_waits": 300,
+      "fault_discarded": 1,
+      "recreated": 1,
+      "suffix": {
+        "deterministic_return": true,
+        "first_evaluations_added": 0,
+        "next_color_continuous": true,
+        "output_hashes": [
+          "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f",
+          "acc8f5c8478bfa5fbbbae4947205be0c8f385ce8faaa6ed6e694d15014a659bc",
+          "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f"
+        ],
+        "prefix_unchanged": true,
+        "second_submitted_evaluations_added": 3,
+        "source_frame_id": 1,
+        "source_observations_added": 0
+      },
+      "validation_errors": 0,
+      "validation_warning_messages": [
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 35,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 36,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 37,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 38,
+          "severity": 256,
+          "type": 1
+        }
+      ],
+      "messages_filtered": false,
+      "last_events": [
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 889,
+          "stage": "two_pass_destroy_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 890,
+          "stage": "destroy_feature_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 891,
+          "stage": "snippet_shutdown"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 892,
+          "stage": "destroy_capability_parameters"
+        }
+      ],
+      "timing": {
+        "scope": "synthetic input recording+NR record+submission+wait; strict validation; excludes output reads and injected failure; first 5 normal samples excluded",
+        "median_us": 7730.5,
+        "p95_us": 10167,
+        "samples": 294
+      },
+      "artifacts": [
+        {
+          "path": "src-tauri/target/nr-consolidated-split-001/nr-options.json",
+          "sha256": "d783498ac17bf9722d4887fbfd708a42c5e34dbd332f3901da7db54fe5a16ca6"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-split-001/nr-inputs.json",
+          "sha256": "2e108a06318379cdd0bca81616e2325cbe533bcdf94bba69840f1a02c21a9fe3"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-split-001/nr-output-summary.json",
+          "sha256": "605e028afd8b692e7b8e87b6c3c55c09871525986ec44fab5883cbc2a922c55f"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-split-001/nr-events.jsonl",
+          "sha256": "0fb916c73c5ffc9d5dbf34a75b75ebf15992557059a06c714a7f41785bc6cd6f"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-split-001/nr-process.json",
+          "sha256": "e482cf41be6f316f8cbf7c33e60df614705967af2547c0f68ab39b98b288a191"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-split-001/validation.jsonl",
+          "sha256": "8f194abb03e71eaddc8bb71d2f64ecd37c602ac77ebb1c6aa4ba5d00de2db37b"
+        }
+      ]
+    },
+    {
+      "session": "nr-consolidated-ngx-001",
+      "execution_verified": true,
+      "normal_retirement_passed": false,
+      "process": {
+        "p0_passed": false,
+        "timeout": true,
+        "timeout_seconds": 240
+      },
+      "scheduling": "consolidated_experimental",
+      "dimensions": [
+        640,
+        360
+      ],
+      "frames": 300,
+      "output_hash_count": 299,
+      "submissions": 300,
+      "intermediate_fence_waits": 1,
+      "fault_discarded": 1,
+      "recreated": 1,
+      "suffix": {
+        "deterministic_return": true,
+        "first_evaluations_added": 0,
+        "next_color_continuous": true,
+        "output_hashes": [
+          "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f",
+          "acc8f5c8478bfa5fbbbae4947205be0c8f385ce8faaa6ed6e694d15014a659bc",
+          "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f"
+        ],
+        "prefix_unchanged": true,
+        "second_submitted_evaluations_added": 3,
+        "source_frame_id": 1,
+        "source_observations_added": 0
+      },
+      "validation_errors": 0,
+      "validation_warning_messages": [
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 35,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 36,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 37,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 38,
+          "severity": 256,
+          "type": 1
+        }
+      ],
+      "messages_filtered": false,
+      "last_events": [
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 889,
+          "stage": "two_pass_destroy_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 890,
+          "stage": "destroy_feature_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 891,
+          "stage": "snippet_shutdown"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 892,
+          "stage": "destroy_capability_parameters"
+        }
+      ],
+      "timing": {
+        "scope": "synthetic input recording+NR record+submission+wait; strict validation; excludes output reads and injected failure; first 5 normal samples excluded",
+        "median_us": 7315.0,
+        "p95_us": 9864,
+        "samples": 294
+      },
+      "artifacts": [
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-001/nr-options.json",
+          "sha256": "3ec5ab8e4cf3dfd51060fe7921081732d014f3c99f0b3a2550f18998d0511c25"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-001/nr-inputs.json",
+          "sha256": "2e108a06318379cdd0bca81616e2325cbe533bcdf94bba69840f1a02c21a9fe3"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-001/nr-output-summary.json",
+          "sha256": "197a7a9abeb6e11cde74b0435b9b5693a2222713ae4cf23cd739d53c33475cd1"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-001/nr-events.jsonl",
+          "sha256": "dc270e17f6bf55e4697c60c33474994c5b669b1ff7bce3c2f3eea5fcb9b0c067"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-001/nr-process.json",
+          "sha256": "e482cf41be6f316f8cbf7c33e60df614705967af2547c0f68ab39b98b288a191"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-001/validation.jsonl",
+          "sha256": "8f194abb03e71eaddc8bb71d2f64ecd37c602ac77ebb1c6aa4ba5d00de2db37b"
+        }
+      ]
+    },
+    {
+      "session": "nr-consolidated-ngx-002",
+      "execution_verified": true,
+      "normal_retirement_passed": false,
+      "process": {
+        "p0_passed": false,
+        "timeout": true,
+        "timeout_seconds": 240
+      },
+      "scheduling": "consolidated_experimental",
+      "dimensions": [
+        640,
+        360
+      ],
+      "frames": 300,
+      "output_hash_count": 299,
+      "submissions": 300,
+      "intermediate_fence_waits": 1,
+      "fault_discarded": 1,
+      "recreated": 1,
+      "suffix": {
+        "deterministic_return": true,
+        "first_evaluations_added": 0,
+        "next_color_continuous": true,
+        "output_hashes": [
+          "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f",
+          "acc8f5c8478bfa5fbbbae4947205be0c8f385ce8faaa6ed6e694d15014a659bc",
+          "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f"
+        ],
+        "prefix_unchanged": true,
+        "second_submitted_evaluations_added": 3,
+        "source_frame_id": 1,
+        "source_observations_added": 0
+      },
+      "validation_errors": 0,
+      "validation_warning_messages": [
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 35,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 36,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 37,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 38,
+          "severity": 256,
+          "type": 1
+        }
+      ],
+      "messages_filtered": false,
+      "last_events": [
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 889,
+          "stage": "two_pass_destroy_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 890,
+          "stage": "destroy_feature_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 891,
+          "stage": "snippet_shutdown"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 892,
+          "stage": "destroy_capability_parameters"
+        }
+      ],
+      "timing": {
+        "scope": "synthetic input recording+NR record+submission+wait; strict validation; excludes output reads and injected failure; first 5 normal samples excluded",
+        "median_us": 7453.0,
+        "p95_us": 10398,
+        "samples": 294
+      },
+      "artifacts": [
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-002/nr-options.json",
+          "sha256": "447424d6eef948fe15bd4cef7cc6cd971fff22bffb1d5d241bc79e5d7db249bf"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-002/nr-inputs.json",
+          "sha256": "2e108a06318379cdd0bca81616e2325cbe533bcdf94bba69840f1a02c21a9fe3"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-002/nr-output-summary.json",
+          "sha256": "43873950bfa7cec7a6a83108dbc8090bfbafa1d7a838d55a116a902f136d2127"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-002/nr-events.jsonl",
+          "sha256": "02b14521219e0d94eb7cee7fc11f9594a84a898cc08f525f9b97cf0f93882cd3"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-002/nr-process.json",
+          "sha256": "e482cf41be6f316f8cbf7c33e60df614705967af2547c0f68ab39b98b288a191"
+        },
+        {
+          "path": "src-tauri/target/nr-consolidated-ngx-002/validation.jsonl",
+          "sha256": "8f194abb03e71eaddc8bb71d2f64ecd37c602ac77ebb1c6aa4ba5d00de2db37b"
+        }
+      ]
+    },
+    {
+      "session": "nr-scale-boundary-001",
+      "execution_verified": true,
+      "normal_retirement_passed": false,
+      "process": {
+        "p0_passed": false,
+        "timeout": true,
+        "timeout_seconds": 240
+      },
+      "scheduling": "consolidated_experimental",
+      "dimensions": [
+        320,
+        180
+      ],
+      "frames": 300,
+      "output_hash_count": 299,
+      "submissions": 300,
+      "intermediate_fence_waits": 1,
+      "fault_discarded": 1,
+      "recreated": 1,
+      "suffix": {
+        "deterministic_return": true,
+        "first_evaluations_added": 0,
+        "next_color_continuous": true,
+        "output_hashes": [
+          "7d5a6c29dd0a9b6a6b7535c7c61bf07e1f3640b3a0247b3c5457784fdf2757c9",
+          "916241133592e49e2062b71ab42a077e9b4087d70e631a2ea447300b91e4c4a4",
+          "7d5a6c29dd0a9b6a6b7535c7c61bf07e1f3640b3a0247b3c5457784fdf2757c9"
+        ],
+        "prefix_unchanged": true,
+        "second_submitted_evaluations_added": 3,
+        "source_frame_id": 1,
+        "source_observations_added": 0
+      },
+      "validation_errors": 0,
+      "validation_warning_messages": [
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 35,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 36,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 37,
+          "severity": 256,
+          "type": 1
+        },
+        {
+          "id_number": 0,
+          "message": "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+          "sequence": 38,
+          "severity": 256,
+          "type": 1
+        }
+      ],
+      "messages_filtered": false,
+      "last_events": [
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 889,
+          "stage": "two_pass_destroy_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 890,
+          "stage": "destroy_feature_parameters"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 891,
+          "stage": "snippet_shutdown"
+        },
+        {
+          "details": {
+            "result": 1,
+            "result_hex": "0x00000001"
+          },
+          "sequence": 892,
+          "stage": "destroy_capability_parameters"
+        }
+      ],
+      "timing": {
+        "scope": "synthetic input recording+NR record+submission+wait; strict validation; excludes output reads and injected failure; first 5 normal samples excluded",
+        "median_us": 6092.5,
+        "p95_us": 7249,
+        "samples": 294
+      },
+      "artifacts": [
+        {
+          "path": "src-tauri/target/nr-scale-boundary-001/nr-options.json",
+          "sha256": "a465fb823dc82580fbfb0c29409924208e4f8683089bc8d6ad9bcb361b142625"
+        },
+        {
+          "path": "src-tauri/target/nr-scale-boundary-001/nr-inputs.json",
+          "sha256": "0c28da91ef75239c5b35d2c365c710824804a270d2c780e61b6876373b1a564b"
+        },
+        {
+          "path": "src-tauri/target/nr-scale-boundary-001/nr-output-summary.json",
+          "sha256": "5f54a4ea17a848d8e4e9a7df0c000d63bedb4b475bbb1bd7bf9b9ceaa6809e18"
+        },
+        {
+          "path": "src-tauri/target/nr-scale-boundary-001/nr-events.jsonl",
+          "sha256": "ca426cb6c6c003b77ac1c57c2d316a211b52427f305203b42dd3bce294d8ecbd"
+        },
+        {
+          "path": "src-tauri/target/nr-scale-boundary-001/nr-process.json",
+          "sha256": "e482cf41be6f316f8cbf7c33e60df614705967af2547c0f68ab39b98b288a191"
+        },
+        {
+          "path": "src-tauri/target/nr-scale-boundary-001/validation.jsonl",
+          "sha256": "8f194abb03e71eaddc8bb71d2f64ecd37c602ac77ebb1c6aa4ba5d00de2db37b"
+        }
+      ]
+    }
+  ],
+  "output_equivalence": {
+    "prefix_hashes": true,
+    "output_hashes": true,
+    "suffix_recompute": true
+  },
+  "checks": {
+    "component_tests_passed": 226,
+    "default_gpu_tests_ignored": 6,
+    "component_host_and_windows_checks": true,
+    "toolbox_host_and_windows_checks": true,
+    "rust_errors_or_warnings": 0,
+    "reconstruction_gpu": {
+      "passed": true,
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_notices": 4,
+      "low_extent": [
+        19,
+        3
+      ],
+      "full_extent": [
+        37,
+        5
+      ],
+      "model_support_inferred_from_shader": false
+    },
+    "spirv_val_vulkan_1_1": true,
+    "logs": [
+      {
+        "path": "src-tauri/target/nr-scheduling-host-check.log",
+        "sha256": "880b23c17c3f9881d994e7a1e1059bf2810e99913d1397bb839efb881cd0451e"
+      },
+      {
+        "path": "src-tauri/target/nr-scheduling-windows-check.log",
+        "sha256": "5e54529e8c3e6fb73f9168fbb32045a9a9f305436dc5515b9279e61f3644c10b"
+      },
+      {
+        "path": "src-tauri/target/nr-scheduling-regression.log",
+        "sha256": "a5c9e7a9baa4e6e3dc08f78cc43d8ab5cf8b05a86f8b054add91d9484b8c1cf7"
+      },
+      {
+        "path": "src-tauri/target/nr-scheduling-release-build.log",
+        "sha256": "116a3168a530c8c2e00679bab8d2e532d1d6fb25ff4087c22bea2dcb431e5335"
+      },
+      {
+        "path": "src-tauri/target/nr-scheduling-toolbox-host-check.log",
+        "sha256": "317f2c77ba10e500599cc67fcba0e3ef4f4b2eb29c33104c01c57dfebf6f1b38"
+      },
+      {
+        "path": "src-tauri/target/nr-scheduling-toolbox-windows-check.log",
+        "sha256": "0c6e50f16719b5d71097669b88c148c8037991df10e8cd2191c2f32409564cdf"
+      },
+      {
+        "path": "src-tauri/target/nr-reconstruction-gpu.log",
+        "sha256": "548c41f0b834deb04f9be0a04bd5bc4ddc717cfa946efd106961cf83ef8d8f0e"
+      }
+    ]
+  },
+  "release": {
+    "layer": "9e6758b708e13e2168298cb5d4481123d5d46af7a0e1974e370b25a305cbe14c",
+    "launcher": "d922dc1e3729c2426e237f5fc7b3e13fd00ef71116a1cc53b59fc80e13c16815",
+    "nrDiagnostics": "47b47ea41d4996d9dfaf69270e1b9b854ae90c72bf2f7ae8e7731d625ea5f7d5"
+  },
+  "pending": [
+    "matched video camera/occlusion quality; manual observation passed",
+    "strict NR/SR/FG integration and long-run allocations; normal resize/combination smoke passed",
+    "normal NGX core retirement",
+    "wider GPU stages/bandwidth/memory/long-frame performance"
+  ],
+  "conditional_work": "optional low-frequency temporal reconstruction only if independent evidence warrants it",
+  "game_experiment": {
+    "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-followup-20261005\\eden-scheduling-resizing-20261006-003839-109",
+    "validation": false,
+    "readback": false,
+    "timestamps": false,
+    "two_pass_active": true,
+    "pipeline": {
+      "activeFeatureCount": 2,
+      "actualPasses": 2,
+      "error": null,
+      "inferenceExtent": [
+        1293,
+        725
+      ],
+      "inferenceSubmissions": 1,
+      "intermediateFenceWaits": 0,
+      "lookCacheResources": {
+        "first": {
+          "allocationBytes": 39813120,
+          "rawModelCache": {
+            "allocationBytes": 7962624,
+            "ready": false,
+            "textureCount": 1
+          },
+          "textureCount": 5
+        },
+        "second": {
+          "allocationBytes": 39813120,
+          "rawModelCache": {
+            "allocationBytes": 7962624,
+            "ready": true,
+            "textureCount": 1
+          },
+          "textureCount": 5
+        }
+      },
+      "originalExtent": [
+        1724,
+        967
+      ],
+      "passes": [
+        {
+          "depthImage": 2072935216848,
+          "evaluated": true,
+          "feature": 2642215667600,
+          "inputImage": 2072935213776,
+          "instance": 1,
+          "intensity": 1.0,
+          "motionImage": 2072935218384,
+          "options": {
+            "autoMask": false,
+            "globalTone": null,
+            "localStructure": null,
+            "localTone": null,
+            "skinStructure": 0,
+            "style": "a"
+          },
+          "outputImage": 2072935215312,
+          "outputReused": false,
+          "parameters": 2642090575120,
+          "pass": 1,
+          "reset": false,
+          "sourceFrameId": 3573
+        },
+        {
+          "depthImage": 2072935216848,
+          "evaluated": true,
+          "feature": 2642035055136,
+          "inputImage": 2072935215312,
+          "instance": 2,
+          "intensity": 1.0,
+          "motionImage": 2072935218384,
+          "options": {
+            "autoMask": false,
+            "globalTone": null,
+            "localStructure": null,
+            "localTone": null,
+            "skinStructure": 0,
+            "style": "a"
+          },
+          "outputImage": 2072935232208,
+          "outputReused": false,
+          "parameters": 2642090579856,
+          "pass": 2,
+          "reset": false,
+          "sourceFrameId": 3573
+        }
+      ],
+      "privateTextureCount": 8,
+      "reason": "active",
+      "reconstruction": {
+        "allocationBytes": 28311552,
+        "alpha": "original",
+        "mode": "linear_sdr_total_delta",
+        "sourceComparison": "full_resolution_p0",
+        "textureCount": 2
+      },
+      "requestedPasses": 2,
+      "retry": 0,
+      "retryPolicy": "explicit_retry_toggle_or_recreation",
+      "scheduling": "consolidated_experimental",
+      "sdkMemoryBytes": null,
+      "secondActive": true,
+      "secondAllocationBytes": 7962624,
+      "secondEvaluated": true,
+      "secondTextureCount": 1
+    },
+    "normal_game_scene_confirmed": true,
+    "waiting_for_human_entry": false,
+    "fps_not_accepted_from_background": true,
+    "startup_telemetry": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/startup-contract.json",
+      "sha256": "ffce4dd45b5f0b4dc64f292078869595e12471e17f5fb1dfd1ce4b906a0c3f56"
+    },
+    "scene": "XC3 Everblight Plain, objective51m, fixed camera",
+    "fixed_scene_75": {
+      "scene": "Everblight Plain, objective51m, fixed camera confirmed by screenshot",
+      "distinct_samples": 23,
+      "active_foreground_samples": 23,
+      "valid_contract_samples": 23,
+      "fps_mean": 30.10132545511479,
+      "fps_min": 29.820590382084266,
+      "fps_max": 30.865512787681514,
+      "fps_limited_by_game_cap": true,
+      "video_quality_verified": false
+    },
+    "pass_transition": {
+      "passed": true,
+      "nr_never_disabled": true,
+      "revisions": [
+        1,
+        2
+      ],
+      "all_samples_foreground": true,
+      "features_one_then_two": [
+        1,
+        2
+      ]
+    },
+    "motion_observation_pending": false,
+    "artifacts": [
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/scene-confirmed.json",
+        "sha256": "b07d10bb13af102d038f22df40f26b071f0c15435d5498c8d2c5c94c04d1d2b7"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/fixed-scene-75.json",
+        "sha256": "247db2a8d3f721147025b879d6e9d82cda1947ae57397c53e4d1bed971c4d2bb"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/pass-transition-check.json",
+        "sha256": "1d877a1d885f685660be19a3035ec9b8a47c9f41128c4fa41856f70a4a0b8e1f"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/manual-quality-feedback.json",
+        "sha256": "cffc1e9fe535b0b14b01610a03c835c3b7b8196e7e96a89e4edfe39294b6d691"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/quality-motion-plus.json",
+        "sha256": "fff5b625e4f2bec18c2c2248a27b61b92d81a2fe5413e5c5221f10bee163c2ec"
+      }
+    ],
+    "manual_quality_feedback": {
+      "phase": "75% inference + consolidated + two NR + optical_flow_plus",
+      "userActionsCompleted": true,
+      "qualityFeedback": "未看到明显异常",
+      "manualObservationPassed": true,
+      "videoQualityVerified": false,
+      "requestedActions": [
+        "slow camera pan",
+        "fast camera turn",
+        "rock edge occlusion"
+      ],
+      "reportedAt": "2026-10-05T16:47:25.218762+00:00"
+    },
+    "motion_telemetry": {
+      "phase": "plus",
+      "seconds": 45.1920162000024,
+      "distinct_samples": 46,
+      "active_foreground_samples": 32,
+      "fps_mean": 30.072267658079483,
+      "fps_min": 29.74696635479286,
+      "fps_max": 30.820804759050404,
+      "purpose": "Manual camera/occlusion exercise state evidence; does not prove exact action timing or video quality",
+      "video_captured": false,
+      "video_quality_verified": false,
+      "exact_action_timing_synchronized": false
+    }
+  },
+  "game_performance_limit": "75% new path holds the 30FPS game cap in 23 foreground fixed-scene samples; no within-session 100% or queue-schedule timing comparison.",
+  "normal_game_resource_retirement_accepted": true,
+  "game_followup": {
+    "resize": {
+      "passed": true,
+      "original_size_restored": false,
+      "final_preset": "1920x1080",
+      "states": [
+        {
+          "artifact": "resize-small.json",
+          "passed": true,
+          "original_extent": [
+            1399,
+            967
+          ],
+          "inference_extent": [
+            1049,
+            725
+          ],
+          "active_features": 2,
+          "private_texture_count": 8,
+          "reconstruction_allocation_bytes": 22937600
+        },
+        {
+          "artifact": "resize-expanded.json",
+          "passed": true,
+          "original_extent": [
+            2560,
+            1325
+          ],
+          "inference_extent": [
+            1920,
+            993
+          ],
+          "active_features": 2,
+          "private_texture_count": 8,
+          "reconstruction_allocation_bytes": 57671680
+        },
+        {
+          "artifact": "resize-final-1080.json",
+          "passed": true,
+          "original_extent": [
+            1920,
+            1080
+          ],
+          "inference_extent": [
+            1440,
+            810
+          ],
+          "active_features": 2,
+          "private_texture_count": 8,
+          "reconstruction_allocation_bytes": 35389440
+        }
+      ],
+      "strict_validation_enabled": false
+    },
+    "combinations": {
+      "passed": true,
+      "strict_validation_enabled": false,
+      "phases": [
+        {
+          "name": "nr_sr",
+          "requested_sr": "quality",
+          "requested_fg": false,
+          "valid_samples": 18,
+          "passed": true,
+          "app_fps_mean": 30.063141474720073
+        },
+        {
+          "name": "nr_fg",
+          "requested_sr": "off",
+          "requested_fg": true,
+          "valid_samples": 17,
+          "passed": true,
+          "app_fps_mean": 30.07486262048669
+        },
+        {
+          "name": "nr_sr_fg",
+          "requested_sr": "quality",
+          "requested_fg": true,
+          "valid_samples": 18,
+          "passed": true,
+          "app_fps_mean": 28.680366166574043
+        },
+        {
+          "name": "restored_nr_only",
+          "requested_sr": "off",
+          "requested_fg": false,
+          "valid_samples": 18,
+          "passed": true,
+          "app_fps_mean": 29.7816882721147
+        }
+      ],
+      "fg_verified_by": "SDK generationObserved=true and sdkPresented=2",
+      "final_sr_fg": "off",
+      "game_cap_prevents_speedup_claim": true
+    },
+    "retirement": {
+      "feature_lifecycle_counts": {
+        "target_nr_create_feature": 4,
+        "target_nr_release_feature": 4,
+        "target_nr_allocate_parameters": 4,
+        "target_nr_destroy_parameters": 4,
+        "target_nr_second_create_feature": 5,
+        "target_nr_second_release_feature": 5,
+        "target_nr_second_allocate_parameters": 5,
+        "target_nr_second_destroy_parameters": 5
+      },
+      "balanced": true,
+      "all_nr_release_results_success": true,
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "destroy_device": {
+        "remaining_devices": 0
+      },
+      "destroy_instance": {
+        "remaining_instances": 0
+      },
+      "launch_result": {
+        "graphics_launch": true,
+        "strict_acceptance_run": false,
+        "target_exit_code": -1073740791,
+        "target_success": false,
+        "validation_requested": false
+      },
+      "user_excluded_exit_hex": "0xC0000409",
+      "forced_termination": false,
+      "isolated_ngx_core_timeout_not_waived": true,
+      "resource_retirement_passed": true
+    },
+    "artifacts": [
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/resize-small.json",
+        "sha256": "b96a3a36876d7c727cdc9ad64046ca7c37bd4bbf9763c37520b806d1ef2e2aea"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/resize-expanded.json",
+        "sha256": "4ed40e1270b9edb13d61695da9ce4a6ccd7f023f37e23398de9a46e72f4fffe4"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/resize-final-1080.json",
+        "sha256": "847b81337e7895b9e8eeca9a8f5258b9b5f4ab684f3defe929917918837103cd"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/combination-check.json",
+        "sha256": "ad833df27c28b179294a43ffad9c48967a4bb33bf52982b85a50ccaa07dadf55"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/retirement-check.json",
+        "sha256": "db93ced812264743e208841ee01b4e61c8c630722ca847e59a6299073937be72"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/launch-result.json",
+        "sha256": "b57fcae42d3542a7c40f2c2557ae433f48ec6df4e6edd799b81a0f32afa5faed"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-scheduling-resizing-20261006-003839-109/layer.jsonl",
+        "sha256": "8799db8bc93ad65af409e5aafc5ea33a892cd6daed7773f9b70c50532e9284f4"
+      }
+    ]
+  },
+  "local_packaging": {
+    "date": "2026-10-06",
+    "user_request": "打包吧，组件也换成最新的",
+    "toolbox_version": "0.6.3",
+    "component_version": "local-abc947812335-4d67386cfb92-nr3108-v8",
+    "nr_model_version": "310.8.0",
+    "nr_model_weights_changed": false,
+    "component_release_features": [
+      "native-nr"
+    ],
+    "toolbox_sha256": "f4bc0d7ede5c9564734ea8f104fdc6f71c3d4faddc8ab1788fe7ee4f4716f06e",
+    "layer_sha256": "4d67386cfb9269ece0adf5d24df0be4fb850141882e40da0b8a4ff7979897e0e",
+    "complete_offline_manifest_files": 23,
+    "nsis_component_paths_verified": 23,
+    "portable_members_crc_and_sha256_verified": 27,
+    "local_update_policy_uses_embedded_bundle": true,
+    "rust_host_and_windows_checks_passed_after_update_policy_change": true,
+    "installed_components_updated": [
+      "Eden",
+      "Ryujinx"
+    ],
+    "old_versions_pointer_backups_and_user_configuration_retained": true,
+    "game_sessions_unchanged": true,
+    "published": false,
+    "functional_tests_run": false,
+    "functional_testing_owner": "user",
+    "historical_game_evidence_applies_to_its_original_build_only": true,
+    "verification_report": "output/NsEmuTools-0.6.3-nr-v8-20261006/package-verification.json",
+    "artifacts": [
+      {
+        "path": "output/NsEmuTools-0.6.3-nr-v8-20261006/NsEmuTools-0.6.3-nr-v8-windows-x64-setup.exe",
+        "bytes": 140309639,
+        "sha256": "33f7f3a76851ef303e52d4429e716a531462646ae9f19c5d209b63edc8f4bbad"
+      },
+      {
+        "path": "output/NsEmuTools-0.6.3-nr-v8-20261006/NsEmuTools-0.6.3-nr-v8-windows-x64-portable.zip",
+        "bytes": 155997301,
+        "sha256": "a83b3df8984e3ac66e87f0bb40a7f2d80c721ab59779e090d4d4840444e03f2d"
+      }
+    ]
+  },
+  "remaining_acceptance": [
+    "matched real-motion video comparison; manual observation passed, no video captured",
+    "game-stage GPU/CPU timings, long frames and controlled 100% versus reduced-resolution performance",
+    "isolated NGX normal core shutdown; four raw failures retained",
+    "strict integration acceptance separate from known emulator errors; current smoke validation disabled"
+  ],
+  "fixed_inference_cap_followup": {
+    "user_request": "Move inference sizing higher and support a fixed numeric upper limit",
+    "sizing": {
+      "ui_position": "first expanded section in NR advanced settings",
+      "modes": [
+        "percentage",
+        "max_edge"
+      ],
+      "default_mode": "percentage",
+      "default_percent": 100,
+      "max_edge_pixels": [
+        320,
+        8192
+      ],
+      "cap_supersedes_saved_percentage": true,
+      "never_upscales": true,
+      "minimum_reduced_extent": [
+        320,
+        180
+      ],
+      "startup_only": true,
+      "layer_capability_marker_verified": "NS_EMU_NR_INFERENCE_CAP_V1"
+    },
+    "config_key": "streamline_nr_inference_max_edge",
+    "config_default": 0,
+    "launcher_flag": "--nr-inference-max-edge",
+    "component_version": "local-1129d1740d45-85e70280ea65-nr3108-v9",
+    "toolbox_sha256": "e3350bd2a9f2b337e4ab672344289dc0a48d9dd9209d42e951b89021e153f21b",
+    "layer_sha256": "85e70280ea655c7b935fc65e4f2ebac137d93ad2f389a0d8aad2795d7f87dfea",
+    "format_and_component_toolbox_host_windows_checks": "passed, zero warnings/errors",
+    "frontend_app_node_types_lint_and_production_build": "passed",
+    "complete_component_files_verified": 23,
+    "nsis_paths_verified": true,
+    "zip_members_crc_sha256_verified": 27,
+    "installed_components_updated": [
+      "Eden",
+      "Ryujinx"
+    ],
+    "old_versions_and_pointer_backups_retained": true,
+    "functional_tests_run": false,
+    "testing_owner": "user",
+    "models_changed": false,
+    "public_release_created": false,
+    "artifacts": [
+      {
+        "path": "output/NsEmuTools-0.6.3-nr-v9-20261006/NsEmuTools-0.6.3-nr-v9-windows-x64-setup.exe",
+        "sha256": "978162a1edca1cad4845e3eeb9b9d41a35f02c8946913e86f878fd641a303f13",
+        "bytes": 140334382
+      },
+      {
+        "path": "output/NsEmuTools-0.6.3-nr-v9-20261006/NsEmuTools-0.6.3-nr-v9-windows-x64-portable.zip",
+        "sha256": "3affd4b8fdcc88c79aae64d4b354b03e239c405caf126abfe5d385fb600dc435",
+        "bytes": 156003884
+      }
+    ]
+  },
+  "shared_input_scaling_followup": {
+    "user_request": "Split input scaling above effects and allow it while NR is off",
+    "implementation": {
+      "ui_position": "standalone section above NR/SR/FG on the main panel",
+      "settings": [
+        "streamline_input_scale",
+        "streamline_input_max_edge"
+      ],
+      "legacy_keys_migrate_numeric_values": true,
+      "modes": [
+        "percentage",
+        "max_edge"
+      ],
+      "default_percent": 100,
+      "default_max_edge": 0,
+      "percentage_bounds": [
+        50,
+        100
+      ],
+      "max_edge_bounds": [
+        320,
+        8192
+      ],
+      "minimum_reduced_extent": [
+        320,
+        180
+      ],
+      "cap_supersedes_percentage": true,
+      "never_upscales_input": true,
+      "startup_only": true,
+      "nr_runtime_required": false,
+      "nr_feature_required": false,
+      "shared_private_color_source": true,
+      "nr_and_sr_consume_scaled_input": true,
+      "resample_to_window_when_nr_and_sr_off": true,
+      "fg_processing_extent": "final presentation window",
+      "motion_basis": "unprocessed consecutive present pairs",
+      "capability_marker_verified": "NS_EMU_INPUT_SCALING_V1",
+      "supersedes_nr_delta_reconstruction_ui": true,
+      "runtime_behavior_hardware_verified_this_followup": false
+    },
+    "component_version": "local-e0d4acf90eaf-e5fedaae0199-nr3108-v10",
+    "toolbox_sha256": "53c1f01b31c7444b4f08036a091553a8a4320e2b719dc9a9bc7d015c1acfa509",
+    "layer_sha256": "e5fedaae019953c2863cd9e819ec0aca7faf075d181cb1825e47a7a82d8c3a70",
+    "format_host_windows_component_and_toolbox_checks": "passed, zero warnings/errors",
+    "sdk_bridge_without_native_nr_check": "passed, zero warnings/errors",
+    "frontend_app_node_type_checks_changed_components_eslint_and_vite_build": "passed",
+    "complete_component_files_verified": 23,
+    "portable_members_verified": 27,
+    "nsis_resource_paths_verified": true,
+    "installed_components_updated": [
+      "Eden",
+      "Ryujinx"
+    ],
+    "old_versions_and_pointer_backups_retained": true,
+    "functional_tests_run": false,
+    "gpu_tests_run": false,
+    "testing_owner": "user",
+    "old_nr_only_runtime_evidence_not_reused": true,
+    "models_changed": false,
+    "public_release_created": false,
+    "artifacts": [
+      {
+        "path": "output/NsEmuTools-0.6.3-input-v10-20261006/NsEmuTools-0.6.3-input-v10-windows-x64-setup.exe",
+        "bytes": 140341474,
+        "sha256": "4bbd92088441f3f7f266d2eaaad7732bfc275c15a8f69500fbd70cb92a573c7a"
+      },
+      {
+        "path": "output/NsEmuTools-0.6.3-input-v10-20261006/NsEmuTools-0.6.3-input-v10-windows-x64-portable.zip",
+        "bytes": 156015926,
+        "sha256": "9a6558bdb883473ca99c617f2d20034d30a594c8fb8a741c0f62bea40ac509d8"
+      }
+    ]
+  },
+  "dynamic_input_scaling_followup": {
+    "user_request": "Allow input sizing changes to apply live without restarting the emulator",
+    "implementation": {
+      "ui_position": "standalone section above NR/SR/FG on the main panel",
+      "settings": [
+        "streamline_input_scale",
+        "streamline_input_max_edge"
+      ],
+      "legacy_keys_migrate_numeric_values": true,
+      "modes": [
+        "percentage",
+        "max_edge"
+      ],
+      "default_percent": 100,
+      "default_max_edge": 0,
+      "percentage_bounds": [
+        50,
+        100
+      ],
+      "max_edge_bounds": [
+        320,
+        8192
+      ],
+      "minimum_reduced_extent": [
+        320,
+        180
+      ],
+      "cap_supersedes_percentage": true,
+      "never_upscales_input": true,
+      "startup_only": false,
+      "live_capability": "inputScalingLiveSupported",
+      "live_control": [
+        "inputSizing",
+        "inputScaleRevision"
+      ],
+      "gui_waits_for_renderer_applied_revision": true,
+      "invalid_incomplete_and_stale_requests_rejected": true,
+      "frame_control_snapshot_atomic": true,
+      "gpu_retired_before_consumer_and_source_rebuild": true,
+      "nr_sr_fg_and_flow_reset_on_resize": true,
+      "paused_game_applies_on_next_present": true,
+      "process_environment_mutated": false,
+      "old_session_needs_one_upgrade_relaunch": true,
+      "nr_runtime_required": false,
+      "nr_feature_required": false,
+      "shared_private_color_source": true,
+      "nr_and_sr_consume_scaled_input": true,
+      "resample_to_window_when_nr_and_sr_off": true,
+      "fg_processing_extent": "final presentation window",
+      "motion_basis": "unprocessed consecutive present pairs",
+      "capability_marker_verified": "NS_EMU_INPUT_SCALING_LIVE_V1",
+      "supersedes_nr_delta_reconstruction_ui": true,
+      "runtime_behavior_hardware_verified_this_followup": false
+    },
+    "component_version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
+    "toolbox_sha256": "427487287bd0f97c9c6191dec3bc5f2053f927825722753156db04de4f20bfb6",
+    "layer_sha256": "8022e54e0d1bbd1c2c43eb5e5890d60c605a3b9e6f7dc88e715e1d3ff84807f3",
+    "format_host_windows_component_and_toolbox_checks": "passed, zero warnings/errors",
+    "sdk_bridge_without_native_nr_check": "passed, zero warnings/errors",
+    "frontend_app_node_type_checks_changed_components_eslint_and_vite_build": "passed",
+    "complete_component_files_verified": 23,
+    "portable_members_verified": 27,
+    "nsis_resource_paths_verified": true,
+    "installed_components_updated": [
+      "Eden",
+      "Ryujinx"
+    ],
+    "old_versions_and_pointer_backups_retained": true,
+    "functional_tests_run": false,
+    "gpu_tests_run": false,
+    "testing_owner": "user",
+    "old_nr_only_runtime_evidence_not_reused": true,
+    "models_changed": false,
+    "public_release_created": false,
+    "artifacts": [
+      {
+        "path": "output/NsEmuTools-0.6.3-input-v11-20261006/NsEmuTools-0.6.3-input-v11-windows-x64-setup.exe",
+        "bytes": 140299700,
+        "sha256": "6e88bc3ccf1a04b352f1687f9574359e9f6d55dfb889cfb43260a1ac9b4b2244"
+      },
+      {
+        "path": "output/NsEmuTools-0.6.3-input-v11-20261006/NsEmuTools-0.6.3-input-v11-windows-x64-portable.zip",
+        "bytes": 156019931,
+        "sha256": "25cc07e755a34251c6150c1eecd29f1353d8c71ebd11d4a564725532553474e1"
+      }
+    ]
+  },
+  "graphics_gpu_ui_followup": {
+    "implementation": {
+      "enumeration": "Windows DXGI hardware adapters; exclude software adapters",
+      "menu_requires_vendor_id": "0x10de",
+      "all_adapters_checked_for_hybrid_laptops": true,
+      "unknown_model_features_disabled": true,
+      "professional_rtx_4000_5000_not_classified_as_geforce": true,
+      "sr_geforce_series": [
+        20,
+        30,
+        40,
+        50
+      ],
+      "nr_dlss5_geforce_series": [
+        50
+      ],
+      "fg_2x_geforce_series": [
+        40,
+        50
+      ],
+      "fg_higher_and_dynamic_geforce_series": [
+        50
+      ],
+      "maximum_multiplier_is_min_of_model_gate_and_fresh_runtime_limit": true,
+      "direct_page_hides_controls_without_nvidia": true,
+      "unsupported_saved_settings_block_launch": true,
+      "user_action_can_select_supported_effects_and_multiplier": true,
+      "backend_launch_rechecks_model_gate": true,
+      "fmt_host_windows_checks": "passed, zero warnings/errors",
+      "frontend_app_node_types_vite": "passed",
+      "changed_graphics_files_eslint": "passed, zero warnings/errors",
+      "app_drawer_eslint_errors": 0,
+      "app_drawer_existing_format_warnings_not_reformatted": true,
+      "hardware_detection_and_functional_tests_run": false,
+      "testing_owner": "user",
+      "components_changed_this_followup": false,
+      "reuses_verified_v11_input_scaling_components": true,
+      "sources": [
+        "https://www.nvidia.com/en-us/geforce/news/dlss-5-3d-guided-neural-rendering/",
+        "https://www.nvidia.com/en-gb/geforce/news/dlss-4-5-dynamic-multi-frame-generation-6x-mode-released/"
+      ]
+    },
+    "component_version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
+    "toolbox_sha256": "b8b2f9bc8b40e48cc35c3c926eade73fa1ca549f7d66fcdc5077ee79e0e30210",
+    "artifacts": [
+      {
+        "name": "NsEmuTools-0.6.3-gpu-v12-windows-x64-setup.exe",
+        "bytes": 140274230,
+        "sha256": "c5b6120dcab846b4cdbaa9486729f51dba94f6427c66392d3c7ccc473ee3e508"
+      },
+      {
+        "name": "NsEmuTools-0.6.3-gpu-v12-windows-x64-portable.zip",
+        "bytes": 156022831,
+        "sha256": "8163e32f8a627a9cae7f3bc31d84b1ca554ca6cd7f3144796a86b3ebe36fc44f"
+      }
+    ],
+    "gpu_tests_run": false,
+    "game_sessions_changed": false,
+    "older_evidence_preserved": true
+  },
+  "gpu_name_dedup_release_followup": {
+    "delivery": "src-tauri/target/release",
+    "toolbox_sha256": "15b363adb8fc15f52a2635d7390da08c0ab77c0ccce5edddd9488167ffa4a8f8",
+    "component_version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
+    "component_files_verified": 23,
+    "gpu_name_display": "normalize whitespace, unique NVIDIA names; preserve raw adapters",
+    "installer_or_zip_created_for_this_delivery": false,
+    "game_and_gpu_tests_run": false
+  },
+  "gpu_preflight_release_followup": {
+    "delivery": "src-tauri/target/release",
+    "toolbox_sha256": "5107a266ba7dc32c02ebef09161a5d7fb735314400c396d631561aed2a374101",
+    "component_version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
+    "component_files_verified": 23,
+    "gpu_name_display": "normalize whitespace, unique NVIDIA names; preserve raw adapters",
+    "gpu_preflight": "DXGI detection connected; model-only pass, no NVIDIA blocked, detection errors pending",
+    "fmt_host_windows_cargo_checks": "passed, zero warnings/errors",
+    "installer_or_zip_created_for_this_delivery": false,
+    "game_and_gpu_tests_run": false
+  },
+  "component_preflight_release_followup": {
+    "delivery": "src-tauri/target/release",
+    "toolbox_sha256": "a4701157704b79b2b61e07e359a9016b3426ca22b894fbaebfb5baf88b1b1a95",
+    "component_version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
+    "component_files_verified": 23,
+    "gpu_name_display": "normalize whitespace, unique NVIDIA names; preserve raw adapters",
+    "gpu_preflight": "DXGI detection connected; model-only pass, no NVIDIA blocked, detection errors pending",
+    "component_preflight": "verified local bundle passes availability without claiming installation; missing or invalid bundle is unavailable",
+    "fmt_host_windows_cargo_checks": "passed, zero warnings/errors",
+    "installer_or_zip_created_for_this_delivery": false,
+    "game_and_gpu_tests_run": false
+  },
+  "preflight_prompt_removal_followup": {
+    "delivery": "src-tauri/target/release",
+    "toolbox_sha256": "5dbd3937ae9e63d10bc30a033d62be6f23518a7ab93ff4d7362e36733718bfbd",
+    "component_version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
+    "component_files_verified": 23,
+    "gpu_name_display": "normalize whitespace, unique NVIDIA names; preserve raw adapters",
+    "gpu_preflight": "DXGI detection connected; model-only pass, no NVIDIA blocked, detection errors pending",
+    "component_preflight": "verified local bundle passes availability without claiming installation; missing or invalid bundle is unavailable",
+    "fmt_host_windows_cargo_checks": "passed, zero warnings/errors",
+    "installer_or_zip_created_for_this_delivery": false,
+    "game_and_gpu_tests_run": false,
+    "removed_preflight_rows": [
+      "source",
+      "layers"
+    ]
+  }
+}

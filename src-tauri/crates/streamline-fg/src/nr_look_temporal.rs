@@ -15,6 +15,7 @@ pub(super) struct Temporal {
     pending: Option<(Frame, usize)>,
     last: Option<Frame>,
     bytes: u64,
+    persistent: bool,
 }
 impl Temporal {
     pub(super) unsafe fn new(
@@ -22,14 +23,31 @@ impl Temporal {
         memory: &vk::PhysicalDeviceMemoryProperties,
         input: Resource,
         output: Resource,
+        guide: Resource,
         motion: Resource,
+        mode: crate::advanced_settings::TemporalMode,
     ) -> Result<Self> {
-        let shader: &[u8] = match vk::Format::from_raw(motion.format as i32) {
-            vk::Format::R16G16_SFLOAT => include_bytes!("../shaders/nr_look_temporal_fp16.spv"),
-            vk::Format::R32G32_SFLOAT => include_bytes!("../shaders/nr_look_temporal.spv"),
-            _ => return Err("temporal Look requires RG16F or RG32F UV motion".into()),
+        let persistent = mode.persistent();
+        let shader: &[u8] = if persistent {
+            match vk::Format::from_raw(motion.format as i32) {
+                vk::Format::R16G16_SFLOAT => {
+                    include_bytes!("../shaders/nr_look_temporal_plus_fp16.spv")
+                }
+                vk::Format::R32G32_SFLOAT => include_bytes!("../shaders/nr_look_temporal_plus.spv"),
+                _ => return Err("persistent Look requires RG16F or RG32F UV motion".into()),
+            }
+        } else if mode == crate::advanced_settings::TemporalMode::Static {
+            include_bytes!("../shaders/nr_look_temporal_static.spv")
+        } else {
+            match vk::Format::from_raw(motion.format as i32) {
+                vk::Format::R16G16_SFLOAT => include_bytes!("../shaders/nr_look_temporal_fp16.spv"),
+                vk::Format::R32G32_SFLOAT => include_bytes!("../shaders/nr_look_temporal.spv"),
+                _ => return Err("temporal Look requires RG16F or RG32F UV motion".into()),
+            }
         };
-        if motion.width != input.width || motion.height != input.height {
+        if mode != crate::advanced_settings::TemporalMode::Static
+            && (motion.width != input.width || motion.height != input.height)
+        {
             return Err("temporal Look requires same-sized current-to-previous UV motion".into());
         }
         let mut t = Self {
@@ -46,8 +64,9 @@ impl Temporal {
             pending: None,
             last: None,
             bytes: 0,
+            persistent,
         };
-        for _ in 0..3 {
+        for _ in 0..if persistent { 4 } else { 3 } {
             let image = fg_api::texture_with_usage(
                 d,
                 memory,
@@ -65,7 +84,7 @@ impl Temporal {
                 .size;
             t.images.push(image);
         }
-        let bindings = (0..6)
+        let bindings = (0..if persistent { 8 } else { 7 })
             .map(|binding| {
                 vk::DescriptorSetLayoutBinding::default()
                     .binding(binding)
@@ -83,7 +102,7 @@ impl Temporal {
                 .max_sets(2)
                 .pool_sizes(&[vk::DescriptorPoolSize {
                     ty: vk::DescriptorType::STORAGE_IMAGE,
-                    descriptor_count: 12,
+                    descriptor_count: if persistent { 16 } else { 14 },
                 }]),
             None,
         )?;
@@ -94,17 +113,19 @@ impl Temporal {
         )?;
         t.sets = [sets[0], sets[1]];
         for index in 0..2 {
-            for (binding, r) in [
+            let mut resources = vec![
                 input,
                 output,
                 t.images[index],
                 t.images[1 - index],
                 t.images[2],
                 motion,
-            ]
-            .into_iter()
-            .enumerate()
-            {
+                guide,
+            ];
+            if persistent {
+                resources.push(t.images[3]);
+            }
+            for (binding, r) in resources.into_iter().enumerate() {
                 let image = [vk::DescriptorImageInfo::default()
                     .image_view(vk::ImageView::from_raw(r.view))
                     .image_layout(vk::ImageLayout::GENERAL)];
@@ -129,10 +150,33 @@ impl Temporal {
         t.pipeline = pipeline(d, t.pipeline_layout, shader)?;
         Ok(t)
     }
+    pub(super) unsafe fn set_input(&mut self, input: Resource) {
+        let image = [vk::DescriptorImageInfo::default()
+            .image_view(vk::ImageView::from_raw(input.view))
+            .image_layout(vk::ImageLayout::GENERAL)];
+        for set in self.sets {
+            self.device.update_descriptor_sets(
+                &[vk::WriteDescriptorSet::default()
+                    .dst_set(set)
+                    .dst_binding(0)
+                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                    .image_info(&image)],
+                &[],
+            );
+        }
+        self.invalidate();
+    }
     pub(super) fn invalidate(&mut self) {
         self.clock.invalidate();
         self.pending = None;
         self.last = None;
+    }
+    pub(super) fn latest(&self, options: LookOptions) -> Option<Resource> {
+        self.last
+            .filter(|frame| {
+                frame.options.scope == options.scope && frame.options.temporal == options.temporal
+            })
+            .map(|_| self.images[if self.persistent { 3 } else { self.index }])
     }
     pub(super) fn submitted(&mut self) {
         if let Some((frame, index)) = self.pending.take() {
@@ -145,12 +189,14 @@ impl Temporal {
         serde_json::json!({"textureCount":self.images.len(),"allocationBytes":self.bytes,"historyReady":self.last.is_some(),
             "sourceFrameId":self.last.map(|f|f.context.source_frame_id),"intervalMs":self.last.map(|f|f.interval_ms),
             "maximumHistoryWeight":self.last.map(|f|f.weight),"resetReason":self.last.map(|f|f.reason),
-            "history":"raw_log_model_delta","reprojection":"current_to_previous_uv_bilinear","pixelHistoryAcceptanceMeasured":false})
+            "history":if self.persistent {"conditional_log_amplitude_and_presence"} else {"raw_log_model_delta"},
+            "persistence":if self.persistent {serde_json::json!({"riseMs":60,"fallMs":180,"amplitudeMs":self.last.map(|f|f.options.temporal.time_ms),"thresholdStops":0.01,"presence":"shared_rgb_support","experimental":true})} else {serde_json::Value::Null},"pixelHistoryAcceptanceMeasured":false})
     }
     pub(super) unsafe fn record(
         &mut self,
         cmd: vk::CommandBuffer,
         input: Resource,
+        guide: Resource,
         options: LookOptions,
         context: Context,
     ) -> Resource {
@@ -187,12 +233,16 @@ impl Temporal {
         let values = [
             frame.weight,
             f32::from(options.temporal.rejection) / 100.0,
-            0.0,
+            if options.temporal.sampling == crate::advanced_settings::HistorySampling::PerTap {
+                1.0
+            } else {
+                0.0
+            },
             0.0,
             context.uv_scale[0],
             context.uv_scale[1],
-            0.0,
-            0.0,
+            frame.interval_ms as f32,
+            f32::from(options.temporal.time_ms),
         ];
         d.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::COMPUTE, self.pipeline);
         d.cmd_push_constants(
@@ -222,11 +272,11 @@ impl Temporal {
             &[],
             &[],
         );
-        // Save raw Look input before any final composition; never accumulate RGB output.
+        // Validate with P0 even when the delta belongs to (R1,R2).
         fg_api::transition(
             d,
             cmd,
-            vk::Image::from_raw(input.image),
+            vk::Image::from_raw(guide.image),
             vk::ImageLayout::GENERAL,
             vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
         );
@@ -242,7 +292,7 @@ impl Temporal {
             .layer_count(1);
         d.cmd_copy_image(
             cmd,
-            vk::Image::from_raw(input.image),
+            vk::Image::from_raw(guide.image),
             vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
             vk::Image::from_raw(self.images[2].image),
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
@@ -258,7 +308,7 @@ impl Temporal {
         fg_api::transition(
             d,
             cmd,
-            vk::Image::from_raw(input.image),
+            vk::Image::from_raw(guide.image),
             vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
             vk::ImageLayout::GENERAL,
         );
@@ -270,7 +320,7 @@ impl Temporal {
             vk::ImageLayout::GENERAL,
         );
         self.pending = Some((frame, 1 - self.index));
-        self.images[1 - self.index]
+        self.images[if self.persistent { 3 } else { 1 - self.index }]
     }
 }
 impl Drop for Temporal {

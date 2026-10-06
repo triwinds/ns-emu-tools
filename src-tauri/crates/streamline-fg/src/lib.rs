@@ -8,6 +8,16 @@ pub mod advanced_settings;
 #[used]
 #[no_mangle]
 pub static nsEmuGraphicsAdvancedV1: [u8; 27] = *b"NS_EMU_GRAPHICS_ADVANCED_V1";
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuInputScalingV1: [u8; b"NS_EMU_INPUT_SCALING_V1".len()] =
+    *b"NS_EMU_INPUT_SCALING_V1";
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuInputScalingLiveV1: [u8; b"NS_EMU_INPUT_SCALING_LIVE_V1".len()] =
+    *b"NS_EMU_INPUT_SCALING_LIVE_V1";
 #[cfg(all(windows, feature = "native-nr"))]
 #[used]
 #[no_mangle]
@@ -24,6 +34,38 @@ pub static nsEmuNrTwoPassV1: [u8; 21] = *b"NS_EMU_NR_TWO_PASS_V1";
 #[used]
 #[no_mangle]
 pub static nsEmuNrTemporalLookV1: [u8; 26] = *b"NS_EMU_NR_TEMPORAL_LOOK_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrLookScopeV1: [u8; 23] = *b"NS_EMU_NR_LOOK_SCOPE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrTemporalModesV1: [u8; 27] = *b"NS_EMU_NR_TEMPORAL_MODES_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrPersistenceV1: [u8; 24] = *b"NS_EMU_NR_PERSISTENCE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrLookExperimentsV1: [u8; b"NS_EMU_NR_LOOK_EXPERIMENTS_V1".len()] =
+    *b"NS_EMU_NR_LOOK_EXPERIMENTS_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrConsolidatedV1: [u8; b"NS_EMU_NR_CONSOLIDATED_V1".len()] =
+    *b"NS_EMU_NR_CONSOLIDATED_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrInferenceScaleV1: [u8; b"NS_EMU_NR_INFERENCE_SCALE_V1".len()] =
+    *b"NS_EMU_NR_INFERENCE_SCALE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrInferenceCapV1: [u8; b"NS_EMU_NR_INFERENCE_CAP_V1".len()] =
+    *b"NS_EMU_NR_INFERENCE_CAP_V1";
 mod capture;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod live;
@@ -43,12 +85,16 @@ pub mod nr_look_history;
 mod nr_package;
 pub mod nr_pass_history;
 #[cfg(all(windows, feature = "native-nr"))]
+mod nr_reconstruct;
+#[cfg(all(windows, feature = "native-nr"))]
 mod nr_runtime;
 pub mod nr_source_frames;
 #[cfg(all(windows, feature = "native-nr"))]
 mod nr_validation;
 #[cfg(all(windows, feature = "native-nr"))]
 mod target_nr;
+#[cfg(all(windows, feature = "native-nr"))]
+mod validation_calls;
 #[cfg(all(windows, feature = "native-nr"))]
 #[no_mangle]
 pub extern "C" fn nrLayerAbi() -> u64 {
@@ -403,7 +449,49 @@ device_hook!(vkGetDeviceQueue, PFN_vkGetDeviceQueue, (handle: vk::Device, family
 device_hook!(vkGetDeviceQueue2, PFN_vkGetDeviceQueue2, (handle: vk::Device, info: *const vk::DeviceQueueInfo2, output: *mut vk::Queue), (), ());
 device_hook!(vkDeviceWaitIdle, PFN_vkDeviceWaitIdle, (handle: vk::Device), vk::Result, vk::Result::ERROR_DEVICE_LOST);
 
-device_hook!(vkGetSwapchainImagesKHR, PFN_vkGetSwapchainImagesKHR, (handle: vk::Device, swapchain: vk::SwapchainKHR, count: *mut u32, images: *mut vk::Image), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+#[no_mangle]
+pub unsafe extern "system" fn vkGetSwapchainImagesKHR(
+    handle: vk::Device,
+    swapchain: vk::SwapchainKHR,
+    count: *mut u32,
+    images: *mut vk::Image,
+) -> vk::Result {
+    let Some(d) = device(handle) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        target_runtime::ensure_device(d.handle);
+    }
+    let Some(next) = (d.gdpa)(handle, c"vkGetSwapchainImagesKHR".as_ptr()) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    let next = if target_runtime::enabled() {
+        target_runtime::device_proc(handle, c"vkGetSwapchainImagesKHR").unwrap_or(next)
+    } else {
+        next
+    };
+    let next: vk::PFN_vkGetSwapchainImagesKHR = std::mem::transmute(next);
+    #[cfg(all(windows, feature = "native-nr"))]
+    let result = validation_context::application("vkGetSwapchainImagesKHR", || {
+        next(handle, swapchain, count, images)
+    });
+    #[cfg(not(all(windows, feature = "native-nr")))]
+    let result = next(handle, swapchain, count, images);
+    // Proxy ownership is required even when all optional source probes are off.
+    if matches!(result, vk::Result::SUCCESS | vk::Result::INCOMPLETE)
+        && !count.is_null()
+        && !images.is_null()
+    {
+        present_layout::images(
+            handle.as_raw(),
+            swapchain.as_raw(),
+            scale_probe::items(images, *count),
+        );
+    }
+    result
+}
 device_hook!(vkAcquireNextImageKHR, PFN_vkAcquireNextImageKHR, (handle: vk::Device, swapchain: vk::SwapchainKHR, timeout: u64, semaphore: vk::Semaphore, fence: vk::Fence, index: *mut u32), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
 device_hook!(vkAcquireNextImage2KHR, PFN_vkAcquireNextImage2KHR, (handle: vk::Device, info: *const vk::AcquireNextImageInfoKHR, index: *mut u32), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
 
@@ -416,6 +504,10 @@ device_hook!(vkQueueWaitIdle, PFN_vkQueueWaitIdle, (handle: vk::Queue), vk::Resu
 unsafe fn device_intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
     macro_rules! pick { ($($f:ident),*) => { match name.to_bytes() { $(s if s == stringify!($f).as_bytes() => return Some(std::mem::transmute($f as *const ())),)* _ => {} } }; }
     if let Some(hook) = scale_probe::intercept(name) {
+        return Some(hook);
+    }
+    #[cfg(all(windows, feature = "native-nr"))]
+    if let Some(hook) = validation_calls::intercept(name, nr_validation::enabled()) {
         return Some(hook);
     }
     if name == c"vkQueueBindSparse" {
@@ -439,6 +531,15 @@ unsafe fn device_intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
         vkAcquireNextImage2KHR,
         vkQueuePresentKHR
     );
+    // Queue synchronization must also cover Submit2 when source probing is off.
+    if let Some(hook) = queue_sync::intercept(name) {
+        return Some(hook);
+    }
+    // The proxy's PRESENT -> TRANSFER_SRC contract is not a tracing feature.
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        return present_layout::barrier_intercept(name);
+    }
     None
 }
 
@@ -683,6 +784,8 @@ mod frame_capture;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_fg;
 #[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_input_scale;
+#[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_nvof;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_sr;
@@ -759,4 +862,19 @@ pub unsafe extern "system" fn vkDestroySwapchainKHR(
         "vkDestroySwapchainKHR",
         json!({"object":handle.as_raw(),"next":address as usize,"hook":vkDestroySwapchainKHR as *const () as usize}),
     );
+}
+
+#[cfg(test)]
+mod dispatch_tests {
+    use super::*;
+
+    #[test]
+    fn synchronization2_queue_commands_remain_intercepted_without_source_probing() {
+        unsafe {
+            for name in [c"vkQueueSubmit2", c"vkQueueSubmit2KHR"] {
+                assert!(device_intercept(name).is_some());
+            }
+            assert!(device_intercept(c"vkUnsupportedProbeCommand").is_none());
+        }
+    }
 }

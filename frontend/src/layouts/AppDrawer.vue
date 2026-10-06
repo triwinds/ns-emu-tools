@@ -10,7 +10,6 @@ import {
   mdiMemory,
   mdiMonitorShimmer,
   mdiNewBox,
-  mdiSpeedometer,
   mdiTestTube,
 } from '@mdi/js'
 import {useEmitter} from "@/plugins/mitt";
@@ -18,11 +17,15 @@ import {useDisplay, useTheme} from "vuetify";
 import {useConfigStore} from "@/stores/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 import {updateLastOpenEmuPage} from "@/utils/tauri";
+import {useGraphicsGpu} from "@/utils/graphicsGpu";
+
+const { capabilities: graphicsGpu, load: loadGraphicsGpu } = useGraphicsGpu()
+onMounted(() => { void loadGraphicsGpu() })
 
 const emitter = useEmitter()
-let open = ref<string[]>([])
+const open = ref<string[]>([])
 const display = useDisplay()
-let drawer = ref(display.lgAndUp.value)
+const drawer = ref(display.lgAndUp.value)
 const configStore = useConfigStore()
 import router from "@/router";
 
@@ -119,9 +122,18 @@ function openReleasePage() {
             </template>
           </v-list-item>
         </template>
-        <v-list-item link to="/graphics">
-          <template v-slot:prepend>
-            <div class="my-prepend-box"><v-icon color="secondary" :icon="mdiMonitorShimmer" /></div>
+        <v-list-item
+          v-if="graphicsGpu?.hasNvidia"
+          link
+          to="/graphics"
+        >
+          <template #prepend>
+            <div class="my-prepend-box">
+              <v-icon
+                color="secondary"
+                :icon="mdiMonitorShimmer"
+              />
+            </div>
           </template>
           <v-list-item-title>图形增强</v-list-item-title>
         </v-list-item>

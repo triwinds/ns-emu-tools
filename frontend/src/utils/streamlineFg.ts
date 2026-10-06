@@ -1,6 +1,12 @@
 import { graphicsCommand, type GraphicsApi } from './graphics'
 export interface NrLookStatus { temporal?: { active: boolean; requested: boolean; evaluated?: boolean; reason: string; error?: string | null; textureCount: number; allocationBytes: number; sourceFrameId?: number | null; intervalMs?: number | null; maximumHistoryWeight?: number | null; resetReason?: string | null } | null; active: boolean; requested: boolean; reason: string; error?: string | null; codec: string; spatial?: { active: boolean; requested: boolean; error?: string | null; reason: string; radiusPixels: number; textureCount: number; allocationBytes: number } | null }
-export interface NrPipelineStatus { requestedPasses: number; actualPasses: number; secondActive: boolean; secondEvaluated: boolean; error?: string | null; reason: string; retry: number; passes?: { pass: number; evaluated: boolean; reset: boolean; sourceFrameId: number; intensity: number }[] }
+export interface NrPipelineStatus {
+  requestedPasses: number; actualPasses: number; secondActive: boolean; secondEvaluated: boolean
+  error?: string | null; reason: string; retry: number
+  scheduling?: 'consolidated_experimental' | 'fenced_passes'
+  inferenceScalePercent?: number; inferenceSizingMode?: 'percentage' | 'max_edge'; inferenceMaxEdge?: number; originalExtent?: number[]; inferenceExtent?: number[]
+  passes?: { pass: number; evaluated: boolean; reset: boolean; sourceFrameId: number; intensity: number }[]
+}
 import type { GraphicsAdvanced, FgOptions } from './graphicsAdvanced'
 
 export interface FgCheck {
@@ -36,14 +42,25 @@ export function operateStreamlineFg(action: 'install' | 'launch' | 'uninstall', 
 
 export interface FgSample { time: number; appFps: number | null; presentFps: number | null }
 export interface FgLive {
+  inputScalingSupported?: boolean
+  inputScalingLiveSupported?: boolean
+  sentInputScaleRevision?: number
+  inputScale?: { active: boolean; appliedRevision?: number; mode?: 'percentage' | 'max_edge'; scalePercent?: number; maxEdge?: number; originalExtent?: number[]; inputExtent?: number[]; outputExtent?: number[]; error?: string; nrInputScaled?: boolean; srInputScaled?: boolean; presentationResampled?: boolean }
   advancedSettingsSupported?: boolean
   nrLookSupported?: boolean
   nrSpatialLookSupported?: boolean; nrTwoPassSupported?: boolean
   nrTemporalLookSupported?: boolean
+  nrLookScopeSupported?: boolean
+  nrTemporalModesSupported?: boolean
+  nrPersistenceSupported?: boolean
+  nrLookExperimentsSupported?: boolean
+  nrConsolidatedSupported?: boolean
+  nrInferenceScaleSupported?: boolean
+  nrInferenceCapSupported?: boolean
   fg?: { maximumGenerated?: number; options?: FgOptions; unsupportedMultiplier?: boolean } | null
   nrLiveSupported?: boolean
   sentNrRevision?: number
-  nr?: { pipeline?: NrPipelineStatus | null; look?: NrLookStatus | null; active: boolean; requested?: boolean; appliedRevision?: number | null; intensity?: number; appliedIntensity?: number | null; evaluated?: boolean; outputReused?: boolean; sourceFrameId?: number | null; sourceFrameBasis?: string; controlsPending?: boolean; reason?: string; source?: string; depth?: string; motionValid?: boolean; input?: number[]; error?: string; reset?: boolean; resetReason?: string } | null
+nr?: { pipeline?: NrPipelineStatus | null; look?: NrLookStatus | null; active: boolean; requested?: boolean; appliedRevision?: number | null; intensity?: number; appliedIntensity?: number | null; evaluated?: boolean; firstEvaluated?: boolean; sourceObserved?: boolean; modelRecomputed?: boolean; outputReused?: boolean; lookRecomputed?: boolean; finalOutputReused?: boolean; sourceFrameId?: number | null; sourceFrameBasis?: string; controlsPending?: boolean; reason?: string; source?: string; depth?: string; motionValid?: boolean; input?: number[]; error?: string; reset?: boolean; resetReason?: string } | null
   srLiveSupported?: boolean
   srPresetSupported?: boolean
   sentSrRevision?: number
@@ -59,8 +76,8 @@ export interface FgLive {
   sentRevision?: number
   samples?: FgSample[]
 }
-export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string, nrEnabled?: boolean, nrIntensity?: number, advanced?: Partial<GraphicsAdvanced>) {
-  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset, nrEnabled, nrIntensity, advanced })
+export function liveStreamlineFg(executable: string, enabled?: boolean, srMode?: string, srScale?: number, srPreset?: string, nrEnabled?: boolean, nrIntensity?: number, advanced?: Partial<GraphicsAdvanced>, inputSizing?: { scalePercent: number; maxEdge: number }) {
+  return graphicsCommand<FgLive>('live_streamline_fg', { executable, enabled, srMode, srScale, srPreset, nrEnabled, nrIntensity, advanced, inputSizing })
 }
 
 export interface NativeNrComponent {

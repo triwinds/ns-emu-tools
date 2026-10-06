@@ -5,7 +5,7 @@ use crate::models::graphics_components::GraphicsApi;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 #[path = "../../../crates/streamline-target-policy.rs"]
@@ -94,9 +94,16 @@ impl FgPreflight {
                         && super::streamline_update::same_files(current, latest)
                 })
             });
+        let local_bundle = update
+            .package
+            .as_ref()
+            .is_some_and(|p| !p.online() && p.version.starts_with("local-"));
+        // Local availability was established by detect() through full file hashes.
+        // A known manifest alone must not claim that its accompanying files exist.
+        let verified_local_bundle = local_bundle && self.package_available;
         let detail = match update.package {
             Some(latest) => {
-                self.package_available = true;
+                self.package_available = !local_bundle || verified_local_bundle;
                 self.planned_destination =
                     streamline_install::planned_package(&self.executable, &latest);
                 let current = installed
@@ -110,21 +117,43 @@ impl FgPreflight {
                         .is_some_and(|p| !super::streamline_update::same_files(p, &latest))
                 {
                     format!(
-                        "远端同版本组件的校验值发生变化：{}。请等待发布新版本；当前安装保持可用。",
+                        "同版本组件的校验值发生变化：{}。请使用新版本清单；当前安装保持可用。",
                         latest.version
                     )
                 } else if self.installation_state == "installed" && current != latest.version {
                     self.installation_state = "outdated";
-                    format!("发现组件小包更新：{current} → {}。点击下载并安装全部组件即可更新；稳定包缓存将复用，当前游戏会话保持不变。", latest.version)
+                    if local_bundle {
+                        format!("可更新到随程序附带的本地组件：{current} → {}。点击安装全部组件后应用，旧版本和当前游戏会话保留。", latest.version)
+                    } else {
+                        format!("发现组件小包更新：{current} → {}。点击下载并安装全部组件即可更新；稳定包缓存将复用，当前游戏会话保持不变。", latest.version)
+                    }
                 } else if self.installation_state == "installed" && update.fresh {
-                    format!("已安装最新组件小包：{}。文件校验已通过。", latest.version)
+                    if local_bundle {
+                        format!("已安装本地配套组件：{}。文件校验已通过。", latest.version)
+                    } else {
+                        format!("已安装最新组件小包：{}。文件校验已通过。", latest.version)
+                    }
                 } else if self.installation_state == "installed" {
                     format!("已安装组件小包：{}。{}", latest.version, update.message)
                 } else {
-                    format!(
-                        "可安装组件小包：{}。自动下载并校验小包和配套稳定包。",
-                        latest.version
-                    )
+                    if local_bundle {
+                        if verified_local_bundle {
+                            format!(
+                                "本地组件包 {} 已通过完整文件校验；尚未安装到当前模拟器。点击安装全部组件即可使用，无需下载组件。",
+                                latest.version
+                            )
+                        } else {
+                            format!(
+                                "本地组件包 {} 不可用。{} 请恢复程序旁的配套 streamline-fg-package 目录后重新检查。",
+                                latest.version, self.package_message
+                            )
+                        }
+                    } else {
+                        format!(
+                            "可安装组件小包：{}。自动下载并校验小包和配套稳定包。",
+                            latest.version
+                        )
+                    }
                 }
             }
             None => format!("{} {}", self.package_message, update.message),
@@ -132,9 +161,17 @@ impl FgPreflight {
         self.package_message = detail.clone();
         self.checks.push(PreflightCheck {
             id: "component-version",
-            label: "组件小包版本",
-            status: if self.installation_state == "installed" && verified_latest {
+            label: if local_bundle {
+                "本地组件包可用性"
+            } else {
+                "组件小包版本"
+            },
+            status: if verified_local_bundle
+                || (self.installation_state == "installed" && verified_latest)
+            {
                 CheckStatus::Passed
+            } else if local_bundle {
+                CheckStatus::Blocked
             } else {
                 CheckStatus::Pending
             },
@@ -224,47 +261,18 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
             "需要 Vulkan；此处按页面选择检查，启动前仍需核对模拟器设置".into()
         },
     );
-    if family == TargetFamily::Yuzu {
-        check(
-            "source",
-            "画面输入",
+    let (gpu_status, gpu_detail) = match super::gpu::detect() {
+        Ok(gpu) if gpu.has_nvidia => (CheckStatus::Passed, gpu.preflight_detail()),
+        Ok(_) => (
+            CheckStatus::Blocked,
+            "未检测到 NVIDIA 硬件显卡，无法使用画面增强。".into(),
+        ),
+        Err(error) => (
             CheckStatus::Pending,
-            format!("{} 系列使用最终呈现画面试运行 NR、SR / DLAA 和 FG，包含黑边与叠加界面。尚未接入游戏原生纹理、深度或运动矢量；SR 不降低模拟器渲染分辨率，实际能力由运行时检查。需要更新增强组件以使用此启动方式", family.as_str()),
-        );
-    }
-    let directory = executable.parent().ok_or("主程序没有父目录")?;
-    let mut conflicts = Vec::new();
-    for name in [
-        "ReShade64.dll",
-        "opengl32.dll",
-        "dlss5-feed.addon64",
-        "renodx-dlss5.addon64",
-    ] {
-        match directory.join(name).symlink_metadata() {
-            Ok(_) => conflicts.push(name),
-            Err(e) if e.kind() == io::ErrorKind::NotFound => (),
-            Err(e) => return Err(format!("无法检查 {name}：{e}")),
-        }
-    }
-    check(
-        "layers",
-        "其他图形组件",
-        CheckStatus::Pending,
-        if conflicts.is_empty() {
-            "目标目录未发现已知冲突文件；全局 Vulkan 图层仍需在启动前检查".into()
-        } else {
-            format!(
-                "发现 {}。组合使用尚未验证，安装器不会自动移除这些文件",
-                conflicts.join("、")
-            )
-        },
-    );
-    check(
-        "gpu",
-        "显卡与驱动",
-        CheckStatus::Pending,
-        "需要支持 DLSS 帧生成的 NVIDIA 显卡；由运行时检查实际能力，当前尚未检测".into(),
-    );
+            format!("本机显卡检测未完成：{error}。请重新检查。"),
+        ),
+    };
+    check("gpu", "显卡型号初筛", gpu_status, gpu_detail);
     let package = streamline_install::availability();
     Ok(FgPreflight {
         planned_destination: streamline_install::planned(&executable),
@@ -439,7 +447,7 @@ mod tests {
         assert!(detect(dir.path().join("missing.exe"), GraphicsApi::Vulkan).is_err());
     }
     #[test]
-    fn adapted_builds_can_install_without_claiming_version_tests_or_gpu_support() {
+    fn adapted_builds_do_not_claim_version_tests_or_runtime_confirmation() {
         let dir = tempfile::tempdir().unwrap();
         for name in ["eden.exe", "citron.exe", "Ryujinx.exe"] {
             let exe = dir.path().join(name);
@@ -467,16 +475,10 @@ mod tests {
                     .status,
                 CheckStatus::Pending
             ));
-            assert!(matches!(
-                report.checks.iter().find(|c| c.id == "gpu").unwrap().status,
-                CheckStatus::Pending
-            ));
+            assert_eq!(report.runtime_state, "unknown");
             if name == "Ryujinx.exe" {
                 continue;
             }
-            let source = report.checks.iter().find(|c| c.id == "source").unwrap();
-            assert!(matches!(source.status, CheckStatus::Pending));
-            assert!(source.detail.contains("最终呈现画面"));
             assert!(report
                 .checks
                 .iter()
@@ -487,7 +489,7 @@ mod tests {
         }
     }
     #[test]
-    fn unknown_executable_cannot_pass_identity_or_claim_gpu_support() {
+    fn unknown_executable_cannot_pass_identity_or_claim_runtime_confirmation() {
         let dir = tempfile::tempdir().unwrap();
         let exe = dir.path().join("Ryujinx.exe");
         std::fs::write(&exe, b"not the frozen executable").unwrap();
@@ -506,11 +508,6 @@ mod tests {
             result.checks.iter().find(|c| c.id == "api").unwrap().status,
             CheckStatus::Blocked
         ));
-        assert!(matches!(
-            result.checks.iter().find(|c| c.id == "gpu").unwrap().status,
-            CheckStatus::Pending
-        ));
-
         assert_eq!(result.runtime_state, "unknown");
         assert_eq!(
             std::fs::read(dir.path().join("ReShade64.dll")).unwrap(),

@@ -36,6 +36,9 @@ export interface OtherSetting {
   streamline_fg?: boolean
   streamline_nr?: boolean
   streamline_nr_intensity?: number
+  streamline_nr_consolidated?: boolean
+  streamline_input_scale?: number
+  streamline_input_max_edge?: number
   streamline_advanced?: GraphicsAdvanced
   streamline_nr_presets?: NrPreset[]
   streamline_sr_scale?: number

@@ -101,10 +101,126 @@ FP16 binary with `glslc --target-env=vulkan1.1 -DNR_MOTION_FORMAT=rg16f nr_look_
 from `shaders`, validate both with `spirv-val --target-env vulkan1.1`, and update
 their paired entries in `motion.json`. The opt-in GPU test exercises both formats.
 
+Look now has an explicit `scope` (`final_pass`, the legacy default, or
+`chain_total`). Both scopes validate temporal history against the original
+mapped NR input P0. Scope support requires `NS_EMU_NR_LOOK_SCOPE_V1` /
+`nrLookScopeSupported`; neutral/bypassed Look remains bit-exact. Two-pass amount
+zero preserves R1 RGB in final-pass scope and P0 RGB in chain-total scope, with
+R2 alpha in both cases. Presets export schema 4 and migrate schemas 1/2/3.
+
+Temporal `mode` defaults to `optical_flow`; explicit `static` accumulation
+checks same-position original color and neighborhood stability without reading
+motion. NR itself still requires the existing valid NVOF guide. `sampling`
+defaults to legacy `bilinear`; experimental `per_tap` rejects each corner
+before normalizing support (minimum accepted support 0.25). The extensions
+require `NS_EMU_NR_TEMPORAL_MODES_V1` / `nrTemporalModesSupported`. Compile the
+static variant with `glslc --target-env=vulkan1.1 -DNR_STATIC=1 nr_look_temporal.comp
+-o nr_look_temporal_static.spv`, validate it and update `motion.json` too.
+
+Pure Look changes on a repeated source recompose immediately from a private
+pristine model-output cache, without NR Evaluate or temporal advancement.
+`outputReused` continues to describe model reuse; `lookRecomputed` and
+`finalOutputReused` distinguish recomposition from unchanged final pixels.
+The cache adds one RGBA16F allocation per prepared Look pair, reported under
+`lookCacheResources`. Model tuning on an exact repeat now recomputes the affected
+suffix with NGX reset, preserving the source ID and skipping temporal observation.
+Second-only changes reuse the first raw output; degraded chains conservatively
+recompute the prefix when it may have been overwritten by Look. The existing
+first-pass fence remains in place.
+
+Experimental `optical_flow_plus` tracks conditional log amplitude and presence
+separately. It uses 60/180 ms rise/fall, the existing `timeMs` for amplitude,
+0.01 stops for presence, and one extra RGBA16F final-delta texture. It requires
+`NS_EMU_NR_PERSISTENCE_V1` / `nrPersistenceSupported`; ordinary optical flow remains
+the default. Compile the two variants with `-DNR_PERSISTENT=1`, and additionally
+`-DNR_MOTION_FORMAT=rg16f` for the FP16 motion variant. Validate every Look SPIR-V
+against Vulkan 1.1 and update `motion.json`.
+
+Optional `algorithm=oklab`, `protection` percentages and `diagnostic` views require
+`NS_EMU_NR_LOOK_EXPERIMENTS_V1` / `nrLookExperimentsSupported`. Oklab changes the
+chroma decomposition; luminance controls retain their stops contract. Diagnostics
+read pristine P0/R1/final caches and do not feed model inference. The ten views
+include actual per-pixel temporal weight; no aggregate acceptance readback is
+claimed. These algorithms passed fixed-input GPU checks but still need real
+motion/occlusion videos and performance acceptance.
+
+The SDK proxy's image tracking and PRESENT-to-TRANSFER_SRC translation now remain
+active with optional source probes disabled, including synchronization2 barriers.
+Submit2 queue synchronization also remains active without source probing. Only
+SDK-created ordinary images belonging to a live proxy are translated; native
+swapchain images retain PRESENT layout. The strict game baseline still reports
+other renderer errors. Per the user's clarification, errors already present
+with enhancement off no longer block M5/M6 implementation. Raw strict game
+acceptance remains separate. See the
+[suffix/persistence/color and baseline evidence](evidence/nr-suffix-persistence-color-2026-10-05/README.md).
+
+Strict native-NR/SDK validation additionally tags application shader/pipeline,
+render-pass/rendering, clear, query-end and draw entry points in raw callbacks,
+without enabling source probes. Normal graphics launches omit these additional
+wrappers. The tag identifies the entry point, not the final fault owner; the
+wrapper preserves arguments and forwards the existing driver/SDK route. It does
+not filter validation messages or change rendering to hide errors.
+
 The target's SDK-only debug-messenger route escapes literal percent characters
 for the pinned Streamline printf-style error callback. Capture is scoped to
 `slSetVulkanInfo`; application callbacks and raw validation JSON remain unchanged.
 This prevents a logging crash and does not make a failed validation session pass.
+
+## Experimental NR scheduling and inference sizing
+
+**输入尺寸缩放** is a standalone section above NR/SR/FG on the main panel.
+Choose **按输入比例** (50–100%, default 100%) or **固定长边上限** (320–8192
+pixels). `streamline_input_max_edge` defaults to 0. A nonzero cap supersedes the
+percentage, preserves aspect ratio with integer rounding down, and never
+enlarges smaller input. Cap 1920 maps 2560x1325 to 1920x993. Reduced inputs
+must be at least 320x180. The old NR sizing keys migrate to these shared keys.
+
+`--input-scale` / `--input-max-edge` require the independent SDK layer marker
+`NS_EMU_INPUT_SCALING_V1`, not NR or its runtime. In normal graphics launches,
+one shared SDR downsample produces private encoded RGBA16F color, including
+crop/flip and mutable-SRGB byte reinterpretation. NR/SR read this smaller
+source. With both off, the private color is enlarged back into the original
+viewport; FG receives final presentation dimensions in every combination.
+NVOF still analyzes original present pairs. Source remapping resets consumers,
+wait semaphores are consumed once, and private submissions complete before
+handoff. The full image, including UI and fine lines, participates in scaling.
+
+Launch arguments seed the input settings. Sessions advertising
+`inputScalingLiveSupported` accept `inputSizing: {scalePercent, maxEdge}` with a
+monotonic `inputScaleRevision` in the session-local control file. Both values
+are required and validated together; stale/invalid updates leave controls intact.
+On the next present, pending GPU consumers retire before SR, NR and shared input
+resources are rebuilt; NR/SR/FG/flow history resets at the same boundary. No
+process environment mutation is used. Paused games apply on their next frame.
+Actual source/input/output dimensions, preparation failures and
+`appliedRevision` appear in `inputScale`. A failed preparation reports the
+original input and an error; the GUI does not claim successful scaling.
+The toolbox persists each change and waits for the renderer's revision before
+confirming live application. Older sessions require one component update and
+relaunch; subsequent input adjustments in a live-capable session need no restart.
+Scheduling remains under NR **提交方式实验** and defaults to fenced passes.
+Legacy `--nr-inference-*` options retain the old NR delta reconstruction for
+diagnostics; normal shared scaling cannot combine with those or legacy readback.
+Functional testing is handed to the user as requested.
+
+`--nr-consolidated` keeps borrowed-input retirement and submits independent
+first and second/tail command buffers together. A failed second recording is
+discarded; the valid prefix is completed before feature release and fallback.
+Default remains fenced passes.
+
+`--nr-inference-scale 50..100` retains full-resolution P0, downsamples once for
+all model passes and reconstructs the controlled total linear SDR RGB correction
+onto the original base. Original alpha and zero-delta detail remain exact.
+Default is 100. Reduced extents must be at least 320x180; this experimental bound
+does not claim the model minimum. HDR and legacy NR readback are rejected for
+reduced inference. Allocations and actual inference extent are reported. Both
+options require matching DLL capability markers.
+
+Isolated `--two-pass --consolidated` results match fenced chaining hashes and
+pass discarded-tail recovery. Core shutdown timed out in both schedules, so
+execution checks do not certify normal retirement. Offscreen reconstruction
+passed strict GPU checks. Game/video quality, combinations and performance are
+separate gates. See [scheduling/resizing evidence](evidence/nr-scheduling-resizing-2026-10-06/README.md).
 
 ## NR presets in the toolbox
 

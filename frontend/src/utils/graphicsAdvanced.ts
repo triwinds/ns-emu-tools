@@ -1,4 +1,8 @@
 export interface NrLook {
+  algorithm: 'log_delta' | 'oklab'
+  protection: { hue: number; shadows: number; highlights: number; overcorrection: number }
+  diagnostic: 'off' | 'original' | 'first_pass' | 'model_output' | 'raw_delta' | 'controlled_delta' | 'low_frequency' | 'high_frequency' | 'protection' | 'history_validity' | 'history_weight'
+  scope: 'final_pass' | 'chain_total'
   temporal: NrTemporalLook
   spatial: NrSpatialLook
   enabled: boolean
@@ -14,8 +18,8 @@ export interface NrLook {
   midtones: number
   highlights: number
 }
-export interface NrTemporalLook { enabled: boolean; timeMs: number; strength: number; rejection: number }
-export function nrTemporalLook(): NrTemporalLook { return { enabled: false, timeMs: 80, strength: 75, rejection: 50 } }
+export interface NrTemporalLook { mode: 'static' | 'optical_flow' | 'optical_flow_plus'; sampling: 'bilinear' | 'per_tap'; enabled: boolean; timeMs: number; strength: number; rejection: number }
+export function nrTemporalLook(): NrTemporalLook { return { mode: 'optical_flow', sampling: 'bilinear', enabled: false, timeMs: 80, strength: 75, rejection: 50 } }
 export interface NrSpatialLook {
   enabled: boolean
   lighting: number
@@ -27,10 +31,10 @@ export function nrSpatialLook(): NrSpatialLook {
   return { enabled: false, lighting: 100, detail: 100, radius: 8, halo: 0 }
 }
 export function nrLook(): NrLook {
-  return { temporal: nrTemporalLook(), spatial: nrSpatialLook(), enabled: true, schemaVersion: 1, amount: 100, brighten: 100, darken: 100, brightenCap: 0, darkenCap: 0, color: 100, hue: 100, shadows: 100, midtones: 100, highlights: 100 }
+  return { algorithm: 'log_delta', protection: { hue: 0, shadows: 0, highlights: 0, overcorrection: 0 }, diagnostic: 'off', scope: 'final_pass', temporal: nrTemporalLook(), spatial: nrSpatialLook(), enabled: true, schemaVersion: 1, amount: 100, brighten: 100, darken: 100, brightenCap: 0, darkenCap: 0, color: 100, hue: 100, shadows: 100, midtones: 100, highlights: 100 }
 }
 function cloneNrLook(value?: NrLook): NrLook {
-  return { ...nrLook(), ...value, temporal: { ...nrTemporalLook(), ...value?.temporal }, spatial: { ...nrSpatialLook(), ...value?.spatial } }
+  return { ...nrLook(), ...value, protection: { ...nrLook().protection, ...value?.protection }, temporal: { ...nrTemporalLook(), ...value?.temporal }, spatial: { ...nrSpatialLook(), ...value?.spatial } }
 }
 export function cloneNrOptions(value: NrOptions): NrOptions {
   return { ...value, look: cloneNrLook(value.look), secondPass: { ...nrSecondPass(), ...value.secondPass } }

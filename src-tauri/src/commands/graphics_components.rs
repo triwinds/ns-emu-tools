@@ -5,6 +5,16 @@ use crate::services::graphics_components;
 use std::path::PathBuf;
 
 #[tauri::command]
+pub async fn get_graphics_gpu_capabilities() -> ApiResponse<graphics_components::gpu::Capabilities>
+{
+    match tauri::async_runtime::spawn_blocking(graphics_components::gpu::detect).await {
+        Ok(Ok(result)) => ApiResponse::success(result),
+        Ok(Err(error)) => ApiResponse::fail(error),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+
+#[tauri::command]
 pub fn validate_nr_preset(json: String) -> ApiResponse<crate::config::nr_presets::ImportResult> {
     match crate::config::nr_presets::import(&json) {
         Ok(result) => ApiResponse::success(result),
@@ -147,6 +157,7 @@ pub async fn live_streamline_fg(
     nr_enabled: Option<bool>,
     nr_intensity: Option<f32>,
     advanced: Option<crate::config::advanced_settings::AdvancedUpdate>,
+    input_sizing: Option<crate::config::advanced_settings::InputSizing>,
 ) -> ApiResponse<serde_json::Value> {
     match tauri::async_runtime::spawn_blocking(move || {
         graphics_components::streamline_install::live(
@@ -158,6 +169,7 @@ pub async fn live_streamline_fg(
             nr_enabled,
             nr_intensity,
             advanced,
+            input_sizing,
         )
     })
     .await

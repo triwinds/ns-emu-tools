@@ -38,6 +38,11 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut nr_performance = false;
     let mut graphics_launch = false;
     let mut nr_initial_off = false;
+    let mut nr_consolidated = false;
+    let mut nr_inference_scale = 100u32;
+    let mut nr_inference_max_edge = 0u32;
+    let mut input_scale = 100u32;
+    let mut input_max_edge = 0u32;
     let advanced: streamline_probe_layer::advanced_settings::AdvancedSettings =
         match std::env::var("NS_STREAMLINE_ADVANCED_SETTINGS") {
             Ok(value) => serde_json::from_str(&value)?,
@@ -46,6 +51,58 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         };
     let mut args = args.iter();
     while let Some(flag) = args.next() {
+        if flag == "--input-scale" {
+            input_scale = args
+                .next()
+                .and_then(|v| v.to_str())
+                .ok_or("missing input scale")?
+                .parse()?;
+            if !(50..=100).contains(&input_scale) {
+                return Err("input scale must be 50..100 percent".into());
+            }
+            continue;
+        }
+        if flag == "--input-max-edge" {
+            input_max_edge = args
+                .next()
+                .and_then(|v| v.to_str())
+                .ok_or("missing input max edge")?
+                .parse()?;
+            if !streamline_probe_layer::advanced_settings::valid_nr_inference_max_edge(
+                input_max_edge,
+            ) {
+                return Err("input max edge must be 0 or 320..8192 pixels".into());
+            }
+            continue;
+        }
+        if flag == "--nr-inference-max-edge" {
+            nr_inference_max_edge = args
+                .next()
+                .and_then(|v| v.to_str())
+                .ok_or("missing NR inference max edge")?
+                .parse()?;
+            if !streamline_probe_layer::advanced_settings::valid_nr_inference_max_edge(
+                nr_inference_max_edge,
+            ) {
+                return Err("NR inference max edge must be 0 or 320..8192 pixels".into());
+            }
+            continue;
+        }
+        if flag == "--nr-inference-scale" {
+            nr_inference_scale = args
+                .next()
+                .and_then(|v| v.to_str())
+                .ok_or("missing NR inference scale")?
+                .parse()?;
+            if !(50..=100).contains(&nr_inference_scale) {
+                return Err("NR inference scale must be 50..100 percent".into());
+            }
+            continue;
+        }
+        if flag == "--nr-consolidated" {
+            nr_consolidated = true;
+            continue;
+        }
         if flag == "--graphics-launch" {
             graphics_launch = true;
             sdk_off = true;
@@ -201,6 +258,19 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     if nr_initial_off && !native_nr {
         return Err("--nr-initial-off requires --native-nr".into());
     }
+    if nr_consolidated && !native_nr {
+        return Err("--nr-consolidated requires --native-nr".into());
+    }
+    if nr_inference_scale != 100 && (!native_nr || nr_readback) {
+        return Err(
+            "--nr-inference-scale requires --native-nr without legacy --nr-readback".into(),
+        );
+    }
+    if nr_inference_max_edge != 0 && (!native_nr || nr_readback) {
+        return Err(
+            "--nr-inference-max-edge requires --native-nr without legacy --nr-readback".into(),
+        );
+    }
     if graphics_launch
         && (nr_performance
             || nr_readback
@@ -261,6 +331,41 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         json!({"executable":executable,"sha256":target_hash,"version":null,"build_test":target_policy::build_test(&target_hash),"publisher_authenticity_verified":false})
     };
     let layer = dunce::canonicalize(layer.ok_or("missing --layer")?)?;
+    if input_scale != 100 || input_max_edge != 0 {
+        if !graphics_launch
+            || nr_readback
+            || nr_inference_scale != 100
+            || nr_inference_max_edge != 0
+        {
+            return Err("shared input scaling requires --graphics-launch and cannot combine with legacy NR resizing/readback".into());
+        }
+        let bytes = fs::read(&layer)?;
+        let marker = streamline_probe_layer::advanced_settings::INPUT_SCALING_MARKER;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("selected layer does not support shared input scaling; update it".into());
+        }
+    }
+    if nr_consolidated || nr_inference_scale != 100 || nr_inference_max_edge != 0 {
+        let bytes = fs::read(&layer)?;
+        for (needed, marker) in [
+            (
+                nr_consolidated,
+                streamline_probe_layer::advanced_settings::NR_CONSOLIDATED_MARKER,
+            ),
+            (
+                nr_inference_scale != 100 && nr_inference_max_edge == 0,
+                streamline_probe_layer::advanced_settings::NR_INFERENCE_SCALE_MARKER,
+            ),
+            (
+                nr_inference_max_edge != 0,
+                streamline_probe_layer::advanced_settings::NR_INFERENCE_CAP_MARKER,
+            ),
+        ] {
+            if needed && !bytes.windows(marker.len()).any(|v| v == marker) {
+                return Err("selected layer does not support the requested NR scheduling/resizing experiment; update it".into());
+            }
+        }
+    }
     if !advanced.nr.second_pass.is_default() {
         let bytes = fs::read(&layer)?;
         let marker = streamline_probe_layer::advanced_settings::NR_TWO_PASS_MARKER;
@@ -270,6 +375,35 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     if !advanced.nr.look.is_default() {
         let bytes = fs::read(&layer)?;
+        for (needed, marker, name) in [
+            (
+                advanced.nr.look.needs_experiments(),
+                streamline_probe_layer::advanced_settings::NR_LOOK_EXPERIMENTS_MARKER,
+                "NR Look color experiments/diagnostics",
+            ),
+            (
+                advanced.nr.look.temporal.mode.persistent(),
+                streamline_probe_layer::advanced_settings::NR_PERSISTENCE_MARKER,
+                "NR persistent temporal mode",
+            ),
+            (
+                !advanced.nr.look.scope.is_default(),
+                streamline_probe_layer::advanced_settings::NR_LOOK_SCOPE_MARKER,
+                "NR Look scope",
+            ),
+            (
+                advanced.nr.look.temporal.needs_extended_support(),
+                streamline_probe_layer::advanced_settings::NR_TEMPORAL_MODES_MARKER,
+                "NR temporal modes/sampling",
+            ),
+        ] {
+            if needed && !bytes.windows(marker.len()).any(|v| v == marker) {
+                return Err(format!(
+                    "selected layer does not support {name}; update it or restore defaults"
+                )
+                .into());
+            }
+        }
         let temporal_marker = streamline_probe_layer::advanced_settings::NR_TEMPORAL_LOOK_MARKER;
         if !advanced.nr.look.temporal.is_default()
             && !bytes
@@ -437,6 +571,20 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         )
         .env("NS_STREAMLINE_NATIVE_NR", if native_nr { "1" } else { "0" })
         .env(
+            "NS_STREAMLINE_NR_CONSOLIDATED",
+            if nr_consolidated { "1" } else { "0" },
+        )
+        .env(
+            "NS_STREAMLINE_NR_INFERENCE_SCALE",
+            nr_inference_scale.to_string(),
+        )
+        .env("NS_STREAMLINE_INPUT_SCALE", input_scale.to_string())
+        .env("NS_STREAMLINE_INPUT_MAX_EDGE", input_max_edge.to_string())
+        .env(
+            "NS_STREAMLINE_NR_INFERENCE_MAX_EDGE",
+            nr_inference_max_edge.to_string(),
+        )
+        .env(
             "NS_STREAMLINE_NR_INITIAL_ENABLED",
             if nr_initial_off { "0" } else { "1" },
         )
@@ -513,7 +661,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     );
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_consolidated":nr_consolidated,"nr_inference_scale_percent":nr_inference_scale,"nr_inference_max_edge":nr_inference_max_edge,"input_scale_percent":input_scale,"input_max_edge":input_max_edge,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     write_json(
         &session.join("target-command.json"),
@@ -551,4 +699,32 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         return Err("target process failed; inspect evidence".into());
     }
     crate::session_verify::verify(&session)
+}
+#[cfg(test)]
+mod experiment_arguments {
+    use super::*;
+    #[test]
+    fn scheduling_and_scaling_require_nr_and_bounded_explicit_scale() {
+        for (args, message) in [
+            (
+                vec!["--nr-consolidated"],
+                "--nr-consolidated requires --native-nr",
+            ),
+            (
+                vec!["--nr-inference-scale", "75"],
+                "--nr-inference-scale requires --native-nr",
+            ),
+            (
+                vec!["--nr-inference-scale", "25"],
+                "NR inference scale must be 50..100",
+            ),
+            (
+                vec!["--native-nr", "--nr-readback", "--nr-inference-scale", "50"],
+                "without legacy --nr-readback",
+            ),
+        ] {
+            let args: Vec<OsString> = args.into_iter().map(OsString::from).collect();
+            assert!(run(&args).unwrap_err().to_string().contains(message));
+        }
+    }
 }

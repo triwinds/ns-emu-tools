@@ -54,10 +54,12 @@ fn checked(stage: &str, result: u32) -> Result<()> {
         );
         return Err(error);
     }
-    event(
-        stage,
-        json!({"result":result,"result_hex":format!("0x{result:08x}")}),
-    )?;
+    if trace::enabled(stage) {
+        event(
+            stage,
+            json!({"result":result,"result_hex":format!("0x{result:08x}")}),
+        )?;
+    }
     Ok(())
 }
 pub(super) unsafe fn initialize(

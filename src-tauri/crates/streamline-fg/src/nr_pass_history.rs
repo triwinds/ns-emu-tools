@@ -29,6 +29,16 @@ impl History {
 mod tests {
     use super::*;
     #[test]
+    fn suffix_recompute_resets_same_observation_and_next_color_remains_sequential() {
+        let mut h = History::default();
+        let options = NrOptions::default();
+        h.submitted(7, 1.0, options);
+        assert!(h.reset(7, 0.5, options, false));
+        h.submitted(7, 0.5, options);
+        assert!(h.reset(7, 0.5, options, false));
+        assert!(!h.reset(8, 0.5, options, false));
+    }
+    #[test]
     fn independent_parameters_and_gaps_reset_but_look_does_not() {
         let mut h = History::default();
         let mut options = NrOptions::default();

@@ -30,7 +30,8 @@ impl Clock {
         } else if let Some(old) = self.previous {
             if old.context.source_frame_id.checked_add(1) != Some(context.source_frame_id) {
                 "source_gap"
-            } else if old.options != options {
+            } else if old.options.scope != options.scope || old.options.temporal != options.temporal
+            {
                 "look_changed"
             } else if interval_ms == 0 {
                 "nonpositive_interval"
@@ -92,6 +93,8 @@ mod tests {
             "nonpositive_interval"
         );
         options.brighten = 50;
+        assert_eq!(clock.plan(options, c(2, 116)).reason, "continuous");
+        options.scope = crate::advanced_settings::LookScope::ChainTotal;
         assert_eq!(clock.plan(options, c(2, 116)).reason, "look_changed");
         clock.invalidate();
         assert_eq!(clock.plan(options, c(2, 116)).weight, 0.0);

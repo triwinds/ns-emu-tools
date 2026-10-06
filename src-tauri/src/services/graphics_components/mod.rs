@@ -9,6 +9,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
+pub mod gpu;
 pub mod native_nr;
 pub mod nr_presets;
 pub(super) mod runtime_package;

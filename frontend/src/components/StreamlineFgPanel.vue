@@ -2,22 +2,25 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import StreamlineFgLive from './StreamlineFgLive.vue'
 import NativeNrControls from './NativeNrControls.vue'
+import InputScaleControls from './InputScaleControls.vue'
 import GraphicsAdvancedDialog from './GraphicsAdvancedDialog.vue'
 import { useConfigStore } from '@/stores/ConfigStore'
 import { useProgressStore } from '@/stores/ProgressStore'
 import { updateSetting } from '@/utils/tauri'
 import { mdiCheckCircleOutline, mdiAlertCircleOutline, mdiClockOutline, mdiLayersOutline, mdiTuneVariant, mdiRefresh, mdiClipboardTextSearchOutline } from '@mdi/js'
 import type { GraphicsApi } from '@/utils/graphics'
+import type { GraphicsGpu } from '@/utils/graphicsGpu'
 import { detectStreamlineFg, operateStreamlineFg, liveStreamlineFg, type FgLive, type FgCheck, type FgPreflight } from '@/utils/streamlineFg'
 import { graphicsAdvanced, type FgOptions } from '@/utils/graphicsAdvanced'
 
 const emit = defineEmits<{ busy: [value: boolean] }>()
 const activeAction = ref<'install' | 'launch' | 'uninstall' | null>(null)
-const props = defineProps<{ executable: string; api: GraphicsApi; disabled: boolean }>()
+const props = defineProps<{ executable: string; api: GraphicsApi; disabled: boolean; gpu: GraphicsGpu }>()
 const configStore = useConfigStore()
 const progress = useProgressStore()
 const savingNvof = ref(false)
 const savingNr = ref(false)
+const savingInput = ref(false)
 const srAdvanced = ref(false)
 const fgAdvanced = ref(false)
 const currentLive = ref<FgLive>({ connected: false })
@@ -56,12 +59,33 @@ const srOptions = ref({ ...advancedOptions.value.sr })
 const fgOptions = ref({ ...advancedOptions.value.fg })
 watch(() => advancedOptions.value.sr, value => { srOptions.value = { ...value } })
 watch(() => advancedOptions.value.fg, value => { fgOptions.value = { ...value } })
-const fgMaximum = computed(() => currentLive.value.connected ? currentLive.value.fg?.maximumGenerated : undefined)
+const fgMaximum = computed(() => {
+  const runtime = currentLive.value.connected && currentLive.value.fresh ? currentLive.value.fg?.maximumGenerated : undefined
+  return runtime === undefined ? props.gpu.fgMaxMultiplier : Math.min(props.gpu.fgMaxMultiplier, runtime > 0 ? runtime + 1 : 0)
+})
+const fgSupported = computed(() => fgMaximum.value >= 2)
+const nvidiaNames = computed(() => [...new Set(props.gpu.adapters
+  .filter(adapter => adapter.vendorId === 0x10de)
+  .map(adapter => adapter.name.trim().replace(/\s+/g, ' '))
+  .filter(Boolean))].join('、'))
 const fgMultipliers = computed(() => [2, 3, 4, 5, 6].map(value => {
-  const disabled = !!fgMaximum.value && value > fgMaximum.value + 1
-  return { title: `${value}×${disabled ? '（当前不可用）' : ''}`, value, props: { disabled, 'aria-disabled': disabled } }
+  const disabled = value > fgMaximum.value
+  return { title: `${value}×${disabled ? (value > 2 && props.gpu.fgMaxMultiplier < 3 ? '（需要 RTX 50 系列）' : '（当前不可用）') : ''}`, value, props: { disabled, 'aria-disabled': disabled } }
 }))
-const fgModes = [{ title: '固定倍数', value: 'fixed' }, { title: '动态目标帧率', value: 'dynamic' }]
+const fgModes = computed(() => [{ title: '固定倍数', value: 'fixed' }, { title: `动态目标帧率${fgMaximum.value < 3 ? '（需要 RTX 50 系列及运行库支持）' : ''}`, value: 'dynamic', props: { disabled: fgMaximum.value < 3 } }])
+const hardwareIssue = computed(() =>
+  (!props.gpu.nrSupported && configStore.config.setting.other?.streamline_nr)
+  || (!props.gpu.srSupported && srEnabled.value)
+  || (fgEnabled.value && (!fgSupported.value || advancedOptions.value.fg.multiplier > fgMaximum.value || (advancedOptions.value.fg.mode === 'dynamic' && fgMaximum.value < 3))),
+)
+async function useSupportedEffects() {
+  await saveGraphics({
+    streamline_nr: props.gpu.nrSupported && !!configStore.config.setting.other?.streamline_nr,
+    streamline_sr: props.gpu.srSupported && srEnabled.value,
+    streamline_fg: fgSupported.value && fgEnabled.value,
+    streamline_advanced: { ...advancedOptions.value, fg: { ...advancedOptions.value.fg, multiplier: Math.max(2, Math.min(fgMaximum.value, advancedOptions.value.fg.multiplier)) as FgOptions['multiplier'], mode: fgMaximum.value < 3 ? 'fixed' : advancedOptions.value.fg.mode } },
+  })
+}
 const reflexModes = [{ title: '低延迟（默认）', value: 'low_latency' }, { title: '低延迟 + Boost', value: 'boost' }]
 const fgSummary = computed(() => advancedOptions.value.fg.mode === 'dynamic' ? `动态帧生成 · 目标 ${advancedOptions.value.fg.targetFps || '显示器刷新率'}${advancedOptions.value.fg.targetFps ? ' FPS' : ''} · 最高 ${advancedOptions.value.fg.multiplier}×` : `${advancedOptions.value.fg.multiplier}× 帧生成`)
 const srDefault = computed(() => srMode.value === 'balanced' && savedScale.value === 172 && srPreset.value === 'j' && JSON.stringify(advancedOptions.value.sr) === JSON.stringify(graphicsAdvanced().sr))
@@ -90,7 +114,7 @@ const srScale = ref(sliderScale(savedScale.value))
 watch(savedScale, value => { srScale.value = sliderScale(value) })
 const srModeTitle = computed(() => srModes.find(mode => mode.value === srMode.value)?.title ?? srMode.value)
 const srPresetTitle = computed(() => srPreset.value === 'default' ? '自动模型' : `${srPreset.value.toUpperCase()} 模型`)
-type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nvof' | 'streamline_fg' | 'streamline_sr' | 'streamline_sr_mode' | 'streamline_sr_scale' | 'streamline_sr_preset' | 'streamline_advanced'>>
+type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nr' | 'streamline_nvof' | 'streamline_fg' | 'streamline_sr' | 'streamline_sr_mode' | 'streamline_sr_scale' | 'streamline_sr_preset' | 'streamline_advanced'>>
 async function saveSrOptions() {
   await saveGraphics({ streamline_advanced: { ...advancedOptions.value, sr: { ...srOptions.value } } })
 }
@@ -100,8 +124,8 @@ async function saveFgOptions() {
     nvofError.value = '目标帧率需为 0 或 30～360，输入帧率上限需为 0 或 15～240。'
     return
   }
-  if (fgMaximum.value && next.multiplier > fgMaximum.value + 1) {
-    nvofError.value = `当前 GPU / 运行库最高支持 ${fgMaximum.value + 1}×。请降低倍数。`
+  if (next.multiplier > fgMaximum.value || (next.mode === 'dynamic' && fgMaximum.value < 3)) {
+    nvofError.value = '当前显卡／运行库不支持所选 FG 倍数或动态模式。2× 需要 RTX 40／50 系列；更高倍数与动态模式需要 RTX 50 系列。'
     return
   }
   await saveGraphics({ streamline_advanced: { ...advancedOptions.value, fg: next } })
@@ -113,7 +137,7 @@ function srModeForScale(scale: number) {
   ).value
 }
 async function setFg(value: boolean | null) {
-  if (value === null) return
+  if (value === null || (value && !fgSupported.value)) return
   await saveGraphics({ streamline_fg: value })
 }
 async function setNvof(value: boolean | null) {
@@ -122,6 +146,7 @@ async function setNvof(value: boolean | null) {
   if (!nvofError.value) nvofFeedback.value = '已保存；下次以画面增强启动时生效。当前游戏会话保持原设置。'
 }
 async function setSr(value: boolean | null) {
+  if (value && !props.gpu.srSupported) return
   const scale = Math.round(srScale.value * 100)
   if (value !== null) await saveGraphics({ streamline_sr: value, streamline_sr_scale: scale, streamline_sr_mode: srModeForScale(scale) })
 }
@@ -136,6 +161,7 @@ async function saveGraphics(patch: GraphicsSettings) {
   if (Object.entries(patch).every(([key, value]) => JSON.stringify(configStore.config.setting.other[key as keyof GraphicsSettings]) === JSON.stringify(value))) return
   const affectsSr = 'streamline_sr' in patch || 'streamline_sr_mode' in patch || 'streamline_sr_scale' in patch || 'streamline_sr_preset' in patch || (patch.streamline_advanced && JSON.stringify(patch.streamline_advanced.sr) !== JSON.stringify(advancedOptions.value.sr))
   const affectsFg = 'streamline_fg' in patch || (patch.streamline_advanced && JSON.stringify(patch.streamline_advanced.fg) !== JSON.stringify(advancedOptions.value.fg))
+  const affectsNr = 'streamline_nr' in patch
   if ((affectsSr && srPending.value) || (affectsFg && fgPending.value)) return
   const executable = props.executable
   savingNvof.value = true
@@ -144,7 +170,7 @@ async function saveGraphics(patch: GraphicsSettings) {
     const setting = configStore.config.setting
     await updateSetting({ ...setting, other: { ...setting.other, ...patch } })
     Object.assign(configStore.config.setting.other, patch)
-    if (affectsSr || affectsFg) {
+    if (affectsSr || affectsFg || affectsNr) {
       if (executable !== props.executable) return
       if (affectsSr) srFeedback.value = '已保存，正在连接游戏…'
       if (affectsFg) fgFeedback.value = '已保存，正在连接游戏…'
@@ -155,6 +181,10 @@ async function saveGraphics(patch: GraphicsSettings) {
           if (affectsSr) srFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
           if (affectsFg) fgFeedback.value = '已保存；尚未连接游戏，下次专用启动时使用。'
         } else {
+          if (affectsNr && status.nrLiveSupported) {
+            await liveStreamlineFg(executable, undefined, undefined, undefined, undefined, patch.streamline_nr)
+            if (executable !== props.executable) return
+          }
           if (affectsSr) {
             if (!status.advancedSettingsSupported && JSON.stringify(advancedOptions.value.sr) !== JSON.stringify(graphicsAdvanced().sr)) {
               srFeedback.value = '已保存；当前组件不支持曝光配置，请更新画面增强组件后重新专用启动。'
@@ -203,7 +233,7 @@ const allowUnverified = ref(false)
 let revision = 0
 let inspectionPending = false
 const installed = computed(() => report.value?.installationState === 'installed')
-const working = computed(() => loading.value || savingNvof.value || savingNr.value)
+const working = computed(() => loading.value || savingNvof.value || savingNr.value || savingInput.value)
 watch(working, value => emit('busy', value), { flush: 'sync' })
 const installLabel = computed(() => activeAction.value === 'install' ? '正在下载并安装…' : '下载并安装全部组件')
 const nextStep = computed(() => !props.executable ? '先在上方选择模拟器主程序。' : loading.value ? (activeAction.value ? '操作进行中，下载进度与取消操作见进度窗口。' : '正在检查模拟器与组件…') : !report.value ? '检查未完成，请重新检查后继续。' : blocked.value.length ? '请先解决下方列出的安装条件。' : report.value.requiresTrialConfirmation && !allowUnverified.value ? '当前程序尚无适配记录，请先阅读并确认尝试。' : installed.value ? '组件已安装。选择下方效果，再通过此面板启动模拟器。' : report.value.installationState === 'damaged' ? '组件不完整。先移除损坏安装，再下载并安装全部组件。' : !report.value.packageAvailable ? '组件包暂不可用，请查看检测详情并重新检查。' : '一次安装 NR、SR / DLAA 和帧生成所需组件，无需手动查找 DLL。')
@@ -264,7 +294,8 @@ watch(() => [props.executable, props.api, props.disabled], () => {
 }, { immediate: true, flush: 'post' })
 onBeforeUnmount(() => { revision++; emit('busy', false) })
 async function operate(action: 'install' | 'launch' | 'uninstall') {
-  if (!report.value || loading.value || savingNvof.value || savingNr.value || props.disabled) return
+  if (!report.value || working.value || props.disabled) return
+  if (action === 'launch' && hardwareIssue.value) return
   const token = ++revision
   const executable = props.executable
   const api = props.api
@@ -314,6 +345,21 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       <p class="fg-description">
         先安装，再选择效果，最后从这里启动模拟器。
       </p>
+      <p>检测到：{{ nvidiaNames }}。多显卡电脑请在模拟器中选择支持对应功能的 NVIDIA 显卡，实际支持范围以运行状态为准。</p>
+      <v-alert
+        v-if="hardwareIssue"
+        type="warning"
+        variant="tonal"
+      >
+        已保存的效果或 FG 参数超出当前显卡／运行库支持范围。调整后才能以画面增强启动。
+        <v-btn
+          variant="text"
+          :disabled="disabled || working"
+          @click="useSupportedEffects"
+        >
+          改用支持的效果和倍率
+        </v-btn>
+      </v-alert>
       <ol
         class="fg-steps"
         aria-label="画面增强设置流程"
@@ -466,7 +512,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             variant="flat"
             size="large"
             :loading="activeAction === 'launch'"
-            :disabled="!canUse || disabled || working"
+            :disabled="!canUse || disabled || working || !!hardwareIssue"
             @click="operate('launch')"
           >
             以画面增强启动
@@ -476,13 +522,20 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           v-show="installed"
           class="fg-effects"
         >
+          <InputScaleControls
+            :executable="executable"
+            :disabled="disabled || loading || savingNvof || savingNr"
+            :live="currentLive"
+            @busy="savingInput = $event"
+          />
           <div class="fg-effects-heading">
             <h3>选择要启用的效果</h3><p>三个效果可独立使用。设置自动保存，实际效果以游戏运行状态为准。</p>
           </div>
           <NativeNrControls
+            :supported="gpu.nrSupported"
             :executable="executable"
             :refresh-key="report?.checkedAt"
-            :disabled="disabled || loading || savingNvof"
+            :disabled="disabled || loading || savingNvof || savingInput || !gpu.nrSupported"
             :live="currentLive"
             @busy="savingNr = $event"
           />
@@ -490,17 +543,18 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             <h3>改善锯齿 · SR / DLAA</h3>
             <p id="fg-sr-description">
               重建画面以改善锯齿，文字和界面也会参与处理，会增加 GPU 开销。
+              需要 GeForce RTX 20／30／40／50 系列。{{ gpu.srSupported ? '' : '本机未检测到支持的显卡。' }}
             </p>
             <div class="fg-effect-controls">
               <v-switch
-                :model-value="srEnabled"
+                :model-value="gpu.srSupported && srEnabled"
                 label="启用 SR / DLAA"
                 color="primary"
                 density="compact"
                 hide-details
                 inset
                 :loading="savingNvof"
-                :disabled="disabled || loading || savingNvof || savingNr || !!srPending || !configStore.config.setting.other"
+                :disabled="disabled || working || !!srPending || !configStore.config.setting.other || !gpu.srSupported"
                 aria-describedby="fg-sr-description"
                 @update:model-value="setSr"
               />
@@ -510,7 +564,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
                 :prepend-icon="mdiTuneVariant"
                 aria-label="SR 高级配置"
                 aria-haspopup="dialog"
-                :disabled="disabled || working"
+                :disabled="disabled || working || !gpu.srSupported"
                 @click="srAdvanced = true"
               >
                 高级配置
@@ -525,16 +579,16 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           </div>
           <div class="fg-effect">
             <h3>提升流畅度 · FG 帧生成</h3>
-            <p>插入生成帧，让画面更流畅。连接游戏后可实时切换，生成能力以 GPU 与运行库支持为准。</p>
+            <p>2× 帧生成需要 GeForce RTX 40／50 系列；3×～6× 和动态多帧生成需要 RTX 50 系列及运行库支持。{{ fgSupported ? '' : '当前显卡／运行库不支持 FG，相关选项不可用。' }}</p>
             <div class="fg-effect-controls">
               <v-switch
-                :model-value="fgEnabled"
+                :model-value="fgSupported && fgEnabled"
                 label="启用 FG 帧生成"
                 color="primary"
                 density="compact"
                 hide-details
                 inset
-                :disabled="disabled || working || !!fgPending || !configStore.config.setting.other"
+                :disabled="disabled || working || !!fgPending || !configStore.config.setting.other || !fgSupported"
                 @update:model-value="setFg"
               />
               <v-btn
@@ -543,7 +597,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
                 :prepend-icon="mdiTuneVariant"
                 aria-label="FG 高级配置"
                 aria-haspopup="dialog"
-                :disabled="disabled || working"
+                :disabled="disabled || working || !fgSupported"
                 @click="fgAdvanced = true"
               >
                 高级配置
@@ -727,16 +781,16 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           :label="fgOptions.mode === 'dynamic' ? '最高生成倍数' : '生成倍数'"
           variant="outlined"
           :disabled="disabled || working || !!fgPending"
-          hint="2× 包含 1 帧原始画面和 1 帧生成画面。更高倍数需要 GPU 与运行库支持。"
+          hint="2× 需要 RTX 40／50 系列；3×～6× 需要 RTX 50 系列及运行库支持。倍数包含原始画面。"
           persistent-hint
           @update:model-value="saveFgOptions"
         />
         <p
-          v-if="fgMaximum"
+          v-if="fgSupported"
           class="fg-capability"
           role="status"
         >
-          当前会话最高支持 {{ fgMaximum + 1 }}×
+          当前显卡／运行库最高可选 {{ fgMaximum }}×
         </p>
         <v-text-field
           v-if="fgOptions.mode === 'dynamic'"

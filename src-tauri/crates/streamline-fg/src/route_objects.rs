@@ -142,11 +142,17 @@ pub(super) unsafe fn drain_device(handle: vk::Device) -> Result<(), vk::Result> 
     if let Some(p) = pending.get(&handle.as_raw()) {
         let started = std::time::Instant::now();
         let waited = p.device.wait_for_fences(&[p.fence], true, 5_000_000_000);
-        let mut details = p.details.clone();
-        details["fence_wait_succeeded"] = json!(waited.is_ok());
-        details["cpu_wait_us"] = json!(started.elapsed().as_micros());
-        details["age_us"] = json!(p.submitted.elapsed().as_micros());
-        trace::event!("route_present_retired", details);
+        if waited.is_err() || trace::enabled("route_present_retired") {
+            let mut details = p.details.clone();
+            details["fence_wait_succeeded"] = json!(waited.is_ok());
+            details["cpu_wait_us"] = json!(started.elapsed().as_micros());
+            details["age_us"] = json!(p.submitted.elapsed().as_micros());
+            if waited.is_err() {
+                trace::event!("route_present_retirement_failure", details);
+            } else {
+                trace::event!("route_present_retired", details);
+            }
+        }
         waited?;
         p.device.destroy_fence(p.fence, None);
         #[cfg(all(windows, feature = "sdk-bridge"))]

@@ -70,7 +70,7 @@ pub struct ImportResult {
 
 fn schema<'de, D: Deserializer<'de>>(d: D) -> Result<u16, D::Error> {
     match u16::deserialize(d)? {
-        1 | 2 => Ok(2),
+        1..=4 => Ok(4),
         _ => Err(serde::de::Error::custom("不支持的 NR 预设版本")),
     }
 }
@@ -127,7 +127,10 @@ pub fn import(json: &str) -> Result<ImportResult, String> {
     let value: serde_json::Value = serde_json::from_str(json).map_err(|e| e.to_string())?;
     Ok(ImportResult {
         preset,
-        migrated_from: (value["schemaVersion"] == 1).then_some(1),
+        migrated_from: value["schemaVersion"]
+            .as_u64()
+            .filter(|v| *v < 4)
+            .map(|v| v as u16),
     })
 }
 
@@ -135,6 +138,34 @@ pub fn import(json: &str) -> Result<ImportResult, String> {
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn v2_scope_defaults_and_v3_extensions_roundtrip_without_reinterpreting_controls() {
+        let mut value = fixture();
+        let old = import(&value.to_string()).unwrap();
+        assert_eq!(old.migrated_from, Some(2));
+        assert_eq!(old.preset.schema_version, 4);
+        assert_eq!(
+            old.preset.settings.options.look.scope,
+            crate::config::advanced_settings::LookScope::FinalPass
+        );
+        assert_eq!(old.preset.settings.options.look.temporal.time_ms, 100);
+        value["schemaVersion"] = json!(3);
+        value["settings"]["options"]["look"]["scope"] = json!("chain_total");
+        value["settings"]["options"]["look"]["temporal"]["mode"] = json!("static");
+        value["settings"]["options"]["look"]["temporal"]["sampling"] = json!("per_tap");
+        let new = import(&value.to_string()).unwrap();
+        assert_eq!(new.migrated_from, Some(3));
+        value["schemaVersion"] = json!(4);
+        value["settings"]["options"]["look"]["temporal"]["mode"] = json!("optical_flow_plus");
+        let new = import(&value.to_string()).unwrap();
+        assert_eq!(new.migrated_from, None);
+        assert_eq!(
+            import(&serde_json::to_string(&new.preset).unwrap())
+                .unwrap()
+                .preset,
+            new.preset
+        );
+    }
 
     fn fixture() -> serde_json::Value {
         json!({"schemaVersion":2,"name":"夜景","emulator":"eden","game":"游戏 A",
@@ -162,7 +193,7 @@ mod tests {
         value["schemaVersion"] = json!(1);
         let result = import(&value.to_string()).unwrap();
         assert_eq!(result.migrated_from, Some(1));
-        assert_eq!(result.preset.schema_version, 2);
+        assert_eq!(result.preset.schema_version, 4);
         assert_eq!(result.preset.settings.options.global_tone, Some(0));
         value["settings"].as_object_mut().unwrap().remove("options");
         let legacy = import(&value.to_string()).unwrap().preset;
@@ -177,7 +208,7 @@ mod tests {
             assert!(import(&value.to_string()).is_err());
         }
         for (pointer, invalid) in [
-            ("/schemaVersion", json!(3)),
+            ("/schemaVersion", json!(5)),
             ("/emulator", json!("unknown")),
             ("/settings/options/style", json!("d")),
             ("/settings/options/look/amount", json!(201)),

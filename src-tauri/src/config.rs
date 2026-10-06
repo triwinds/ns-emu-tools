@@ -543,6 +543,22 @@ pub struct OtherSetting {
         deserialize_with = "deserialize_nr_intensity"
     )]
     pub streamline_nr_intensity: u8,
+    /// 启动时选择的 NR 调度实验；不参与实时模型参数或游戏预设。
+    #[serde(default)]
+    pub streamline_nr_consolidated: bool,
+    #[serde(
+        alias = "streamline_nr_inference_scale",
+        default = "default_input_scale",
+        deserialize_with = "deserialize_input_scale"
+    )]
+    pub streamline_input_scale: u8,
+    /// 公共输入缩放：0 使用比例；非零时按固定长边上限等比缩小。
+    #[serde(
+        default,
+        alias = "streamline_nr_inference_max_edge",
+        deserialize_with = "deserialize_input_max_edge"
+    )]
+    pub streamline_input_max_edge: u32,
     #[serde(default)]
     pub streamline_sr: bool,
     #[serde(default)]
@@ -565,6 +581,9 @@ impl Default for OtherSetting {
             streamline_fg: true,
             streamline_nr: false,
             streamline_nr_intensity: default_nr_intensity(),
+            streamline_nr_consolidated: false,
+            streamline_input_scale: 100,
+            streamline_input_max_edge: 0,
             streamline_sr: false,
             streamline_sr_mode: StreamlineSrMode::Balanced,
             streamline_sr_scale: None,
@@ -582,6 +601,28 @@ fn deserialize_nr_intensity<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8
     let value = u8::deserialize(d)?;
     if value > 200 {
         return Err(serde::de::Error::custom("NR 强度必须为 0～200"));
+    }
+    Ok(value)
+}
+
+fn deserialize_input_scale<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8, D::Error> {
+    let value = u8::deserialize(d)?;
+    if !(50..=100).contains(&value) {
+        return Err(serde::de::Error::custom("输入尺寸比例必须为 50～100"));
+    }
+    Ok(value)
+}
+
+fn default_input_scale() -> u8 {
+    100
+}
+
+fn deserialize_input_max_edge<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    let value = u32::deserialize(d)?;
+    if !advanced_settings::valid_nr_inference_max_edge(value) {
+        return Err(serde::de::Error::custom(
+            "输入长边上限必须为 0 或 320～8192 像素",
+        ));
     }
     Ok(value)
 }

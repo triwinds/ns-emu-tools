@@ -112,6 +112,10 @@ impl UpdateCache {
     }
 }
 pub(super) fn candidate() -> Package {
+    let embedded = install::package();
+    if !embedded.online() && embedded.version.starts_with("local-") {
+        return embedded;
+    }
     CANDIDATE
         .read()
         .ok()
@@ -119,6 +123,10 @@ pub(super) fn candidate() -> Package {
         .unwrap_or_else(install::package)
 }
 pub(super) fn candidate_for(exe: &std::path::Path) -> Package {
+    let embedded = install::package();
+    if !embedded.online() && embedded.version.starts_with("local-") {
+        return embedded;
+    }
     let installed = install::installed_package(exe).ok();
     let candidate = CANDIDATE.read().ok().and_then(|p| p.clone());
     candidate
@@ -350,6 +358,16 @@ async fn latest() -> Result<Option<Package>, String> {
     Ok(Some(package))
 }
 pub(super) async fn check() -> Update {
+    let embedded = install::package();
+    if !embedded.online() && embedded.version.starts_with("local-") {
+        // A local experimental build must use its accompanying verified bundle,
+        // never replace it with an older published layer discovered online.
+        return Update {
+            package: Some(embedded),
+            message: "使用随本地构建附带的组件包，不切换到远端组件版本".into(),
+            fresh: true,
+        };
+    }
     UPDATE_CACHE.check(refresh(), FOREGROUND_WAIT).await
 }
 async fn refresh() -> Update {
