@@ -232,6 +232,32 @@ const details = ref(false)
 const allowUnverified = ref(false)
 let revision = 0
 let inspectionPending = false
+let componentRefreshTimer: ReturnType<typeof setTimeout> | undefined
+function cancelComponentRefresh() {
+  clearTimeout(componentRefreshTimer)
+  componentRefreshTimer = undefined
+}
+function followComponentUpdate(token: number, attempt = 0) {
+  cancelComponentRefresh()
+  if (token !== revision || !report.value?.componentUpdatePending || attempt >= 6) return
+  componentRefreshTimer = setTimeout(async () => {
+    componentRefreshTimer = undefined
+    if (token !== revision) return
+    if (working.value || props.disabled) {
+      followComponentUpdate(token, attempt + 1)
+      return
+    }
+    try {
+      const result = await detectStreamlineFg(props.executable, props.api)
+      if (token !== revision) return
+      if (result.targetSha256 !== report.value?.targetSha256) allowUnverified.value = false
+      report.value = result
+      followComponentUpdate(token, attempt + 1)
+    } catch (e) {
+      if (token === revision) error.value = e instanceof Error ? e.message : String(e)
+    }
+  }, 2000)
+}
 const installed = computed(() => report.value?.installationState === 'installed')
 const working = computed(() => loading.value || savingNvof.value || savingNr.value || savingInput.value)
 watch(working, value => emit('busy', value), { flush: 'sync' })
@@ -251,6 +277,7 @@ const checkedTime = computed(() => report.value ? new Date(report.value.checkedA
 // Clear old evidence immediately, including when an earlier request is still running.
 watch(() => [props.executable, props.api], () => {
   revision++
+  cancelComponentRefresh()
   inspectionPending = true
   srPending.value = 0
   fgPending.value = 0
@@ -273,13 +300,17 @@ watch(() => [props.executable, props.api], () => {
 async function inspect() {
   if (!props.executable || props.disabled || loading.value) return
   const token = ++revision
+  cancelComponentRefresh()
   allowUnverified.value = false
   report.value = null
   error.value = ''
   loading.value = true
   try {
     const result = await detectStreamlineFg(props.executable, props.api)
-    if (token === revision) report.value = result
+    if (token === revision) {
+      report.value = result
+      followComponentUpdate(token)
+    }
   } catch (e) {
     if (token === revision) error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -292,11 +323,12 @@ watch(() => [props.executable, props.api, props.disabled], () => {
   inspectionPending = false
   void inspect()
 }, { immediate: true, flush: 'post' })
-onBeforeUnmount(() => { revision++; emit('busy', false) })
+onBeforeUnmount(() => { revision++; cancelComponentRefresh(); emit('busy', false) })
 async function operate(action: 'install' | 'launch' | 'uninstall') {
   if (!report.value || working.value || props.disabled) return
   if (action === 'launch' && hardwareIssue.value) return
   const token = ++revision
+  cancelComponentRefresh()
   const executable = props.executable
   const api = props.api
   activeAction.value = action
@@ -309,7 +341,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
     message.value = result.message
     session.value = result.session ?? ''
     const refreshed = await detectStreamlineFg(executable, api)
-    if (token === revision) report.value = refreshed
+    if (token === revision) {
+      report.value = refreshed
+      followComponentUpdate(token)
+    }
   } catch (e) {
     if (token === revision) error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -951,11 +986,14 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           <p class="fg-muted">
             不替换模拟器主程序，不修改存档或全局 Vulkan 注册。
           </p>
-          <div class="fg-release-note">
+          <div
+            class="fg-release-note"
+            :class="{ 'fg-release-note-installed': installed }"
+          >
             <v-icon
-              :icon="mdiClockOutline"
+              :icon="installed ? mdiCheckCircleOutline : mdiClockOutline"
               size="20"
-            /><div><strong>{{ report?.packageAvailable ? '自动下载画面增强组件' : '组件包未就绪' }}</strong><p>{{ report?.packageMessage ?? '选择主程序后自动检查组件包。' }}</p></div>
+            /><div><strong>{{ installed ? '已安装画面增强组件' : report?.packageAvailable ? '自动下载画面增强组件' : '组件包未就绪' }}</strong><p>{{ report?.packageMessage ?? '选择主程序后自动检查组件包。' }}</p></div>
           </div>
           <details
             v-if="report"
@@ -1040,6 +1078,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 .fg-deployment dt { color: rgba(var(--v-theme-on-surface), .65); }
 .fg-deployment small { display: block; margin-top: 4px; color: rgba(var(--v-theme-on-surface), .65); }
 .fg-release-note { display: flex; gap: 12px; align-items: flex-start; background: rgba(var(--v-theme-warning), .09); border-radius: 8px; padding: 16px; margin-top: 22px; }
+.fg-release-note-installed { background: rgba(var(--v-theme-success), .09); }
 .fg-release-note .v-icon { margin-top: 3px; flex-shrink: 0; }
 .fg-release-note p { margin-top: 4px; font-size: 13px; }
 .fg-evidence { margin-top: 18px; font-size: 12px; }

@@ -27,6 +27,7 @@ export interface FgPreflight {
   checks: FgCheck[]
   packageAvailable: boolean
   packageMessage: string
+  componentUpdatePending: boolean
   plannedDestination: string
   installationState: 'unmanaged' | 'installed' | 'damaged'
   runtimeState: 'unknown'

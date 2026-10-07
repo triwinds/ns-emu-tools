@@ -44,6 +44,7 @@ pub(super) struct Update {
     pub package: Option<Package>,
     pub message: String,
     pub fresh: bool,
+    pub refreshing: bool,
 }
 #[derive(Default)]
 struct RefreshState {
@@ -95,6 +96,7 @@ impl UpdateCache {
         // continues. A first check waits only briefly; it never cancels the refresh.
         if let Some(mut cached) = cached {
             cached.fresh = false;
+            cached.refreshing = true;
             cached.message = "正在后台刷新组件版本；当前显示缓存的版本信息。".into();
             return cached;
         }
@@ -107,6 +109,7 @@ impl UpdateCache {
         Update {
             package: None,
             fresh: false,
+            refreshing: true,
             message: "远端版本仍在后台查询，本地检查已完成；稍后重新检查即可查看更新结果。".into(),
         }
     }
@@ -366,6 +369,7 @@ pub(super) async fn check() -> Update {
             package: Some(embedded),
             message: "使用随本地构建附带的组件包，不切换到远端组件版本".into(),
             fresh: true,
+            refreshing: false,
         };
     }
     UPDATE_CACHE.check(refresh(), FOREGROUND_WAIT).await
@@ -379,6 +383,7 @@ async fn refresh() -> Update {
             }
             Update {
                 fresh: true,
+                refreshing: false,
                 message: if package.is_some() {
                     "已检查远端组件版本".into()
                 } else {
@@ -395,6 +400,7 @@ async fn refresh() -> Update {
             Update {
                 package: None,
                 fresh: false,
+                refreshing: false,
                 message: format!("未能检查远端组件更新：{error}。已有安装仍可使用。"),
             }
         }
@@ -546,11 +552,13 @@ pub(super) mod tests {
                 package: Some(fixture()),
                 message: "checked".into(),
                 fresh: true,
+                refreshing: false,
             }
         };
         let started = Instant::now();
         let pending = cache.check(query, Duration::from_millis(20)).await;
         assert!(!pending.fresh && pending.package.is_none());
+        assert!(pending.refreshing);
         assert!(started.elapsed() < Duration::from_millis(500));
         assert_eq!(calls.load(Ordering::SeqCst), 1);
         send.send(()).unwrap();
@@ -561,10 +569,12 @@ pub(super) mod tests {
             )
             .await;
         assert!(completed.fresh && completed.package.is_some());
+        assert!(!completed.refreshing);
         let cached = cache
             .check(async { panic!("cached refresh") }, Duration::ZERO)
             .await;
         assert!(cached.fresh && cached.package.is_some());
+        assert!(!cached.refreshing);
         assert_eq!(calls.load(Ordering::SeqCst), 1);
         cache.state.lock().unwrap().result.as_mut().unwrap().0 =
             Instant::now() - CACHE_TTL - Duration::from_secs(1);
@@ -577,12 +587,14 @@ pub(super) mod tests {
                         package: None,
                         message: "offline".into(),
                         fresh: false,
+                        refreshing: false,
                     }
                 },
                 Duration::ZERO,
             )
             .await;
         assert!(!stale.fresh && stale.package.is_some());
+        assert!(stale.refreshing);
         // Wait for the background completion, then verify retries respect the failure cooldown.
         let done = cache.done.notified();
         tokio::pin!(done);
@@ -593,6 +605,7 @@ pub(super) mod tests {
             .check(async { panic!("retry before cooldown") }, Duration::ZERO)
             .await;
         assert!(!failed.fresh && failed.message == "offline");
+        assert!(!failed.refreshing);
     }
     #[tokio::test]
     async fn slow_or_invalid_mirrors_do_not_block_the_official_manifest() {

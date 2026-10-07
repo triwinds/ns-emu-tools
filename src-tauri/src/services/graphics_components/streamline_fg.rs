@@ -45,6 +45,7 @@ pub struct FgPreflight {
     checks: Vec<PreflightCheck>,
     package_available: bool,
     package_message: String,
+    component_update_pending: bool,
     planned_destination: PathBuf,
     /// File installation state is separate from live frame-generation state.
     installation_state: &'static str,
@@ -86,6 +87,7 @@ pub async fn detect_online(
 }
 impl FgPreflight {
     fn apply_update(&mut self, update: super::streamline_update::Update) {
+        self.component_update_pending = update.refreshing;
         let installed = streamline_install::installed_package(&self.executable).ok();
         let verified_latest = update.fresh
             && update.package.as_ref().is_some_and(|latest| {
@@ -293,6 +295,7 @@ pub fn detect(executable: PathBuf, graphics_api: GraphicsApi) -> Result<FgPrefli
             Err(error) => error,
         },
         runtime_state: "unknown",
+        component_update_pending: false,
     })
 }
 
@@ -372,6 +375,7 @@ mod tests {
             planned_destination: PathBuf::new(),
             installation_state: "installed",
             runtime_state: "unknown",
+            component_update_pending: false,
         };
         let latest = super::super::streamline_update::tests::fixture();
         let mut report = make_report();
@@ -379,6 +383,7 @@ mod tests {
             package: Some(latest),
             message: String::new(),
             fresh: true,
+            refreshing: false,
         });
         assert_eq!(report.installation_state, "outdated");
         assert!(report.package_available && report.package_message.contains("发现组件小包更新"));
@@ -391,6 +396,7 @@ mod tests {
             package: None,
             message: "未能检查远端组件更新".into(),
             fresh: false,
+            refreshing: false,
         });
         assert_eq!(report.installation_state, "installed");
         assert!(matches!(
