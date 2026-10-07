@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.6.4-beta
+
+- 添加对 Eden Nightly 的支持
+- 新增实验性 DLSS 画质增强功能
+
 ## 0.6.3
 
 - 添加对 Citron NEO 的支持 (#137)

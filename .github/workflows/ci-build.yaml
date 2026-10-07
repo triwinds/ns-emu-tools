@@ -50,12 +50,37 @@ jobs:
       run: bun run build
     - name: Build Rust executable
       run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --bin NsEmuTools
+    - name: Stage verified local graphics components
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        $manifest = Get-Content -Raw "src-tauri/src/services/graphics_components/streamline-package.json" | ConvertFrom-Json
+        if (-not $manifest.version.StartsWith('local-')) { exit 0 }
+        $downloadDir = Join-Path $env:RUNNER_TEMP 'graphics-release'
+        gh release download $env:GITHUB_REF_NAME --pattern streamline-fg-package.zip --dir $downloadDir
+        if ($LASTEXITCODE -ne 0) { throw "Matching local graphics package is required for this release" }
+        Expand-Archive -LiteralPath (Join-Path $downloadDir 'streamline-fg-package.zip') -DestinationPath "src-tauri/target/release"
+        $packageDir = "src-tauri/target/release/streamline-fg-package"
+        if (@(Get-ChildItem -LiteralPath $packageDir -Recurse -File).Count -ne $manifest.files.Count) {
+          throw "Graphics package file count differs from the embedded manifest"
+        }
+        foreach ($file in $manifest.files) {
+          $path = Join-Path $packageDir $file.name
+          $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $file.sha256) { throw "Graphics component digest mismatch: $($file.name)" }
+        }
     - name: Package Windows portable zip
       shell: pwsh
       run: |
         $exePath = "src-tauri/target/release/NsEmuTools.exe"
         if (-not (Test-Path $exePath)) { throw "NsEmuTools.exe not found" }
-        Compress-Archive -Path $exePath -DestinationPath "src-tauri/target/release/NsEmuTools-windows-portable.zip"
+        $payload = @($exePath)
+        $packageDir = "src-tauri/target/release/streamline-fg-package"
+        if (Test-Path -LiteralPath $packageDir) { $payload += $packageDir }
+        Compress-Archive -Path $payload -DestinationPath "src-tauri/target/release/NsEmuTools-windows-portable.zip"
     - name: Show Rust cache stats
       if: always()
       run: sccache --show-stats
@@ -218,6 +243,7 @@ jobs:
       uses: softprops/action-gh-release@v2.2.2
       with:
         draft: true
+        prerelease: ${{ contains(github.ref_name, '-') }}
         body_path: dist/release-notes.md
         files: |
           dist/NsEmuTools-windows-zip/NsEmuTools-windows-portable.zip
