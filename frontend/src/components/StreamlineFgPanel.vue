@@ -347,6 +347,14 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       </p>
       <p>检测到：{{ nvidiaNames }}。多显卡电脑请在模拟器中选择支持对应功能的 NVIDIA 显卡，实际支持范围以运行状态为准。</p>
       <v-alert
+        class="mt-3"
+        type="warning"
+        variant="tonal"
+        density="compact"
+      >
+        当前画面增强实现无法获取游戏真实的深度和运动向量信息。HUD-less 模式下运行的 FG（帧生成）可能产生鬼影、闪烁、UI 变形等问题。有条件时，建议优先通过 MOD 提升画质、解锁帧数限制。
+      </v-alert>
+      <v-alert
         v-if="hardwareIssue"
         type="warning"
         variant="tonal"
