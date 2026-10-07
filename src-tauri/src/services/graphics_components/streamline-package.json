@@ -1,100 +1,143 @@
 {
-  "version": "local-cc8949e46572-8022e54e0d1b-nr3108-v11",
-  "native_nr": true,
-  "schema_version": 1,
+  "version": "streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11",
   "launcher_protocol": 1,
   "files": [
     {
-      "name": "LICENSE-DLSS.txt",
-      "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294"
+      "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294",
+      "name": "LICENSE-DLSS.txt"
     },
     {
-      "name": "LICENSE-Layer.txt",
-      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e",
+      "name": "LICENSE-Layer.txt"
     },
     {
-      "name": "LICENSE-NGX.txt",
-      "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294"
+      "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294",
+      "name": "LICENSE-NGX.txt"
     },
     {
-      "name": "LICENSE-NsEmuTools.txt",
-      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e",
+      "name": "LICENSE-NsEmuTools.txt"
     },
     {
-      "name": "LICENSE-Streamline-third-party.md",
-      "sha256": "cb251639994465f31d2178c16acedf1ff4f9cef1c370a09782ed36d4c86c1dca"
+      "sha256": "cb251639994465f31d2178c16acedf1ff4f9cef1c370a09782ed36d4c86c1dca",
+      "name": "LICENSE-Streamline-third-party.md"
     },
     {
-      "name": "LICENSE-Streamline.txt",
-      "sha256": "7b6f23e7d6f3ad6292f9308d2b42cdc3d82ae4e9b2abb55f230279d83bedd43d"
+      "sha256": "7b6f23e7d6f3ad6292f9308d2b42cdc3d82ae4e9b2abb55f230279d83bedd43d",
+      "name": "LICENSE-Streamline.txt"
     },
     {
-      "name": "NvLowLatencyVk.dll",
-      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+      "name": "NvLowLatencyVk.dll"
     },
     {
-      "name": "nvngx_dlss.dll",
-      "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+      "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e",
+      "name": "nvngx_dlss.dll"
     },
     {
-      "name": "nvngx_dlssg.dll",
-      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+      "name": "nvngx_dlssg.dll"
     },
     {
-      "name": "nvngx_dlssnr.dll",
-      "sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e"
+      "sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+      "name": "nvngx_dlssnr.dll"
     },
     {
-      "name": "nvngx.dll",
-      "sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc"
+      "sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc",
+      "name": "nvngx.dll"
     },
     {
-      "name": "README-LAYER.txt",
-      "sha256": "5b8152d85a7e05bf8ec1ffae29815647ab900546224e8076b271423e9ed33946"
+      "sha256": "5b8152d85a7e05bf8ec1ffae29815647ab900546224e8076b271423e9ed33946",
+      "name": "README-LAYER.txt"
     },
     {
-      "name": "README-RUNTIMES.txt",
-      "sha256": "471c3f6190020f5a5911ff46bcd58d2303dbc78a82ad228e618cb69e9fd3213b"
+      "sha256": "471c3f6190020f5a5911ff46bcd58d2303dbc78a82ad228e618cb69e9fd3213b",
+      "name": "README-RUNTIMES.txt"
     },
     {
-      "name": "sl.common.dll",
-      "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+      "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+      "name": "sl.common.dll"
     },
     {
-      "name": "sl.dlss_g.dll",
-      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+      "name": "sl.dlss_g.dll"
     },
     {
-      "name": "sl.dlss.dll",
-      "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+      "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c",
+      "name": "sl.dlss.dll"
     },
     {
-      "name": "sl.interposer.dll",
-      "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+      "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+      "name": "sl.interposer.dll"
     },
     {
-      "name": "sl.pcl.dll",
-      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+      "name": "sl.pcl.dll"
     },
     {
-      "name": "sl.reflex.dll",
-      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced",
+      "name": "sl.reflex.dll"
     },
     {
-      "name": "SOURCE-NR.json",
-      "sha256": "064488f53b6aec7e17f3b32adc78200775eb4496327397ecd80448926ec6922a"
+      "sha256": "064488f53b6aec7e17f3b32adc78200775eb4496327397ecd80448926ec6922a",
+      "name": "SOURCE-NR.json"
     },
     {
-      "name": "SOURCE-Streamline.json",
-      "sha256": "68b487acf86010c9a2b1930ed6624778f1bf97410cfbdfd61b7d453f0c2f2d53"
+      "sha256": "68b487acf86010c9a2b1930ed6624778f1bf97410cfbdfd61b7d453f0c2f2d53",
+      "name": "SOURCE-Streamline.json"
     },
     {
-      "name": "streamline_probe_layer.dll",
-      "sha256": "8022e54e0d1bbd1c2c43eb5e5890d60c605a3b9e6f7dc88e715e1d3ff84807f3"
+      "sha256": "8022e54e0d1bbd1c2c43eb5e5890d60c605a3b9e6f7dc88e715e1d3ff84807f3",
+      "name": "streamline_probe_layer.dll"
     },
     {
-      "name": "streamline-layer-probe.exe",
-      "sha256": "cc8949e46572bc405e50a135e441707a8d394362d24b0388c77a70d007333fb4"
+      "sha256": "cc8949e46572bc405e50a135e441707a8d394362d24b0388c77a70d007333fb4",
+      "name": "streamline-layer-probe.exe"
+    }
+  ],
+  "native_nr": true,
+  "schema_version": 1,
+  "parts": [
+    {
+      "download": {
+        "name": "streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11.zip",
+        "sha256": "c49d93a84ed69f70074b3cf6d2c3f27560fc3b0aec85f2cc48a46d353fddfec8",
+        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11/streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11.zip"
+      },
+      "files": [
+        "LICENSE-Layer.txt",
+        "nvngx.dll",
+        "README-LAYER.txt",
+        "streamline_probe_layer.dll",
+        "streamline-layer-probe.exe"
+      ]
+    },
+    {
+      "download": {
+        "name": "streamline-runtime-14a362ce9469-v1.zip",
+        "sha256": "87366a0d8e6d72a47055301dd7ec9dd63c32ef2e7c08da05b8bdd80b2f0b934e",
+        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-runtime-14a362ce9469-v1/streamline-runtime-14a362ce9469-v1.zip"
+      },
+      "files": [
+        "LICENSE-DLSS.txt",
+        "LICENSE-NGX.txt",
+        "LICENSE-NsEmuTools.txt",
+        "LICENSE-Streamline-third-party.md",
+        "LICENSE-Streamline.txt",
+        "NvLowLatencyVk.dll",
+        "nvngx_dlss.dll",
+        "nvngx_dlssg.dll",
+        "nvngx_dlssnr.dll",
+        "README-RUNTIMES.txt",
+        "sl.common.dll",
+        "sl.dlss_g.dll",
+        "sl.dlss.dll",
+        "sl.interposer.dll",
+        "sl.pcl.dll",
+        "sl.reflex.dll",
+        "SOURCE-NR.json",
+        "SOURCE-Streamline.json"
+      ]
     }
   ]
 }
