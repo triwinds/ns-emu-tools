@@ -64,6 +64,13 @@
     },
     {
       "kind": "download",
+      "url": "https://ghfile.geekertao.top/https://github.com",
+      "region": "美国",
+      "description": "[美国 Cloudflare CDN] - 该公益加速源由 [ghfile.geekertao.top] 提供",
+      "source_array": "download_url_us"
+    },
+    {
+      "kind": "download",
       "url": "https://cdn.crashmc.com/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [cdn.crashmc.com] 提供",
@@ -88,13 +95,6 @@
       "url": "https://down.npee.cn/?https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [npee社区] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://gh.zwy.one/https://github.com",
-      "region": "美国",
-      "description": "[美国 洛杉矶] - 该公益加速源由 [gh.zwy.one] 提供",
       "source_array": "download_url_us"
     },
     {
