@@ -2,6 +2,10 @@
 
 Windows x64 Vulkan frame-generation layer and the launcher used by the toolbox. This remains an experimental integration: it uses reference constants and constant depth. Toolbox launches request native NVIDIA hardware optical flow for motion vectors, with zero-motion fallback when unavailable. See [NVOF integration](docs/NVOF.md). Optional source-based SR/DLAA and native NR have independent controls; NR pauses without valid motion. Window-operation protection and SDK capability checks still apply.
 
+When native extraction is unavailable, Ryujinx and Yuzu-family launches can use the complete presented image for FG at the original input size. Valid native viewports remain preferred; malformed native viewports never fall back. DLAA custom ratios first resize color and optical-flow guidance to the working resolution, evaluate DLAA with equal input/output dimensions, and resize the result back to the window. This preserves DLAA mode rather than substituting SR. An SR preparation failure before SDK evaluation owns no SDK viewport and therefore skips `slFreeResources`; evaluation and submitted-work teardown retain their existing retirement checks.
+
+After the first native `OUT_OF_DATE` result, the downstream route retires that swapchain. Its first presentation fence must still complete. Later SDK worker presents for the same retired swapchain consume their own wait semaphores through an empty GPU submission and wait for its queue fence, returning the original WSI error without another native present. This prevents repeated rejected presentations from leaving an unsignaled presentation fence during window close. Retirement entries are removed only after swapchain destruction; successful presentation pacing and failed GPU-wait protections are unchanged.
+
 ## Source layout
 
 - `src/lib.rs`, `target_*.rs`, `live.rs`: Vulkan layer, frame generation, lifecycle and live control/telemetry.

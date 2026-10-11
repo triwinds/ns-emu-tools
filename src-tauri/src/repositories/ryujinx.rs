@@ -1,10 +1,10 @@
 //! Ryujinx 模拟器数据访问层
 //!
-//! 提供 Ryujinx 模拟器（mainline/canary 分支）的版本信息获取功能
+//! 提供 Ryujinx 模拟器（mainline/canary/nextendo 分支）的版本信息获取功能
 
 use crate::error::{AppError, AppResult};
 use crate::models::release::ReleaseInfo;
-use crate::services::network::request_git_api;
+use crate::services::network::{request_git_api, request_github_api};
 use tracing::{debug, info, warn};
 
 /// Ryujinx Forgejo Mainline Releases API
@@ -13,12 +13,54 @@ const RYUJINX_MAINLINE_API: &str = "https://git.ryujinx.app/api/v1/repos/ryubing
 /// Ryujinx Forgejo Canary Releases API
 const RYUJINX_CANARY_API: &str = "https://git.ryujinx.app/api/v1/repos/ryubing/canary/releases";
 
+/// Ryujinx Nextendo GitHub Releases API
+const RYUJINX_NEXTENDO_API: &str =
+    "https://api.github.com/repos/NextendoNetwork/Ryujinx-Nextendo/releases";
+
 /// 获取所有 Ryujinx Release 信息（根据分支）
 pub async fn get_all_ryujinx_release_infos(branch: &str) -> AppResult<Vec<ReleaseInfo>> {
     match branch {
         "canary" => get_all_canary_ryujinx_release_infos().await,
+        "nextendo" => get_all_nextendo_ryujinx_release_infos().await,
         _ => get_all_mainline_ryujinx_release_infos().await,
     }
+}
+
+fn nextendo_version_parts(tag: &str) -> Option<Vec<u32>> {
+    let parts: Vec<u32> = tag
+        .trim_start_matches('v')
+        .split('.')
+        .map(str::parse)
+        .collect::<Result<_, _>>()
+        .ok()?;
+    (parts.len() == 3).then_some(parts)
+}
+
+fn parse_nextendo_release(data: &serde_json::Value) -> Option<ReleaseInfo> {
+    if data["draft"].as_bool().unwrap_or(false) || data["prerelease"].as_bool().unwrap_or(false) {
+        return None;
+    }
+    let release = ReleaseInfo::from_github_api(data)?;
+    // The repository also publishes build-deps, which is not an emulator release.
+    nextendo_version_parts(&release.tag_name)?;
+    Some(release)
+}
+
+pub async fn get_all_nextendo_ryujinx_release_infos() -> AppResult<Vec<ReleaseInfo>> {
+    info!("正在获取 Ryujinx Nextendo 的所有发布信息");
+    let data = request_github_api(RYUJINX_NEXTENDO_API).await?;
+    let mut releases: Vec<ReleaseInfo> = data
+        .as_array()
+        .ok_or_else(|| AppError::InvalidArgument("无效的 GitHub API 响应格式".to_string()))?
+        .iter()
+        .filter_map(parse_nextendo_release)
+        .collect();
+    // An older hotfix can be published later than the newest version.
+    releases.sort_by_cached_key(|release| {
+        std::cmp::Reverse(nextendo_version_parts(&release.tag_name).unwrap_or_default())
+    });
+    debug!("共获取到 {} 个 Ryujinx Nextendo 发布", releases.len());
+    Ok(releases)
 }
 
 /// 获取所有 Mainline Ryujinx Release 信息
@@ -72,8 +114,24 @@ pub async fn get_ryujinx_release_info_by_version(
 ) -> AppResult<ReleaseInfo> {
     match branch {
         "canary" => get_canary_ryujinx_release_info_by_version(version).await,
+        "nextendo" => get_nextendo_ryujinx_release_info_by_version(version).await,
         _ => get_mainline_ryujinx_release_info_by_version(version).await,
     }
+}
+
+async fn get_nextendo_ryujinx_release_info_by_version(version: &str) -> AppResult<ReleaseInfo> {
+    if nextendo_version_parts(version).is_none() {
+        return Err(AppError::InvalidArgument(format!(
+            "无效的 Ryujinx Nextendo 版本: {}",
+            version
+        )));
+    }
+    let tag = format!("v{}", version.trim_start_matches('v'));
+    let url = format!("{}/tags/{}", RYUJINX_NEXTENDO_API, tag);
+    let data = request_github_api(&url).await?;
+    parse_nextendo_release(&data).ok_or_else(|| {
+        AppError::InvalidArgument(format!("无法解析 Ryujinx Nextendo 版本 {} 的信息", version))
+    })
 }
 
 /// 获取指定版本的 Mainline Ryujinx Release 信息
@@ -138,6 +196,7 @@ pub async fn load_ryujinx_change_log(branch: &str) -> AppResult<String> {
 fn ryujinx_branch_label(branch: &str) -> &str {
     match branch {
         "canary" => "Canary",
+        "nextendo" => "Nextendo",
         _ => "Mainline",
     }
 }
@@ -188,6 +247,51 @@ fn ryujinx_changelog_error_message(branch: &str, error: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_nextendo_release_parsing_excludes_utility_and_unstable_releases() {
+        let mut data = serde_json::json!({
+            "tag_name": "v1.8.14",
+            "body": "Nextendo release notes",
+            "assets": [{
+                "name": "Nextendo-1.8.14-win-x64.zip",
+                "browser_download_url": "https://github.com/NextendoNetwork/Ryujinx-Nextendo/releases/download/v1.8.14/Nextendo-1.8.14-win-x64.zip"
+            }]
+        });
+        let release = parse_nextendo_release(&data).unwrap();
+        assert_eq!(release.tag_name, "v1.8.14");
+        assert_eq!(release.description, "Nextendo release notes");
+        assert!(release.assets[0]
+            .download_url
+            .contains("NextendoNetwork/Ryujinx-Nextendo"));
+        data["tag_name"] = serde_json::json!("build-deps");
+        assert!(parse_nextendo_release(&data).is_none());
+        data["tag_name"] = serde_json::json!("v1.8.15");
+        data["prerelease"] = serde_json::json!(true);
+        assert!(parse_nextendo_release(&data).is_none());
+        data["prerelease"] = serde_json::json!(false);
+        data["draft"] = serde_json::json!(true);
+        assert!(parse_nextendo_release(&data).is_none());
+    }
+
+    #[tokio::test]
+    #[ignore = "requires network access"]
+    async fn test_get_nextendo_releases() {
+        let releases = get_all_nextendo_ryujinx_release_infos().await.unwrap();
+        assert!(!releases.is_empty());
+        assert!(releases
+            .iter()
+            .all(|release| release.tag_name != "build-deps"));
+        let latest = &releases[0];
+        let release = get_ryujinx_release_info_by_version(&latest.tag_name, "nextendo")
+            .await
+            .unwrap();
+        assert_eq!(release.tag_name, latest.tag_name);
+        assert!(!load_ryujinx_change_log("nextendo")
+            .await
+            .unwrap()
+            .is_empty());
+    }
 
     #[test]
     fn test_load_ryujinx_change_log_fallback_for_empty_description() {

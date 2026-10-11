@@ -21,7 +21,7 @@
           @update:model-value="switchRyujinxBranch"
         >
           <template #selection>
-            <span>{{ selectedBranch === 'canary' ? 'Ryujinx Canary 版' : 'Ryujinx 正式版' }}</span>
+            <span>{{ selectedBranchLabel }}</span>
           </template>
         </v-select>
       </header>
@@ -109,7 +109,7 @@
           <section class="version-section latest-version">
             <h3 class="row-title">最新 {{ selectedEmulatorName }} 版本</h3>
             <p class="version-value version-text">{{ latestRyujinxVersion }}</p>
-            <ChangeLogDialog v-if="selectedBranch === 'canary' || selectedBranch === 'mainline'">
+            <ChangeLogDialog>
               <template #activator="{ props }">
                 <v-btn v-bind="props" color="secondary" variant="outlined" @click="loadChangeLog">
                   查看更新日志
@@ -293,10 +293,19 @@ let availableBranch = ref([
   }, {
     text: 'Ryubing/Ryujinx Canary 版',
     value: 'canary'
+  }, {
+    text: 'Ryujinx Nextendo 版',
+    value: 'nextendo'
   }
 ])
 let selectedBranch = ref('')
-const selectedEmulatorName = computed(() => selectedBranch.value === 'canary' ? 'Ryujinx Canary' : 'Ryujinx')
+const selectedEmulatorName = computed(() => {
+  if (selectedBranch.value === 'nextendo') return 'Ryujinx Nextendo'
+  return selectedBranch.value === 'canary' ? 'Ryujinx Canary' : 'Ryujinx'
+})
+const selectedBranchLabel = computed(() =>
+  availableBranch.value.find(branch => branch.value === selectedBranch.value)?.text ?? 'Ryujinx 正式版'
+)
 const cds = useConsoleDialogStore()
 const configStore = useConfigStore()
 const appStore = useAppStore()
@@ -330,11 +339,13 @@ onBeforeMount(async () => {
 })
 
 async function updateRyujinxReleaseInfos() {
+  const branch = selectedBranch.value
   isLoadingRyujinxVersions.value = true
   allRyujinxReleaseInfos.value = []
   targetRyujinxVersion.value = "加载中..."
   try {
-    const data = await getAllRyujinxVersions(selectedBranch.value)
+    const data = await getAllRyujinxVersions(branch)
+    if (selectedBranch.value !== branch) return
     if (data.code === 0) {
       const infos = data.data || []
       allRyujinxReleaseInfos.value = infos.map(v => ({ tag_name: v }))
@@ -344,11 +355,14 @@ async function updateRyujinxReleaseInfos() {
       targetRyujinxVersion.value = "加载失败"
     }
   } catch (error) {
+    if (selectedBranch.value !== branch) return
     cds.appendConsoleMessage('ryujinx 版本信息加载异常: ' + error)
     console.error('获取 Ryujinx 版本信息失败:', error)
     targetRyujinxVersion.value = "加载失败"
   } finally {
-    isLoadingRyujinxVersions.value = false
+    if (selectedBranch.value === branch) {
+      isLoadingRyujinxVersions.value = false
+    }
   }
 }
 

@@ -65,16 +65,19 @@ pub(super) fn content_region(viewport: [f32; 4], size: [u32; 2]) -> Option<[u32;
     Some([x, y, width, height])
 }
 
-/// Yuzu-family trials process the complete presented image, including bars and
-/// overlays. This does not establish a native texture or its content viewport.
+/// Supported emulator families can process the complete presented image when
+/// native extraction is unavailable. This includes bars and overlays; it does
+/// not establish a native texture or its content viewport.
 pub(super) fn presentation_region(
     native_viewport: Option<[f32; 4]>,
     size: [u32; 2],
-    present_image: bool,
+    family: &str,
 ) -> Option<[u32; 4]> {
     match native_viewport {
         Some(viewport) => content_region(viewport, size),
-        None if present_image && size[0] > 0 && size[1] > 0 => Some([0, 0, size[0], size[1]]),
+        None if matches!(family, "yuzu" | "ryujinx") && size[0] > 0 && size[1] > 0 => {
+            Some([0, 0, size[0], size[1]])
+        }
         None => None,
     }
 }
@@ -345,21 +348,23 @@ mod region_tests {
     }
     #[test]
     fn present_image_trials_do_not_require_a_native_texture() {
-        assert_eq!(
-            presentation_region(None, [1920, 1080], true),
-            Some([0, 0, 1920, 1080])
-        );
-        assert_eq!(presentation_region(None, [1920, 1080], false), None);
-        assert_eq!(presentation_region(None, [0, 1080], true), None);
-        assert_eq!(presentation_region(None, [1920, 0], true), None);
+        for family in ["yuzu", "ryujinx"] {
+            assert_eq!(
+                presentation_region(None, [1920, 1080], family),
+                Some([0, 0, 1920, 1080])
+            );
+            assert_eq!(presentation_region(None, [0, 1080], family), None);
+            assert_eq!(presentation_region(None, [1920, 0], family), None);
+        }
+        assert_eq!(presentation_region(None, [1920, 1080], "unknown"), None);
         let viewport = [0., 140., 1920., 800.];
         assert_eq!(
-            presentation_region(Some(viewport), [1920, 1080], true),
+            presentation_region(Some(viewport), [1920, 1080], "ryujinx"),
             Some([0, 140, 1920, 800])
         );
         // A rejected native contract must not be hidden by a full-window fallback.
         assert_eq!(
-            presentation_region(Some([0., 0., 2000., 1080.]), [1920, 1080], true),
+            presentation_region(Some([0., 0., 2000., 1080.]), [1920, 1080], "ryujinx"),
             None
         );
     }

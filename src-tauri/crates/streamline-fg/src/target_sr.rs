@@ -71,7 +71,7 @@ fn source_extent(window: vk::Extent2D, native: Option<crate::source_auto::Source
         height: s.offsets[1].y.abs_diff(s.offsets[0].y),
     })
 }
-fn sizes(original: vk::Extent2D, scale: u16) -> Result<(vk::Extent2D, vk::Extent2D)> {
+fn sizes(original: vk::Extent2D, scale: u16, mode: u32) -> Result<(vk::Extent2D, vk::Extent2D)> {
     if !(50..=200).contains(&scale) {
         return Err("invalid SR scale".into());
     }
@@ -86,16 +86,26 @@ fn sizes(original: vk::Extent2D, scale: u16) -> Result<(vk::Extent2D, vk::Extent
         width: dimension(original.width)?,
         height: dimension(original.height)?,
     };
-    // DLSS does not downscale: below 1x first reduce the color input.
-    Ok((if scale < 100 { output } else { original }, output))
+    // DLAA always evaluates at 1:1. Resize color and motion to the requested
+    // working resolution before evaluation, then blit back to the window.
+    // Other DLSS modes do not downscale: below 1x first reduce the color input.
+    Ok((
+        if mode == 6 || scale < 100 {
+            output
+        } else {
+            original
+        },
+        output,
+    ))
 }
 pub(super) fn can_process(
     window: vk::Extent2D,
     native: Option<crate::source_auto::Source>,
     scale: u16,
+    mode: u32,
 ) -> bool {
     crate::target_fg_gate::processing_extent([window.width, window.height])
-        && sizes(source_extent(window, native), scale).is_ok_and(|(input, output)| {
+        && sizes(source_extent(window, native), scale, mode).is_ok_and(|(input, output)| {
             [input, output]
                 .into_iter()
                 .all(|size| crate::target_fg_gate::processing_extent([size.width, size.height]))
@@ -160,6 +170,7 @@ pub(super) struct Sr {
     in_flight: bool,
     pending: Option<(serde_json::Value, serde_json::Value)>,
     initialized: bool,
+    sdk_evaluate_attempted: bool,
     extent: vk::Extent2D,
     scale: u16,
     original: vk::Extent2D,
@@ -204,6 +215,7 @@ impl Sr {
             in_flight: false,
             pending: None,
             initialized: false,
+            sdk_evaluate_attempted: false,
             extent,
             scale,
             original: source_extent(extent, native),
@@ -230,7 +242,7 @@ impl Sr {
                 });
             }
         }
-        let (input, work) = sizes(this.original, scale)?;
+        let (input, work) = sizes(this.original, scale, mode)?;
         let mut size = [input.width, input.height];
         checked(
             target_sr_options(
@@ -601,10 +613,16 @@ impl Sr {
         #[cfg(feature = "native-nr")]
         let _nr_recording = crate::nr_runtime::requested()
             .then(|| crate::nr_layout::Recording::sr(cmd, input.width, input.height));
+        let api = target_runtime::fg_api()?;
+        let evaluate = target_runtime::sr_function(b"slEvaluateFeature\0")?;
+        // Streamline creates its viewport during evaluation, not option setup.
+        // A rejected ratio or pre-evaluation allocation failure owns no SDK
+        // viewport and must not call slFreeResources during partial teardown.
+        self.sdk_evaluate_attempted = true;
         checked(
             target_sr_evaluate(
-                &target_runtime::fg_api()?,
-                target_runtime::sr_function(b"slEvaluateFeature\0")?,
+                &api,
+                evaluate,
                 cmd.as_raw(),
                 token,
                 u32::from(reset || !self.initialized || motion.is_none()),
@@ -847,9 +865,11 @@ impl Drop for Sr {
             }
             drop(self.motion_adapter.take());
             // Caller only drops after device idle; uncertain GPU failures abort at the presentation boundary.
-            if let Ok(f) = target_runtime::sr_function(b"slFreeResources\0") {
-                if target_sr_free(f) != 0 {
-                    std::process::abort();
+            if self.sdk_evaluate_attempted {
+                if let Ok(f) = target_runtime::sr_function(b"slFreeResources\0") {
+                    if target_sr_free(f) != 0 {
+                        std::process::abort();
+                    }
                 }
             }
             for r in self.resources.drain(..) {
@@ -882,11 +902,11 @@ mod tests {
     #[test]
     fn skips_tiny_loading_surfaces_and_scaled_inputs_before_sdk_evaluation() {
         let size = |width, height| vk::Extent2D { width, height };
-        assert!(!can_process(size(100, 30), None, 100));
-        assert!(!can_process(size(32, 32), None, 50));
-        assert!(can_process(size(64, 64), None, 50));
-        assert!(can_process(size(1920, 1080), None, 100));
-        assert!(!can_process(size(8192, 8192), None, 200));
+        assert!(!can_process(size(100, 30), None, 100, 3));
+        assert!(!can_process(size(32, 32), None, 50, 3));
+        assert!(can_process(size(64, 64), None, 50, 3));
+        assert!(can_process(size(1920, 1080), None, 100, 3));
+        assert!(!can_process(size(8192, 8192), None, 200, 3));
     }
     #[test]
     fn timestamp_wrap_and_period() {
@@ -928,10 +948,10 @@ mod tests {
             viewport: [93.0, 0.0, 2374.0, 1335.0],
         };
         let original = source_extent(window, Some(native));
-        let (input, output) = sizes(original, 200).unwrap();
+        let (input, output) = sizes(original, 200, 3).unwrap();
         assert_eq!([input.width, input.height], [1920, 1080]);
         assert_eq!([output.width, output.height], [3840, 2160]);
-        let (_, fallback) = sizes(source_extent(window, None), 200).unwrap();
+        let (_, fallback) = sizes(source_extent(window, None), 200, 3).unwrap();
         assert_eq!([fallback.width, fallback.height], [5120, 2670]);
         let rect = viewport_offsets(native.viewport);
         assert_eq!([rect[0].x, rect[1].x], [93, 2467]);
@@ -948,19 +968,42 @@ mod tests {
             (150, [1920, 1080], [2880, 1620]),
             (200, [1920, 1080], [3840, 2160]),
         ] {
-            let (a, b) = sizes(extent, scale).unwrap();
+            let (a, b) = sizes(extent, scale, 3).unwrap();
             assert_eq!([a.width, a.height], input);
             assert_eq!([b.width, b.height], output);
         }
-        assert!(sizes(extent, 49).is_err());
-        assert!(sizes(extent, 201).is_err());
+        assert!(sizes(extent, 49, 3).is_err());
+        assert!(sizes(extent, 201, 3).is_err());
         assert!(sizes(
             vk::Extent2D {
                 width: 8192,
                 height: 8192
             },
-            200
+            200,
+            3
         )
         .is_err());
+    }
+    #[test]
+    fn dlaa_prescales_both_inputs_and_output_to_the_same_working_resolution() {
+        let original = vk::Extent2D {
+            width: 1280,
+            height: 738,
+        };
+        for (scale, expected) in [
+            (50, [640, 369]),
+            (100, [1280, 738]),
+            (139, [1779, 1026]),
+            (200, [2560, 1476]),
+        ] {
+            let (input, output) = sizes(original, scale, 6).unwrap();
+            assert_eq!([input.width, input.height], expected);
+            assert_eq!(input, output);
+            assert!(can_process(original, None, scale, 6));
+        }
+        // SR still receives the original input at ratios above 1x.
+        let (input, output) = sizes(original, 139, 3).unwrap();
+        assert_eq!(input, original);
+        assert_eq!([output.width, output.height], [1779, 1026]);
     }
 }

@@ -1,6 +1,6 @@
 //! Ryujinx 模拟器管理服务
 //!
-//! 提供 Ryujinx 模拟器（mainline/canary 分支）的安装、更新、版本检测等功能
+//! 提供 Ryujinx 模拟器（mainline/canary/nextendo 分支）的安装、更新、版本检测等功能
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
@@ -37,7 +37,7 @@ const RYUJINX_EXE_NAMES: &[&str] = &["Ryujinx.Ava", "Ryujinx"];
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `branch` - 分支 (mainline, canary)
+/// * `branch` - 分支 (mainline, canary, nextendo)
 ///
 /// # 返回
 /// 下载 URL
@@ -59,25 +59,15 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
         release_info.assets.len()
     );
 
-    // 根据平台选择资源后缀
-    #[cfg(target_os = "windows")]
-    let suffix = "-win_x64.zip";
-
-    #[cfg(target_os = "macos")]
-    let suffix = "-macos_universal.app.tar.gz";
-
-    #[cfg(target_os = "linux")]
-    let suffix = if cfg!(target_arch = "aarch64") {
-        "-linux_arm64.tar.gz"
-    } else {
-        "-linux_x64.tar.gz"
-    };
-
     // 查找对应平台的版本
     for asset in &release_info.assets {
-        let name = asset.name.to_lowercase();
         debug!("检查资源：{}（大小：{}）", asset.name, asset.size);
-        if name.starts_with("ryujinx-") && name.ends_with(suffix) {
+        if matches_ryujinx_asset(
+            &asset.name,
+            branch,
+            std::env::consts::OS,
+            std::env::consts::ARCH,
+        ) {
             let url = get_final_url(&asset.download_url);
             info!("已选择下载资源：{}，链接：{}", asset.name, url);
             return Ok(url);
@@ -89,6 +79,52 @@ async fn get_ryujinx_download_url(target_version: &str, branch: &str) -> AppResu
         "未找到 Ryujinx {} [{}] 版本的下载链接",
         branch, target_version
     )))
+}
+
+fn matches_ryujinx_asset(name: &str, branch: &str, os: &str, arch: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    let nextendo = branch == "nextendo";
+    let prefix_matches = if nextendo {
+        name.starts_with("nextendo-") || name.starts_with("ryujinx-nextendo-")
+    } else {
+        name.starts_with("ryujinx-")
+    };
+    let suffix = match (os, arch, nextendo) {
+        ("windows", "x86_64", true) => "-win-x64.zip",
+        ("windows", "x86_64", false) => "-win_x64.zip",
+        ("macos", _, true) => "-macos_universal.tar.gz",
+        ("macos", _, false) => "-macos_universal.app.tar.gz",
+        ("linux", "aarch64", true) => "-linux-arm64.tar.gz",
+        ("linux", "aarch64", false) => "-linux_arm64.tar.gz",
+        ("linux", "x86_64", true) => "-linux-x64.tar.gz",
+        ("linux", "x86_64", false) => "-linux_x64.tar.gz",
+        _ => return false,
+    };
+    prefix_matches && name.ends_with(suffix)
+}
+
+fn is_nextendo_binary(data: &[u8]) -> bool {
+    // The upstream fork retains generic Ryujinx PE/plist metadata. Its updater
+    // embeds its own repository URL, as UTF-16 in .NET or UTF-8 in native builds.
+    const MARKER: &str = "NextendoNetwork/Ryujinx-Nextendo";
+    if data
+        .windows(MARKER.len())
+        .any(|window| window == MARKER.as_bytes())
+    {
+        return true;
+    }
+    let utf16: Vec<u8> = MARKER.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    data.windows(utf16.len()).any(|window| window == utf16)
+}
+
+fn is_nextendo_executable(exe_path: &Path) -> bool {
+    std::fs::read(exe_path)
+        .map(|data| is_nextendo_binary(&data))
+        .unwrap_or(false)
+}
+
+fn nextendo_version_tag(version: &str) -> String {
+    format!("v{}", version.trim_start_matches('v'))
 }
 
 /// 获取 Ryujinx 可执行文件路径
@@ -189,6 +225,9 @@ pub fn detect_current_branch() -> String {
     let ryujinx_path = PathBuf::from(&config.ryujinx.path);
 
     if let Some(exe_path) = get_ryujinx_exe_path_internal(&ryujinx_path) {
+        if is_nextendo_executable(&exe_path) {
+            return "nextendo".to_string();
+        }
         if exe_path
             .file_name()
             .unwrap()
@@ -212,7 +251,7 @@ pub fn detect_current_branch() -> String {
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `branch` - 分支 (mainline, canary)
+/// * `branch` - 分支 (mainline, canary, nextendo)
 /// * `on_event` - 事件回调
 pub async fn install_ryujinx_by_version<F>(
     target_version: &str,
@@ -236,7 +275,10 @@ where
     let current_branch = detect_current_branch();
     let config = get_config();
     if let Some(ref current_version) = config.ryujinx.version {
-        if current_version == target_version && (branch == "ldn" || current_branch == branch) {
+        let same_version = current_version == target_version
+            || (branch == "nextendo"
+                && nextendo_version_tag(current_version) == nextendo_version_tag(target_version));
+        if same_version && (branch == "ldn" || current_branch == branch) {
             info!("当前已是目标版本，跳过安装");
 
             // 更新步骤状态
@@ -347,8 +389,12 @@ where
 
     info!("下载链接：{}", download_url);
 
-    // 获取下载源名称（使用原始 GitLab 地址，因为 download_url 已经过镜像转换）
-    let download_source = get_download_source_name("https://git.ryujinx.app");
+    // Forgejo URLs are already converted; Nextendo uses the GitHub download settings.
+    let download_source = get_download_source_name(if branch == "nextendo" {
+        &download_url
+    } else {
+        "https://git.ryujinx.app"
+    });
     debug!("下载源: {}", download_source);
 
     // 下载
@@ -392,7 +438,7 @@ where
         }
     };
     let options = DownloadOptions {
-        use_github_mirror: false, // Ryujinx 使用 GitLab，不需要镜像
+        use_github_mirror: branch == "nextendo",
         ..Default::default()
     };
 
@@ -1472,7 +1518,7 @@ fn detect_version_from_binary(app_path: &Path) -> AppResult<(Option<String>, Str
         .map_err(|e| AppError::Emulator(format!("解析 Info.plist 失败: {}", e)))?;
 
     // 读取版本信息（优先使用 CFBundleLongVersionString，因为它更准确）
-    let version =
+    let mut version =
         if let Some(plist::Value::String(version)) = plist.get("CFBundleLongVersionString") {
             // 提取版本号部分 (例如 "1.3.3-e2143d4" -> "1.3.3")
             let version_part = version.split('-').next().unwrap_or(version).to_string();
@@ -1497,7 +1543,13 @@ fn detect_version_from_binary(app_path: &Path) -> AppResult<(Option<String>, Str
     }
 
     // 2. 检测分支 - 使用多种方法按优先级检测
-    let branch = detect_branch_from_plist(&plist, version.as_deref());
+    let mut branch = detect_branch_from_plist(&plist, version.as_deref());
+    let exe_path = get_macos_bundle_executable_path(app_path, Some("Ryujinx"))
+        .unwrap_or_else(|_| app_path.join("Contents/MacOS/Ryujinx"));
+    if is_nextendo_executable(&exe_path) {
+        branch = "nextendo".to_string();
+        version = version.map(|version| nextendo_version_tag(&version));
+    }
 
     info!("从 Info.plist 检测到版本: {:?}, 分支: {}", version, branch);
 
@@ -1762,6 +1814,11 @@ fn detect_version_from_binary(exe_path: &Path) -> AppResult<(Option<String>, Str
         debug!("未找到版本信息，分支: {}", branch);
     }
 
+    if is_nextendo_binary(&file_data) {
+        branch = "nextendo".to_string();
+        version = version.map(|version| nextendo_version_tag(&version));
+    }
+
     Ok((version, branch))
 }
 
@@ -1880,6 +1937,76 @@ pub async fn detect_ryujinx_version() -> AppResult<(Option<String>, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_nextendo_assets_match_platform_and_architecture() {
+        let packages = [
+            ("Nextendo-1.8.14-win-x64.zip", "windows", "x86_64"),
+            ("Nextendo-1.8.14-linux-x64.tar.gz", "linux", "x86_64"),
+            (
+                "Ryujinx-Nextendo-1.8.14-macos_universal.tar.gz",
+                "macos",
+                "aarch64",
+            ),
+        ];
+        for (name, os, arch) in packages {
+            assert!(matches_ryujinx_asset(name, "nextendo", os, arch));
+            assert!(!matches_ryujinx_asset(name, "canary", os, arch));
+        }
+        assert!(matches_ryujinx_asset(
+            packages[2].0,
+            "nextendo",
+            "macos",
+            "x86_64"
+        ));
+        assert!(!matches_ryujinx_asset(
+            packages[1].0,
+            "nextendo",
+            "linux",
+            "aarch64"
+        ));
+        assert!(!matches_ryujinx_asset(
+            packages[0].0,
+            "nextendo",
+            "linux",
+            "x86_64"
+        ));
+        assert!(matches_ryujinx_asset(
+            "ryujinx-canary-1.3.351-win_x64.zip",
+            "canary",
+            "windows",
+            "x86_64"
+        ));
+        assert!(matches_ryujinx_asset(
+            "ryujinx-1.3.3-macos_universal.app.tar.gz",
+            "mainline",
+            "macos",
+            "aarch64"
+        ));
+    }
+
+    #[test]
+    fn test_nextendo_binary_marker_encodings() {
+        let marker = "https://github.com/NextendoNetwork/Ryujinx-Nextendo/releases";
+        assert!(is_nextendo_binary(marker.as_bytes()));
+        let utf16: Vec<u8> = marker.encode_utf16().flat_map(u16::to_le_bytes).collect();
+        assert!(is_nextendo_binary(&utf16));
+        assert!(!is_nextendo_binary(b"Ryujinx Canary 1.3.351"));
+        assert_eq!(nextendo_version_tag("1.8.14"), "v1.8.14");
+        assert_eq!(nextendo_version_tag("v1.8.14"), "v1.8.14");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[ignore = "requires official Nextendo executable in NEXTENDO_TEST_EXE"]
+    fn test_detect_nextendo_release_binary() {
+        let exe_path = PathBuf::from(std::env::var("NEXTENDO_TEST_EXE").unwrap());
+        assert!(is_nextendo_executable(&exe_path));
+        assert_eq!(
+            detect_version_from_binary(&exe_path).unwrap(),
+            (Some("v1.8.14".to_string()), "nextendo".to_string())
+        );
+    }
 
     #[test]
     fn test_detect_current_branch() {

@@ -1,6 +1,5 @@
 {
-  "version": "streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11",
-  "launcher_protocol": 1,
+  "version": "local-64460a56462d-27e5161b14a5",
   "files": [
     {
       "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294",
@@ -87,57 +86,15 @@
       "name": "SOURCE-Streamline.json"
     },
     {
-      "sha256": "8022e54e0d1bbd1c2c43eb5e5890d60c605a3b9e6f7dc88e715e1d3ff84807f3",
+      "sha256": "27e5161b14a5d55ffa5a2f9101ef315477e26834d5e14b3b46c724685c331c9b",
       "name": "streamline_probe_layer.dll"
     },
     {
-      "sha256": "cc8949e46572bc405e50a135e441707a8d394362d24b0388c77a70d007333fb4",
+      "sha256": "64460a56462d38d2fbc6a79dbc6de3940335950dc81e73b1618a31b39b76b44c",
       "name": "streamline-layer-probe.exe"
     }
   ],
   "native_nr": true,
   "schema_version": 1,
-  "parts": [
-    {
-      "download": {
-        "name": "streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11.zip",
-        "sha256": "c49d93a84ed69f70074b3cf6d2c3f27560fc3b0aec85f2cc48a46d353fddfec8",
-        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11/streamline-layer-cc8949e46572-8022e54e0d1b-0f23c0fce4bc-14a362ce9469-v11.zip"
-      },
-      "files": [
-        "LICENSE-Layer.txt",
-        "nvngx.dll",
-        "README-LAYER.txt",
-        "streamline_probe_layer.dll",
-        "streamline-layer-probe.exe"
-      ]
-    },
-    {
-      "download": {
-        "name": "streamline-runtime-14a362ce9469-v1.zip",
-        "sha256": "87366a0d8e6d72a47055301dd7ec9dd63c32ef2e7c08da05b8bdd80b2f0b934e",
-        "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/streamline-runtime-14a362ce9469-v1/streamline-runtime-14a362ce9469-v1.zip"
-      },
-      "files": [
-        "LICENSE-DLSS.txt",
-        "LICENSE-NGX.txt",
-        "LICENSE-NsEmuTools.txt",
-        "LICENSE-Streamline-third-party.md",
-        "LICENSE-Streamline.txt",
-        "NvLowLatencyVk.dll",
-        "nvngx_dlss.dll",
-        "nvngx_dlssg.dll",
-        "nvngx_dlssnr.dll",
-        "README-RUNTIMES.txt",
-        "sl.common.dll",
-        "sl.dlss_g.dll",
-        "sl.dlss.dll",
-        "sl.interposer.dll",
-        "sl.pcl.dll",
-        "sl.reflex.dll",
-        "SOURCE-NR.json",
-        "SOURCE-Streamline.json"
-      ]
-    }
-  ]
+  "launcher_protocol": 1
 }

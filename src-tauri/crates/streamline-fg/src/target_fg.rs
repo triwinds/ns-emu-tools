@@ -388,7 +388,7 @@ pub(super) unsafe fn present(
         let region = crate::target_fg_gate::presentation_region(
             native_source.ok().map(|source| source.viewport),
             [chain.extent.width, chain.extent.height],
-            std::env::var("NS_STREAMLINE_TARGET_FAMILY").as_deref() == Ok("yuzu"),
+            &std::env::var("NS_STREAMLINE_TARGET_FAMILY").unwrap_or_default(),
         );
         let region_changed = region != chain.region;
         chain.region = region;
@@ -453,7 +453,7 @@ pub(super) unsafe fn present(
             drop(chain.sr.take());
         }
         let sr_dimensions_allowed =
-            crate::target_sr::can_process(chain.extent, native_source.ok(), sr_scale);
+            crate::target_sr::can_process(chain.extent, native_source.ok(), sr_scale, sr_mode);
         let sr_requested = crate::target_sr::available()
             && sr_mode != 0
             && !chain.sr_failed
