@@ -8,7 +8,7 @@ use ns_emu_tools_lib::config::get_config;
 use ns_emu_tools_lib::repositories::yuzu::{
     get_eden_all_release_versions, get_eden_release_info_by_version,
 };
-use ns_emu_tools_lib::services::yuzu::install_eden;
+use ns_emu_tools_lib::services::yuzu::install_yuzu;
 use std::path::PathBuf;
 use tracing::info;
 
@@ -116,7 +116,8 @@ async fn test_get_latest_and_install_eden() {
     // 使用简单的进度打印器
     let progress_callback = simple_progress_printer("Eden 下载");
 
-    let result = install_eden(latest_version, progress_callback).await;
+    // 走 GUI 实际使用的入口：它还会做平台校验、清理旧文件、更新配置与安装元数据
+    let result = install_yuzu(latest_version, "eden", progress_callback).await;
 
     // 步骤 4: 验证安装结果
     if let Err(e) = result {
@@ -145,16 +146,43 @@ async fn test_get_latest_and_install_eden() {
     );
     assert_eq!(config.yuzu.branch, "eden", "分支应该是 eden");
 
-    // 验证可执行文件存在
+    // 验证可执行文件存在（各平台的落地形态不同：.app / 无扩展名 AppImage / .exe）
     let yuzu_path = PathBuf::from(&config.yuzu.yuzu_path);
-    let eden_exe = yuzu_path.join("eden.exe");
+    let eden_exe = if cfg!(target_os = "macos") {
+        yuzu_path.join("Eden.app")
+    } else if cfg!(target_os = "linux") {
+        yuzu_path.join("Eden")
+    } else {
+        yuzu_path.join("eden.exe")
+    };
 
-    if cfg!(windows) {
-        // 在 Windows 上验证 exe 文件存在
-        // 注意: 由于使用了临时目录，实际安装可能不会创建文件
-        // 这里只是检查路径配置是否正确
-        info!("Eden 安装路径: {}", eden_exe.display());
+    info!("Eden 安装路径: {}", eden_exe.display());
+    assert!(
+        eden_exe.exists(),
+        "可执行文件不存在: {}",
+        eden_exe.display()
+    );
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&eden_exe)
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777;
+        assert_eq!(mode, 0o755, "AppImage 必须有执行权限");
     }
+
+    // 版本检测应能从安装元数据读回
+    let detected = ns_emu_tools_lib::services::yuzu::detect_yuzu_version()
+        .await
+        .expect("版本检测失败");
+    assert_eq!(
+        detected.as_deref(),
+        Some(latest_version.as_str()),
+        "安装后应能检测到版本"
+    );
 
     info!("测试完成: Eden {} 安装成功", latest_version);
 }
@@ -188,7 +216,7 @@ async fn test_install_specific_eden_version() {
     // 安装
     let progress_callback = simple_progress_printer("Eden 下载");
 
-    let result = install_eden(target_version, progress_callback).await;
+    let result = install_yuzu(target_version, "eden", progress_callback).await;
 
     if let Err(e) = result {
         // 网络错误不算失败
