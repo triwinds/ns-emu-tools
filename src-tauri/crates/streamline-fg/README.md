@@ -1,5 +1,49 @@
 # Streamline FG runtime
 
+## Native NR interpass comparison (2026-10-17)
+
+The Feeder experiment was reverted. Under the second NR pass, optional
+`secondPass.interpass` adds `clamp` (default false) and integer `feedback` (0–100,
+default 100). Neutral settings bypass the dispatch and allocate no preparation
+texture. The model input is `mix(P0, clampHue(P1), feedback/100)` in the current
+frame's SDR model-input domain. With clamp disabled, P1 is used as-is in that
+mix. Clamp removes negative RGB, then divides all positive channels by their
+peak when above one; nonfinite model RGB falls back to P0. Alpha comes from P0.
+Zero feedback copies P0 exactly; it does not disable the second model. There is
+no temporal feedback. This only handles out-of-range values, not legal bright
+outlines or depth/occlusion errors.
+
+The toolbox's comparison button preserves pass-one and Look tuning, copies the
+first model parameters into independent pass two, sets its local tone to zero,
+and selects clamp plus 75% feedback. Try pass-two local structure 50% separately
+if needed. These are comparison starting points, not a quality guarantee.
+Stored settings and presets default to the legacy direct handoff; the new
+`NS_EMU_NR_INTERPASS_V1` marker and `nrInterpassSupported` live capability prevent
+silently sending new settings to old components.
+
+One private RGBA16F image is allocated on demand and retained until pass-two
+retirement. It never overwrites P0/P1. Preparation is recorded before the second
+model in its separate command buffer, with cross-command compute dependencies
+also covering consolidated submission. Preparation failure falls back to one
+pass. Tuning invalidates only the suffix cache, resets its independent model
+history and downstream SR/FG, and preserves first-model history. Final-pass Look
+uses the prepared input as its delta baseline; first-pass diagnostics retain P1.
+Captures and pass evidence identify the actual prepared input and upstream P1.
+
+Validation includes the shipped SPIR-V on an RTX 5070 Ti Laptop with core/sync
+validation: hue-preserving high values, negatives, legal RGB, 50%/0%/100%
+feedback, alpha/subnormal preservation and nonfinite recovery. Run
+`cargo test --lib --features native-nr gpu_interpass -- --ignored --nocapture`
+with `NS_NR_LOOK_GPU_VALIDATION=1` and a validation-layer SDK in `VK_LAYER_PATH`.
+Game halo quality and performance remain a visual comparison for the user.
+
+The same Ryujinx Nextendo / Xenoblade 3 startup also completed 3,658 first-model
+and 3,658 second-model evaluations with the prepared input and FG off, without a
+second-pass fallback. Live changes acknowledged 50% feedback, neutral bypass,
+75% feedback and nonneutral final-pass Look. The target exited normally with
+code 0 after about 137 seconds. This tests execution and lifecycle, not whether
+the image looks better. Local evidence is under `build/nr-interpass-20261017`.
+
 The current optical-flow path only computes the current-to-previous field used
 by NR, SR and FG. Unconsumed backward/cost outputs and confidence-image work are
 removed; duplicate-frame reuse and FG static-tile protection remain unchanged.

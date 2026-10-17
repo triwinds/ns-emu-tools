@@ -373,6 +373,12 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     if !advanced.nr.second_pass.is_default() {
         let bytes = fs::read(&layer)?;
+        let marker = streamline_probe_layer::advanced_settings::NR_INTERPASS_MARKER;
+        if !advanced.nr.second_pass.interpass.is_default()
+            && !bytes.windows(marker.len()).any(|v| v == marker)
+        {
+            return Err("selected layer does not support NR interpass preparation; rebuild/update it or restore interpass defaults".into());
+        }
         let marker = streamline_probe_layer::advanced_settings::NR_TWO_PASS_MARKER;
         if !bytes.windows(marker.len()).any(|v| v == marker) {
             return Err("selected layer does not support two-pass NR; rebuild/update it or restore second-pass defaults".into());

@@ -7,7 +7,7 @@ import { useProgressStore } from '@/stores/ProgressStore'
 import { mdiTuneVariant } from '@mdi/js'
 import GraphicsAdvancedDialog from './GraphicsAdvancedDialog.vue'
 import NrPresetControls from './NrPresetControls.vue'
-import { bypassNrAdditions, cloneNrOptions, graphicsAdvanced, nrLook, nrSpatialLook, nrTemporalLook, nrSecondPass, type NrOptions } from '@/utils/graphicsAdvanced'
+import { bypassNrAdditions, cloneNrOptions, graphicsAdvanced, nrLook, nrSpatialLook, nrTemporalLook, nrSecondPass, nrInterpass, nrHaloComparison, type NrOptions } from '@/utils/graphicsAdvanced'
 
 const props = defineProps<{ executable: string; disabled: boolean; supported: boolean; live: FgLive; refreshKey?: string }>()
 const emit = defineEmits<{ busy: [value: boolean] }>()
@@ -146,6 +146,10 @@ async function save(on: boolean, strength: number, tuning: NrOptions = savedOpti
       feedback.value = '已保存；当前组件不支持时间 Look，请更新组件后重新专用启动。'
       return
     }
+    if (on && !props.live.nrInterpassSupported && JSON.stringify(tuning.secondPass.interpass) !== JSON.stringify(nrInterpass())) {
+      feedback.value = '已保存；当前组件不支持遍间预处理，请更新画面增强组件后重新专用启动。'
+      return
+    }
     if (on && tuning.look.scope !== 'final_pass' && !props.live.nrLookScopeSupported) {
       feedback.value = '已保存；当前组件不支持整链 Look，请更新组件并重新专用启动。'
       return
@@ -192,6 +196,10 @@ function retrySecond() {
   return saveOptions()
 }
 function resetSecond() { options.value.secondPass = nrSecondPass(); return saveOptions() }
+function haloComparison() {
+  options.value = nrHaloComparison(options.value, intensity.value)
+  return saveOptions()
+}
 function linkTone(key: typeof toneFields[number]['key'], linked: boolean | null) {
   options.value[key] = linked ? null : savedIntensity.value
   void saveOptions()
@@ -506,6 +514,43 @@ async function removeRuntime() {
             @update:model-value="saveOptions"
           />
         </template>
+        <v-switch
+          v-model="options.secondPass.interpass.clamp"
+          label="遍间限幅（SDR）"
+          :disabled="disabled || working || !!pending || !options.secondPass.enabled"
+          hide-details
+          @update:model-value="saveOptions"
+        />
+        <div class="nr-strength-heading">
+          <label id="nr-interpass-feedback">第一遍结果反馈</label><output>{{ options.secondPass.interpass.feedback }}%</output>
+        </div>
+        <v-slider
+          v-model="options.secondPass.interpass.feedback"
+          :min="0"
+          :max="100"
+          :step="1"
+          aria-labelledby="nr-interpass-feedback"
+          :disabled="disabled || working || !!pending || !options.secondPass.enabled"
+          hide-details
+          @end="saveOptions"
+          @keyup="saveOptions"
+        />
+        <p class="nr-dialog-note">
+          第二遍输入由本帧原图与第一遍结果混合：100% 使用第一遍结果，0% 使用原图，第二遍仍会执行。
+          限幅先去除负值，再将超出 1 的 RGB 等比例缩回范围；它不会消除范围内的亮边。
+          两项均只作用于第二遍输入，不改动第一遍输出，也不混合前后帧。
+        </p>
+        <v-btn
+          variant="text"
+          :disabled="disabled || working || !!pending"
+          @click="haloComparison"
+        >
+          应用减轻光晕对照
+        </v-btn>
+        <p class="nr-dialog-note">
+          对照保持第一遍参数，第二遍局部色调设为 0%，开启限幅与 75% 反馈。
+          若仍有光晕，再将第二遍局部结构设为 50% 比较。
+        </p>
         <p
           v-if="live.nr?.pipeline?.error"
           class="nr-dialog-note"

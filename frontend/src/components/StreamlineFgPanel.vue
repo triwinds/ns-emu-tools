@@ -504,7 +504,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             :disabled="disabled || working || !report || (report.installationState !== 'damaged' && (!canUse || !report.packageAvailable))"
             @click="operate(report?.installationState === 'damaged' ? 'uninstall' : 'install')"
           >
-            {{ report?.installationState === 'damaged' ? '移除损坏组件' : installLabel }}
+            {{ report?.installationState === 'damaged' ? '更新组件' : installLabel }}
           </v-btn>
           <v-btn
             class="fg-utility-button"

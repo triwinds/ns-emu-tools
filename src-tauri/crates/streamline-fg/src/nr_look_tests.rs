@@ -36,6 +36,8 @@ unsafe extern "system" fn validation(
     vk::FALSE
 }
 struct Gpu {
+    interpass: Option<crate::nr_interpass::Interpass>,
+    interpass_options: crate::advanced_settings::InterpassOptions,
     _entry: ash::Entry,
     instance: ash::Instance,
     debug: Option<(ash::ext::debug_utils::Instance, vk::DebugUtilsMessengerEXT)>,
@@ -190,6 +192,8 @@ impl Gpu {
             .create_fence(&vk::FenceCreateInfo::default(), None)
             .unwrap();
         Self {
+            interpass: None,
+            interpass_options: Default::default(),
             _entry: entry,
             instance,
             debug,
@@ -329,7 +333,9 @@ impl Gpu {
         if let Some(difference) = &self.difference {
             difference.record(self.command, SIZE);
         }
-        if self.recomposing {
+        if let Some(interpass) = &self.interpass {
+            interpass.record(self.command, self.interpass_options);
+        } else if self.recomposing {
             self.look
                 .as_mut()
                 .unwrap()
@@ -347,7 +353,12 @@ impl Gpu {
                 .unwrap()
                 .record(self.command, SIZE, options);
         }
-        let output = vk::Image::from_raw(self.images[1].image);
+        let output = vk::Image::from_raw(
+            self.interpass
+                .as_ref()
+                .map_or(self.images[1], |p| p.output.unwrap())
+                .image,
+        );
         fg_api::transition(
             d,
             self.command,
@@ -390,7 +401,9 @@ impl Gpu {
         d.wait_for_fences(&[self.fence], true, 10_000_000_000)
             .unwrap();
         self.initialized = true;
-        if !self.recomposing {
+        if let Some(interpass) = &mut self.interpass {
+            interpass.initialized = true;
+        } else if !self.recomposing {
             self.look.as_mut().unwrap().submitted();
         }
         let mapped = d
@@ -407,6 +420,7 @@ impl Drop for Gpu {
             let d = &self.device;
             d.device_wait_idle().unwrap();
             drop(self.look.take());
+            drop(self.interpass.take());
             drop(self.difference.take());
             d.destroy_fence(self.fence, None);
             d.destroy_command_pool(self.pool, None);
@@ -439,6 +453,77 @@ fn linear(v: f32) -> f32 {
         v / 12.92
     } else {
         ((v + 0.055) / 1.055).powf(2.4)
+    }
+}
+#[test]
+#[ignore = "requires a Vulkan GPU; set NS_NR_LOOK_GPU_VALIDATION=1 for strict validation"]
+fn gpu_interpass_hue_clamp_feedback_endpoints_and_nonfinite_recovery() {
+    unsafe {
+        VALIDATION.store(0, Ordering::Relaxed);
+        let mut gpu = Gpu::new();
+        let physical = gpu.instance.enumerate_physical_devices().unwrap()[0];
+        let memory = gpu.instance.get_physical_device_memory_properties(physical);
+        gpu.interpass = Some(
+            crate::nr_interpass::Interpass::new(
+                &gpu.device,
+                &memory,
+                gpu.images[0],
+                gpu.images[1],
+                gpu.images[2],
+            )
+            .unwrap(),
+        );
+        let base = vec![[0x3400, 0x3800, 0x3000, 0x3555]; PIXELS];
+        let high = vec![[0x4000, 0x3c00, 0x3800, 0x3c00]; PIXELS]; // 2, 1, .5
+        gpu.interpass_options = crate::advanced_settings::InterpassOptions {
+            clamp: true,
+            feedback: 100,
+        };
+        assert_eq!(
+            gpu.run(&base, &high, LookOptions::default()),
+            vec![[0x3c00, 0x3800, 0x3400, 0x3555]; PIXELS],
+            "positive RGB ratios stay 4:2:1"
+        );
+        let legal = vec![[0x3a00, 0x3800, 0x3400, 0x3c00]; PIXELS];
+        assert_eq!(
+            gpu.run(&base, &legal, LookOptions::default()),
+            vec![[0x3a00, 0x3800, 0x3400, 0x3555]; PIXELS],
+            "legal RGB is untouched"
+        );
+        gpu.interpass_options.feedback = 50;
+        assert_eq!(
+            gpu.run(&base, &legal, LookOptions::default()),
+            vec![[0x3800, 0x3800, 0x3200, 0x3555]; PIXELS],
+            "same-frame .5 mix, original alpha"
+        );
+        let negative = vec![[0xb800, 0x3800, 0x4000, 0x3c00]; PIXELS];
+        gpu.interpass_options.feedback = 100;
+        assert_eq!(
+            gpu.run(&base, &negative, LookOptions::default()),
+            vec![[0, 0x3400, 0x3c00, 0x3555]; PIXELS]
+        );
+        let invalid = vec![[0x7e00, 0x7c00, 0xfc00, 0x3c00]; PIXELS];
+        assert_eq!(
+            gpu.run(&base, &invalid, LookOptions::default()),
+            base,
+            "bad model pixel falls back to P0"
+        );
+        gpu.interpass_options = crate::advanced_settings::InterpassOptions {
+            clamp: false,
+            feedback: 0,
+        };
+        let tiny = vec![[1, 2, 3, 0x3555]; PIXELS];
+        assert_eq!(
+            gpu.run(&tiny, &invalid, LookOptions::default()),
+            tiny,
+            "zero feedback cannot propagate NaN; exact endpoint"
+        );
+        drop(gpu);
+        assert_eq!(
+            VALIDATION.load(Ordering::Relaxed),
+            0,
+            "GPU core/sync validation must pass"
+        );
     }
 }
 #[test]

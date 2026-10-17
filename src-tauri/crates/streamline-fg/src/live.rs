@@ -325,6 +325,7 @@ fn worker(dir: std::path::PathBuf) {
             status["nrPersistenceSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrLookExperimentsSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrTwoPassSupported"] = json!(cfg!(feature = "native-nr"));
+            status["nrInterpassSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrConsolidatedSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrInferenceScaleSupported"] = json!(cfg!(feature = "native-nr"));
             status["nrInferenceCapSupported"] = json!(cfg!(feature = "native-nr"));

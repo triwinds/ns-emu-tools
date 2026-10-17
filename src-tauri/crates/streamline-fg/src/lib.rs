@@ -40,6 +40,10 @@ pub static nsEmuNrTwoPassV1: [u8; 21] = *b"NS_EMU_NR_TWO_PASS_V1";
 #[cfg(all(windows, feature = "native-nr"))]
 #[used]
 #[no_mangle]
+pub static nsEmuNrInterpassV1: [u8; b"NS_EMU_NR_INTERPASS_V1".len()] = *b"NS_EMU_NR_INTERPASS_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
 pub static nsEmuNrTemporalLookV1: [u8; 26] = *b"NS_EMU_NR_TEMPORAL_LOOK_V1";
 #[cfg(all(windows, feature = "native-nr"))]
 #[used]
@@ -83,6 +87,8 @@ mod nr_api;
 pub mod nr_history;
 #[cfg(all(windows, feature = "native-nr"))]
 mod nr_input_difference;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_interpass;
 #[cfg(all(windows, feature = "native-nr"))]
 mod nr_layout;
 #[cfg(all(windows, feature = "native-nr"))]

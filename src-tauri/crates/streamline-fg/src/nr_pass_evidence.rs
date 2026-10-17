@@ -64,6 +64,7 @@ pub(super) fn analyze(rows: &[Value]) -> Value {
                             || old["mapping"] != d["mapping"]
                             || old["intensity"] != d["intensity"]
                             || old["options"] != d["options"]
+                            || old["interpass"] != d["interpass"]
                     });
                 valid &= d["reset"] == expected_reset;
                 histories.insert(d["instance"].as_u64().unwrap_or(0), d);
@@ -75,7 +76,18 @@ pub(super) fn analyze(rows: &[Value]) -> Value {
                 passes.iter().find(|r| r["details"]["pass"] == 2),
             ) {
                 let (a, b) = (&first["details"], &second["details"]);
-                valid &= a["outputImage"] == b["inputImage"]
+                let prepared = b["interpass"].is_object()
+                    && (b["interpass"]["clamp"] == true
+                        || b["interpass"]["feedback"].as_u64().is_some_and(|v| v < 100));
+                let linked = if prepared {
+                    b["upstreamImage"] == a["outputImage"]
+                        && b["originalImage"] == a["inputImage"]
+                        && b["inputImage"] != a["outputImage"]
+                        && b["inputImage"] != a["inputImage"]
+                } else {
+                    a["outputImage"] == b["inputImage"]
+                };
+                valid &= linked
                     && a["inputImage"] != b["outputImage"]
                     && a["outputImage"] != b["outputImage"]
                     && a["depthImage"] == b["depthImage"]
@@ -189,6 +201,23 @@ mod tests {
             rows.push(event(name, json!({"result":1})));
         }
         rows
+    }
+    #[test]
+    fn prepared_input_must_link_original_and_first_output() {
+        let mut rows = fixture();
+        for row in &mut rows {
+            let is_pass = row["event"] == "target_nr_pass_frame";
+            let d = &mut row["details"];
+            if is_pass && d["pass"] == 2 {
+                d["interpass"] = json!({"clamp":true,"feedback":75});
+                d["upstreamImage"] = json!(12);
+                d["originalImage"] = json!(11);
+                d["inputImage"] = json!(90);
+            }
+        }
+        assert_eq!(analyze(&rows)["valid"], true);
+        rows[3]["details"]["upstreamImage"] = json!(999);
+        assert_eq!(analyze(&rows)["valid"], false);
     }
     #[test]
     fn independent_history_and_final_output_are_required() {

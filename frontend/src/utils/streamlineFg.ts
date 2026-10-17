@@ -51,7 +51,7 @@ export interface FgLive {
   inputScale?: { active: boolean; appliedRevision?: number; mode?: 'percentage' | 'max_edge'; scalePercent?: number; maxEdge?: number; originalExtent?: number[]; inputExtent?: number[]; outputExtent?: number[]; error?: string; nrInputScaled?: boolean; srInputScaled?: boolean; presentationResampled?: boolean }
   advancedSettingsSupported?: boolean
   nrLookSupported?: boolean
-  nrSpatialLookSupported?: boolean; nrTwoPassSupported?: boolean
+  nrSpatialLookSupported?: boolean; nrTwoPassSupported?: boolean; nrInterpassSupported?: boolean
   nrTemporalLookSupported?: boolean
   nrLookScopeSupported?: boolean
   nrTemporalModesSupported?: boolean

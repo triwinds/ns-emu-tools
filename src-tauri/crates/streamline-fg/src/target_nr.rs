@@ -189,6 +189,7 @@ pub(super) struct Nr {
     last_intermediate_waits: u8,
 }
 struct Second {
+    interpass: Option<crate::nr_interpass::Interpass>,
     device: ash::Device,
     allocation_bytes: u64,
     output: Option<Resource>,
@@ -206,6 +207,7 @@ impl Second {
         input: Resource,
     ) -> Result<Self> {
         let mut second = Self {
+            interpass: None,
             device: device.clone(),
             allocation_bytes: 0,
             output: None,
@@ -237,6 +239,17 @@ impl Second {
             crate::frame_capture::Capture::new(device, memory, &[input, second.output.unwrap()])?;
         Ok(second)
     }
+    fn input(
+        &self,
+        first: Resource,
+        settings: crate::advanced_settings::InterpassOptions,
+    ) -> Resource {
+        if settings.is_default() {
+            first
+        } else {
+            self.interpass.as_ref().unwrap().output.unwrap()
+        }
+    }
 }
 impl Drop for Second {
     fn drop(&mut self) {
@@ -245,6 +258,7 @@ impl Drop for Second {
             drop(self.feature.take());
             drop(self.look.take());
             drop(self.capture.take());
+            drop(self.interpass.take());
             if let Some(r) = self.output.take() {
                 self.device
                     .destroy_image_view(vk::ImageView::from_raw(r.view), None);
@@ -283,12 +297,21 @@ impl Nr {
     ) -> serde_json::Value {
         if self.last_passes == 2 {
             if let Some(second) = &self.second {
-                return look_status(
+                let mut status = look_status(
                     second.look.as_ref(),
                     second.look_failure.as_deref(),
                     options,
                     2,
                 );
+                if !options.scope.uses_original(2)
+                    && self
+                        .source_frames
+                        .applied()
+                        .is_some_and(|c| !c.options.second_pass.interpass.is_default())
+                {
+                    status["base"] = json!("prepared_second_input");
+                }
+                return status;
             }
         }
         look_status(self.look.as_ref(), self.look_failure.as_deref(), options, 1)
@@ -319,9 +342,12 @@ impl Nr {
             "error":self.second_failure,"retry":self.second_retry,"retryPolicy":"explicit_retry_toggle_or_recreation",
             "secondTextureCount":usize::from(self.second.is_some()),
             "secondAllocationBytes":self.second.as_ref().map_or(0, |s| s.allocation_bytes),
+            "interpass":{"settings":options.second_pass.interpass,
+                "active":self.last_passes == 2 && !options.second_pass.interpass.is_default(),
+                "domain":"same_frame_sdr_model_input", "allocationBytes":self.second.as_ref().and_then(|s|s.interpass.as_ref()).map_or(0,|p|p.bytes)},
             "activeFeatureCount":usize::from(self.feature.as_ref().is_some_and(|f| f.identity().1 != 0))
                 + usize::from(self.second.as_ref().and_then(|s| s.feature.as_ref()).is_some_and(|f| f.identity().1 != 0)),
-            "privateTextureCount":self.resources.len()+usize::from(self.previous_input.is_some())+usize::from(self.second.is_some())+2*usize::from(self.reconstruction.is_some()),
+            "privateTextureCount":self.resources.len()+usize::from(self.previous_input.is_some())+usize::from(self.second.is_some())+usize::from(self.second.as_ref().is_some_and(|s|s.interpass.is_some()))+2*usize::from(self.reconstruction.is_some()),
             "lookCacheResources":{"first":self.look.as_ref().map(|look|look.resource_status()),"second":self.second.as_ref().and_then(|s|s.look.as_ref()).map(|look|look.resource_status())},"sdkMemoryBytes":serde_json::Value::Null,"passes":passes})
     }
     pub(super) fn matches(&self, native: Option<Source>) -> bool {
@@ -611,12 +637,13 @@ impl Nr {
     // A pending model update must not invalidate the currently cached Look.
     unsafe fn prepare_look(&mut self, options: crate::advanced_settings::NrOptions) {
         if let Some(second) = &mut self.second {
+            let second_input = second.input(self.resources[1], options.second_pass.interpass);
             if !options.look.bypass() && second.look.is_none() && second.look_failure.is_none() {
                 let prepared = if self.look_srgb {
                     crate::nr_look::Look::with_guide(
                         &self.device,
                         self.look_memory,
-                        self.resources[1],
+                        second_input,
                         second.output.unwrap(),
                         self.resources[0],
                     )
@@ -639,7 +666,7 @@ impl Nr {
                 look.set_input(if options.look.scope.uses_original(2) {
                     self.resources[0]
                 } else {
-                    self.resources[1]
+                    second_input
                 });
                 if let Err(error) = look.prepare_temporal(options.look, self.resources[3]) {
                     trace::event!(
@@ -730,6 +757,36 @@ impl Nr {
                         "target_nr_second_fallback",
                         json!({"stage":"prepare_before_submit","error":self.second_failure,"output":"first_pass","retry":"explicit_retry_toggle_or_recreation"})
                     );
+                }
+            }
+        }
+        // Allocate before any commands can reference the new image. Retain it
+        // across neutral settings, and retire with the independent second model.
+        if !options.second_pass.interpass.is_default() && self.second.is_some() {
+            let second = self.second.as_mut().unwrap();
+            if second.interpass.is_none() {
+                let prepared = if self.look_srgb {
+                    crate::nr_interpass::Interpass::new(
+                        &self.device,
+                        &self.look_memory,
+                        self.resources[0],
+                        self.resources[1],
+                        second.output.unwrap(),
+                    )
+                } else {
+                    Err("interpass preparation requires SDR sRGB input".into())
+                };
+                match prepared {
+                    Ok(prepared) => second.interpass = Some(prepared),
+                    Err(error) => {
+                        drop(self.second.take());
+                        self.second_failure = Some(format!("interpass preparation: {error}"));
+                        trace::event!(
+                            "target_nr_second_fallback",
+                            json!({"stage":"interpass_prepare_before_submit",
+                            "error":self.second_failure,"output":"first_pass","retry":"explicit_retry_toggle_or_recreation"})
+                        );
+                    }
                 }
             }
         }
@@ -1065,7 +1122,9 @@ impl Nr {
         let mut actual_passes = self.last_passes;
         let mut output = self.last_output.unwrap_or(self.resources[1]);
         let mut look_input = if actual_passes == 2 {
-            self.resources[1]
+            self.second.as_ref().map_or(self.resources[1], |s| {
+                s.input(self.resources[1], options.second_pass.interpass)
+            })
         } else {
             self.resources[0]
         };
@@ -1168,6 +1227,15 @@ impl Nr {
                 }
                 cmd = self.second_command;
                 d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())?;
+                let second_input = if options.second_pass.interpass.is_default() {
+                    self.resources[1]
+                } else {
+                    second
+                        .interpass
+                        .as_ref()
+                        .unwrap()
+                        .record(cmd, options.second_pass.interpass)
+                };
                 let second_output = second.output.unwrap();
                 fg_api::transition(
                     d,
@@ -1209,14 +1277,15 @@ impl Nr {
                     &[],
                     &[],
                 );
-                let second_reset = second.history.reset(
+                let second_reset = second.history.reset_with_input(
                     source_frame.id,
                     second_intensity,
                     second_options,
                     source_frame.reset,
+                    options.second_pass.interpass,
                 );
                 let mut second_resources = [
-                    descriptor(self.resources[1], false),
+                    descriptor(second_input, false),
                     descriptor(second_output, true),
                     descriptor(self.resources[2], false),
                     descriptor(self.resources[3], false),
@@ -1250,11 +1319,12 @@ impl Nr {
                         }
                         actual_passes = 2;
                         output = second_output;
-                        look_input = self.resources[1];
+                        look_input = second_input;
                         let (parameters, feature) = second.feature.as_ref().unwrap().identity();
                         pass_details.push(json!({"instance":second.feature.as_ref().unwrap().instance(),"pass":2,"evaluated":true,"outputReused":false,"reset":second_reset,
                             "sourceFrameId":source_frame.id,"intensity":second_intensity,"options":second_options,
-                            "parameters":parameters,"feature":feature,"inputImage":self.resources[1].image,"outputImage":second_output.image,
+                            "parameters":parameters,"feature":feature,"inputImage":second_input.image,"outputImage":second_output.image,
+                            "interpass":options.second_pass.interpass,"upstreamImage":self.resources[1].image,"originalImage":self.resources[0].image,
                             "depthImage":self.resources[2].image,"motionImage":self.resources[3].image}));
                     }
                     Err(error) => {
@@ -1515,13 +1585,13 @@ impl Nr {
         }
         if frame_capture {
             if actual_passes == 2 {
-                self.second
-                    .as_ref()
-                    .unwrap()
-                    .capture
-                    .as_ref()
-                    .ok_or("second NR capture missing")?
-                    .record(cmd);
+                let second = self.second.as_ref().unwrap();
+                let capture = if options.second_pass.interpass.is_default() {
+                    second.capture.as_ref()
+                } else {
+                    second.interpass.as_ref().and_then(|p| p.capture.as_ref())
+                };
+                capture.ok_or("second NR capture missing")?.record(cmd);
             } else {
                 self.frame_capture.as_ref().unwrap().record(cmd);
             }
@@ -1557,13 +1627,13 @@ impl Nr {
         self.last_intermediate_waits = intermediate_waits;
         if frame_capture {
             if actual_passes == 2 {
-                self.second
-                    .as_ref()
-                    .unwrap()
-                    .capture
-                    .as_ref()
-                    .unwrap()
-                    .save("nr", frame)?;
+                let second = self.second.as_ref().unwrap();
+                let capture = if options.second_pass.interpass.is_default() {
+                    second.capture.as_ref()
+                } else {
+                    second.interpass.as_ref().and_then(|p| p.capture.as_ref())
+                };
+                capture.unwrap().save("nr", frame)?;
             } else {
                 self.frame_capture.as_ref().unwrap().save("nr", frame)?;
             }
@@ -1573,9 +1643,15 @@ impl Nr {
             if actual_passes == 2 {
                 let second = self.second.as_mut().unwrap();
                 second.initialized = true;
-                second
-                    .history
-                    .submitted(source_frame.id, second_intensity, second_options);
+                if !options.second_pass.interpass.is_default() {
+                    second.interpass.as_mut().unwrap().initialized = true;
+                }
+                second.history.submitted_with_input(
+                    source_frame.id,
+                    second_intensity,
+                    second_options,
+                    options.second_pass.interpass,
+                );
             }
             self.last_passes = actual_passes;
             self.last_output = Some(model_output);

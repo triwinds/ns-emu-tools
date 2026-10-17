@@ -5,6 +5,7 @@
 - 添加对 Ryujinx Nextendo 分支的支持，使用 NextendoNetwork/Ryujinx-Nextendo 的 GitHub Releases (#140)
 - 添加对 Eden Nightly 的支持
 - 新增实验性 DLSS 画质增强功能
+- 回退 Feeder 实验后端；原生两遍 NR 新增可选遍间限幅与本帧原图反馈，提供保持第一遍参数、降低第二遍局部色调的光晕对照
 - 修复 Ryujinx 在原始输入尺寸下的 FG 窗口画面回退，以及 DLAA 自定义比例导致的异常退出
 - 修复开启 FG 后直接关闭模拟器时，失效交换链的重复呈现导致 GPU 同步超时和异常退出
 - 修复 FG 窗口保护触发后 NR 无法恢复；FG 安全停用并完成 GPU 任务后恢复 NR

@@ -1,5 +1,5 @@
 import { graphicsCommand } from './graphics'
-import { cloneNrOptions, graphicsAdvanced, nrLook, nrSecondPass, nrSpatialLook, nrTemporalLook, type NrOptions } from './graphicsAdvanced'
+import { cloneNrOptions, graphicsAdvanced, nrLook, nrSecondPass, nrInterpass, nrSpatialLook, nrTemporalLook, type NrOptions } from './graphicsAdvanced'
 import type { FgLive } from './streamlineFg'
 
 export type NrPresetEmulator = 'eden' | 'citron' | 'yuzu' | 'ryujinx' | 'other'
@@ -33,6 +33,7 @@ export function presetNotices(preset: NrPreset, environment: NrPresetEnvironment
   // Match the backend's full capability contract, including inactive overrides.
   if (settings.enabled && (!live.advancedSettingsSupported && (settings.intensity > 100 || JSON.stringify(tuning) !== JSON.stringify(graphicsAdvanced().nr)))) notes.push('当前组件不支持新增模型参数。')
   if (settings.enabled && JSON.stringify(tuning.secondPass) !== JSON.stringify(nrSecondPass()) && !live.nrTwoPassSupported) notes.push('当前组件不支持第二遍配置。')
+  if (settings.enabled && JSON.stringify(tuning.secondPass.interpass) !== JSON.stringify(nrInterpass()) && !live.nrInterpassSupported) notes.push('当前组件不支持 NR 遍间预处理。')
   if (settings.enabled && JSON.stringify(tuning.look) !== JSON.stringify(nrLook()) && !live.nrLookSupported) notes.push('当前组件不支持此 Look 配置。')
   if (settings.enabled && JSON.stringify(tuning.look.spatial) !== JSON.stringify(nrSpatialLook()) && !live.nrSpatialLookSupported) notes.push('当前组件不支持空间 Look 配置。')
   if (settings.enabled && JSON.stringify(tuning.look.temporal) !== JSON.stringify(nrTemporalLook()) && !live.nrTemporalLookSupported) notes.push('当前组件不支持时间 Look 配置。')

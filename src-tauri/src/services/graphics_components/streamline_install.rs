@@ -582,6 +582,11 @@ pub fn launch(
                 "Look 颜色保护/诊断实验",
             ),
             (
+                !advanced.nr.second_pass.interpass.is_default(),
+                crate::config::advanced_settings::NR_INTERPASS_MARKER,
+                "NR 遍间预处理",
+            ),
+            (
                 advanced.nr.look.temporal.mode.persistent(),
                 crate::config::advanced_settings::NR_PERSISTENCE_MARKER,
                 "光流累积＋",
@@ -1328,6 +1333,9 @@ pub fn live(
             }
             if !nr.second_pass.is_default() && v["nrTwoPassSupported"] != true {
                 return Err("当前会话不支持两遍 NR，请更新组件并重新专用启动".into());
+            }
+            if !nr.second_pass.interpass.is_default() && v["nrInterpassSupported"] != true {
+                return Err("当前会话不支持 NR 遍间预处理，请更新组件并重新专用启动".into());
             }
             if !nr.look.spatial.is_default() && v["nrSpatialLookSupported"] != true {
                 return Err("当前会话不支持空间 Look，请更新组件并重新专用启动".into());

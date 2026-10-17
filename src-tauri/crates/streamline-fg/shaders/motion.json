@@ -21,5 +21,7 @@
   "nr_look_temporal_plus.spv": "2c54fa795a81cc6244056160bfb71c84a5456334085b6be78d83652bb75dd619",
   "nr_look_temporal_plus_fp16.spv": "343e7cd68e989f1914d553b07e84f6126edea00f9a1384483131dc237fe2d913",
   "nr_reconstruct.comp": "a97d0589ecbc1528a04254fbe9281ac5e7e35e3595a311f7827620dbaaea8446",
-  "nr_reconstruct.spv": "c291b63c660dc5aafb22575dbcf2a7250f5fe1024a45c11f77a0862ca2657046"
+  "nr_reconstruct.spv": "c291b63c660dc5aafb22575dbcf2a7250f5fe1024a45c11f77a0862ca2657046",
+  "nr_interpass.comp": "424f6e7aa49ec788e93cc35a23e6bd033f5f47067efafba21f1a7eb6ee823cda",
+  "nr_interpass.spv": "8e81366015bdc642b52112541e51c60bb8eee3da38480b16f13c6ef6fe105aa4"
 }

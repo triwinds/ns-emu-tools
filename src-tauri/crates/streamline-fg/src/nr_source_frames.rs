@@ -111,6 +111,19 @@ impl SourceFrames {
 mod tests {
     use super::*;
     #[test]
+    fn interpass_tuning_reuses_first_model_but_recomputes_suffix_on_same_frame() {
+        let mut frames = SourceFrames::default();
+        let mut c = controls();
+        c.options.second_pass.enabled = true;
+        let initial = frames.plan(false, false, false, c).unwrap();
+        frames.submitted(initial, c);
+        c.options.second_pass.interpass.feedback = 75;
+        let changed = frames.plan(true, false, false, c).unwrap();
+        assert!(changed.evaluate && changed.model_recompute && changed.reset_consumers);
+        assert!(!changed.first_evaluate && !changed.reset && !changed.observed);
+        assert_eq!(initial.id, changed.id);
+    }
+    #[test]
     fn inactive_second_controls_do_not_invalidate_active_output_or_hide_look_updates() {
         let mut frames = SourceFrames::default();
         let mut c = controls();

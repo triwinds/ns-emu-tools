@@ -1,8 +1,8 @@
 //! Independent history of the second model, acknowledged only on submission.
-use crate::advanced_settings::NrOptions;
+use crate::advanced_settings::{InterpassOptions, NrOptions};
 #[derive(Default)]
 pub struct History {
-    previous: Option<(u64, f32, NrOptions)>,
+    previous: Option<(u64, f32, NrOptions, InterpassOptions)>,
 }
 impl History {
     pub fn reset(
@@ -12,22 +12,81 @@ impl History {
         options: NrOptions,
         upstream_reset: bool,
     ) -> bool {
+        self.reset_with_input(
+            frame,
+            intensity,
+            options,
+            upstream_reset,
+            InterpassOptions::default(),
+        )
+    }
+    pub fn reset_with_input(
+        &self,
+        frame: u64,
+        intensity: f32,
+        options: NrOptions,
+        upstream_reset: bool,
+        input: InterpassOptions,
+    ) -> bool {
         upstream_reset
             || self
                 .previous
-                .is_none_or(|(old_frame, old_intensity, old_options)| {
+                .is_none_or(|(old_frame, old_intensity, old_options, old_input)| {
                     old_frame.checked_add(1) != Some(frame)
                         || old_intensity != intensity
                         || old_options != options.model_only()
+                        || old_input != input
                 })
     }
     pub fn submitted(&mut self, frame: u64, intensity: f32, options: NrOptions) {
-        self.previous = Some((frame, intensity, options.model_only()));
+        self.submitted_with_input(frame, intensity, options, InterpassOptions::default());
+    }
+    pub fn submitted_with_input(
+        &mut self,
+        frame: u64,
+        intensity: f32,
+        options: NrOptions,
+        input: InterpassOptions,
+    ) {
+        self.previous = Some((frame, intensity, options.model_only(), input));
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn prepared_input_changes_reset_only_the_second_model() {
+        let mut h = History::default();
+        let options = NrOptions::default();
+        let input = InterpassOptions {
+            clamp: true,
+            feedback: 75,
+        };
+        h.submitted_with_input(7, 1.0, options, input);
+        assert!(!h.reset_with_input(8, 1.0, options, false, input));
+        assert!(h.reset_with_input(
+            8,
+            1.0,
+            options,
+            false,
+            InterpassOptions {
+                feedback: 50,
+                ..input
+            }
+        ));
+        assert!(h.reset_with_input(
+            8,
+            1.0,
+            options,
+            false,
+            InterpassOptions {
+                clamp: false,
+                ..input
+            }
+        ));
+        // The acknowledgement follows submission, not a failed/discarded recording.
+        assert!(!h.reset_with_input(8, 1.0, options, false, input));
+    }
     #[test]
     fn suffix_recompute_resets_same_observation_and_next_color_remains_sequential() {
         let mut h = History::default();

@@ -6,6 +6,7 @@ pub const CAPABILITY_MARKER: &[u8] = b"NS_EMU_GRAPHICS_ADVANCED_V1";
 pub const NR_LOOK_MARKER: &[u8] = b"NS_EMU_NR_LOOK_V1";
 pub const NR_SPATIAL_LOOK_MARKER: &[u8] = b"NS_EMU_NR_SPATIAL_LOOK_V1";
 pub const NR_TWO_PASS_MARKER: &[u8] = b"NS_EMU_NR_TWO_PASS_V1";
+pub const NR_INTERPASS_MARKER: &[u8] = b"NS_EMU_NR_INTERPASS_V1";
 pub const NR_TEMPORAL_LOOK_MARKER: &[u8] = b"NS_EMU_NR_TEMPORAL_LOOK_V1";
 pub const NR_LOOK_SCOPE_MARKER: &[u8] = b"NS_EMU_NR_LOOK_SCOPE_V1";
 pub const NR_TEMPORAL_MODES_MARKER: &[u8] = b"NS_EMU_NR_TEMPORAL_MODES_V1";
@@ -204,6 +205,8 @@ impl NrOptions {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct SecondPassOptions {
+    #[serde(skip_serializing_if = "InterpassOptions::is_default")]
+    pub interpass: InterpassOptions,
     pub enabled: bool,
     pub inherit: bool,
     /// Explicit recreation request; normal tuning never retries a failed pass.
@@ -224,6 +227,7 @@ pub struct SecondPassOptions {
 impl Default for SecondPassOptions {
     fn default() -> Self {
         Self {
+            interpass: InterpassOptions::default(),
             enabled: false,
             inherit: true,
             retry: 0,
@@ -262,7 +266,61 @@ impl SecondPassOptions {
         self.enabled == other.enabled
             && (!self.enabled
                 || (self.retry == other.retry
+                    && self.interpass == other.interpass
                     && self.resolve(intensity, first) == other.resolve(intensity, first)))
+    }
+}
+
+/// Same-frame preparation of the second model's SDR input; never temporal history.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default, rename_all = "camelCase", deny_unknown_fields)]
+pub struct InterpassOptions {
+    pub clamp: bool,
+    #[serde(deserialize_with = "protection_strength")]
+    pub feedback: u16,
+}
+impl Default for InterpassOptions {
+    fn default() -> Self {
+        Self {
+            clamp: false,
+            feedback: 100,
+        }
+    }
+}
+impl InterpassOptions {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+#[cfg(test)]
+mod interpass_tests {
+    use super::*;
+    #[test]
+    fn legacy_wire_defaults_and_bounded_feedback() {
+        let old: NrOptions = serde_json::from_str(r#"{"secondPass":{"enabled":true}}"#).unwrap();
+        assert!(old.second_pass.interpass.is_default());
+        assert!(serde_json::to_value(old.second_pass)
+            .unwrap()
+            .get("interpass")
+            .is_none());
+        for invalid in ["-1", "101", "null", "1.5"] {
+            assert!(serde_json::from_str::<InterpassOptions>(&format!(
+                "{{\"feedback\":{invalid}}}"
+            ))
+            .is_err());
+        }
+        let mut changed = old;
+        changed.second_pass.interpass = InterpassOptions {
+            clamp: true,
+            feedback: 75,
+        };
+        assert_eq!(
+            old.model_only(),
+            changed.model_only(),
+            "first model is unchanged"
+        );
+        assert!(!old.second_pass.execution_eq(changed.second_pass, 1.0, old));
     }
 }
 

@@ -1,11 +1,31 @@
 import { describe, expect, test } from 'bun:test'
-import { bypassNrAdditions, graphicsAdvanced, type NrOptions } from '../src/utils/graphicsAdvanced'
+import { bypassNrAdditions, graphicsAdvanced, nrHaloComparison, type NrOptions } from '../src/utils/graphicsAdvanced'
 import { normalizeNrPreset, presetNotices, type NrPreset } from '../src/utils/nrPresets'
 
 function fixture(): NrPreset {
   return { schemaVersion: 4, name: 'test', emulator: 'eden', game: '', displayMode: 'SDR', settings: { enabled: true, intensity: 150, options: graphicsAdvanced().nr }, environment: { toolboxVersion: '0.6.3', componentVersion: 'test', componentSha256: 'a'.repeat(64), modelVersion: '310.8.0', modelSha256: 'b'.repeat(64), targetSha256: 'c'.repeat(64) } }
 }
 describe('NR preset integration', () => {
+  test('halo comparison preserves first model and Look, and requires interpass support', () => {
+    const preset = fixture()
+    const first = preset.settings.options
+    first.style = 'c'
+    first.globalTone = 40
+    first.localTone = 130
+    first.localStructure = 80
+    first.autoMask = true
+    const compared = nrHaloComparison(first, 150)
+    expect({ ...compared, secondPass: first.secondPass }).toEqual(first)
+    expect(compared.secondPass).toMatchObject({ enabled: true, inherit: false, intensity: 150, style: 'c', globalTone: 40, localTone: 0, localStructure: 80, autoMask: true, interpass: { clamp: true, feedback: 75 } })
+    expect(first.secondPass.enabled).toBe(false)
+    preset.settings.options = compared
+    const draft = normalizeNrPreset(preset)
+    draft.settings.options.secondPass.interpass.feedback = 50
+    expect(compared.secondPass.interpass.feedback).toBe(75)
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true, nrTwoPassSupported: true }
+    expect(presetNotices(preset, preset.environment, live).some(note => note.includes('遍间'))).toBe(true)
+    expect(presetNotices(preset, preset.environment, { ...live, nrInterpassSupported: true })).toEqual([])
+  })
   test('persistence is versioned and requires its own capability even with older temporal modes', () => {
     const preset = fixture()
     preset.settings.options.look.temporal.mode = 'optical_flow_plus'
