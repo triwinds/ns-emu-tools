@@ -125,10 +125,12 @@ impl FgPreflight {
                 } else if self.installation_state == "installed" && current != latest.version {
                     self.installation_state = "outdated";
                     if local_bundle {
-                        format!("可更新到随程序附带的本地组件：{current} → {}。点击安装全部组件后应用，旧版本和当前游戏会话保留。", latest.version)
+                        format!("可更新到随程序附带的本地组件：{current} → {}。请先关闭使用画面增强的模拟器，再安装全部组件；共享目录将替换为新版本。", latest.version)
                     } else {
-                        format!("发现组件小包更新：{current} → {}。点击下载并安装全部组件即可更新；稳定包缓存将复用，当前游戏会话保持不变。", latest.version)
+                        format!("发现组件小包更新：{current} → {}。请先关闭使用画面增强的模拟器，再下载并安装全部组件；稳定包缓存将复用。", latest.version)
                     }
+                } else if self.installation_state == "outdated" && current == latest.version {
+                    "当前模拟器需要重新登记或迁移旧安装布局。点击安装全部组件，校验后使用共享 runtime 目录。".into()
                 } else if self.installation_state == "installed" && update.fresh {
                     if local_bundle {
                         format!("已安装本地配套组件：{}。文件校验已通过。", latest.version)
@@ -141,7 +143,7 @@ impl FgPreflight {
                     if local_bundle {
                         if verified_local_bundle {
                             format!(
-                                "本地组件包 {} 已通过完整文件校验；尚未安装到当前模拟器。点击安装全部组件即可使用，无需下载组件。",
+                                "本地组件包 {} 已通过完整文件校验；点击安装全部组件即可使用共享运行库并登记当前模拟器，无需下载组件。",
                                 latest.version
                             )
                         } else {

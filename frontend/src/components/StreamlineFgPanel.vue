@@ -43,7 +43,7 @@ function receiveLive(value: FgLive) {
   }
   if (srPending.value && value.connected && value.fresh && (value.sr?.appliedRevision ?? 0) >= srPending.value) {
     srPending.value = 0
-    srFeedback.value = value.sr?.active ? 'SR 已生效。' : `SR ${value.sr?.reason ?? '未运行'}`
+    srFeedback.value = value.sr?.active ? '抗锯齿与细节重建已生效。' : `抗锯齿与细节重建：${value.sr?.reason ?? '未运行'}`
   } else if (srPending.value && Date.now() > srDeadline) {
     srPending.value = 0
     srFeedback.value = '已保存，但尚未收到生效确认。请回到游戏恢复画面后查看运行状态。'
@@ -91,10 +91,10 @@ const fgSummary = computed(() => advancedOptions.value.fg.mode === 'dynamic' ? `
 const srDefault = computed(() => srMode.value === 'balanced' && savedScale.value === 172 && srPreset.value === 'j' && JSON.stringify(advancedOptions.value.sr) === JSON.stringify(graphicsAdvanced().sr))
 const fgDefault = computed(() => nvofEnabled.value && JSON.stringify(advancedOptions.value.fg) === JSON.stringify(graphicsAdvanced().fg))
 const srModes = [
-  { title: 'DLAA · 等尺寸抗锯齿', value: 'dlaa', scale: 100 },
-  { title: 'Quality · 画质', value: 'quality', scale: 150 },
-  { title: 'Balanced · 均衡', value: 'balanced', scale: 172 },
-  { title: 'Performance · 性能', value: 'performance', scale: 200 },
+  { value: 'dlaa', scale: 100 },
+  { value: 'quality', scale: 150 },
+  { value: 'balanced', scale: 172 },
+  { value: 'performance', scale: 200 },
 ] as const
 const srPresets = [
   { title: '自动（运行库默认）', value: 'default' },
@@ -112,7 +112,7 @@ const savedScale = computed(() => configStore.config.setting.other?.streamline_s
 const sliderScale = (value: number) => Math.min(2, Math.max(1, value / 100))
 const srScale = ref(sliderScale(savedScale.value))
 watch(savedScale, value => { srScale.value = sliderScale(value) })
-const srModeTitle = computed(() => srModes.find(mode => mode.value === srMode.value)?.title ?? srMode.value)
+const srModeTitle = computed(() => srMode.value === 'dlaa' && savedScale.value === 100 ? '原尺寸抗锯齿 · DLAA' : '放大重建')
 const srPresetTitle = computed(() => srPreset.value === 'default' ? '自动模型' : `${srPreset.value.toUpperCase()} 模型`)
 type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 'streamline_nr' | 'streamline_nvof' | 'streamline_fg' | 'streamline_sr' | 'streamline_sr_mode' | 'streamline_sr_scale' | 'streamline_sr_preset' | 'streamline_advanced'>>
 async function saveSrOptions() {
@@ -531,7 +531,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           v-if="!installed"
           class="fg-install-hint"
         >
-          安装后可分别启用画面重建、抗锯齿和帧生成。下载可在进度窗口取消。
+          安装后可分别启用神经渲染、抗锯齿与细节重建、帧生成。下载可在进度窗口取消。
         </p>
         <p
           v-if="message"
@@ -583,7 +583,8 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             @busy="savingNr = $event"
           />
           <div class="fg-effect">
-            <h3>改善锯齿 · SR / DLAA</h3>
+            <h3>抗锯齿与细节重建</h3>
+            <p>DLSS SR / DLAA</p>
             <p id="fg-sr-description">
               重建画面以改善锯齿，文字和界面也会参与处理，会增加 GPU 开销。
               需要 GeForce RTX 20／30／40／50 系列。{{ gpu.srSupported ? '' : '本机未检测到支持的显卡。' }}
@@ -591,7 +592,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             <div class="fg-effect-controls">
               <v-switch
                 :model-value="gpu.srSupported && srEnabled"
-                label="启用 SR / DLAA"
+                label="启用抗锯齿与细节重建"
                 color="primary"
                 density="compact"
                 hide-details
@@ -605,7 +606,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
                 variant="text"
                 size="small"
                 :prepend-icon="mdiTuneVariant"
-                aria-label="SR 高级配置"
+                aria-label="抗锯齿与细节重建高级配置"
                 aria-haspopup="dialog"
                 :disabled="disabled || working || !gpu.srSupported"
                 @click="srAdvanced = true"
@@ -666,7 +667,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           class="fg-maintenance"
         >
           <summary>组件维护</summary>
-          <p>卸载后需重新安装才能通过画面增强入口启动。</p>
+          <p>多个模拟器共用组件。更新或卸载前请先关闭使用画面增强的模拟器；卸载后所有模拟器的画面增强入口都需重新安装组件。</p>
           <v-btn
             variant="text"
             :disabled="disabled || working"
@@ -696,15 +697,15 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 
     <GraphicsAdvancedDialog
       v-model="srAdvanced"
-      title="SR / DLAA 高级配置"
+      title="抗锯齿与细节重建高级配置"
       title-id="sr-advanced-title"
-      description="调整倍率、模型和曝光。设置自动保存；连接专用启动的游戏后实时应用，效果关闭时也可预先配置。"
+      description="DLSS SR / DLAA：调整重建倍率、模型和曝光。设置自动保存；连接专用启动的游戏后实时应用，效果关闭时也可预先配置。"
       :busy="savingNvof"
     >
       <div class="fg-sr-options">
         <div class="fg-scale-section">
           <div class="fg-sr-scale-label">
-            <label id="fg-sr-scale-label">自定义放大倍率</label><output>{{ srScale.toFixed(2) }}×</output>
+            <label id="fg-sr-scale-label">重建倍率</label><output>{{ srScale.toFixed(2) }}×</output>
           </div>
           <v-slider
             v-model="srScale"
@@ -720,10 +721,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             @keyup="setSrScale"
           />
           <div class="fg-sr-scale-label fg-muted">
-            <span>1.00× · DLAA</span><span>2.00× · 四倍像素</span>
+            <span>1.00× · 原尺寸抗锯齿</span><span>2.00× · 放大重建</span>
           </div>
           <p class="fg-option-note">
-            1.00× 使用 DLAA。更高倍率先重建，再缩回窗口，不改变模拟器内部渲染分辨率。倍率越高，处理像素越多。
+            在原尺寸下抗锯齿，或先放大重建再适配窗口。不会改变模拟器内部渲染分辨率；更高倍率通常增加开销，画质改善因游戏而异。
           </p>
           <p class="fg-option-note">
             所选倍率需运行库支持当前画面尺寸；未生效时可恢复默认配置后重试。
@@ -900,10 +901,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         id="fg-motion-description"
         class="fg-option-note"
       >
-        利用 NVIDIA 硬件估算画面运动，辅助 FG 和 SR。默认开启，会增加处理开销，可关闭对比效果。
+        利用 NVIDIA 硬件估算画面运动，辅助帧生成、抗锯齿与细节重建。默认开启，会增加处理开销，可关闭对比效果。
       </p>
       <div class="fg-shared-setting">
-        <strong>此设置也影响 SR</strong>
+        <strong>此设置也影响抗锯齿与细节重建</strong>
         <p>NR 会话始终使用硬件光流。安装 NR 组件后，专用启动会为实时切换准备 NR，因此即使此开关关闭，该会话仍会启用光流。</p>
       </div>
       <p

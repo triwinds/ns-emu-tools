@@ -111,44 +111,6 @@ struct Map {
     binding: vk::OpticalFlowSessionBindingPointNV,
     segment: u32,
 }
-fn session_profiles(backward: bool, cost: bool) -> Vec<(bool, bool)> {
-    let mut profiles = Vec::new();
-    for pair in [
-        (backward, cost),
-        (backward, false),
-        (false, cost),
-        (false, false),
-    ] {
-        if !profiles.contains(&pair) {
-            profiles.push(pair);
-        }
-    }
-    profiles
-}
-unsafe fn cost_format_available(
-    instance: vk::Instance,
-    physical: vk::PhysicalDevice,
-    gipa: vk::PFN_vkGetInstanceProcAddr,
-) -> Result<bool> {
-    // Resolve through the instance's existing route. Interposer physical-device
-    // handles cannot be passed to a separately loaded system Loader trampoline.
-    let Some(address) = gipa(
-        instance,
-        c"vkGetPhysicalDeviceOpticalFlowImageFormatsNV".as_ptr(),
-    ) else {
-        return Ok(false);
-    };
-    let get: vk::PFN_vkGetPhysicalDeviceOpticalFlowImageFormatsNV = std::mem::transmute(address);
-    let info = vk::OpticalFlowImageFormatInfoNV::default().usage(vk::OpticalFlowUsageFlagsNV::COST);
-    let mut count = 0;
-    get(physical, &info, &mut count, std::ptr::null_mut()).result()?;
-    let mut formats = vec![vk::OpticalFlowImageFormatPropertiesNV::default(); count as usize];
-    if count != 0 {
-        get(physical, &info, &mut count, formats.as_mut_ptr()).result()?;
-        formats.truncate(count as usize);
-    }
-    Ok(formats.iter().any(|f| f.format == vk::Format::R8_UINT))
-}
 unsafe fn dense_texture(
     instance: &ash::Instance,
     physical: vk::PhysicalDevice,
@@ -320,11 +282,8 @@ pub(super) struct Flow {
     session: vk::OpticalFlowSessionNV,
     colors: Vec<Image>,
     maps: Vec<Map>,
-    backward: bool,
-    cost: bool,
     pixel_motion: Option<(Image, Resource)>,
     sr_pixel_motion: Option<(Image, Resource)>,
-    confidence: Option<Image>,
     capture: Option<crate::frame_capture::Capture>,
     data: Option<Buffer>,
     timing: Option<GpuTiming>,
@@ -355,7 +314,6 @@ pub(super) struct Flow {
 impl Flow {
     pub(super) unsafe fn new(
         instance: &ash::Instance,
-        gipa: vk::PFN_vkGetInstanceProcAddr,
         physical: vk::PhysicalDevice,
         device: &ash::Device,
         swapchain: vk::SwapchainKHR,
@@ -363,7 +321,6 @@ impl Flow {
     ) -> Result<Self> {
         Self::create(
             instance,
-            gipa,
             physical,
             device,
             0,
@@ -374,28 +331,12 @@ impl Flow {
     }
     unsafe fn create(
         instance: &ash::Instance,
-        gipa: vk::PFN_vkGetInstanceProcAddr,
         physical: vk::PhysicalDevice,
         device: &ash::Device,
         graphics: u32,
         optical: u32,
         swapchain: vk::SwapchainKHR,
         output: Resource,
-    ) -> Result<Self> {
-        Self::create_with_profile(
-            instance, gipa, physical, device, graphics, optical, swapchain, output, None,
-        )
-    }
-    unsafe fn create_with_profile(
-        instance: &ash::Instance,
-        gipa: vk::PFN_vkGetInstanceProcAddr,
-        physical: vk::PhysicalDevice,
-        device: &ash::Device,
-        graphics: u32,
-        optical: u32,
-        swapchain: vk::SwapchainKHR,
-        output: Resource,
-        preferred: Option<(bool, bool)>,
     ) -> Result<Self> {
         let api = ash::nv::optical_flow::Device::new(instance, device);
         let extent = vk::Extent2D {
@@ -412,11 +353,8 @@ impl Flow {
             session: vk::OpticalFlowSessionNV::null(),
             colors: vec![],
             maps: vec![],
-            backward: false,
-            cost: false,
             pixel_motion: None,
             sr_pixel_motion: None,
-            confidence: None,
             capture: None,
             data: None,
             timing: None,
@@ -440,7 +378,7 @@ impl Flow {
             reference_frame: 0,
             last_frame: None,
             // Like Magpie, retain hints between new color frames. Exact repeats
-            // never run OF; confidence remains separate from raw motion.
+            // never run OF; static-tile protection only changes FG motion.
             temporal_hints: std::env::var("NS_STREAMLINE_NVOF_TEMPORAL_HINTS").as_deref()
                 != Ok("0"),
             static_guard: std::env::var("NS_STREAMLINE_NVOF_STATIC_GUARD").as_deref() != Ok("0"),
@@ -459,60 +397,23 @@ impl Flow {
         {
             return Err("NVOF input extent outside device limits".into());
         }
-        let cost_available =
-            props.cost_supported != 0 && cost_format_available(instance.handle(), physical, gipa)?;
-        let (want_backward, want_cost) = preferred.unwrap_or((true, true));
-        let mut last_error = vk::Result::ERROR_INITIALIZATION_FAILED;
-        for (backward, cost) in session_profiles(
-            want_backward && props.bidirectional_flow_supported != 0,
-            want_cost && cost_available,
-        ) {
-            let mut flags = vk::OpticalFlowSessionCreateFlagsNV::empty();
-            if backward {
-                flags |= vk::OpticalFlowSessionCreateFlagsNV::BOTH_DIRECTIONS;
-            }
-            if cost {
-                flags |= vk::OpticalFlowSessionCreateFlagsNV::ENABLE_COST;
-            }
-            let info = vk::OpticalFlowSessionCreateInfoNV::default()
-                .width(extent.width)
-                .height(extent.height)
-                .image_format(vk::Format::B8G8R8A8_UNORM)
-                .flow_vector_format(vk::Format::R16G16_S10_5_NV)
-                .cost_format(if cost {
-                    vk::Format::R8_UINT
-                } else {
-                    vk::Format::UNDEFINED
-                })
-                .output_grid_size(vk::OpticalFlowGridSizeFlagsNV::TYPE_4X4)
-                .performance_level(vk::OpticalFlowPerformanceLevelNV::MEDIUM)
-                .flags(flags);
-            let mut session = vk::OpticalFlowSessionNV::null();
-            let result = (f.api.fp().create_optical_flow_session_nv)(
-                device.handle(),
-                &info,
-                std::ptr::null(),
-                &mut session,
-            );
-            if result == vk::Result::SUCCESS {
-                f.session = session;
-                f.backward = backward;
-                f.cost = cost;
-                break;
-            }
-            last_error = result;
-            if !matches!(
-                result,
-                vk::Result::ERROR_INITIALIZATION_FAILED
-                    | vk::Result::ERROR_FEATURE_NOT_PRESENT
-                    | vk::Result::ERROR_FORMAT_NOT_SUPPORTED
-            ) {
-                return Err(format!("NVOF session failed: {result:?}").into());
-            }
-        }
-        if f.session == vk::OpticalFlowSessionNV::null() {
-            return Err(format!("NVOF profiles unavailable: {last_error:?}").into());
-        }
+        // All runtime consumers use the current-to-previous field. Backward
+        // flow and cost were only used to build an unconsumed confidence map.
+        let info = vk::OpticalFlowSessionCreateInfoNV::default()
+            .width(extent.width)
+            .height(extent.height)
+            .image_format(vk::Format::B8G8R8A8_UNORM)
+            .flow_vector_format(vk::Format::R16G16_S10_5_NV)
+            .cost_format(vk::Format::UNDEFINED)
+            .output_grid_size(vk::OpticalFlowGridSizeFlagsNV::TYPE_4X4)
+            .performance_level(vk::OpticalFlowPerformanceLevelNV::MEDIUM);
+        (f.api.fp().create_optical_flow_session_nv)(
+            device.handle(),
+            &info,
+            std::ptr::null(),
+            &mut f.session,
+        )
+        .result()?;
         if std::env::var("NS_STREAMLINE_NVOF_TIMING").as_deref() == Ok("1") {
             let bits = instance.get_physical_device_queue_family_properties(physical)
                 [graphics as usize]
@@ -547,53 +448,20 @@ impl Flow {
                 &families,
             )?);
         }
-        for (binding, segment, format, usage, enabled) in [
-            (
-                vk::OpticalFlowSessionBindingPointNV::FLOW_VECTOR,
-                0,
+        f.maps.push(Map {
+            image: image(
+                instance,
+                physical,
+                device,
+                grid,
                 vk::Format::R16G16_S10_5_NV,
                 vk::OpticalFlowUsageFlagsNV::OUTPUT,
-                true,
-            ),
-            (
-                vk::OpticalFlowSessionBindingPointNV::BACKWARD_FLOW_VECTOR,
-                1,
-                vk::Format::R16G16_S10_5_NV,
-                vk::OpticalFlowUsageFlagsNV::OUTPUT,
-                f.backward,
-            ),
-            (
-                vk::OpticalFlowSessionBindingPointNV::COST,
-                2,
-                vk::Format::R8_UINT,
-                vk::OpticalFlowUsageFlagsNV::COST,
-                f.cost,
-            ),
-            (
-                vk::OpticalFlowSessionBindingPointNV::BACKWARD_COST,
-                3,
-                vk::Format::R8_UINT,
-                vk::OpticalFlowUsageFlagsNV::COST,
-                f.backward && f.cost,
-            ),
-        ] {
-            if enabled {
-                f.maps.push(Map {
-                    image: image(
-                        instance,
-                        physical,
-                        device,
-                        grid,
-                        format,
-                        usage,
-                        vk::ImageUsageFlags::TRANSFER_SRC,
-                        &families,
-                    )?,
-                    binding,
-                    segment,
-                });
-            }
-        }
+                vk::ImageUsageFlags::TRANSFER_SRC,
+                &families,
+            )?,
+            binding: vk::OpticalFlowSessionBindingPointNV::FLOW_VECTOR,
+            segment: 0,
+        });
         f.pixel_motion = Some(dense_texture(
             instance,
             physical,
@@ -608,8 +476,6 @@ impl Flow {
             extent,
             vk::Format::R16G16_SFLOAT,
         )?);
-        f.confidence =
-            Some(dense_texture(instance, physical, device, extent, vk::Format::R16_SFLOAT)?.0);
         let memory = instance.get_physical_device_memory_properties(physical);
         f.capture = crate::frame_capture::Capture::new(
             device,
@@ -619,15 +485,11 @@ impl Flow {
                 f.colors[1].capture_resource(vk::Format::B8G8R8A8_UNORM),
                 output,
                 f.pixel_motion(),
-                f.confidence
-                    .as_ref()
-                    .unwrap()
-                    .capture_resource(vk::Format::R16_SFLOAT),
                 f.sr_pixel_motion(),
             ],
         )?;
         let count = u64::from(grid.width) * u64::from(grid.height);
-        let bytes = count * 16;
+        let bytes = count * 4;
         f.data = Some(buffer(
             device,
             &memory,
@@ -662,7 +524,6 @@ impl Flow {
             vk::DescriptorType::STORAGE_BUFFER,
             vk::DescriptorType::STORAGE_IMAGE,
             vk::DescriptorType::STORAGE_IMAGE,
-            vk::DescriptorType::STORAGE_IMAGE,
             vk::DescriptorType::STORAGE_BUFFER,
             vk::DescriptorType::STORAGE_IMAGE,
         ]
@@ -690,7 +551,7 @@ impl Flow {
                     },
                     vk::DescriptorPoolSize {
                         ty: vk::DescriptorType::STORAGE_IMAGE,
-                        descriptor_count: 4,
+                        descriptor_count: 3,
                     },
                 ]),
             None,
@@ -711,9 +572,6 @@ impl Flow {
             .image_layout(vk::ImageLayout::GENERAL)];
         let sr_pixel_motion = [vk::DescriptorImageInfo::default()
             .image_view(f.sr_pixel_motion.as_ref().unwrap().0.view)
-            .image_layout(vk::ImageLayout::GENERAL)];
-        let confidence = [vk::DescriptorImageInfo::default()
-            .image_view(f.confidence.as_ref().unwrap().view)
             .image_layout(vk::ImageLayout::GENERAL)];
         let matches = [vk::DescriptorBufferInfo::default()
             .buffer(f.difference.as_ref().unwrap().flags.buffer)
@@ -738,16 +596,11 @@ impl Flow {
                 vk::WriteDescriptorSet::default()
                     .dst_set(f.set)
                     .dst_binding(3)
-                    .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
-                    .image_info(&confidence),
-                vk::WriteDescriptorSet::default()
-                    .dst_set(f.set)
-                    .dst_binding(4)
                     .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
                     .buffer_info(&matches),
                 vk::WriteDescriptorSet::default()
                     .dst_set(f.set)
-                    .dst_binding(5)
+                    .dst_binding(4)
                     .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
                     .image_info(&sr_pixel_motion),
             ],
@@ -804,7 +657,7 @@ impl Flow {
         }
         trace::event!(
             "target_nvof_ready",
-            json!({"backend":"VK_NV_optical_flow","width":extent.width,"height":extent.height,"grid":4,"quality":"balanced","bidirectional":f.backward,"cost":f.cost,"temporal_hints":f.temporal_hints,"exact_duplicate_filter":true,"unchanged_tile_zero_motion":f.static_guard,"shared_motion_static_guard":false,"confidence_masked":false,"fg_motion":"fp16_pixels","shared_motion":"fp32_uv"}),
+            json!({"backend":"VK_NV_optical_flow","width":extent.width,"height":extent.height,"grid":4,"quality":"balanced","bidirectional":false,"cost":false,"confidence_available":false,"temporal_hints":f.temporal_hints,"exact_duplicate_filter":true,"unchanged_tile_zero_motion":f.static_guard,"shared_motion_static_guard":false,"confidence_masked":false,"fg_motion":"fp16_pixels","shared_motion":"fp32_uv"}),
         );
         Ok(f)
     }
@@ -889,7 +742,6 @@ impl Flow {
                 .chain(self.maps.iter().map(|m| &m.image))
                 .chain(self.pixel_motion.iter().map(|p| &p.0))
                 .chain(self.sr_pixel_motion.iter().map(|p| &p.0))
-                .chain(self.confidence.iter())
             {
                 transition(
                     d,
@@ -1103,9 +955,7 @@ impl Flow {
             &[],
         );
         let mut constants = [0u8; 16];
-        let flags = u32::from(self.backward)
-            | (u32::from(self.cost) << 1)
-            | (u32::from(self.static_guard) << 2);
+        let flags = u32::from(self.static_guard) << 2;
         for (i, value) in [
             self.grid.width,
             self.grid.height,
@@ -1182,7 +1032,7 @@ impl Flow {
                     "frame":frame,"reset":reset,"duplicate":duplicate,"evaluated":evaluate,
                     "current_color_index":self.current,"reference_frame":self.reference_frame,
                     "temporal_hints_used":evaluate && self.temporal_hints && !self.hint_reset_pending,
-                    "bidirectional":self.backward,"cost":self.cost,
+                    "bidirectional":false,"cost":false,"confidence_available":false,
                 })
             );
         }

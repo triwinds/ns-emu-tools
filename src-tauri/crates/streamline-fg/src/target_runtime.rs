@@ -22,8 +22,12 @@ struct Requirements {
 }
 #[link(name = "streamline_query_bridge", kind = "static")]
 unsafe extern "C" {
-    fn probe_sl_init_combined(function: *mut c_void, directory: *const u16) -> i32;
-    fn probe_sl_init(function: *mut c_void, directory: *const u16) -> i32;
+    fn probe_sl_init_at(
+        function: *mut c_void,
+        directory: *const u16,
+        logs: *const u16,
+        combined: i32,
+    ) -> i32;
     fn probe_sl_requirements(function: *mut c_void, feature: u32, output: *mut Requirements)
         -> i32;
     fn probe_sl_set_vulkan(
@@ -48,6 +52,8 @@ unsafe extern "C" {
 struct Sdk {
     library: Library,
     _directory: Vec<u16>,
+    _logs: Vec<u16>,
+    _files: Vec<std::fs::File>,
     instance_ext: Vec<CString>,
     device_ext: Vec<CString>,
     graphics: u32,
@@ -94,6 +100,22 @@ unsafe fn initialize() -> Result<Option<Arc<Sdk>>> {
         );
         use std::os::windows::ffi::OsStrExt;
         let directory: Vec<_> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+        let logs = std::env::var_os("NS_STREAMLINE_TARGET_LOGS")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| path.clone());
+        if !logs.is_absolute() || !logs.is_dir() {
+            return Err("invalid SDK log directory".into());
+        }
+        let files: Vec<_> = std::fs::read_dir(&path)
+            .map_err(|e| e.to_string())?
+            .map(|e| e.map(|e| e.path()))
+            .collect::<std::io::Result<Vec<_>>>()
+            .map_err(|e| e.to_string())?
+            .into_iter()
+            .filter(|p| matches!(p.extension().and_then(|x| x.to_str()), Some("dll" | "exe")))
+            .collect();
+        let files = crate::runtime_files::hold(&files, crate::runtime_files::Access::Runtime)
+            .map_err(|e| e.to_string())?;
         let library = libloading::os::windows::Library::load_with_flags(
             path.join("sl.interposer.dll"),
             0x100 | 0x1000,
@@ -102,17 +124,20 @@ unsafe fn initialize() -> Result<Option<Arc<Sdk>>> {
         let mut sdk = Sdk {
             library: library.into(),
             _directory: directory,
+            _logs: logs.as_os_str().encode_wide().chain(Some(0)).collect(),
+            _files: files,
             instance_ext: Vec::new(),
             device_ext: Vec::new(),
             graphics: 0,
             compute: 0,
         };
         require(
-            if crate::target_sr::available() {
-                probe_sl_init_combined(address(&sdk, b"slInit\0")?, sdk._directory.as_ptr())
-            } else {
-                probe_sl_init(address(&sdk, b"slInit\0")?, sdk._directory.as_ptr())
-            },
+            probe_sl_init_at(
+                address(&sdk, b"slInit\0")?,
+                sdk._directory.as_ptr(),
+                sdk._logs.as_ptr(),
+                i32::from(crate::target_sr::available()),
+            ),
             "slInit",
         )?;
         for &feature in if crate::target_sr::available() {

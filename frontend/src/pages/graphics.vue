@@ -81,7 +81,7 @@ onMounted(async () => {
     <header class="page-heading">
       <div>
         <h1>图形增强</h1>
-        <p>为你的模拟器管理原生神经渲染、超分辨率与帧生成。</p>
+        <p>为你的模拟器管理神经渲染、抗锯齿与细节重建、帧生成。</p>
         <p class="text-warning mt-2">
           使用前，请先完整备份模拟器目录，并备份配置与存档。
         </p>

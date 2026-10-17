@@ -305,6 +305,13 @@ mod pacing_tests {
 }
 
 // Focus changes pause ordinary sessions; explicit diagnostics retain terminal stops.
+/// Ordinary NR may resume after FG has been disabled and its device-idle
+/// retirement completed. Keep the FG stop latch and bounded diagnostic policy.
+#[cfg(feature = "native-nr")]
+pub(super) fn nr_window_paused(stopping: bool, fg_was_on: bool, bounded: bool) -> bool {
+    stopping && (fg_was_on || bounded)
+}
+
 pub(super) fn terminal_stop(reason: Option<&'static str>, bounded: bool) -> Option<&'static str> {
     if matches!(
         reason,
@@ -319,6 +326,18 @@ pub(super) fn terminal_stop(reason: Option<&'static str>, bounded: bool) -> Opti
 #[cfg(test)]
 mod lifecycle_tests {
     use super::*;
+    #[test]
+    #[cfg(feature = "native-nr")]
+    fn nr_resumes_after_fg_retirement_without_rearming_fg() {
+        assert!(nr_window_paused(true, true, false));
+        assert!(!nr_window_paused(true, false, false));
+        assert_eq!(
+            terminal_stop(Some("window_operation"), false),
+            Some("window_operation")
+        );
+        assert!(nr_window_paused(true, false, true));
+        assert!(!nr_window_paused(false, true, true));
+    }
     #[test]
     fn focus_can_resume_but_window_and_sdk_failures_remain_terminal() {
         for bounded in [false, true] {

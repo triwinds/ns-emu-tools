@@ -37,6 +37,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut nr_readback = false;
     let mut nr_performance = false;
     let mut graphics_launch = false;
+    let mut fixed_runtime = false;
     let mut nr_initial_off = false;
     let mut nr_consolidated = false;
     let mut nr_inference_scale = 100u32;
@@ -106,6 +107,10 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         if flag == "--graphics-launch" {
             graphics_launch = true;
             sdk_off = true;
+            continue;
+        }
+        if flag == "--fixed-runtime" {
+            fixed_runtime = true;
             continue;
         }
         if flag == "--nr-initial-off" {
@@ -453,21 +458,66 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     if sdk_off && !cfg!(feature = "sdk-bridge") {
         return Err("SDK target mode requires sdk-bridge build".into());
     }
-    let runtime_dest = session.join("runtime");
+    if fixed_runtime && !graphics_launch {
+        return Err("NS_EMU_FIXED_RUNTIME_V1 requires --graphics-launch".into());
+    }
+    let runtime_dest = if fixed_runtime {
+        dunce::canonicalize(runtime.as_ref().ok_or("missing --runtime")?)?
+    } else {
+        session.join("runtime")
+    };
+    // Hold shared, read-only handles across the entire target process lifetime.
+    // This guard is independent of whether the toolbox remains open.
+    let _runtime_files = if fixed_runtime {
+        let mut paths: Vec<_> = fs::read_dir(&runtime_dest)?
+            .map(|entry| entry.map(|e| e.path()))
+            .collect::<std::io::Result<Vec<_>>>()?
+            .into_iter()
+            .filter(|p| matches!(p.extension().and_then(|x| x.to_str()), Some("dll" | "exe")))
+            .collect();
+        paths.push(layer.clone());
+        if let Some(path) = &nr_runtime {
+            paths.push(path.clone());
+        }
+        if let Some(path) = &nr_bridge {
+            paths.push(path.clone());
+        }
+        streamline_probe_layer::runtime_files::hold(
+            &paths,
+            streamline_probe_layer::runtime_files::Access::Runtime,
+        )?
+    } else {
+        Vec::new()
+    };
+    let sdk_logs = if fixed_runtime {
+        let logs = session.join("sdk");
+        fs::create_dir(&logs)?;
+        logs
+    } else {
+        // Standalone diagnostics and their acceptance verifier retain sl.log
+        // beside the private runtime copy.
+        runtime_dest.clone()
+    };
     #[cfg(feature = "sdk-bridge")]
     if sdk_off {
         let runtime = runtime.ok_or("missing --runtime")?;
-        fs::create_dir(&runtime_dest)?;
+        if !fixed_runtime {
+            fs::create_dir(&runtime_dest)?;
+        }
         if fg || graphics_launch || (native_nr && sr_mode != "off") {
             for name in crate::runtime::SR_PLUGINS {
                 crate::runtime::verify_sr(&runtime.join(name), name)?;
-                fs::copy(runtime.join(name), runtime_dest.join(name))?;
+                if !fixed_runtime {
+                    fs::copy(runtime.join(name), runtime_dest.join(name))?;
+                }
                 crate::runtime::verify_sr(&runtime_dest.join(name), name)?;
             }
         }
         for name in crate::runtime::PLUGINS {
             crate::runtime::verify_runtime(&runtime.join(name), name, true)?;
-            fs::copy(runtime.join(name), runtime_dest.join(name))?;
+            if !fixed_runtime {
+                fs::copy(runtime.join(name), runtime_dest.join(name))?;
+            }
             crate::runtime::verify_runtime(&runtime_dest.join(name), name, true)?;
         }
     }
@@ -486,12 +536,14 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         let nr_hash = crate::nr_package::verify(source, &crate::nr_package::RUNTIMES)?;
         let bridge_hash = crate::nr_package::verify(bridge, &[crate::nr_package::BRIDGE])?;
-        let dir = session.join("nr");
-        fs::create_dir(&dir)?;
-        fs::copy(source, dir.join("nvngx_dlssnr.dll"))?;
-        fs::copy(bridge, dir.join("nvngx.dll"))?;
-        crate::nr_package::verify(&dir.join("nvngx_dlssnr.dll"), &[nr_hash.as_str()])?;
-        crate::nr_package::verify(&dir.join("nvngx.dll"), &[bridge_hash.as_str()])?;
+        if !fixed_runtime {
+            let dir = session.join("nr");
+            fs::create_dir(&dir)?;
+            fs::copy(source, dir.join("nvngx_dlssnr.dll"))?;
+            fs::copy(bridge, dir.join("nvngx.dll"))?;
+            crate::nr_package::verify(&dir.join("nvngx_dlssnr.dll"), &[nr_hash.as_str()])?;
+            crate::nr_package::verify(&dir.join("nvngx.dll"), &[bridge_hash.as_str()])?;
+        }
         let mut validation_files = Value::Null;
         if !nr_performance && !graphics_launch {
             let validation = validation_dir
@@ -561,6 +613,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .env("NS_STREAMLINE_PROBE_TRACE", session.join("layer.jsonl"))
         .env("NS_STREAMLINE_TARGET_SDK", if sdk_off { "1" } else { "0" })
         .env("NS_STREAMLINE_TARGET_RUNTIME", &runtime_dest)
+        .env("NS_STREAMLINE_TARGET_LOGS", &sdk_logs)
         .env("NS_STREAMLINE_TARGET_FG", if fg { "1" } else { "0" })
         // Eden/yuzu use the completed presentation image. Their native texture
         // path must not inherit the pinned Ryujinx shader/descriptor contract.
@@ -598,9 +651,20 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         )
         .env(
             "NS_STREAMLINE_NR_RUNTIME",
-            session.join("nr/nvngx_dlssnr.dll"),
+            if fixed_runtime {
+                nr_runtime.clone().unwrap_or_default()
+            } else {
+                session.join("nr/nvngx_dlssnr.dll")
+            },
         )
-        .env("NS_STREAMLINE_NR_BRIDGE", session.join("nr/nvngx.dll"))
+        .env(
+            "NS_STREAMLINE_NR_BRIDGE",
+            if fixed_runtime {
+                nr_bridge.clone().unwrap_or_default()
+            } else {
+                session.join("nr/nvngx.dll")
+            },
+        )
         .env("NS_STREAMLINE_NR_INTENSITY", nr_intensity.to_string())
         .env(
             "NS_STREAMLINE_ADVANCED_SETTINGS",
@@ -661,7 +725,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     );
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_consolidated":nr_consolidated,"nr_inference_scale_percent":nr_inference_scale,"nr_inference_max_edge":nr_inference_max_edge,"input_scale_percent":input_scale,"input_max_edge":input_max_edge,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"fixed_runtime":fixed_runtime,"runtime_directory":runtime_dest,"sdk_log_directory":sdk_logs,"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_consolidated":nr_consolidated,"nr_inference_scale_percent":nr_inference_scale,"nr_inference_max_edge":nr_inference_max_edge,"input_scale_percent":input_scale,"input_max_edge":input_max_edge,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     write_json(
         &session.join("target-command.json"),
@@ -670,7 +734,22 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     if hash(&executable)? != target_hash {
         return Err("target changed during launch preparation; inspect it again".into());
     }
-    let mut child = command.spawn()?;
+    // Persist the spawn boundary first. A failed PID-record write must not let
+    // the toolbox assume there is no target and reclaim its loaded runtimes.
+    write_json(
+        &session.join("target-spawning.json"),
+        &json!({"requested":true}),
+    )?;
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            write_json(
+                &session.join("target-exit.json"),
+                &json!({"success":false,"code":null,"spawn_error":error.to_string()}),
+            )?;
+            return Err(error.into());
+        }
+    };
     write_json(
         &session.join("target-process.json"),
         &json!({"pid":child.id()}),

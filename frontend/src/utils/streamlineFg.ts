@@ -43,6 +43,8 @@ export function operateStreamlineFg(action: 'install' | 'launch' | 'uninstall', 
 
 export interface FgSample { time: number; appFps: number | null; presentFps: number | null }
 export interface FgLive {
+  launchState?: 'launching' | 'started' | 'running' | 'finished' | 'failed'
+  launchMessage?: string
   inputScalingSupported?: boolean
   inputScalingLiveSupported?: boolean
   sentInputScaleRevision?: number

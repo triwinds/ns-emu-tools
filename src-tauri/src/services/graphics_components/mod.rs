@@ -12,7 +12,11 @@ use std::io::{Read, Seek, SeekFrom};
 pub mod gpu;
 pub mod native_nr;
 pub mod nr_presets;
+#[path = "../../../crates/streamline-runtime-files.rs"]
+mod runtime_files;
 pub(super) mod runtime_package;
+mod sessions;
+mod shared_runtime;
 pub mod streamline_download;
 pub mod streamline_fg;
 pub(super) mod streamline_update;

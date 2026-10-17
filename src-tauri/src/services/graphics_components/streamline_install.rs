@@ -1,4 +1,4 @@
-//! Pinned experimental package from the managed download cache. Each launch uses a private snapshot.
+//! Pinned experimental package; launches share immutable installed versions.
 use super::streamline_fg::{file_digest, target_policy};
 use crate::{config::effective_config_dir, models::graphics_components::GraphicsApi};
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,31 @@ use std::{
     sync::Mutex,
 };
 pub(super) static OPERATION: Mutex<()> = Mutex::new(());
+pub(super) fn hold_runtime_files(
+    paths: &[PathBuf],
+    removing: bool,
+) -> Result<Vec<fs::File>, String> {
+    for path in paths {
+        super::runtime_package::safe_path(path)?;
+        plain(path, false)?;
+    }
+    use super::runtime_files::{hold, Access};
+    hold(
+        paths,
+        if removing {
+            Access::Removal
+        } else {
+            Access::Runtime
+        },
+    )
+    .map_err(|error| {
+        if matches!(error.raw_os_error(), Some(32 | 33)) {
+            "组件文件正在使用中，请先关闭通过画面增强启动的模拟器，再重试更新或卸载".into()
+        } else {
+            format!("无法保护组件文件：{error}")
+        }
+    })
+}
 pub(super) fn lock_store() -> Result<fs::File, String> {
     safe_dir(&root())?;
     let path = root().join(".operation.lock");
@@ -83,19 +108,35 @@ fn key(exe: &Path) -> String {
         Sha256::digest(exe.to_string_lossy().to_lowercase().as_bytes())
     )
 }
-fn destination(base: &Path, exe: &Path) -> PathBuf {
-    base.join(key(exe)).join(package().version)
+fn destination(base: &Path, _exe: &Path) -> PathBuf {
+    super::shared_runtime::destination(base)
 }
 fn selected_at(base: &Path, exe: &Path) -> Result<(PathBuf, Package), String> {
+    let shared = destination(base, exe);
+    if shared.exists() {
+        return super::shared_runtime::manifest(&shared).map(|package| (shared, package));
+    }
+    let global = base.join("current-package.json");
+    if global.exists() {
+        let package =
+            serde_json::from_value(read_live_json(&global)?).map_err(|e| e.to_string())?;
+        super::streamline_update::validate_selected(&package)?;
+        return Ok((shared, package));
+    }
+    legacy_at(base, exe).map(|legacy| legacy.unwrap_or_else(|| (shared, package())))
+}
+fn legacy_at(base: &Path, exe: &Path) -> Result<Option<(PathBuf, Package)>, String> {
     let pointer = base.join(key(exe)).join("current-package.json");
     super::runtime_package::safe_path(&pointer)?;
     if !pointer.exists() {
-        return Ok((destination(base, exe), package()));
+        let package = package();
+        let dir = base.join(key(exe)).join(&package.version);
+        return Ok(dir.exists().then_some((dir, package)));
     }
     let bytes = read_live_json(&pointer)?;
     let package: Package = serde_json::from_value(bytes).map_err(|e| e.to_string())?;
     super::streamline_update::validate_selected(&package)?;
-    Ok((base.join(key(exe)).join(&package.version), package))
+    Ok(Some((base.join(key(exe)).join(&package.version), package)))
 }
 pub(super) fn installed_package(exe: &Path) -> Result<Package, String> {
     selected_at(&root(), exe).map(|(_, p)| p)
@@ -183,12 +224,10 @@ pub(super) fn native_bridge() -> Result<PathBuf, String> {
     Ok(bridge)
 }
 pub(super) fn planned(exe: &Path) -> PathBuf {
-    selected_at(&root(), exe)
-        .map(|(p, _)| p)
-        .unwrap_or_else(|_| destination(&root(), exe))
+    destination(&root(), exe)
 }
-pub(super) fn planned_package(exe: &Path, package: &Package) -> PathBuf {
-    root().join(key(exe)).join(&package.version)
+pub(super) fn planned_package(exe: &Path, _package: &Package) -> PathBuf {
+    destination(&root(), exe)
 }
 fn receipt_for(exe: &Path, package: &Package) -> Result<Receipt, String> {
     Ok(Receipt {
@@ -196,6 +235,12 @@ fn receipt_for(exe: &Path, package: &Package) -> Result<Receipt, String> {
         target_sha256: file_digest(exe)?,
         version: package.version.clone(),
     })
+}
+fn target_record(base: &Path, exe: &Path) -> PathBuf {
+    base.join("targets").join(format!("{}.json", key(exe)))
+}
+fn live_pointer(base: &Path, exe: &Path) -> PathBuf {
+    base.join("live").join(format!("{}.json", key(exe)))
 }
 #[cfg(test)]
 fn owned(dir: &Path, exe: &Path, current: bool) -> Result<(), String> {
@@ -207,17 +252,32 @@ fn owned_for(dir: &Path, exe: &Path, current: bool, package: &Package) -> Result
         plain(path, true)?;
         ancestor = path.parent();
     }
-    let record = dir.join("installation.json");
+    let shared = dir.file_name().and_then(|s| s.to_str()) == Some("runtime");
+    if shared {
+        super::shared_runtime::verify(dir, package)?;
+        if !current {
+            return Ok(());
+        }
+    }
+    let record = if shared {
+        target_record(dir.parent().ok_or("无组件存储目录")?, exe)
+    } else {
+        dir.join("installation.json")
+    };
     plain(&record, false)?;
     let r: Receipt = serde_json::from_slice(&fs::read(record).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
-    if r.executable != exe || r.version != package.version {
+    if r.executable != exe || (!shared && r.version != package.version) {
         return Err("安装记录不属于当前目标".into());
     }
-    if current && r != receipt_for(exe, package)? {
-        return Err("模拟器已更新，请卸载组件后重新检测、安装".into());
+    if current && r.target_sha256 != file_digest(exe)? {
+        return Err("模拟器已更新，请重新检测并安装组件".into());
     }
-    verify_artifacts(dir, &package.files)
+    if shared {
+        Ok(())
+    } else {
+        verify_artifacts(dir, &package.files)
+    }
 }
 pub(super) fn state(exe: &Path) -> &'static str {
     let Ok((dir, package)) = selected_at(&root(), exe) else {
@@ -225,8 +285,24 @@ pub(super) fn state(exe: &Path) -> &'static str {
     };
     if !dir.exists() {
         "unmanaged"
+    } else if dir == destination(&root(), exe) {
+        let registered = target_record(&root(), exe).exists();
+        if registered && owned_for(&dir, exe, true, &package).is_ok() {
+            "installed"
+        } else if super::shared_runtime::verify(&dir, &package).is_err() {
+            "damaged"
+        } else if registered
+            || legacy_at(&root(), exe)
+                .ok()
+                .flatten()
+                .is_some_and(|(dir, _)| dir.exists())
+        {
+            "outdated"
+        } else {
+            "unmanaged"
+        }
     } else if owned_for(&dir, exe, true, &package).is_ok() {
-        "installed"
+        "outdated"
     } else {
         "damaged"
     }
@@ -252,7 +328,7 @@ pub(crate) fn authorize(
     target_policy::classify(&exe, &hash, true).authorize(consent)?;
     Ok(exe)
 }
-fn copy_package_for(from: &Path, to: &Path, package: &Package) -> Result<(), String> {
+pub(super) fn copy_package_for(from: &Path, to: &Path, package: &Package) -> Result<(), String> {
     verify_artifacts(from, &package.files)?;
     for f in &package.files {
         fs::copy(from.join(&f.name), to.join(&f.name)).map_err(|e| e.to_string())?;
@@ -284,44 +360,36 @@ fn install_package_at(
     exe: &Path,
     expected: &str,
     package: &Package,
-    select: bool,
+    _select: bool,
 ) -> Result<(), String> {
     super::streamline_update::validate_selected(package)?;
     if file_digest(exe)? != expected {
         return Err("主程序已改变，请重新检测".into());
     }
-    let dest = base.join(key(exe)).join(&package.version);
-    if dest.exists() {
-        owned_for(&dest, exe, true, package)?;
-        if select {
-            atomic_json(
-                &base.join(key(exe)).join("current-package.json"),
-                &serde_json::to_value(package).map_err(|e| e.to_string())?,
-            )?;
+    let legacy = legacy_at(base, exe).ok().flatten();
+    super::shared_runtime::install(base, src, package, || {
+        if file_digest(exe)? != expected {
+            return Err("安装期间主程序发生变化".into());
         }
-        return Ok(());
-    }
-    let parent = dest.parent().ok_or("无安装目录")?;
-    safe_dir(parent)?;
-    let stage = tempfile::Builder::new()
-        .prefix(".staging-")
-        .tempdir_in(parent)
-        .map_err(|e| e.to_string())?;
-    copy_package_for(src, stage.path(), package)?;
-    if file_digest(exe)? != expected {
-        return Err("安装期间主程序发生变化".into());
-    }
-    fs::write(
-        stage.path().join("installation.json"),
-        serde_json::to_vec_pretty(&receipt_for(exe, package)?).map_err(|e| e.to_string())?,
-    )
-    .map_err(|e| e.to_string())?;
-    fs::rename(stage.path(), &dest).map_err(|e| e.to_string())?;
-    if select {
-        atomic_json(
-            &base.join(key(exe)).join("current-package.json"),
-            &serde_json::to_value(package).map_err(|e| e.to_string())?,
-        )?;
+        Ok(())
+    })?;
+    safe_dir(&base.join("targets"))?;
+    atomic_json(
+        &target_record(base, exe),
+        &serde_json::to_value(receipt_for(exe, package)?).map_err(|e| e.to_string())?,
+    )?;
+    atomic_json(
+        &base.join("current-package.json"),
+        &serde_json::to_value(package).map_err(|e| e.to_string())?,
+    )?;
+    // Migrate only the selected legacy payload whose receipt and all hashes
+    // can be verified. Active or unknown old installations remain untouched.
+    if let Some((dir, legacy)) = legacy.filter(|(dir, _)| dir.exists()) {
+        let result =
+            owned_for(&dir, exe, false, &legacy).and_then(|_| remove_legacy(&dir, &legacy));
+        if let Err(error) = result {
+            tracing::warn!(%error, path = %dir.display(), "保留未能验证或仍在使用的旧组件安装");
+        }
     }
     Ok(())
 }
@@ -363,16 +431,11 @@ pub(super) fn install_package(
     let exe = authorize(&exe, api, consent, &expected)?;
     install_package_at(&root(), &source, &exe, &expected, &package, true)?;
     Ok(Operation {
-        message: "组件已安装。请通过“以画面增强启动”打开模拟器。".into(),
+        message: "共享组件已安装。请通过“以画面增强启动”打开模拟器。更新和卸载前请先关闭使用组件的模拟器。".into(),
         session: None,
     })
 }
-pub(super) fn uninstall_at(base: &Path, exe: &Path) -> Result<(), String> {
-    let (dir, package) = selected_at(base, exe)?;
-    if !dir.exists() {
-        return Ok(());
-    }
-    owned_for(&dir, exe, false, &package)?;
+fn remove_legacy(dir: &Path, package: &Package) -> Result<(), String> {
     let mut names: Vec<String> = package.files.iter().map(|f| f.name.clone()).collect();
     names.push("installation.json".into());
     for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
@@ -381,15 +444,34 @@ pub(super) fn uninstall_at(base: &Path, exe: &Path) -> Result<(), String> {
             return Err("目录存在额外文件，保留安装目录，请手动检查".into());
         }
     }
-    // Only the exact owned files are removed. Session snapshots and user files remain.
+    // Acquire every removal handle before deleting anything. Active launchers
+    // and target layers hold reader handles even after the toolbox closes.
+    let _files = hold_runtime_files(
+        &names.iter().map(|name| dir.join(name)).collect::<Vec<_>>(),
+        true,
+    )?;
+    // Only the exact owned files are removed. Diagnostics and user files remain.
     for name in names {
         fs::remove_file(dir.join(name)).map_err(|e| e.to_string())?;
     }
-    fs::remove_dir(dir).map_err(|e| e.to_string())?;
+    drop(_files); // Finish Windows delete-pending files before removing the directory.
+    fs::remove_dir(dir).map_err(|e| e.to_string())
+}
+pub(super) fn uninstall_at(base: &Path, exe: &Path) -> Result<(), String> {
+    let (dir, package) = selected_at(base, exe)?;
+    if !dir.exists() {
+        return Ok(());
+    }
+    owned_for(&dir, exe, false, &package)?;
+    if dir == destination(base, exe) {
+        super::shared_runtime::remove(&dir, &package)?;
+    } else {
+        remove_legacy(&dir, &package)?;
+    }
     // Keep the selected version after uninstall so a retained older version is
     // never silently reactivated by the legacy fallback.
     atomic_json(
-        &base.join(key(exe)).join("current-package.json"),
+        &base.join("current-package.json"),
         &serde_json::to_value(package).map_err(|e| e.to_string())?,
     )?;
     Ok(())
@@ -400,7 +482,8 @@ pub fn uninstall(exe: PathBuf) -> Result<Operation, String> {
     let exe = exe.canonicalize().map_err(|e| e.to_string())?;
     uninstall_at(&root(), &exe)?;
     Ok(Operation {
-        message: "已卸载组件；当前游戏会话和诊断记录保留，普通启动不加载画面增强图层。".into(),
+        message: "已卸载共享组件；所有模拟器的画面增强入口需重新安装组件后使用，诊断记录保留。"
+            .into(),
         session: None,
     })
 }
@@ -567,13 +650,28 @@ pub fn launch(
     }
     let sessions = root().join("sessions");
     safe_dir(&sessions)?;
+    super::sessions::reap_completed(&sessions);
     let stage = tempfile::Builder::new()
         .prefix("game-")
         .tempdir_in(&sessions)
         .map_err(|e| e.to_string())?;
-    let bundle = stage.path().join("package");
-    fs::create_dir(&bundle).map_err(|e| e.to_string())?;
-    copy_package_for(&installed, &bundle, &package)?;
+    let bundle = installed;
+    let mut paths: Vec<_> = package.files.iter().map(|f| bundle.join(&f.name)).collect();
+    if let Some(runtime) = &nr_runtime {
+        paths.push(runtime.clone());
+    }
+    let runtime_files = hold_runtime_files(&paths, false)?;
+    let marker = b"NS_EMU_FIXED_RUNTIME_V1";
+    for name in ["streamline-layer-probe.exe", "streamline_probe_layer.dll"] {
+        let bytes = fs::read(bundle.join(name)).map_err(|e| e.to_string())?;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("当前组件不支持固定版本目录启动，请更新画面增强组件".into());
+        }
+    }
+    atomic_json(
+        &stage.path().join("runtime-reference.json"),
+        &serde_json::json!({"package":bundle,"version":package.version,"files":package.files,"nrRuntime":nr_runtime}),
+    )?;
     let mut cmd = Command::new(bundle.join("streamline-layer-probe.exe"));
     // Diagnostic flags must never leak into a normal game launch from the parent.
     for name in [
@@ -607,6 +705,7 @@ pub fn launch(
     );
     cmd.arg("--target-probe")
         .arg("--graphics-launch")
+        .arg("--fixed-runtime")
         .arg("--expected-target-sha256")
         .arg(&expected)
         .arg("--target")
@@ -682,25 +781,35 @@ pub fn launch(
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x08000000);
     }
-    let mut child = cmd.spawn().map_err(|e| e.to_string())?;
+    let child = cmd.spawn().map_err(|e| e.to_string())?;
     let session = stage.keep();
-    let pointer = root().join(key(&exe)).join("live-session.json");
+    super::sessions::monitor(child, session.clone(), sessions, runtime_files);
+    safe_dir(&root().join("live"))?;
+    let pointer = live_pointer(&root(), &exe);
     atomic_json(&pointer, &serde_json::json!({"session":session}))?;
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
-    while !session.join("run/target-process.json").exists() && std::time::Instant::now() < deadline
-    {
-        if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
+    loop {
+        let status = super::sessions::status(&session)?;
+        if status["launchState"] == "failed" || status["launchState"] == "finished" {
             return Err(format!(
-                "启动失败（{status}）。请查看 {}",
-                session.join("launcher.error.log").display()
+                "模拟器启动后已退出。{}",
+                status["launchMessage"].as_str().unwrap_or_default()
             ));
+        }
+        if status["launchState"] == "started" {
+            return Ok(Operation {
+                message: "模拟器进程已启动，等待游戏画面与增强运行状态确认。".into(),
+                session: Some(session),
+            });
+        }
+        if std::time::Instant::now() >= deadline {
+            return Ok(Operation {
+                message: "启动器仍在准备，尚未确认模拟器进程启动。请查看下方运行状态；启动失败时会显示原因。".into(),
+                session: Some(session),
+            });
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    std::thread::spawn(move || {
-        let _ = child.wait();
-    });
-    Ok(Operation{message:"画面增强专用启动已就绪。NR、SR 和 FG 独立控制；NR 使用合成深度和硬件光流，未取得有效运动时暂停。失焦会暂停 FG，窗口操作可能停用本次 FG。".into(),session:Some(session)})
 }
 #[cfg(test)]
 mod tests {
@@ -746,13 +855,15 @@ mod tests {
         }
     }
     #[test]
-    fn upgrades_select_only_after_verification_and_uninstall_never_reactivates_old_versions() {
+    fn shared_runtime_reuses_one_directory_and_replaces_only_when_idle() {
         let temp = tempfile::tempdir().unwrap();
         let base = temp.path().join("managed");
         let source = temp.path().join("source");
         fs::create_dir(&source).unwrap();
-        let exe = temp.path().join("test.exe");
-        fs::write(&exe, b"unchanged target").unwrap();
+        let exe = temp.path().join("first.exe");
+        let second = temp.path().join("second.exe");
+        fs::write(&exe, b"first target").unwrap();
+        fs::write(&second, b"second target").unwrap();
         let expected = file_digest(&exe).unwrap();
         let make_package = |version: &str, bytes: &[u8]| Package {
             version: version.into(),
@@ -769,28 +880,169 @@ mod tests {
         let old = make_package("local-old", b"first release");
         fs::write(source.join("layer.txt"), b"first release").unwrap();
         install_package_at(&base, &source, &exe, &expected, &old, true).unwrap();
-        let (old_dir, saved) = selected_at(&base, &exe).unwrap();
-        assert_eq!(saved.version, old.version);
+        let dir = destination(&base, &exe);
+        assert_eq!(dir, base.join("runtime"));
+        // Registration of another emulator reuses the verified directory and
+        // does not need the source or another copy of the package.
+        install_package_at(
+            &base,
+            &temp.path().join("missing-source"),
+            &second,
+            &file_digest(&second).unwrap(),
+            &old,
+            true,
+        )
+        .unwrap();
+        assert_eq!(selected_at(&base, &second).unwrap().0, dir);
+        owned_for(&dir, &second, true, &old).unwrap();
+        assert!(!base.join(key(&exe)).exists());
+        assert!(!base.join(key(&second)).exists());
         let new = make_package("local-new", b"second release");
         assert!(install_package_at(&base, &source, &exe, &expected, &new, true).is_err());
         assert_eq!(selected_at(&base, &exe).unwrap().1.version, old.version);
-        owned_for(&old_dir, &exe, true, &old).unwrap();
         fs::write(source.join("layer.txt"), b"second release").unwrap();
+        #[cfg(windows)]
+        {
+            let guard = hold_runtime_files(&[dir.join("layer.txt")], false).unwrap();
+            assert!(
+                install_package_at(&base, &source, &exe, &expected, &new, true)
+                    .unwrap_err()
+                    .contains("正在使用")
+            );
+            assert!(uninstall_at(&base, &exe).unwrap_err().contains("正在使用"));
+            owned_for(&dir, &exe, true, &old).unwrap();
+            drop(guard);
+        }
         install_package_at(&base, &source, &exe, &expected, &new, true).unwrap();
-        // Selection comes from disk, independent of the network candidate or embedded version.
-        let (new_dir, saved) = selected_at(&base, &exe).unwrap();
-        assert_eq!(saved.version, new.version);
-        owned_for(&new_dir, &exe, true, &saved).unwrap();
-        assert_eq!(
-            fs::read(old_dir.join("layer.txt")).unwrap(),
-            b"first release"
-        );
-        fs::write(new_dir.join("layer.txt"), b"tampered").unwrap();
+        assert_eq!(selected_at(&base, &exe).unwrap().0, dir);
+        assert_eq!(selected_at(&base, &second).unwrap().1.version, new.version);
+        owned_for(&dir, &second, true, &new).unwrap();
+        assert_eq!(fs::read(dir.join("layer.txt")).unwrap(), b"second release");
+        assert!(!fs::read_dir(&base).unwrap().any(|e| e
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .starts_with(".retired-")));
+        // Retry an interrupted backup cleanup without deleting unknown files.
+        let retired = base.join(".retired-test");
+        fs::create_dir(&retired).unwrap();
+        atomic_json(
+            &retired.join("installation.json"),
+            &serde_json::to_value(&new).unwrap(),
+        )
+        .unwrap();
+        fs::write(retired.join("user.txt"), b"keep").unwrap();
+        install_package_at(&base, &source, &exe, &expected, &new, true).unwrap();
+        assert_eq!(fs::read(retired.join("user.txt")).unwrap(), b"keep");
+        fs::remove_file(retired.join("user.txt")).unwrap();
+        install_package_at(&base, &source, &exe, &expected, &new, true).unwrap();
+        assert!(!retired.exists());
+        fs::write(dir.join("user.txt"), b"keep").unwrap();
         assert!(uninstall_at(&base, &exe).is_err());
-        fs::copy(source.join("layer.txt"), new_dir.join("layer.txt")).unwrap();
+        assert!(install_package_at(&base, &source, &exe, &expected, &old, true).is_err());
+        assert_eq!(fs::read(dir.join("user.txt")).unwrap(), b"keep");
+        fs::remove_file(dir.join("user.txt")).unwrap();
         uninstall_at(&base, &exe).unwrap();
-        assert!(!selected_at(&base, &exe).unwrap().0.exists());
-        assert!(old_dir.exists());
+        assert!(!selected_at(&base, &second).unwrap().0.exists());
+        // The shared uninstall marker never falls back to a legacy installation.
+        let legacy = base.join(key(&second)).join(&old.version);
+        fs::create_dir_all(&legacy).unwrap();
+        atomic_json(
+            &legacy.parent().unwrap().join("current-package.json"),
+            &serde_json::to_value(&old).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(selected_at(&base, &second).unwrap().0, dir);
+        assert!(!dir.exists());
+    }
+    #[test]
+    fn verified_legacy_install_migrates_without_deleting_active_or_unknown_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let base = temp.path().join("managed");
+        let source = temp.path().join("source");
+        fs::create_dir(&source).unwrap();
+        fs::write(source.join("layer.txt"), b"legacy layer").unwrap();
+        let package = Package {
+            version: "local-migration".into(),
+            files: vec![Artifact {
+                name: "layer.txt".into(),
+                sha256: file_digest(&source.join("layer.txt")).unwrap(),
+            }],
+            download: None,
+            parts: vec![],
+            native_nr: false,
+            schema_version: 0,
+            launcher_protocol: 0,
+        };
+        let exe = temp.path().join("eden.exe");
+        fs::write(&exe, b"target").unwrap();
+        let legacy = base.join(key(&exe)).join(&package.version);
+        fs::create_dir_all(&legacy).unwrap();
+        copy_package_for(&source, &legacy, &package).unwrap();
+        atomic_json(
+            &legacy.join("installation.json"),
+            &serde_json::to_value(receipt_for(&exe, &package).unwrap()).unwrap(),
+        )
+        .unwrap();
+        atomic_json(
+            &legacy.parent().unwrap().join("current-package.json"),
+            &serde_json::to_value(&package).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(selected_at(&base, &exe).unwrap().0, legacy);
+        #[cfg(windows)]
+        let guard = hold_runtime_files(&[legacy.join("layer.txt")], false).unwrap();
+        #[cfg(not(windows))]
+        fs::write(legacy.join("user.txt"), b"keep").unwrap();
+        install_package_at(
+            &base,
+            &source,
+            &exe,
+            &file_digest(&exe).unwrap(),
+            &package,
+            true,
+        )
+        .unwrap();
+        assert!(legacy.join("layer.txt").exists());
+        assert_eq!(selected_at(&base, &exe).unwrap().0, base.join("runtime"));
+        owned_for(&base.join("runtime"), &exe, true, &package).unwrap();
+        #[cfg(windows)]
+        drop(guard);
+        #[cfg(not(windows))]
+        fs::remove_file(legacy.join("user.txt")).unwrap();
+        fs::write(legacy.join("user.txt"), b"keep").unwrap();
+        install_package_at(
+            &base,
+            &source,
+            &exe,
+            &file_digest(&exe).unwrap(),
+            &package,
+            true,
+        )
+        .unwrap();
+        assert_eq!(fs::read(legacy.join("user.txt")).unwrap(), b"keep");
+        fs::remove_file(legacy.join("user.txt")).unwrap();
+        install_package_at(
+            &base,
+            &source,
+            &exe,
+            &file_digest(&exe).unwrap(),
+            &package,
+            true,
+        )
+        .unwrap();
+        assert!(!legacy.exists());
+        let mut next = package.clone();
+        next.version = "local-next".into();
+        // A target change after preparing an update leaves the old package intact.
+        assert!(
+            super::super::shared_runtime::install(&base, &source, &next, || Err(
+                "target changed".into()
+            ))
+            .is_err()
+        );
+        assert_eq!(selected_at(&base, &exe).unwrap().1.version, package.version);
+        owned_for(&base.join("runtime"), &exe, true, &package).unwrap();
     }
     #[test]
     #[ignore = "Explicit local package selection; target, hash and store supplied by caller"]
@@ -917,7 +1169,7 @@ pub(super) fn atomic_json(path: &Path, value: &serde_json::Value) -> Result<(), 
     tmp.persist(path).map_err(|e| e.to_string())?;
     Ok(())
 }
-fn read_live_json(path: &Path) -> Result<serde_json::Value, String> {
+pub(super) fn read_live_json(path: &Path) -> Result<serde_json::Value, String> {
     plain(path, false)?;
     if fs::metadata(path).map_err(|e| e.to_string())?.len() > 131072 {
         return Err("运行记录过大".into());
@@ -938,12 +1190,13 @@ pub fn live(
     let _lock = OPERATION.lock().map_err(|e| e.to_string())?;
     let _store_lock = lock_store()?;
     let exe = exe.canonicalize().map_err(|e| e.to_string())?;
-    let target = root().join(key(&exe));
-    if !target.exists() {
-        return Ok(serde_json::json!({"connected":false}));
-    }
-    safe_dir(&target)?;
-    let pointer = target.join("live-session.json");
+    let pointer = live_pointer(&root(), &exe);
+    let pointer = if pointer.exists() {
+        pointer
+    } else {
+        root().join(key(&exe)).join("live-session.json")
+    };
+    super::runtime_package::safe_path(&pointer)?;
     if !pointer.exists() {
         return Ok(serde_json::json!({"connected":false}));
     }
@@ -953,14 +1206,15 @@ pub fn live(
         return Err("会话不属于工具箱".into());
     }
     safe_dir(&session)?;
+    let launch = super::sessions::status(&session)?;
     let run = session.join("run");
     if !run.exists() {
-        return Ok(serde_json::json!({"connected":false}));
+        return Ok(launch);
     }
     safe_dir(&run)?;
     let path = run.join("telemetry.json");
     if !path.exists() {
-        return Ok(serde_json::json!({"connected":false}));
+        return Ok(launch);
     }
     let mut v = read_live_json(&path)?;
     let now = std::time::SystemTime::now()
@@ -971,7 +1225,14 @@ pub fn live(
     let connected = v["protocol"] == 1
         && updated <= now
         && now - updated < 3500
-        && !run.join("target-exit.json").exists();
+        && launch["launchState"] != "failed"
+        && launch["launchState"] != "finished";
+    v["launchState"] = if connected {
+        "running".into()
+    } else {
+        launch["launchState"].clone()
+    };
+    v["launchMessage"] = launch["launchMessage"].clone();
     v["connected"] = connected.into();
     if !connected {
         v["active"] = false.into();

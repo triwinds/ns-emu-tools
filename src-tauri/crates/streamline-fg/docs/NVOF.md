@@ -1,5 +1,23 @@
 # Native NVIDIA motion guidance for FG
 
+Current runtime (2026-10-11): only current-to-previous flow is requested. The
+backward field and cost maps had no NR/SR/FG consumer; their only derived output
+was a diagnostic confidence image. They and the full-resolution R16F confidence
+image/dispatch writes have been removed. The packed transfer buffer now holds
+one S10.5 field (4 bytes per grid cell instead of 16). Exact duplicate detection,
+temporal hints, and FG-only unchanged-tile zeroing are unchanged. NR uses raw UV
+motion; SR uses separately cropped/scaled FP16 pixel motion; FG uses FP16 pixel
+motion with static-tile protection. Capture entries are now current color,
+reference color, raw UV, FG pixels, SR pixels (indices 0 through 4); no confidence
+entry is produced. Historical measurements below describe their recorded builds.
+
+Forward-only validation on 2026-10-11: all three NVIDIA GPU regression tests
+passed with core and synchronization validation enabled (1080p translation,
+reset/static/repeated frames, fast pans with temporal hints on/off, and SR
+crop/scale readback). The translation/static test also passed at 321x193 to
+cover partial edge tiles. No Vulkan validation errors were reported. These
+synthetic checks validate correctness, not an in-game FPS improvement.
+
 The FG layer now uses a separate `target_nvof` backend. The historical
 `target_motion` colour block matcher is no longer compiled or called. Its source
 and paired shader are retained solely as experiment history.

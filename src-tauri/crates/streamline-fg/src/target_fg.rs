@@ -253,14 +253,8 @@ unsafe fn guides(
     if crate::target_nvof::enabled() {
         // Initialization has not consumed any application semaphore. Unsupported
         // formats/session creation can safely fall back to already-cleared guides.
-        match crate::target_nvof::Flow::new(
-            &instance,
-            parent.gipa,
-            d.physical,
-            device,
-            swapchain,
-            resources[1],
-        ) {
+        match crate::target_nvof::Flow::new(&instance, d.physical, device, swapchain, resources[1])
+        {
             Ok(flow) => chain.flow = Some(flow),
             Err(error) => {
                 if error.downcast_ref::<vk::Result>() == Some(&vk::Result::ERROR_DEVICE_LOST) {
@@ -425,6 +419,12 @@ pub(super) unsafe fn present(
         let on = off_reason.is_none();
         let boundary_reset = chain.temporal_boundary.next(foreground == root, on);
         #[cfg(feature = "native-nr")]
+        let nr_window_paused = crate::target_fg_gate::nr_window_paused(
+            crate::target_window::stopping(),
+            chain.was_on,
+            chain.frame_budget.is_some(),
+        );
+        #[cfg(feature = "native-nr")]
         let nr_extent = crate::target_nr::extent(chain.extent, native_source.ok());
         #[cfg(feature = "native-nr")]
         let nr_requested = crate::nr_runtime::requested()
@@ -433,7 +433,7 @@ pub(super) unsafe fn present(
             && crate::target_fg_gate::processing_extent([nr_extent.width, nr_extent.height])
             && crate::target_fg_gate::processing_extent([chain.extent.width, chain.extent.height])
             && !chain.nr_failed
-            && !crate::target_window::stopping();
+            && !nr_window_paused;
         #[cfg(not(feature = "native-nr"))]
         let nr_requested = false;
         if sr_mode != chain.sr_mode || sr_revision != chain.sr_revision {
@@ -703,7 +703,7 @@ pub(super) unsafe fn present(
                 reason
             } else if chain.nr_failed {
                 "resource_preparation_failed"
-            } else if crate::target_window::stopping() {
+            } else if nr_window_paused {
                 "window_transition"
             } else if !motion_valid {
                 "motion_unavailable"

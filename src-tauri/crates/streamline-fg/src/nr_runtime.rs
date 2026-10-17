@@ -28,6 +28,7 @@ struct Session {
     features: usize,
     _common: Box<nr_api::CommonInfo>,
     _data: Vec<u16>,
+    _files: Vec<std::fs::File>,
 }
 // Every API/map operation is under this session's mutex. GPU recording is
 // serialized by the swapchain owner and its completion fence. P0 verified
@@ -79,6 +80,10 @@ pub(super) unsafe fn initialize(
         );
         let bridge =
             PathBuf::from(std::env::var_os("NS_STREAMLINE_NR_BRIDGE").ok_or("NR bridge missing")?);
+        let files = crate::runtime_files::hold(
+            &[runtime.clone(), bridge.clone()],
+            crate::runtime_files::Access::Runtime,
+        )?;
         let runtime_hash = nr_package::verify(&runtime, &nr_package::RUNTIMES)?;
         let bridge_hash = nr_package::verify(&bridge, &[nr_package::BRIDGE])?;
         let path = PathBuf::from(
@@ -108,6 +113,7 @@ pub(super) unsafe fn initialize(
             features: 0,
             _common: common,
             _data: path.as_os_str().encode_wide().chain(Some(0)).collect(),
+            _files: files,
         });
         checked(
             "target_nr_core_init",

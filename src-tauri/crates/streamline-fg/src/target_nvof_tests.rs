@@ -39,22 +39,14 @@ unsafe fn ordinary_image(
 #[test]
 #[ignore = "Runs the NVIDIA hardware optical-flow engine on a local Vulkan GPU"]
 fn hardware_translation_reset_and_static() {
-    run_hardware_sequence(false, None, None);
+    run_hardware_sequence(false, None);
 }
 
 #[test]
 #[ignore = "Runs both temporal-hint modes on a local NVIDIA Vulkan GPU"]
 fn hardware_fast_pan_with_and_without_temporal_hints() {
     for hints in [false, true] {
-        run_hardware_sequence(true, Some(hints), None);
-    }
-}
-
-#[test]
-#[ignore = "Exercises no-cost and forward-only profiles on a local NVIDIA Vulkan GPU"]
-fn hardware_guidance_fallback_profiles() {
-    for profile in [(true, false), (false, true), (false, false)] {
-        run_hardware_sequence(false, None, Some(profile));
+        run_hardware_sequence(true, Some(hints));
     }
 }
 
@@ -373,67 +365,6 @@ fn hardware_sr_motion_crop_and_scale() {
         );
     }
 }
-#[test]
-fn capability_fallbacks_never_request_unsupported_outputs() {
-    assert_eq!(
-        session_profiles(true, true),
-        [(true, true), (true, false), (false, true), (false, false)]
-    );
-    assert_eq!(
-        session_profiles(false, true),
-        [(false, true), (false, false)]
-    );
-    assert_eq!(
-        session_profiles(true, false),
-        [(true, false), (false, false)]
-    );
-    assert_eq!(session_profiles(false, false), [(false, false)]);
-}
-#[test]
-fn cost_formats_use_the_supplied_instance_route() {
-    unsafe extern "system" fn query(
-        physical: vk::PhysicalDevice,
-        info: *const vk::OpticalFlowImageFormatInfoNV<'_>,
-        count: *mut u32,
-        formats: *mut vk::OpticalFlowImageFormatPropertiesNV<'_>,
-    ) -> vk::Result {
-        assert_eq!(physical.as_raw(), 0xDEAD);
-        assert_eq!((*info).usage, vk::OpticalFlowUsageFlagsNV::COST);
-        if formats.is_null() {
-            *count = 1;
-        } else {
-            assert_eq!(*count, 1);
-            (*formats).format = vk::Format::R8_UINT;
-        }
-        vk::Result::SUCCESS
-    }
-    unsafe extern "system" fn route(
-        instance: vk::Instance,
-        name: *const std::ffi::c_char,
-    ) -> vk::PFN_vkVoidFunction {
-        assert_eq!(instance.as_raw(), 0xF00D);
-        assert_eq!(
-            CStr::from_ptr(name),
-            c"vkGetPhysicalDeviceOpticalFlowImageFormatsNV"
-        );
-        let function: vk::PFN_vkGetPhysicalDeviceOpticalFlowImageFormatsNV = query;
-        Some(std::mem::transmute(function))
-    }
-    unsafe extern "system" fn missing(
-        _: vk::Instance,
-        _: *const std::ffi::c_char,
-    ) -> vk::PFN_vkVoidFunction {
-        None
-    }
-    // These handles are deliberately invalid for the system Loader. Only the
-    // provided instance route can interpret them, as with the actual proxy.
-    unsafe {
-        let instance = vk::Instance::from_raw(0xF00D);
-        let physical = vk::PhysicalDevice::from_raw(0xDEAD);
-        assert!(cost_format_available(instance, physical, route).unwrap());
-        assert!(!cost_format_available(instance, physical, missing).unwrap());
-    }
-}
 fn sample_grid(grid: vk::Extent2D, p: [f32; 2], load: impl Fn(usize) -> f32) -> f32 {
     let position = [p[0] / 4. - 0.5, p[1] / 4. - 0.5];
     let base = [position[0].floor() as i32, position[1].floor() as i32];
@@ -447,25 +378,15 @@ fn sample_grid(grid: vk::Extent2D, p: [f32; 2], load: impl Fn(usize) -> f32) -> 
     let lower = at(0, 1) * (1. - fraction[0]) + at(1, 1) * fraction[0];
     upper * (1. - fraction[1]) + lower * fraction[1]
 }
-fn sample_flow(raw: &[u32], grid: vk::Extent2D, p: [f32; 2], segment: usize) -> [f32; 2] {
+fn sample_flow(raw: &[u32], grid: vk::Extent2D, p: [f32; 2]) -> [f32; 2] {
     [0, 1].map(|axis| {
         sample_grid(grid, p, |i| {
-            let word = raw[segment * (grid.width * grid.height) as usize + i];
+            let word = raw[i];
             ((word >> (axis * 16)) as u16 as i16) as f32 / 32.
         })
     })
 }
-fn sample_cost(raw: &[u32], grid: vk::Extent2D, p: [f32; 2], segment: usize) -> f32 {
-    sample_grid(grid, p, |i| {
-        let word = raw[segment * (grid.width * grid.height) as usize + i / 4];
-        ((word >> ((i % 4) * 8)) & 255) as f32 / 255.
-    })
-}
-fn run_hardware_sequence(
-    fast_pan: bool,
-    temporal_hints: Option<bool>,
-    preferred: Option<(bool, bool)>,
-) {
+fn run_hardware_sequence(fast_pan: bool, temporal_hints: Option<bool>) {
     unsafe {
         let entry = ash::Entry::load().unwrap();
         let validation = std::env::var_os("NS_NVOF_VALIDATION").is_some();
@@ -594,8 +515,8 @@ fn run_hardware_sequence(
         )
         .unwrap();
         let grid_count = u64::from(width.div_ceil(4)) * u64::from(height.div_ceil(4));
-        let raw_offset = (pixels as u64 * 18).div_ceil(4) * 4;
-        let read_bytes = raw_offset + grid_count * 16;
+        let raw_offset = (pixels as u64 * 16).div_ceil(4) * 4;
+        let read_bytes = raw_offset + grid_count * 4;
         let read = buffer(
             d,
             &props,
@@ -631,26 +552,16 @@ fn run_hardware_sequence(
         let app_ready = d
             .create_semaphore(&vk::SemaphoreCreateInfo::default(), None)
             .unwrap();
-        let mut flow = Flow::create_with_profile(
+        let mut flow = Flow::create(
             &instance,
-            entry.static_fn().get_instance_proc_addr,
             physical,
             d,
             graphics,
             optical,
             vk::SwapchainKHR::null(),
             r,
-            preferred,
         )
         .unwrap();
-        if let Some((backward, cost)) = preferred {
-            assert!(backward || !flow.backward);
-            assert!(cost || !flow.cost);
-        }
-        println!(
-            "bidirectional={} cost={} fg_motion=fp16_pixels",
-            flow.backward, flow.cost
-        );
         if let Some(hints) = temporal_hints {
             flow.temporal_hints = hints;
         }
@@ -731,7 +642,7 @@ fn run_hardware_sequence(
                     let at = ((y as u32 * width + x as u32) * 4) as usize;
                     bytes[at..at + 4].copy_from_slice(&[value, value, value, 255]);
                     // Static UI must keep exact-zero FG motion, while NR/SR
-                    // and the confidence map still retain the raw field.
+                    // retain the raw field.
                     if x < 32 && y < 32 {
                         bytes[at..at + 4].copy_from_slice(&[8, 16, 32, 255]);
                     }
@@ -848,10 +759,9 @@ fn run_hardware_sequence(
                     flow.pixel_motion.as_ref().unwrap().0.image,
                     pixels as u64 * 8,
                 ),
-                (flow.confidence.as_ref().unwrap().image, pixels as u64 * 12),
                 (
                     flow.sr_pixel_motion.as_ref().unwrap().0.image,
-                    pixels as u64 * 14,
+                    pixels as u64 * 12,
                 ),
             ] {
                 transition(
@@ -884,7 +794,7 @@ fn run_hardware_sequence(
                     &[vk::BufferCopy {
                         src_offset: 0,
                         dst_offset: raw_offset,
-                        size: grid_count * 16,
+                        size: grid_count * 4,
                     }],
                 );
             }
@@ -929,18 +839,14 @@ fn run_hardware_sequence(
             let result = std::slice::from_raw_parts(ptr.cast::<f32>(), pixels * 2).to_vec();
             let halfs = std::slice::from_raw_parts(
                 ptr.cast::<u8>().add(pixels * 8).cast::<u16>(),
-                pixels * 3,
+                pixels * 2,
             );
             let pixel_motion = halfs[..pixels * 2]
                 .iter()
                 .map(|v| crate::frame_capture::half(*v))
                 .collect::<Vec<_>>();
-            let confidence = halfs[pixels * 2..]
-                .iter()
-                .map(|v| crate::frame_capture::half(*v))
-                .collect::<Vec<_>>();
             let sr_pixels = std::slice::from_raw_parts(
-                ptr.cast::<u8>().add(pixels * 14).cast::<u16>(),
+                ptr.cast::<u8>().add(pixels * 12).cast::<u16>(),
                 pixels * 2,
             )
             .iter()
@@ -952,7 +858,7 @@ fn run_hardware_sequence(
             } else {
                 std::slice::from_raw_parts(
                     ptr.cast::<u8>().add(raw_offset as usize).cast::<u32>(),
-                    grid_count as usize * 4,
+                    grid_count as usize,
                 )
                 .to_vec()
             };
@@ -960,13 +866,9 @@ fn run_hardware_sequence(
             assert!(result.iter().all(|v| v.is_finite()));
             assert!(pixel_motion.iter().all(|v| v.is_finite()));
             assert!(sr_pixels.iter().all(|v| v.is_finite()));
-            assert!(confidence
-                .iter()
-                .all(|v| v.is_finite() && (0.0..=1.0).contains(v)));
             if history_reset || guidance.duplicate {
                 assert!(pixel_motion
                     .iter()
-                    .chain(confidence.iter())
                     .chain(sr_pixels.iter())
                     .all(|v| *v == 0.));
             } else {
@@ -979,7 +881,7 @@ fn run_hardware_sequence(
                     (width - 1, height - 1),
                 ] {
                     let p = [x as f32 + 0.5, y as f32 + 0.5];
-                    let forward = sample_flow(&raw, flow.grid, p, 0);
+                    let forward = sample_flow(&raw, flow.grid, p);
                     let at = (y * width + x) as usize;
                     let unchanged = previous_pixels.as_ref().is_some_and(|previous| {
                         let tile_x = x / 4 * 4;
@@ -1013,34 +915,6 @@ fn run_hardware_sequence(
                             "FG motion differs from the exact-static/raw contract at ({x},{y})"
                         );
                     }
-                    let mut expected = if flow.cost {
-                        1. - sample_cost(&raw, flow.grid, p, 2)
-                    } else {
-                        0.65
-                    };
-                    if flow.backward {
-                        let previous = [p[0] + forward[0], p[1] + forward[1]];
-                        let inside = previous[0] >= 0.
-                            && previous[1] >= 0.
-                            && previous[0] < width as f32
-                            && previous[1] < height as f32;
-                        let backward = sample_flow(&raw, flow.grid, previous, 1);
-                        let error = (forward[0] + backward[0]).hypot(forward[1] + backward[1]);
-                        let threshold = 0.75 + 0.05 * forward[0].hypot(forward[1]);
-                        expected *= if inside {
-                            (1. - error / threshold).clamp(0., 1.)
-                        } else {
-                            0.
-                        };
-                        if flow.cost {
-                            expected *= 1. - sample_cost(&raw, flow.grid, previous, 3);
-                        }
-                    }
-                    assert!(
-                        (confidence[at] - expected.clamp(0., 1.)).abs() < 0.002,
-                        "confidence packing/consistency mismatch at ({x},{y}): {} != {expected}",
-                        confidence[at]
-                    );
                 }
                 if flow.static_guard {
                     for y in 0..32 {
@@ -1063,9 +937,12 @@ fn run_hardware_sequence(
                 println!("scene cut: zero vectors={zero}/{pixels}");
                 assert!(
                     !history_reset,
-                    "low confidence alone must not reset FG history"
+                    "an unrelated color frame alone must not reset FG history"
                 );
-                assert!(zero < pixels / 2, "raw flow must survive low confidence");
+                assert!(
+                    zero < pixels / 2,
+                    "unrelated frames must retain the raw estimated flow"
+                );
             } else if reset {
                 assert!(history_reset);
                 assert!(result.iter().all(|v| *v == 0.));
@@ -1091,7 +968,7 @@ fn run_hardware_sequence(
                 );
                 assert!(
                     correct * 100 > total * 85,
-                    "NVOF direction, magnitude or confidence failed"
+                    "NVOF direction or magnitude failed"
                 );
             }
             previous = (sx, sy);

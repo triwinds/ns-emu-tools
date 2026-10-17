@@ -43,8 +43,8 @@ static bool copyNames(char (&dest)[64][128], uint32_t count, const char** source
     }
     return true;
 }
-static int32_t initFeatures(void* function, const wchar_t* directory, int sr) noexcept {
-    if (!function || !directory) return -1000;
+static int32_t initFeatures(void* function, const wchar_t* directory, int sr, const wchar_t* logs) noexcept {
+    if (!function || !directory || !logs) return -1000;
     try {
         // Stable storage: retained for the entire SDK session.
         static const sl::Feature features[] = {sl::kFeatureDLSS_G, sl::kFeatureReflex, sl::kFeaturePCL};
@@ -55,7 +55,7 @@ static int32_t initFeatures(void* function, const wchar_t* directory, int sr) no
         sl::Preferences prefs;
         prefs.pathsToPlugins = paths;
         prefs.numPathsToPlugins = 1;
-        prefs.pathToLogsAndData = directory;
+        prefs.pathToLogsAndData = logs;
         prefs.logLevel = sl::LogLevel::eVerbose;
         prefs.featuresToLoad = sr == 2 ? combined : sr ? srFeatures : features;
         prefs.numFeaturesToLoad = sr == 2 ? 4 : sr ? 1 : 3;
@@ -70,13 +70,16 @@ static int32_t initFeatures(void* function, const wchar_t* directory, int sr) no
     } catch (...) { return -1001; }
 }
 extern "C" int32_t probe_sl_init(void* function, const wchar_t* directory) noexcept {
-    return initFeatures(function, directory, false);
+    return initFeatures(function, directory, false, directory);
 }
 extern "C" int32_t probe_sl_init_combined(void* function, const wchar_t* directory) noexcept {
-    return initFeatures(function, directory, 2);
+    return initFeatures(function, directory, 2, directory);
 }
 extern "C" int32_t probe_sl_init_sr(void* function, const wchar_t* directory) noexcept {
-    return initFeatures(function, directory, true);
+    return initFeatures(function, directory, true, directory);
+}
+extern "C" int32_t probe_sl_init_at(void* function, const wchar_t* directory, const wchar_t* logs, int combined) noexcept {
+    return initFeatures(function, directory, combined ? 2 : 0, logs);
 }
 extern "C" int32_t probe_sl_requirements(void* function, uint32_t feature, ProbeRequirements* out) noexcept {
     if (!function || !out) return -1000;

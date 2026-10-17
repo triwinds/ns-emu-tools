@@ -1,6 +1,13 @@
 //! Process-scoped FG Vulkan layer; transparent unless explicitly enabled by the launcher.
 #![allow(clippy::missing_safety_doc)]
 mod abi;
+#[path = "../../streamline-runtime-files.rs"]
+pub mod runtime_files;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuFixedRuntimeV1: [u8; b"NS_EMU_FIXED_RUNTIME_V1".len()] =
+    *b"NS_EMU_FIXED_RUNTIME_V1";
 #[path = "../../streamline-advanced-settings.rs"]
 pub mod advanced_settings;
 // The toolbox checks the verified DLL for this marker before a tuned launch.

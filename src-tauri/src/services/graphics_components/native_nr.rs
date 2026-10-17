@@ -1,4 +1,4 @@
-//! Immutable NR installs from the pinned runtime Release. Games load private snapshots.
+//! Immutable NR installs from the pinned runtime Release, shared by game launches.
 use super::streamline_fg::file_digest;
 use super::streamline_install::{self, atomic_json, plain, safe_dir};
 use serde::{Deserialize, Serialize};
@@ -222,9 +222,17 @@ fn uninstall_at(base: &Path, allowed: &[&str]) -> Result<(), String> {
         }
         versions.push(path);
     }
-    for dir in versions {
+    let files: Vec<_> = versions
+        .iter()
+        .flat_map(|dir| [dir.join("nvngx_dlssnr.dll"), dir.join("installation.json")])
+        .collect();
+    let _files = streamline_install::hold_runtime_files(&files, true)?;
+    for dir in &versions {
         fs::remove_file(dir.join("nvngx_dlssnr.dll")).map_err(|e| e.to_string())?;
         fs::remove_file(dir.join("installation.json")).map_err(|e| e.to_string())?;
+    }
+    drop(_files);
+    for dir in versions {
         fs::remove_dir(dir).map_err(|e| e.to_string())?;
     }
     let pointer = base.join("current.json");
@@ -302,5 +310,30 @@ mod tests {
         )
         .unwrap();
         assert!(current_at(&base, &contract::RUNTIMES).is_err());
+    }
+    #[cfg(windows)]
+    #[test]
+    fn running_model_blocks_uninstall_before_any_files_are_removed() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("model.dll");
+        fs::write(&source, b"test model").unwrap();
+        let hash = file_digest(&source).unwrap();
+        let allowed = [hash.as_str()];
+        let base = temp.path().join("models");
+        import_at(&base, &source, &allowed).unwrap();
+        let runtime = current_at(&base, &allowed).unwrap().unwrap();
+        let guard = streamline_install::hold_runtime_files(&[runtime.clone()], false).unwrap();
+        assert!(uninstall_at(&base, &allowed)
+            .unwrap_err()
+            .contains("正在使用"));
+        assert!(current_at(&base, &allowed).unwrap().is_some());
+        assert!(runtime
+            .parent()
+            .unwrap()
+            .join("installation.json")
+            .is_file());
+        drop(guard);
+        uninstall_at(&base, &allowed).unwrap();
+        assert!(!base.exists());
     }
 }
