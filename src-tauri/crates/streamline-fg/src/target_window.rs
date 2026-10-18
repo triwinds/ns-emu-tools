@@ -8,6 +8,21 @@ static ACTIVE: AtomicBool = AtomicBool::new(false);
 static STOP: AtomicBool = AtomicBool::new(false);
 static REASON: AtomicI32 = AtomicI32::new(-1);
 static HOOKS: std::sync::Mutex<Vec<usize>> = std::sync::Mutex::new(Vec::new());
+pub(super) unsafe fn refresh_rate(hwnd: isize) -> Option<u32> {
+    use windows_sys::Win32::Graphics::Gdi::*;
+    let monitor = MonitorFromWindow(hwnd as HWND, MONITOR_DEFAULTTONEAREST);
+    let mut info: MONITORINFOEXW = std::mem::zeroed();
+    info.monitorInfo.cbSize = std::mem::size_of_val(&info) as u32;
+    if GetMonitorInfoW(monitor, &mut info.monitorInfo) == 0 {
+        return None;
+    }
+    let mut mode: DEVMODEW = std::mem::zeroed();
+    mode.dmSize = std::mem::size_of_val(&mode) as u16;
+    if EnumDisplaySettingsW(info.szDevice.as_ptr(), ENUM_CURRENT_SETTINGS, &mut mode) == 0 {
+        return None;
+    }
+    (mode.dmDisplayFrequency > 1).then_some(mode.dmDisplayFrequency)
+}
 unsafe extern "system" fn callback(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     if code >= 0
         && ACTIVE.load(Ordering::Acquire)

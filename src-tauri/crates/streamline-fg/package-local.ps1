@@ -7,7 +7,7 @@ $bridgeCrate = Join-Path $crate '../nr-call-bridge'
 $previousNrRustFlags = $env:RUSTFLAGS
 try {
     $env:RUSTFLAGS = '-C target-feature=-crt-static'
-    cargo build --locked --release --manifest-path (Join-Path $crate 'Cargo.toml') --lib --bin streamline-layer-probe --features native-nr
+    cargo build --locked --release --manifest-path (Join-Path $crate 'Cargo.toml') --lib --bin streamline-layer-probe --features hybrid-xess-fg
     if ($LASTEXITCODE -ne 0) { throw 'Native graphics build failed' }
     cargo build --locked --release --manifest-path (Join-Path $bridgeCrate 'Cargo.toml')
     if ($LASTEXITCODE -ne 0) { throw 'Native NR bridge build failed' }

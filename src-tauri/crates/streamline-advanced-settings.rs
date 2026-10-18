@@ -17,6 +17,60 @@ pub const NR_INFERENCE_SCALE_MARKER: &[u8] = b"NS_EMU_NR_INFERENCE_SCALE_V1";
 pub const NR_INFERENCE_CAP_MARKER: &[u8] = b"NS_EMU_NR_INFERENCE_CAP_V1";
 pub const INPUT_SCALING_MARKER: &[u8] = b"NS_EMU_INPUT_SCALING_V1";
 pub const INPUT_SCALING_LIVE_MARKER: &[u8] = b"NS_EMU_INPUT_SCALING_LIVE_V1";
+pub const OPTICAL_FLOW_MARKER: &[u8] = b"NS_EMU_OPTICAL_FLOW_V1";
+pub const HYBRID_FG_MARKER: &[u8] = b"NS_EMU_DLSS_XESS_FG_V1";
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FgBackend {
+    #[default]
+    Dlss,
+    Xess,
+}
+impl FgBackend {
+    pub fn is_default(&self) -> bool {
+        *self == Self::Dlss
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum OpticalFlowQuality {
+    Quality,
+    #[default]
+    Balanced,
+    Performance,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default, rename_all = "camelCase", deny_unknown_fields)]
+pub struct OpticalFlowOptions {
+    pub quality: OpticalFlowQuality,
+    pub temporal_hints: bool,
+    pub static_guard: bool,
+    pub edge_protection: bool,
+    #[serde(deserialize_with = "optical_flow_threshold")]
+    pub edge_threshold: u16,
+}
+impl Default for OpticalFlowOptions {
+    fn default() -> Self {
+        Self {
+            quality: OpticalFlowQuality::Balanced,
+            temporal_hints: true,
+            static_guard: true,
+            edge_protection: true,
+            edge_threshold: 2,
+        }
+    }
+}
+impl OpticalFlowOptions {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+fn optical_flow_threshold<'de, D: Deserializer<'de>>(d: D) -> Result<u16, D::Error> {
+    bounded(d, 0, 32, false)
+}
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -134,6 +188,11 @@ impl LookScope {
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
 pub struct AdvancedSettings {
+    #[serde(
+        rename = "opticalFlow",
+        skip_serializing_if = "OpticalFlowOptions::is_default"
+    )]
+    pub optical_flow: OpticalFlowOptions,
     pub nr: NrOptions,
     pub sr: SrOptions,
     pub fg: FgOptions,
@@ -626,6 +685,8 @@ impl ReflexMode {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct FgOptions {
+    #[serde(skip_serializing_if = "FgBackend::is_default")]
+    pub backend: FgBackend,
     pub mode: FgMode,
     #[serde(deserialize_with = "multiplier")]
     pub multiplier: u8,
@@ -638,6 +699,7 @@ pub struct FgOptions {
 impl Default for FgOptions {
     fn default() -> Self {
         Self {
+            backend: FgBackend::Dlss,
             mode: FgMode::Fixed,
             multiplier: 2,
             target_fps: 0,
@@ -702,6 +764,53 @@ fn input_fps<'de, D: Deserializer<'de>>(d: D) -> Result<u16, D::Error> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn fg_backend_is_legacy_compatible_and_roundtrips() {
+        use super::*;
+        let old: FgOptions = serde_json::from_str("{}").unwrap();
+        assert_eq!(old.backend, FgBackend::Dlss);
+        assert!(serde_json::to_value(old).unwrap().get("backend").is_none());
+        let hybrid: FgOptions = serde_json::from_str(r#"{"backend":"xess"}"#).unwrap();
+        assert_eq!(hybrid.backend, FgBackend::Xess);
+        assert_eq!(serde_json::to_value(hybrid).unwrap()["backend"], "xess");
+        assert!(serde_json::from_str::<FgOptions>(r#"{"backend":"both"}"#).is_err());
+    }
+    #[test]
+    fn optical_flow_defaults_roundtrip_bounds_and_startup_only_contract() {
+        use super::*;
+        let legacy: AdvancedSettings = serde_json::from_str("{}").unwrap();
+        assert!(legacy.optical_flow.is_default());
+        assert!(serde_json::to_value(legacy)
+            .unwrap()
+            .get("opticalFlow")
+            .is_none());
+        let tuned: AdvancedSettings = serde_json::from_str(r#"{"opticalFlow":{"quality":"quality","temporalHints":false,"staticGuard":false,"edgeProtection":false,"edgeThreshold":0}}"#).unwrap();
+        assert_eq!(tuned.optical_flow.quality, OpticalFlowQuality::Quality);
+        assert!(
+            !tuned.optical_flow.temporal_hints
+                && !tuned.optical_flow.static_guard
+                && !tuned.optical_flow.edge_protection
+        );
+        assert_eq!(
+            serde_json::from_value::<AdvancedSettings>(serde_json::to_value(tuned).unwrap())
+                .unwrap(),
+            tuned
+        );
+        for bad in [
+            r#"{"edgeThreshold":33}"#,
+            r#"{"edgeThreshold":-1}"#,
+            r#"{"edgeThreshold":2.5}"#,
+            r#"{"quality":"unknown"}"#,
+            r#"{"typo":true}"#,
+        ] {
+            assert!(
+                serde_json::from_str::<OpticalFlowOptions>(bad).is_err(),
+                "{bad}"
+            );
+        }
+        assert!(serde_json::from_str::<OpticalFlowOptions>(r#"{"edgeThreshold":32}"#).is_ok());
+        assert!(serde_json::from_str::<AdvancedUpdate>(r#"{"opticalFlow":{}}"#).is_err());
+    }
     #[test]
     fn color_experiments_preserve_legacy_neutral_and_validate_protection_bounds() {
         let legacy: super::LookOptions = serde_json::from_str(r#"{"amount":100}"#).unwrap();

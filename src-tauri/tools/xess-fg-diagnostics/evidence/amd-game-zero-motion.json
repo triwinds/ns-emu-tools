@@ -1,0 +1,180 @@
+{
+  "session": "game-amd-zero-003",
+  "exit": {
+    "code": 0,
+    "fg_requested": false,
+    "success": true
+  },
+  "zero_motion": true,
+  "fixed_depth": 0.5,
+  "optical_flow": false,
+  "gameplay_observation": {
+    "observed_gameplay_unix": 1792220652.9754758,
+    "conservative_min_elapsed_us": 177587645,
+    "scene": "opening tutorial battle, user confirmed controllable; native window enlarged"
+  },
+  "bridge_configurations": [
+    {
+      "depth": 0.5,
+      "experimental_scale_limit": 640,
+      "fg_output": [
+        640,
+        350
+      ],
+      "input": [
+        1200,
+        656
+      ],
+      "jitter": [
+        0,
+        0
+      ],
+      "motion": [
+        0,
+        0
+      ],
+      "nvof": false,
+      "original_window_presentation": true,
+      "streamline": false
+    },
+    {
+      "depth": 0.5,
+      "experimental_scale_limit": 640,
+      "fg_output": [
+        640,
+        348
+      ],
+      "input": [
+        2560,
+        1391
+      ],
+      "jitter": [
+        0,
+        0
+      ],
+      "motion": [
+        0,
+        0
+      ],
+      "nvof": false,
+      "original_window_presentation": true,
+      "streamline": false
+    },
+    {
+      "depth": 0.5,
+      "experimental_scale_limit": 640,
+      "fg_output": [
+        640,
+        350
+      ],
+      "input": [
+        1200,
+        656
+      ],
+      "jitter": [
+        0,
+        0
+      ],
+      "motion": [
+        0,
+        0
+      ],
+      "nvof": false,
+      "original_window_presentation": true,
+      "streamline": false
+    }
+  ],
+  "guide_readbacks": [
+    {
+      "event": "game_guides_readback",
+      "height": 175,
+      "mismatched_pixels": 0,
+      "plane_stride": 224256,
+      "width": 320
+    },
+    {
+      "event": "game_guides_readback",
+      "height": 174,
+      "mismatched_pixels": 0,
+      "plane_stride": 222720,
+      "width": 320
+    },
+    {
+      "event": "game_guides_readback",
+      "height": 175,
+      "mismatched_pixels": 0,
+      "plane_stride": 224256,
+      "width": 320
+    }
+  ],
+  "segments": [
+    {
+      "enabled": true,
+      "measured_frames": 1483,
+      "seconds": 50.193664,
+      "source_present_fps": 29.52563893323269,
+      "sdk_queued_fps": 59.05127786646538,
+      "frames_queued_counts": {
+        "2": 1483
+      },
+      "fg_result_counts": {
+        "0": 1483
+      },
+      "native_result_counts": {
+        "0": 1483
+      },
+      "bridge_cpu_wall_ms_p50": 20.679,
+      "bridge_cpu_wall_ms_p95": 23.425
+    },
+    {
+      "enabled": false,
+      "measured_frames": 858,
+      "seconds": 29.065884,
+      "source_present_fps": 29.484738878060615,
+      "sdk_queued_fps": 29.484738878060615,
+      "frames_queued_counts": {
+        "1": 858
+      },
+      "fg_result_counts": {
+        "0": 858
+      },
+      "native_result_counts": {
+        "0": 858
+      },
+      "bridge_cpu_wall_ms_p50": 16.615,
+      "bridge_cpu_wall_ms_p95": 18.917
+    },
+    {
+      "enabled": true,
+      "measured_frames": 1455,
+      "seconds": 48.955627,
+      "source_present_fps": 29.700365189889204,
+      "sdk_queued_fps": 59.40073037977841,
+      "frames_queued_counts": {
+        "2": 1455
+      },
+      "fg_result_counts": {
+        "0": 1455
+      },
+      "native_result_counts": {
+        "0": 1455
+      },
+      "bridge_cpu_wall_ms_p50": 19.512,
+      "bridge_cpu_wall_ms_p95": 22.115
+    }
+  ],
+  "failures": [],
+  "layer_trace_sha256": "f9bbeaf970b92ffd8a7cbef4787c342ef8aa7f76efc0607027d9cfbba42d0223",
+  "limits": "Sequential bridge CPU wall time includes GPU waits/presentation; SDK queued FPS is not physical scanout. Placeholder guides cannot validate motion quality or input latency.",
+  "binaries": {
+    "src-tauri/target/xess-fg-game/release/streamline_probe_layer.dll": "fbbe393463d2d5fb1756a83fd307e914ddc499ba03e495d8ac22f68ec20f7133",
+    "src-tauri/target/xess-fg-game/release/streamline-layer-probe.exe": "95a2fd8b0aff2ed83d3a818876b7c8a35e3b40d465b356b319325201b08351ab",
+    "src-tauri/target/xess-fg-sdk-v3.0.2/bin/libxess_fg.dll": "ec5e0c65e075570c6ede72618bb666d0be0c2e10b2ea9762c0fe8cb8e375ab27",
+    "src-tauri/target/xess-fg-sdk-v3.0.2/bin/libxell.dll": "d2030dcd694fda8f2ec7e044b13e6db8f0b56d4ba9113a5efad334e3f3ded8c7"
+  },
+  "loaded_graphics_modules": [
+    "streamline_probe_layer.dll",
+    "libxell.dll",
+    "libxess_fg.dll"
+  ]
+}

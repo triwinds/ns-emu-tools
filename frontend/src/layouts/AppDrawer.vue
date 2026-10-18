@@ -17,10 +17,7 @@ import {useDisplay, useTheme} from "vuetify";
 import {useConfigStore} from "@/stores/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 import {updateLastOpenEmuPage} from "@/utils/tauri";
-import {useGraphicsGpu} from "@/utils/graphicsGpu";
 
-const { capabilities: graphicsGpu, load: loadGraphicsGpu } = useGraphicsGpu()
-onMounted(() => { void loadGraphicsGpu() })
 
 const emitter = useEmitter()
 const open = ref<string[]>([])
@@ -123,7 +120,6 @@ function openReleasePage() {
           </v-list-item>
         </template>
         <v-list-item
-          v-if="graphicsGpu?.hasNvidia"
           link
           to="/graphics"
         >

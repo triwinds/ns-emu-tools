@@ -11,11 +11,11 @@ import { mdiCheckCircleOutline, mdiAlertCircleOutline, mdiClockOutline, mdiLayer
 import type { GraphicsApi } from '@/utils/graphics'
 import type { GraphicsGpu } from '@/utils/graphicsGpu'
 import { detectStreamlineFg, operateStreamlineFg, liveStreamlineFg, type FgLive, type FgCheck, type FgPreflight } from '@/utils/streamlineFg'
-import { graphicsAdvanced, type FgOptions } from '@/utils/graphicsAdvanced'
+import { graphicsAdvanced, opticalFlowOptions, type FgOptions } from '@/utils/graphicsAdvanced'
 
 const emit = defineEmits<{ busy: [value: boolean] }>()
 const activeAction = ref<'install' | 'launch' | 'uninstall' | null>(null)
-const props = defineProps<{ executable: string; api: GraphicsApi; disabled: boolean; gpu: GraphicsGpu }>()
+const props = defineProps<{ executable: string; api: GraphicsApi; disabled: boolean; gpu: GraphicsGpu; unified?: boolean; selectedFgBackend?: 'dlss' | 'xess' }>()
 const configStore = useConfigStore()
 const progress = useProgressStore()
 const savingNvof = ref(false)
@@ -23,6 +23,9 @@ const savingNr = ref(false)
 const savingInput = ref(false)
 const srAdvanced = ref(false)
 const fgAdvanced = ref(false)
+const motionAdvanced = ref(false)
+const fgDialogOpen = computed({ get: () => fgAdvanced.value || motionAdvanced.value, set: (open: boolean) => { if (!open) { fgAdvanced.value = false; motionAdvanced.value = false } } })
+function showMotionOptions() { srAdvanced.value = false; fgAdvanced.value = false; motionAdvanced.value = true }
 const currentLive = ref<FgLive>({ connected: false })
 const nvofError = ref('')
 const nvofFeedback = ref('自动保存；下次以画面增强启动时生效。')
@@ -57,10 +60,20 @@ const srPreset = computed(() => configStore.config.setting.other?.streamline_sr_
 const advancedOptions = computed(() => graphicsAdvanced(configStore.config.setting.other?.streamline_advanced))
 const srOptions = ref({ ...advancedOptions.value.sr })
 const fgOptions = ref({ ...advancedOptions.value.fg })
+const motionOptions = ref(opticalFlowOptions(advancedOptions.value.opticalFlow))
+const motionQualities = [{ title: '质量优先（较慢）', value: 'quality' }, { title: '均衡（默认）', value: 'balanced' }, { title: '性能优先（较快）', value: 'performance' }]
+const motionDefault = computed(() => motionAdvanced.value
+  ? motionOptions.value.quality === 'balanced' && motionOptions.value.temporalHints
+  : JSON.stringify(advancedOptions.value.opticalFlow) === JSON.stringify(opticalFlowOptions()))
+const appliedMotion = computed(() => currentLive.value.connected ? currentLive.value.opticalFlow?.appliedOptions : undefined)
+const appliedMotionQuality = computed(() => motionQualities.find(item => item.value === appliedMotion.value?.quality)?.title ?? '未知')
+const motionRestartPending = computed(() => !!appliedMotion.value && JSON.stringify(appliedMotion.value) !== JSON.stringify(advancedOptions.value.opticalFlow))
 watch(() => advancedOptions.value.sr, value => { srOptions.value = { ...value } })
 watch(() => advancedOptions.value.fg, value => { fgOptions.value = { ...value } })
+watch(() => advancedOptions.value.opticalFlow, value => { motionOptions.value = opticalFlowOptions(value) })
 const fgMaximum = computed(() => {
-  const runtime = currentLive.value.connected && currentLive.value.fresh ? currentLive.value.fg?.maximumGenerated : undefined
+  const runtime = currentLive.value.connected && currentLive.value.fresh
+    ? currentLive.value.fg?.dlssMaximumGenerated ?? ((currentLive.value.fg?.backend ?? 'dlss') === 'dlss' ? currentLive.value.fg?.maximumGenerated : undefined) : undefined
   return runtime === undefined ? props.gpu.fgMaxMultiplier : Math.min(props.gpu.fgMaxMultiplier, runtime > 0 ? runtime + 1 : 0)
 })
 const fgSupported = computed(() => fgMaximum.value >= 2)
@@ -73,10 +86,11 @@ const fgMultipliers = computed(() => [2, 3, 4, 5, 6].map(value => {
   return { title: `${value}×${disabled ? (value > 2 && props.gpu.fgMaxMultiplier < 3 ? '（需要 RTX 50 系列）' : '（当前不可用）') : ''}`, value, props: { disabled, 'aria-disabled': disabled } }
 }))
 const fgModes = computed(() => [{ title: '固定倍数', value: 'fixed' }, { title: `动态目标帧率${fgMaximum.value < 3 ? '（需要 RTX 50 系列及运行库支持）' : ''}`, value: 'dynamic', props: { disabled: fgMaximum.value < 3 } }])
+const xessFgSelected = computed(() => advancedOptions.value.fg.backend === 'xess')
 const hardwareIssue = computed(() =>
   (!props.gpu.nrSupported && configStore.config.setting.other?.streamline_nr)
   || (!props.gpu.srSupported && srEnabled.value)
-  || (fgEnabled.value && (!fgSupported.value || advancedOptions.value.fg.multiplier > fgMaximum.value || (advancedOptions.value.fg.mode === 'dynamic' && fgMaximum.value < 3))),
+  || (fgEnabled.value && (!fgSupported.value || (!xessFgSelected.value && (advancedOptions.value.fg.multiplier > fgMaximum.value || (advancedOptions.value.fg.mode === 'dynamic' && fgMaximum.value < 3))))),
 )
 async function useSupportedEffects() {
   await saveGraphics({
@@ -87,9 +101,10 @@ async function useSupportedEffects() {
   })
 }
 const reflexModes = [{ title: '低延迟（默认）', value: 'low_latency' }, { title: '低延迟 + Boost', value: 'boost' }]
-const fgSummary = computed(() => advancedOptions.value.fg.mode === 'dynamic' ? `动态帧生成 · 目标 ${advancedOptions.value.fg.targetFps || '显示器刷新率'}${advancedOptions.value.fg.targetFps ? ' FPS' : ''} · 最高 ${advancedOptions.value.fg.multiplier}×` : `${advancedOptions.value.fg.multiplier}× 帧生成`)
+const fgSummary = computed(() => xessFgSelected.value ? 'XeSS 2× 帧生成 · 混合模式' : advancedOptions.value.fg.mode === 'dynamic' ? `动态帧生成 · 目标 ${advancedOptions.value.fg.targetFps || '显示器刷新率'}${advancedOptions.value.fg.targetFps ? ' FPS' : ''} · 最高 ${advancedOptions.value.fg.multiplier}×` : `${advancedOptions.value.fg.multiplier}× 帧生成`)
 const srDefault = computed(() => srMode.value === 'balanced' && savedScale.value === 172 && srPreset.value === 'j' && JSON.stringify(advancedOptions.value.sr) === JSON.stringify(graphicsAdvanced().sr))
-const fgDefault = computed(() => nvofEnabled.value && JSON.stringify(advancedOptions.value.fg) === JSON.stringify(graphicsAdvanced().fg))
+const defaultFgOptions = computed(() => ({ ...graphicsAdvanced().fg, ...(props.unified ? { backend: advancedOptions.value.fg.backend } : {}) }))
+const fgDefault = computed(() => nvofEnabled.value && JSON.stringify(advancedOptions.value.fg) === JSON.stringify(defaultFgOptions.value))
 const srModes = [
   { value: 'dlaa', scale: 100 },
   { value: 'quality', scale: 150 },
@@ -118,13 +133,27 @@ type GraphicsSettings = Partial<Pick<typeof configStore.config.setting.other, 's
 async function saveSrOptions() {
   await saveGraphics({ streamline_advanced: { ...advancedOptions.value, sr: { ...srOptions.value } } })
 }
+async function saveMotionOptions() {
+  const next = { ...motionOptions.value, edgeThreshold: Number(motionOptions.value.edgeThreshold) }
+  if (!Number.isInteger(next.edgeThreshold) || next.edgeThreshold < 0 || next.edgeThreshold > 32) {
+    nvofError.value = '运动边界阈值需为 0～32 的整数。'
+    return
+  }
+  await saveGraphics({ streamline_advanced: { ...advancedOptions.value, opticalFlow: next } })
+  if (!nvofError.value) nvofFeedback.value = '光流参数已保存；重新以画面增强启动游戏后生效。'
+}
+async function resetMotionOptions(forFg = true) {
+  const defaults = opticalFlowOptions()
+  motionOptions.value = forFg ? defaults : { ...motionOptions.value, quality: defaults.quality, temporalHints: defaults.temporalHints }
+  await saveMotionOptions()
+}
 async function saveFgOptions() {
   const next: FgOptions = { ...fgOptions.value, inputFps: Number(fgOptions.value.inputFps), targetFps: Number(fgOptions.value.targetFps) }
   if (!Number.isInteger(next.targetFps) || (next.targetFps !== 0 && (next.targetFps < 30 || next.targetFps > 360)) || !Number.isInteger(next.inputFps) || (next.inputFps !== 0 && (next.inputFps < 15 || next.inputFps > 240))) {
     nvofError.value = '目标帧率需为 0 或 30～360，输入帧率上限需为 0 或 15～240。'
     return
   }
-  if (next.multiplier > fgMaximum.value || (next.mode === 'dynamic' && fgMaximum.value < 3)) {
+  if (next.backend !== 'xess' && (next.multiplier > fgMaximum.value || (next.mode === 'dynamic' && fgMaximum.value < 3))) {
     nvofError.value = '当前显卡／运行库不支持所选 FG 倍数或动态模式。2× 需要 RTX 40／50 系列；更高倍数与动态模式需要 RTX 50 系列。'
     return
   }
@@ -197,7 +226,9 @@ async function saveGraphics(patch: GraphicsSettings) {
             }
           }
           if (affectsFg) {
-            if (!status.advancedSettingsSupported && JSON.stringify(advancedOptions.value.fg) !== JSON.stringify(graphicsAdvanced().fg)) {
+            if ((status.fg?.backend ?? 'dlss') !== (advancedOptions.value.fg.backend ?? 'dlss')) {
+              fgFeedback.value = '帧生成引擎已保存；请重新以画面增强启动游戏后应用。'
+            } else if (!status.advancedSettingsSupported && JSON.stringify(advancedOptions.value.fg) !== JSON.stringify(graphicsAdvanced().fg)) {
               fgFeedback.value = '已保存；当前组件不支持新增参数，请更新画面增强组件后重新专用启动。'
             } else {
               const result = await liveStreamlineFg(executable, fgEnabled.value, undefined, undefined, undefined, undefined, undefined, status.advancedSettingsSupported ? { fg: advancedOptions.value.fg } : undefined)
@@ -283,6 +314,7 @@ watch(() => [props.executable, props.api], () => {
   fgPending.value = 0
   srAdvanced.value = false
   fgAdvanced.value = false
+  motionAdvanced.value = false
   currentLive.value = { connected: false }
   srFeedback.value = '自动保存；连接专用启动的游戏后实时应用。'
   fgFeedback.value = '自动保存；连接专用启动的游戏后实时应用。'
@@ -299,6 +331,7 @@ watch(() => [props.executable, props.api], () => {
 
 async function inspect() {
   if (!props.executable || props.disabled || loading.value) return
+  if (props.unified && !props.gpu.hasNvidia) return
   const token = ++revision
   cancelComponentRefresh()
   allowUnverified.value = false
@@ -352,15 +385,35 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
     if (token === revision) { loading.value = false; activeAction.value = null }
   }
 }
+// The unified page owns effect selection and launch routing. Retain the existing
+// component lifecycle, advanced dialogs and runtime evidence in this controller.
+defineExpose({
+  state: computed(() => ({ report: report.value, installed: installed.value, canUse: canUse.value,
+    loading: loading.value, working: working.value, activeAction: activeAction.value,
+    error: error.value, message: message.value, status: statusLabel.value, nextStep: nextStep.value,
+    blocked: blocked.value, allowUnverified: allowUnverified.value, live: currentLive.value,
+    srSummary: `${srModeTitle.value} · ${(savedScale.value / 100).toFixed(2)}× · ${srPresetTitle.value}`,
+    fgSummary: fgSummary.value, srPending: srPending.value, fgPending: fgPending.value })),
+  inspect, operate,
+  showDetails: () => { details.value = true },
+  showSrOptions: () => { srAdvanced.value = true },
+  showFgOptions: () => { motionAdvanced.value = false; fgOptions.value = { ...advancedOptions.value.fg, backend: props.selectedFgBackend ?? advancedOptions.value.fg.backend }; fgAdvanced.value = true },
+  showMotionOptions,
+  allowTrial: (value: boolean) => { allowUnverified.value = value },
+})
 </script>
 
 <template>
   <section
     class="fg-panel"
-    aria-labelledby="fg-title"
+    :class="{ 'fg-controller': unified }"
+    :aria-labelledby="unified ? undefined : 'fg-title'"
     :aria-busy="loading"
   >
-    <div class="fg-intro">
+    <div
+      v-if="!unified"
+      class="fg-intro"
+    >
       <div class="fg-title-line">
         <v-icon
           :icon="mdiLayersOutline"
@@ -419,7 +472,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       </ol>
     </div>
 
-    <div class="fg-body">
+    <div
+      v-if="!unified"
+      class="fg-body"
+    >
       <div class="fg-setup">
         <div class="fg-status-line">
           <h3>{{ installed ? '组件已就绪' : '安装画面增强组件' }}</h3><span
@@ -594,9 +650,8 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
                 :model-value="gpu.srSupported && srEnabled"
                 label="启用抗锯齿与细节重建"
                 color="primary"
-                density="compact"
+                density="comfortable"
                 hide-details
-                inset
                 :loading="savingNvof"
                 :disabled="disabled || working || !!srPending || !configStore.config.setting.other || !gpu.srSupported"
                 aria-describedby="fg-sr-description"
@@ -629,9 +684,8 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
                 :model-value="fgSupported && fgEnabled"
                 label="启用 FG 帧生成"
                 color="primary"
-                density="compact"
+                density="comfortable"
                 hide-details
-                inset
                 :disabled="disabled || working || !!fgPending || !configStore.config.setting.other || !fgSupported"
                 @update:model-value="setFg"
               />
@@ -681,16 +735,20 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
     <StreamlineFgLive
       v-show="currentLive.connected"
       :executable="executable"
+      :expected-fg-backend="selectedFgBackend"
       @status="receiveLive"
     />
     <p
-      v-if="installed && !currentLive.connected"
+      v-if="!unified && installed && !currentLive.connected"
       class="fg-awaiting"
       role="status"
     >
       游戏尚未连接。通过“以画面增强启动”打开模拟器并运行游戏后，这里会显示实时状态与帧率。
     </p>
-    <div class="fg-footer">
+    <div
+      v-if="!unified"
+      class="fg-footer"
+    >
       <span>支持 Ryujinx / Ryubing</span>
       <span>需要 Vulkan 图形接口</span>
     </div>
@@ -748,7 +806,6 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
             label="自动曝光"
             color="primary"
             density="comfortable"
-            inset
             hide-details
             :disabled="disabled || working || !!srPending"
             @update:model-value="saveSrOptions"
@@ -777,7 +834,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         </div>
       </div>
       <p class="fg-option-note">
-        优先处理模拟器缩放前的画面，无法识别时使用窗口画面。光流辅助可在 FG 高级配置中调整；不可用时逐帧重置重建历史。
+        优先处理模拟器缩放前的画面，无法识别时使用窗口画面。光流不可用时逐帧重置重建历史。
       </p>
       <p
         class="fg-apply-feedback"
@@ -795,6 +852,13 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       <template #actions>
         <v-btn
           variant="text"
+          :disabled="disabled || working"
+          @click="showMotionOptions"
+        >
+          NVIDIA 光流设置
+        </v-btn>
+        <v-btn
+          variant="text"
           :disabled="disabled || working || !!srPending || srDefault"
           @click="saveGraphics({ streamline_sr_mode: 'balanced', streamline_sr_scale: 172, streamline_sr_preset: 'j', streamline_advanced: { ...advancedOptions, sr: graphicsAdvanced().sr } })"
         >
@@ -804,14 +868,35 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
     </GraphicsAdvancedDialog>
 
     <GraphicsAdvancedDialog
-      v-model="fgAdvanced"
-      title="FG 高级配置"
+      v-model="fgDialogOpen"
+      :title="motionAdvanced ? 'NVIDIA 光流设置' : fgOptions.backend === 'xess' ? 'XeSS FG 高级配置' : 'DLSS FG 高级配置'"
       title-id="fg-advanced-title"
-      description="调整生成倍数、目标帧率和延迟。设置自动保存；连接支持高级配置的游戏会话后实时应用。"
+      :description="motionAdvanced ? '这些 NVIDIA 光流参数供 DLSS 重建与 NR 使用，不改变 XeSS FG 的引导输入。重新启动游戏后生效。' : '调整当前引擎的帧生成参数。切换引擎需退出模拟器重新启动；光流参数在重新启动后生效。'"
       :busy="savingNvof"
     >
-      <div class="fg-sr-options">
+      <div
+        v-if="!motionAdvanced"
+        class="fg-sr-options"
+      >
         <v-select
+          v-if="!unified"
+          v-model="fgOptions.backend"
+          :items="[{title:'DLSS FG',value:'dlss'},{title:'XeSS FG（实验 · 2×）',value:'xess'}]"
+          label="帧生成引擎"
+          variant="outlined"
+          :disabled="disabled || working || !!fgPending"
+          hint="切换引擎需要重新启动游戏。XeSS 模式需先安装 XeSS 组件。"
+          persistent-hint
+          @update:model-value="saveFgOptions"
+        />
+        <p
+          v-if="fgOptions.backend === 'xess'"
+          class="fg-option-note"
+        >
+          保留本页的 DLSS 重建与 NR 设置，最后交给 XeSS 插帧。XeSS 沿用零运动向量和固定深度，使用 XeLL；DLSS FG、Reflex 和动态倍数关闭。NVIDIA 光流继续用于 DLSS 重建和 NR。
+        </p>
+        <v-select
+          v-if="fgOptions.backend !== 'xess'"
           v-model="fgOptions.mode"
           :items="fgModes"
           label="帧生成方式"
@@ -820,6 +905,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           @update:model-value="saveFgOptions"
         />
         <v-select
+          v-if="fgOptions.backend !== 'xess'"
           v-model="fgOptions.multiplier"
           :items="fgMultipliers"
           :label="fgOptions.mode === 'dynamic' ? '最高生成倍数' : '生成倍数'"
@@ -830,14 +916,14 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           @update:model-value="saveFgOptions"
         />
         <p
-          v-if="fgSupported"
+          v-if="fgSupported && fgOptions.backend !== 'xess'"
           class="fg-capability"
           role="status"
         >
           当前显卡／运行库最高可选 {{ fgMaximum }}×
         </p>
         <v-text-field
-          v-if="fgOptions.mode === 'dynamic'"
+          v-if="fgOptions.backend !== 'xess' && fgOptions.mode === 'dynamic'"
           v-model.number="fgOptions.targetFps"
           label="动态目标帧率"
           type="number"
@@ -846,12 +932,15 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
           suffix="FPS"
           variant="outlined"
           :disabled="disabled || working || !!fgPending"
-          hint="0 自动匹配显示器刷新率；自定义范围 30～360。运行库在最高倍数内调整生成帧数。"
+          hint="0 自动匹配显示器刷新率；自定义范围 30～360。原生动态模式不可用时自动调节倍数，受最高倍数限制；目标帧率不保证精确达到。"
           persistent-hint
           @change="saveFgOptions"
           @keyup.enter="saveFgOptions"
         />
-        <div class="fg-advanced-section">
+        <div
+          v-if="fgOptions.backend !== 'xess'"
+          class="fg-advanced-section"
+        >
           <h3>延迟与帧率</h3>
           <v-select
             v-model="fgOptions.reflex"
@@ -880,41 +969,134 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
         </div>
       </div>
       <p
-        v-if="currentLive.connected && !currentLive.advancedSettingsSupported"
+        v-if="!motionAdvanced && currentLive.connected && !currentLive.advancedSettingsSupported"
         class="fg-option-note"
       >
         当前组件不支持新增参数。设置可先保存，更新画面增强组件并重新专用启动后使用。
       </p>
-      <v-switch
-        :model-value="nvofEnabled"
-        label="NVIDIA 光流辅助"
-        color="primary"
-        density="comfortable"
-        hide-details
-        inset
-        :loading="savingNvof"
-        :disabled="disabled || working || !configStore.config.setting.other"
-        aria-describedby="fg-motion-description"
-        @update:model-value="setNvof"
-      />
+      <template v-if="motionAdvanced || fgOptions.backend !== 'xess'">
+        <v-switch
+          :model-value="nvofEnabled"
+          label="NVIDIA 光流辅助"
+          color="primary"
+          density="comfortable"
+          hide-details
+          :loading="savingNvof"
+          :disabled="disabled || working || !configStore.config.setting.other"
+          aria-describedby="fg-motion-description"
+          @update:model-value="setNvof"
+        />
+        <p
+          id="fg-motion-description"
+          class="fg-option-note"
+        >
+          利用 NVIDIA 硬件估算画面运动，辅助 DLSS 重建、NR{{ motionAdvanced ? '' : ' 和 DLSS FG' }}。默认开启，会增加处理开销，可关闭对比效果。不用于 XeSS FG。
+        </p>
+        <div class="fg-shared-setting">
+          <strong>此设置也影响抗锯齿与细节重建</strong>
+          <p>NR 会话始终使用硬件光流。安装 NR 组件后，专用启动会为实时切换准备 NR，因此即使此开关关闭，该会话仍会启用光流。</p>
+        </div>
+        <div class="fg-advanced-section">
+          <h3>光流高级设置</h3>
+          <p class="fg-option-note">
+            以下设置重新启动游戏后生效。质量档位与时间提示影响 DLSS 重建与 NR{{ motionAdvanced ? '。' : '；两项区域保护只影响 DLSS FG。' }}
+          </p>
+          <v-select
+            v-model="motionOptions.quality"
+            :items="motionQualities"
+            label="光流质量"
+            variant="outlined"
+            :disabled="disabled || working"
+            hint="质量优先增加运动估算开销；性能优先减少开销。不同游戏的实际画质需要对比。"
+            persistent-hint
+            @update:model-value="saveMotionOptions"
+          />
+          <v-switch
+            v-model="motionOptions.temporalHints"
+            label="光流时间提示"
+            color="primary"
+            hide-details
+            :disabled="disabled || working"
+            @update:model-value="saveMotionOptions"
+          />
+          <p class="fg-option-note">
+            沿用之前的运动估计帮助搜索。快速转向时可关闭对比，关闭后也可能增加运动噪声。
+          </p>
+          <template v-if="!motionAdvanced">
+            <v-switch
+              v-model="motionOptions.staticGuard"
+              label="FG 静态区域保护"
+              color="primary"
+              hide-details
+              :disabled="disabled || working"
+              @update:model-value="saveMotionOptions"
+            />
+            <p class="fg-option-note">
+              将完全未变化的小区域视为静止，减轻 HUD 等静态内容的漂移。
+            </p>
+            <v-switch
+              v-model="motionOptions.edgeProtection"
+              label="FG 运动边界保护"
+              color="primary"
+              hide-details
+              :disabled="disabled || working"
+              @update:model-value="saveMotionOptions"
+            />
+            <p class="fg-option-note">
+              减少人物与背景的不同运动混合。关闭后恢复平滑插值，可用于同场景对比。
+            </p>
+            <div class="fg-sr-scale-label fg-control-label">
+              <label id="fg-motion-threshold-label">边界一致性阈值</label><output>{{ motionOptions.edgeThreshold }} 像素</output>
+            </div>
+            <v-slider
+              v-model="motionOptions.edgeThreshold"
+              :min="0"
+              :max="32"
+              :step="1"
+              color="primary"
+              hide-details
+              aria-labelledby="fg-motion-threshold-label"
+              :disabled="disabled || working || !motionOptions.edgeProtection"
+              @end="saveMotionOptions"
+              @keyup="saveMotionOptions"
+            />
+            <p class="fg-option-note">
+              默认 2。较小值更严格地区分运动；较大值保留更多平滑混合。0 仅混合完全相同的运动，可能显露块状边界。
+            </p>
+          </template>
+          <p
+            v-if="appliedMotion"
+            class="fg-option-note"
+            role="status"
+          >
+            本次会话：{{ appliedMotionQuality }}；时间提示{{ appliedMotion.temporalHints ? '开' : '关' }}<template v-if="!motionAdvanced">
+              ；静态保护{{ appliedMotion.staticGuard ? '开' : '关' }}；边界保护{{ appliedMotion.edgeProtection ? `开（${appliedMotion.edgeThreshold} 像素）` : '关' }}
+            </template>。{{ motionRestartPending ? '保存的光流参数已变化，请重新启动游戏以应用。' : '' }}
+          </p>
+          <p
+            v-if="currentLive.connected && !currentLive.opticalFlowSettingsSupported"
+            class="fg-option-note"
+          >
+            当前会话不支持光流高级配置，请更新画面增强组件并重新启动游戏。
+          </p>
+          <v-btn
+            variant="text"
+            :disabled="disabled || working || motionDefault"
+            @click="resetMotionOptions(!motionAdvanced)"
+          >
+            恢复光流默认配置
+          </v-btn>
+        </div>
+        <p class="fg-option-note">
+          光流辅助：{{ nvofFeedback }}
+        </p>
+      </template>
       <p
-        id="fg-motion-description"
-        class="fg-option-note"
-      >
-        利用 NVIDIA 硬件估算画面运动，辅助帧生成、抗锯齿与细节重建。默认开启，会增加处理开销，可关闭对比效果。
-      </p>
-      <div class="fg-shared-setting">
-        <strong>此设置也影响抗锯齿与细节重建</strong>
-        <p>NR 会话始终使用硬件光流。安装 NR 组件后，专用启动会为实时切换准备 NR，因此即使此开关关闭，该会话仍会启用光流。</p>
-      </div>
-      <p
+        v-if="!motionAdvanced && fgOptions.backend !== 'xess'"
         class="fg-apply-feedback"
         role="status"
       >
         {{ fgFeedback }}
-      </p>
-      <p class="fg-option-note">
-        光流辅助：{{ nvofFeedback }}
       </p>
       <p
         v-if="nvofError"
@@ -925,9 +1107,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       </p>
       <template #actions>
         <v-btn
+          v-if="!motionAdvanced && fgOptions.backend !== 'xess'"
           variant="text"
           :disabled="disabled || working || !!fgPending || fgDefault"
-          @click="saveGraphics({ streamline_nvof: true, streamline_advanced: { ...advancedOptions, fg: graphicsAdvanced().fg } })"
+          @click="saveGraphics({ streamline_nvof: true, streamline_advanced: { ...advancedOptions, fg: defaultFgOptions } })"
         >
           恢复默认配置
         </v-btn>
@@ -1019,6 +1202,7 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
 </template>
 
 <style scoped>
+.fg-panel.fg-controller { display: contents; }
 .fg-panel { margin-top: 28px; overflow: hidden; border: 1px solid rgba(var(--v-theme-on-background), .16); border-radius: 16px; background: rgb(var(--v-theme-surface)); }
 .fg-intro { padding: 24px 26px 0; }
 .fg-title-line, .fg-tags, .fg-status-line, .fg-actions, .fg-footer { display: flex; align-items: center; }

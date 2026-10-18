@@ -1,0 +1,2253 @@
+{
+  "date": "2026-10-17",
+  "local_evidence_root": "build\\xess-vulkan-20261017",
+  "method": "Isolated synthetic Vulkan validation; no emulator, presentation, FG or XeLL. Benchmark cases contain no screenshots and are timing-only. SDK private persistent memory is not measured.",
+  "final_executable_sha256": "26520c4b60f01ed1ef1b13a63842604efa1f6640e364f1778b229a357495899d",
+  "runs": {
+    "benchmark-1080": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": []
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "benchmark_only": true,
+        "flat_depth": false,
+        "frames": 1000,
+        "high_resolution_motion": true,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          1920,
+          1080
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": false,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            1920,
+            1080
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 717.4585,
+          "xess_gpu_ms": {
+            "max": 6.219456,
+            "mean": 1.2605999338842975,
+            "min": 1.075968,
+            "p50": 1.173184,
+            "p95": 1.507648,
+            "samples": 968
+          },
+          "cpu_record_ms": {
+            "max": 0.5875,
+            "mean": 0.12530361570247942,
+            "min": 0.061099999999999995,
+            "p50": 0.09069999999999999,
+            "p95": 0.22690000000000002,
+            "samples": 968
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 88473600,
+          "captures": []
+        },
+        {
+          "mode": "quality",
+          "input": [
+            1130,
+            636
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 25.375600000000002,
+          "xess_gpu_ms": {
+            "max": 3.889504,
+            "mean": 1.17334879338843,
+            "min": 1.06432,
+            "p50": 1.11792,
+            "p95": 1.36736,
+            "samples": 968
+          },
+          "cpu_record_ms": {
+            "max": 0.5435,
+            "mean": 0.11797913223140487,
+            "min": 0.0597,
+            "p50": 0.08660000000000001,
+            "p95": 0.21159999999999998,
+            "samples": 968
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 70656000,
+          "captures": []
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            960,
+            540
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 25.2892,
+          "xess_gpu_ms": {
+            "max": 3.296512,
+            "mean": 1.1460627107438004,
+            "min": 1.054944,
+            "p50": 1.104096,
+            "p95": 1.352608,
+            "samples": 968
+          },
+          "cpu_record_ms": {
+            "max": 0.4946,
+            "mean": 0.11948925619834713,
+            "min": 0.0594,
+            "p50": 0.08660000000000001,
+            "p95": 0.21259999999999998,
+            "samples": 968
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 69304320,
+          "captures": []
+        }
+      ]
+    },
+    "benchmark-1440": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": []
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "benchmark_only": true,
+        "flat_depth": false,
+        "frames": 1000,
+        "high_resolution_motion": true,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          2560,
+          1440
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": false,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            2560,
+            1440
+          ],
+          "output": [
+            2560,
+            1440
+          ],
+          "init_ms": 36.4073,
+          "xess_gpu_ms": {
+            "max": 3.724032,
+            "mean": 1.9893119008264435,
+            "min": 1.664672,
+            "p50": 1.775968,
+            "p95": 3.206848,
+            "samples": 968
+          },
+          "cpu_record_ms": {
+            "max": 0.6007,
+            "mean": 0.14971239669421482,
+            "min": 0.0872,
+            "p50": 0.1191,
+            "p95": 0.2693,
+            "samples": 968
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 120913920,
+          "harness_image_allocated_bytes": 157286400,
+          "captures": []
+        },
+        {
+          "mode": "quality",
+          "input": [
+            1506,
+            848
+          ],
+          "output": [
+            2560,
+            1440
+          ],
+          "init_ms": 27.9609,
+          "xess_gpu_ms": {
+            "max": 2.598592,
+            "mean": 1.7954064793388425,
+            "min": 1.642656,
+            "p50": 1.746976,
+            "p95": 2.053984,
+            "samples": 968
+          },
+          "cpu_record_ms": {
+            "max": 0.7494999999999999,
+            "mean": 0.14842820247933897,
+            "min": 0.07619999999999999,
+            "p50": 0.112,
+            "p95": 0.2653,
+            "samples": 968
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 120913920,
+          "harness_image_allocated_bytes": 126386176,
+          "captures": []
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            1280,
+            720
+          ],
+          "output": [
+            2560,
+            1440
+          ],
+          "init_ms": 27.2964,
+          "xess_gpu_ms": {
+            "max": 2.439744,
+            "mean": 1.801573983471072,
+            "min": 1.679136,
+            "p50": 1.74,
+            "p95": 2.091424,
+            "samples": 968
+          },
+          "cpu_record_ms": {
+            "max": 0.7182999999999999,
+            "mean": 0.1521565082644627,
+            "min": 0.0774,
+            "p50": 0.1166,
+            "p95": 0.275,
+            "samples": 968
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 120913920,
+          "harness_image_allocated_bytes": 121896960,
+          "captures": []
+        }
+      ]
+    },
+    "standard-1080": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": []
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "flat_depth": false,
+        "frames": 144,
+        "high_resolution_motion": true,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          1920,
+          1080
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": true,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": false,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            1920,
+            1080
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 191.54489999999998,
+          "xess_gpu_ms": {
+            "max": 5.244992,
+            "mean": 1.1389074285714285,
+            "min": 1.01104,
+            "p50": 1.095264,
+            "p95": 1.256256,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.30269999999999997,
+            "mean": 0.14133660714285715,
+            "min": 0.0594,
+            "p50": 0.10450000000000001,
+            "p95": 0.2797,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": {
+            "max": 0.010731927674003099,
+            "mean": 0.00964987159230862,
+            "min": 0.008521374498375159,
+            "p50": 0.009858228809548994,
+            "p95": 0.010731927674003099,
+            "samples": 7
+          },
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 88473600,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.884765625,
+              "xess_psnr_db": 23.84496579231184,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 24.706883822544818
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.016021728515625,
+              "rgb_max": 0.91162109375,
+              "xess_psnr_db": 22.258814664956613,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 24.4029023544952
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 22.572486860149784,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 23.616916034208764
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0162811279296875,
+              "rgb_max": 0.91064453125,
+              "xess_psnr_db": 21.98954761256511,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 24.145764062074463
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            1130,
+            636
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 26.4959,
+          "xess_gpu_ms": {
+            "max": 4.730432,
+            "mean": 1.1307408571428568,
+            "min": 1.020032,
+            "p50": 1.08352,
+            "p95": 1.28848,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.417,
+            "mean": 0.13651875000000002,
+            "min": 0.0614,
+            "p50": 0.08990000000000001,
+            "p95": 0.2925,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": {
+            "max": 0.012139096473470147,
+            "mean": 0.009003838462243705,
+            "min": 0.0058839540937800465,
+            "p50": 0.009330852441336392,
+            "p95": 0.012139096473470147,
+            "samples": 7
+          },
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 70656000,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.86669921875,
+              "xess_psnr_db": 25.6304665190879,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 23.848579003327973
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.013397216796875,
+              "rgb_max": 1.0126953125,
+              "xess_psnr_db": 22.88415418258571,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 22.96474582751617
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 18.431586505832914,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 20.653578949792788
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01407623291015625,
+              "rgb_max": 1.08984375,
+              "xess_psnr_db": 22.04643397197719,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 20.777911429524984
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            960,
+            540
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 26.1893,
+          "xess_gpu_ms": {
+            "max": 4.256064,
+            "mean": 1.1865120000000002,
+            "min": 1.016448,
+            "p50": 1.078976,
+            "p95": 1.360288,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.4591,
+            "mean": 0.1484973214285714,
+            "min": 0.061099999999999995,
+            "p50": 0.128,
+            "p95": 0.279,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": {
+            "max": 0.006900315267558942,
+            "mean": 0.005662594374525485,
+            "min": 0.004108067373189416,
+            "p50": 0.005733393830527004,
+            "p95": 0.006900315267558942,
+            "samples": 7
+          },
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 69304320,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.857421875,
+              "xess_psnr_db": 24.569793259590167,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 20.319985032320645
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01274871826171875,
+              "rgb_max": 1.130859375,
+              "xess_psnr_db": 21.840649081615577,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 20.267004062743318
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 17.748863414556183,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 20.34989584979688
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0134429931640625,
+              "rgb_max": 1.1337890625,
+              "xess_psnr_db": 21.544438871029257,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 20.117774526037625
+            }
+          ]
+        }
+      ]
+    },
+    "standard-1440": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": []
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "flat_depth": false,
+        "frames": 144,
+        "high_resolution_motion": true,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          2560,
+          1440
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": false,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            2560,
+            1440
+          ],
+          "output": [
+            2560,
+            1440
+          ],
+          "init_ms": 33.4557,
+          "xess_gpu_ms": {
+            "max": 6.286176,
+            "mean": 2.0388794285714282,
+            "min": 1.658848,
+            "p50": 1.811968,
+            "p95": 3.632224,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.4797,
+            "mean": 0.1407169642857143,
+            "min": 0.0797,
+            "p50": 0.0987,
+            "p95": 0.32489999999999997,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 120913920,
+          "harness_image_allocated_bytes": 157286400,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.88525390625,
+              "xess_psnr_db": 23.763935369785372,
+              "native_no_aa_psnr_db": 23.389008644303246,
+              "bilinear_psnr_db": 24.72038240431241
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.015594482421875,
+              "rgb_max": 1.0224609375,
+              "xess_psnr_db": 22.265730916184218,
+              "native_no_aa_psnr_db": 23.054828812803812,
+              "bilinear_psnr_db": 24.441336598940634
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 22.56334317591429,
+              "native_no_aa_psnr_db": 22.531058605757792,
+              "bilinear_psnr_db": 23.663404314422184
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0162506103515625,
+              "rgb_max": 0.9462890625,
+              "xess_psnr_db": 22.01974147361799,
+              "native_no_aa_psnr_db": 22.80081748579823,
+              "bilinear_psnr_db": 24.185367645041577
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            1506,
+            848
+          ],
+          "output": [
+            2560,
+            1440
+          ],
+          "init_ms": 27.311,
+          "xess_gpu_ms": {
+            "max": 4.785984,
+            "mean": 1.9489262857142864,
+            "min": 1.619872,
+            "p50": 1.77504,
+            "p95": 3.421344,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.3721,
+            "mean": 0.13645535714285706,
+            "min": 0.0812,
+            "p50": 0.1041,
+            "p95": 0.24130000000000001,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 120913920,
+          "harness_image_allocated_bytes": 126386176,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.87451171875,
+              "xess_psnr_db": 24.50369688833025,
+              "native_no_aa_psnr_db": 23.389008644303246,
+              "bilinear_psnr_db": 21.612154807803165
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01364898681640625,
+              "rgb_max": 1.0380859375,
+              "xess_psnr_db": 23.403039778704915,
+              "native_no_aa_psnr_db": 23.054828812803812,
+              "bilinear_psnr_db": 22.898154962357008
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 18.017593676686264,
+              "native_no_aa_psnr_db": 22.531058605757792,
+              "bilinear_psnr_db": 19.66906608362466
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0142974853515625,
+              "rgb_max": 1.103515625,
+              "xess_psnr_db": 21.09240682233114,
+              "native_no_aa_psnr_db": 22.80081748579823,
+              "bilinear_psnr_db": 19.90484453827091
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            1280,
+            720
+          ],
+          "output": [
+            2560,
+            1440
+          ],
+          "init_ms": 26.2446,
+          "xess_gpu_ms": {
+            "max": 5.332704,
+            "mean": 1.934804285714286,
+            "min": 1.636032,
+            "p50": 1.769184,
+            "p95": 3.149856,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.5053,
+            "mean": 0.1391705357142857,
+            "min": 0.0776,
+            "p50": 0.0988,
+            "p95": 0.2816,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 120913920,
+          "harness_image_allocated_bytes": 121896960,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.8642578125,
+              "xess_psnr_db": 24.544934335122903,
+              "native_no_aa_psnr_db": 23.389008644303246,
+              "bilinear_psnr_db": 20.35875322543687
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.0124969482421875,
+              "rgb_max": 1.1025390625,
+              "xess_psnr_db": 21.825765166206207,
+              "native_no_aa_psnr_db": 23.054828812803812,
+              "bilinear_psnr_db": 20.34152870422796
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 17.768652376273145,
+              "native_no_aa_psnr_db": 22.531058605757792,
+              "bilinear_psnr_db": 20.414112818443172
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.013275146484375,
+              "rgb_max": 1.12890625,
+              "xess_psnr_db": 21.60023907158926,
+              "native_no_aa_psnr_db": 22.80081748579823,
+              "bilinear_psnr_db": 20.174292611858263
+            }
+          ]
+        }
+      ]
+    },
+    "no-jitter-1080": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": []
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "flat_depth": false,
+        "frames": 144,
+        "high_resolution_motion": true,
+        "jitter": false,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          1920,
+          1080
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": true,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": false,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            1920,
+            1080
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 32.7694,
+          "xess_gpu_ms": {
+            "max": 3.209824,
+            "mean": 1.1734465714285711,
+            "min": 1.04496,
+            "p50": 1.091488,
+            "p95": 1.363936,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.3296,
+            "mean": 0.13442857142857137,
+            "min": 0.056499999999999995,
+            "p50": 0.09809999999999999,
+            "p95": 0.2714,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": {
+            "max": 0.00028659116829373707,
+            "mean": 0.0002839604260149176,
+            "min": 0.00028254905355320055,
+            "p50": 0.0002836980127993925,
+            "p95": 0.00028659116829373707,
+            "samples": 7
+          },
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 88473600,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89794921875,
+              "xess_psnr_db": 24.696388108034718,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 23.369807593768236
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01690673828125,
+              "rgb_max": 0.921875,
+              "xess_psnr_db": 27.275544726674394,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 22.99718740582517
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 23.703323271767193,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 22.471370032917278
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.016845703125,
+              "rgb_max": 0.9150390625,
+              "xess_psnr_db": 26.836510575075252,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 22.71936090689494
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            1130,
+            636
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 26.8856,
+          "xess_gpu_ms": {
+            "max": 2.81808,
+            "mean": 1.1332217142857142,
+            "min": 1.029856,
+            "p50": 1.089536,
+            "p95": 1.367904,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.4251,
+            "mean": 0.15124017857142857,
+            "min": 0.0635,
+            "p50": 0.12210000000000001,
+            "p95": 0.2903,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": {
+            "max": 0.00030436133651576416,
+            "mean": 0.0003020328605686616,
+            "min": 0.0002990131981578874,
+            "p50": 0.000302507906784246,
+            "p95": 0.00030436133651576416,
+            "samples": 7
+          },
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 70656000,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.900390625,
+              "xess_psnr_db": 19.94090318067384,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 21.81024205621306
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01345062255859375,
+              "rgb_max": 1.552734375,
+              "xess_psnr_db": 21.68526316616696,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 20.64329949709219
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 19.709816033496146,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 22.952383207630803
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01476287841796875,
+              "rgb_max": 1.3310546875,
+              "xess_psnr_db": 23.13171403294783,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 23.4702141363849
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            960,
+            540
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 28.6414,
+          "xess_gpu_ms": {
+            "max": 4.742528,
+            "mean": 1.1399948571428578,
+            "min": 1.025696,
+            "p50": 1.08688,
+            "p95": 1.287616,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.5065,
+            "mean": 0.13855714285714285,
+            "min": 0.07289999999999999,
+            "p50": 0.1022,
+            "p95": 0.2189,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": {
+            "max": 0.00039570930808659937,
+            "mean": 0.00034173186423847214,
+            "min": 0.00029348200731316713,
+            "p50": 0.00034210505554214916,
+            "p95": 0.00039570930808659937,
+            "samples": 7
+          },
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 69304320,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.900390625,
+              "xess_psnr_db": 18.313618997182836,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 20.268266153846927
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.0084228515625,
+              "rgb_max": 1.06640625,
+              "xess_psnr_db": 20.937709059732803,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 20.3597111556498
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 17.835274649023386,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 20.347319577824035
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.00948333740234375,
+              "rgb_max": 1.5419921875,
+              "xess_psnr_db": 20.606351439279415,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 20.047917137095943
+            }
+          ]
+        }
+      ]
+    },
+    "flat-depth-no-jitter-1080": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": []
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "flat_depth": true,
+        "frames": 144,
+        "high_resolution_motion": false,
+        "jitter": false,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          1920,
+          1080
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": false,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            1920,
+            1080
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 30.6362,
+          "xess_gpu_ms": {
+            "max": 3.2544,
+            "mean": 1.1807751428571434,
+            "min": 1.043552,
+            "p50": 1.125056,
+            "p95": 1.389472,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.44739999999999996,
+            "mean": 0.13214464285714286,
+            "min": 0.066,
+            "p50": 0.0956,
+            "p95": 0.27099999999999996,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 88473600,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89794921875,
+              "xess_psnr_db": 24.696388108034718,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 23.369807593768236
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.016754150390625,
+              "rgb_max": 0.91748046875,
+              "xess_psnr_db": 27.258885437417533,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 22.99718740582517
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 23.703323271767193,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 22.471370032917278
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0170440673828125,
+              "rgb_max": 0.908203125,
+              "xess_psnr_db": 26.82314365273554,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 22.71936090689494
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            1130,
+            636
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 28.2894,
+          "xess_gpu_ms": {
+            "max": 5.14832,
+            "mean": 1.2219237142857142,
+            "min": 1.037568,
+            "p50": 1.093632,
+            "p95": 1.731008,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.2837,
+            "mean": 0.1286044642857143,
+            "min": 0.074,
+            "p50": 0.0973,
+            "p95": 0.23049999999999998,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 64716800,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.900390625,
+              "xess_psnr_db": 19.94090318067384,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 21.81024205621306
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01316070556640625,
+              "rgb_max": 1.587890625,
+              "xess_psnr_db": 21.689375198004996,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 20.64329949709219
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 19.709816033496146,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 22.952383207630803
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01461029052734375,
+              "rgb_max": 1.32421875,
+              "xess_psnr_db": 23.135473374400235,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 23.4702141363849
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            960,
+            540
+          ],
+          "output": [
+            1920,
+            1080
+          ],
+          "init_ms": 27.3826,
+          "xess_gpu_ms": {
+            "max": 5.256384,
+            "mean": 1.199841714285714,
+            "min": 1.040576,
+            "p50": 1.091424,
+            "p95": 1.418336,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.695,
+            "mean": 0.1318107142857143,
+            "min": 0.0593,
+            "p50": 0.0942,
+            "p95": 0.236,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 74219520,
+          "harness_image_allocated_bytes": 62914560,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.900390625,
+              "xess_psnr_db": 18.313618997182836,
+              "native_no_aa_psnr_db": 23.369807593768236,
+              "bilinear_psnr_db": 20.268266153846927
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.00852203369140625,
+              "rgb_max": 1.0966796875,
+              "xess_psnr_db": 20.93153309784909,
+              "native_no_aa_psnr_db": 22.99718740582517,
+              "bilinear_psnr_db": 20.3597111556498
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 17.835274649023386,
+              "native_no_aa_psnr_db": 22.471370032917278,
+              "bilinear_psnr_db": 20.347319577824035
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.00920867919921875,
+              "rgb_max": 1.6103515625,
+              "xess_psnr_db": 20.604113708133603,
+              "native_no_aa_psnr_db": 22.71936090689494,
+              "bilinear_psnr_db": 20.047917137095943
+            }
+          ]
+        }
+      ]
+    },
+    "validation-low-003": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": [
+            "VK_EXT_debug_utils"
+          ]
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "flat_depth": false,
+        "frames": 144,
+        "high_resolution_motion": false,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          1280,
+          720
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": true,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [
+        "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'."
+      ],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            1280,
+            720
+          ],
+          "output": [
+            1280,
+            720
+          ],
+          "init_ms": 698.6527,
+          "xess_gpu_ms": {
+            "max": 2.766688,
+            "mean": 0.728300285714286,
+            "min": 0.60384,
+            "p50": 0.643264,
+            "p95": 1.102464,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.2133,
+            "mean": 0.5351723214285713,
+            "min": 0.3387,
+            "p50": 0.4105,
+            "p95": 1.0068,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 31211520,
+          "harness_image_allocated_bytes": 39321600,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.8837890625,
+              "xess_psnr_db": 23.974472636930688,
+              "native_no_aa_psnr_db": 23.312673762697674,
+              "bilinear_psnr_db": 24.663439285222783
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01654052734375,
+              "rgb_max": 0.95263671875,
+              "xess_psnr_db": 22.28474415382721,
+              "native_no_aa_psnr_db": 22.914306542833724,
+              "bilinear_psnr_db": 24.341471326424603
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 22.495837146914287,
+              "native_no_aa_psnr_db": 22.392622273004285,
+              "bilinear_psnr_db": 23.530030868054176
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0159759521484375,
+              "rgb_max": 0.931640625,
+              "xess_psnr_db": 21.980358439685226,
+              "native_no_aa_psnr_db": 22.583548175447188,
+              "bilinear_psnr_db": 24.039147049818595
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            753,
+            424
+          ],
+          "output": [
+            1280,
+            720
+          ],
+          "init_ms": 29.671,
+          "xess_gpu_ms": {
+            "max": 2.791648,
+            "mean": 0.693651714285714,
+            "min": 0.593344,
+            "p50": 0.63792,
+            "p95": 0.826272,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.2548,
+            "mean": 0.5306589285714285,
+            "min": 0.3361,
+            "p50": 0.42210000000000003,
+            "p95": 0.9049,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 31211520,
+          "harness_image_allocated_bytes": 29851648,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.875,
+              "xess_psnr_db": 24.930878019596754,
+              "native_no_aa_psnr_db": 23.312673762697674,
+              "bilinear_psnr_db": 21.308037184221913
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01467132568359375,
+              "rgb_max": 1.005859375,
+              "xess_psnr_db": 23.0818274728933,
+              "native_no_aa_psnr_db": 22.914306542833724,
+              "bilinear_psnr_db": 21.860495087607216
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 18.059632704838567,
+              "native_no_aa_psnr_db": 22.392622273004285,
+              "bilinear_psnr_db": 19.029864127880245
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01483917236328125,
+              "rgb_max": 1.041015625,
+              "xess_psnr_db": 20.88768011422323,
+              "native_no_aa_psnr_db": 22.583548175447188,
+              "bilinear_psnr_db": 19.52856492006557
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            640,
+            360
+          ],
+          "output": [
+            1280,
+            720
+          ],
+          "init_ms": 29.2459,
+          "xess_gpu_ms": {
+            "max": 2.447808,
+            "mean": 0.6623491428571431,
+            "min": 0.577792,
+            "p50": 0.630592,
+            "p95": 0.797056,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 0.9783999999999999,
+            "mean": 0.5266214285714284,
+            "min": 0.3211,
+            "p50": 0.4453,
+            "p95": 0.8864,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 31211520,
+          "harness_image_allocated_bytes": 27525120,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.8701171875,
+              "xess_psnr_db": 24.614728235325934,
+              "native_no_aa_psnr_db": 23.312673762697674,
+              "bilinear_psnr_db": 20.30752272839107
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01158905029296875,
+              "rgb_max": 1.087890625,
+              "xess_psnr_db": 21.84274469039929,
+              "native_no_aa_psnr_db": 22.914306542833724,
+              "bilinear_psnr_db": 20.234316840491747
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 17.727810118954565,
+              "native_no_aa_psnr_db": 22.392622273004285,
+              "bilinear_psnr_db": 20.252243606926235
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.013519287109375,
+              "rgb_max": 1.064453125,
+              "xess_psnr_db": 21.49191108085705,
+              "native_no_aa_psnr_db": 22.583548175447188,
+              "bilinear_psnr_db": 20.015417008055174
+            }
+          ]
+        }
+      ]
+    },
+    "validation-current-high": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 0,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 12056,
+        "driver_version_raw": 2559967232,
+        "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": [
+            "VK_EXT_debug_utils"
+          ]
+        },
+        "timestamp_period_ns": 1.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4318,
+        "vulkan_api_raw": 4211029
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "benchmark_only": false,
+        "flat_depth": false,
+        "frames": 144,
+        "high_resolution_motion": true,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          1280,
+          720
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": true,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [
+        "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'."
+      ],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            1280,
+            720
+          ],
+          "output": [
+            1280,
+            720
+          ],
+          "init_ms": 56.693599999999996,
+          "xess_gpu_ms": {
+            "max": 1.724096,
+            "mean": 0.7045354285714287,
+            "min": 0.600096,
+            "p50": 0.653568,
+            "p95": 0.887328,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.0221,
+            "mean": 0.5271580357142857,
+            "min": 0.31379999999999997,
+            "p50": 0.4507,
+            "p95": 0.9092,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 31211520,
+          "harness_image_allocated_bytes": 39321600,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.8837890625,
+              "xess_psnr_db": 23.974472636930688,
+              "native_no_aa_psnr_db": 23.312673762697674,
+              "bilinear_psnr_db": 24.663439285222783
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.0165557861328125,
+              "rgb_max": 0.95068359375,
+              "xess_psnr_db": 22.28614442178337,
+              "native_no_aa_psnr_db": 22.914306542833724,
+              "bilinear_psnr_db": 24.341471326424603
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 22.495837146914287,
+              "native_no_aa_psnr_db": 22.392622273004285,
+              "bilinear_psnr_db": 23.530030868054176
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0157623291015625,
+              "rgb_max": 0.93115234375,
+              "xess_psnr_db": 21.982448658185405,
+              "native_no_aa_psnr_db": 22.583548175447188,
+              "bilinear_psnr_db": 24.039147049818595
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            753,
+            424
+          ],
+          "output": [
+            1280,
+            720
+          ],
+          "init_ms": 32.6178,
+          "xess_gpu_ms": {
+            "max": 0.948512,
+            "mean": 0.6708465714285717,
+            "min": 0.620736,
+            "p50": 0.652576,
+            "p95": 0.802304,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.3542999999999998,
+            "mean": 0.5187910714285715,
+            "min": 0.3182,
+            "p50": 0.40049999999999997,
+            "p95": 1.0207,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 31211520,
+          "harness_image_allocated_bytes": 32210944,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.875,
+              "xess_psnr_db": 24.930878019596754,
+              "native_no_aa_psnr_db": 23.312673762697674,
+              "bilinear_psnr_db": 21.308037184221913
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.0146331787109375,
+              "rgb_max": 1.0029296875,
+              "xess_psnr_db": 23.10285469203937,
+              "native_no_aa_psnr_db": 22.914306542833724,
+              "bilinear_psnr_db": 21.860495087607216
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 18.059632704838567,
+              "native_no_aa_psnr_db": 22.392622273004285,
+              "bilinear_psnr_db": 19.029864127880245
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01332855224609375,
+              "rgb_max": 1.0576171875,
+              "xess_psnr_db": 20.874869230863474,
+              "native_no_aa_psnr_db": 22.583548175447188,
+              "bilinear_psnr_db": 19.52856492006557
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            640,
+            360
+          ],
+          "output": [
+            1280,
+            720
+          ],
+          "init_ms": 29.7276,
+          "xess_gpu_ms": {
+            "max": 1.3088,
+            "mean": 0.6715468571428573,
+            "min": 0.60432,
+            "p50": 0.652736,
+            "p95": 0.792416,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.3271,
+            "mean": 0.5336142857142858,
+            "min": 0.32939999999999997,
+            "p50": 0.4217,
+            "p95": 0.9289,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 64,
+          "sdk_temporary_texture_bytes": 31211520,
+          "harness_image_allocated_bytes": 30474240,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.8701171875,
+              "xess_psnr_db": 24.614728235325934,
+              "native_no_aa_psnr_db": 23.312673762697674,
+              "bilinear_psnr_db": 20.30752272839107
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.0111541748046875,
+              "rgb_max": 1.0498046875,
+              "xess_psnr_db": 21.851601601156126,
+              "native_no_aa_psnr_db": 22.914306542833724,
+              "bilinear_psnr_db": 20.234316840491747
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 17.727810118954565,
+              "native_no_aa_psnr_db": 22.392622273004285,
+              "bilinear_psnr_db": 20.252243606926235
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01172637939453125,
+              "rgb_max": 1.0634765625,
+              "xess_psnr_db": 21.513218848835308,
+              "native_no_aa_psnr_db": 22.583548175447188,
+              "bilinear_psnr_db": 20.015417008055174
+            }
+          ]
+        }
+      ]
+    },
+    "amd-610m-validation": {
+      "passed": true,
+      "hardware": {
+        "adapter_index": 1,
+        "adapters": [
+          {
+            "device_id": 12056,
+            "name": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+            "vendor_id": 4318
+          },
+          {
+            "device_id": 5056,
+            "name": "AMD Radeon(TM) 610M",
+            "vendor_id": 4098
+          }
+        ],
+        "device_id": 5056,
+        "driver_version_raw": 8388939,
+        "gpu": "AMD Radeon(TM) 610M",
+        "queue_family": 0,
+        "requirements": {
+          "device_extensions": [
+            "VK_EXT_mutable_descriptor_type"
+          ],
+          "instance_api": 4206592,
+          "instance_extensions": [
+            "VK_EXT_debug_utils"
+          ]
+        },
+        "timestamp_period_ns": 10.0,
+        "timestamp_valid_bits": 64,
+        "vendor_id": 4098,
+        "vulkan_api_raw": 4206894
+      },
+      "sdk": {
+        "dll": "D:\\py\\ns-emu-tools\\src-tauri\\target\\xess-sdk-files-v3.0.2\\bin\\libxess.dll",
+        "dll_sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7",
+        "release": "v3.0.2",
+        "sr_version": "2.0.2"
+      },
+      "scene_shader_sha256": "886fa255a06afc51d31c00a56bb6a13526e7a764a26c0c148d92c248efdefe7d",
+      "conditions": {
+        "api_jitter_sign": [
+          1.0,
+          1.0
+        ],
+        "benchmark_only": false,
+        "flat_depth": false,
+        "frames": 144,
+        "high_resolution_motion": true,
+        "jitter": true,
+        "motion_units": "current-to-previous pixels on the motion texture grid, no jitter",
+        "output": [
+          640,
+          360
+        ],
+        "reference": "64 spatial samples per output pixel, linear RGB; analytic synthetic scene, not emulator/game acceptance",
+        "scene": "static 0-47, camera/object translation 48+, explicit color cut/reset 112",
+        "temporal_crops": false,
+        "timing": "GPU timestamps enclose XeSS commands only; serialized fenced submissions; no rendering/upload/readback/PNG/presentation in interval",
+        "validation": true,
+        "warmup": 32
+      },
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_isolation_notices": [
+        "Layer \"VK_LAYER_NV_optimus\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_NV_present\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_AMD_switchable_graphics\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'.",
+        "Layer \"VK_LAYER_reshade\" forced disabled because name matches filter of env var 'VK_LOADER_LAYERS_DISABLE'."
+      ],
+      "cases": [
+        {
+          "mode": "aa",
+          "input": [
+            640,
+            360
+          ],
+          "output": [
+            640,
+            360
+          ],
+          "init_ms": 1061.6569,
+          "xess_gpu_ms": {
+            "max": 3.47837,
+            "mean": 2.7876117857142857,
+            "min": 2.69388,
+            "p50": 2.75856,
+            "p95": 2.89908,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.1783,
+            "mean": 0.5245312499999999,
+            "min": 0.34450000000000003,
+            "p50": 0.4305,
+            "p95": 0.9417,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 16,
+          "sdk_temporary_texture_bytes": 7389184,
+          "harness_image_allocated_bytes": 9830400,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.88525390625,
+              "xess_psnr_db": 24.679622777287797,
+              "native_no_aa_psnr_db": 23.19032092478333,
+              "bilinear_psnr_db": 24.550215625124668
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.0160675048828125,
+              "rgb_max": 0.95166015625,
+              "xess_psnr_db": 22.27608978669505,
+              "native_no_aa_psnr_db": 22.614323590153496,
+              "bilinear_psnr_db": 24.085714324628015
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 22.427701124681533,
+              "native_no_aa_psnr_db": 22.148075701509768,
+              "bilinear_psnr_db": 23.303381925665704
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01451873779296875,
+              "rgb_max": 0.9560546875,
+              "xess_psnr_db": 21.822295037718135,
+              "native_no_aa_psnr_db": 22.228482187192363,
+              "bilinear_psnr_db": 23.623377154562483
+            }
+          ]
+        },
+        {
+          "mode": "quality",
+          "input": [
+            377,
+            212
+          ],
+          "output": [
+            640,
+            360
+          ],
+          "init_ms": 35.291500000000006,
+          "xess_gpu_ms": {
+            "max": 3.35428,
+            "mean": 2.6358178571428574,
+            "min": 2.44832,
+            "p50": 2.63836,
+            "p95": 2.68816,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.2046,
+            "mean": 0.5340705357142856,
+            "min": 0.3498,
+            "p50": 0.43570000000000003,
+            "p95": 0.9713999999999999,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 16,
+          "sdk_temporary_texture_bytes": 7389184,
+          "harness_image_allocated_bytes": 8060928,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.880859375,
+              "xess_psnr_db": 26.15543509223981,
+              "native_no_aa_psnr_db": 23.19032092478333,
+              "bilinear_psnr_db": 23.0973957041944
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.01323699951171875,
+              "rgb_max": 0.94873046875,
+              "xess_psnr_db": 22.2996092070137,
+              "native_no_aa_psnr_db": 22.614323590153496,
+              "bilinear_psnr_db": 21.54803115931194
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89990234375,
+              "xess_psnr_db": 18.506467959172305,
+              "native_no_aa_psnr_db": 22.148075701509768,
+              "bilinear_psnr_db": 20.41284662316468
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.01226043701171875,
+              "rgb_max": 0.94189453125,
+              "xess_psnr_db": 21.238831097769243,
+              "native_no_aa_psnr_db": 22.228482187192363,
+              "bilinear_psnr_db": 19.584054395360162
+            }
+          ]
+        },
+        {
+          "mode": "balanced",
+          "input": [
+            320,
+            180
+          ],
+          "output": [
+            640,
+            360
+          ],
+          "init_ms": 36.7917,
+          "xess_gpu_ms": {
+            "max": 2.64264,
+            "mean": 2.5745157142857136,
+            "min": 2.46976,
+            "p50": 2.57932,
+            "p95": 2.62828,
+            "samples": 112
+          },
+          "cpu_record_ms": {
+            "max": 1.0675000000000001,
+            "mean": 0.49023392857142867,
+            "min": 0.3552,
+            "p50": 0.42450000000000004,
+            "p95": 0.8926000000000001,
+            "samples": 112
+          },
+          "static_consecutive_linear_rgb_mae": null,
+          "sdk_temporary_buffer_bytes": 16,
+          "sdk_temporary_texture_bytes": 7389184,
+          "harness_image_allocated_bytes": 7716864,
+          "captures": [
+            {
+              "frame": 47,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.87646484375,
+              "xess_psnr_db": 24.798245582063178,
+              "native_no_aa_psnr_db": 23.19032092478333,
+              "bilinear_psnr_db": 20.110088355164038
+            },
+            {
+              "frame": 95,
+              "rgb_min": 0.013031005859375,
+              "rgb_max": 0.97265625,
+              "xess_psnr_db": 21.752146304867676,
+              "native_no_aa_psnr_db": 22.614323590153496,
+              "bilinear_psnr_db": 19.918826366684595
+            },
+            {
+              "frame": 112,
+              "rgb_min": 0.024993896484375,
+              "rgb_max": 0.89794921875,
+              "xess_psnr_db": 17.462452366029627,
+              "native_no_aa_psnr_db": 22.148075701509768,
+              "bilinear_psnr_db": 19.872282039011985
+            },
+            {
+              "frame": 143,
+              "rgb_min": 0.0120697021484375,
+              "rgb_max": 0.97900390625,
+              "xess_psnr_db": 21.285655112852755,
+              "native_no_aa_psnr_db": 22.228482187192363,
+              "bilinear_psnr_db": 19.626813320437712
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

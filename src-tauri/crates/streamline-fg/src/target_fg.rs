@@ -3,6 +3,8 @@ use super::*;
 use crate::fg_api::*;
 use std::{sync::Arc, time::Instant};
 struct Chain {
+    dynamic: crate::fg_dynamic::Dynamic,
+    refresh_rate: u32,
     input_scale: Option<crate::target_input_scale::InputScale>,
     input_error: Option<String>,
     input_original_extent: Option<vk::Extent2D>,
@@ -23,6 +25,8 @@ struct Chain {
     on_frames: u32,
     was_on: bool,
     fg_revision: u64,
+    #[cfg(feature = "hybrid-xess-fg")]
+    xess_controls: Option<(u64, u64, u64, u64)>,
     temporal_boundary: crate::target_fg_gate::TemporalBoundary,
     region: Option<[u32; 4]>,
     applied_frame_limit_us: u32,
@@ -116,6 +120,8 @@ pub(super) unsafe fn created(
     chains().insert(
         handle.as_raw(),
         Arc::new(Mutex::new(Chain {
+            dynamic: Default::default(),
+            refresh_rate: crate::target_window::refresh_rate(hwnd).unwrap_or(60),
             input_scale: None,
             input_error: None,
             input_original_extent: None,
@@ -136,6 +142,8 @@ pub(super) unsafe fn created(
             on_frames: 0,
             was_on: false,
             fg_revision: 0,
+            #[cfg(feature = "hybrid-xess-fg")]
+            xess_controls: None,
             temporal_boundary: crate::target_fg_gate::TemporalBoundary::default(),
             region: None,
             applied_frame_limit_us: 0,
@@ -291,12 +299,55 @@ pub(super) unsafe fn present(
         chain.frames = chain.frames.saturating_add(1);
         let api = crate::target_runtime::fg_api()?;
         let device = chain.device.clone();
+        let (
+            (requested, control_revision, fg_options),
+            (sr_mode, sr_revision, sr_scale, sr_preset, sr_options),
+            nr_applied,
+            (input_sizing, input_revision),
+        ) = crate::live::frame_controls();
+        #[cfg(feature = "hybrid-xess-fg")]
+        if crate::dual_fg_enabled() {
+            let controls = (control_revision, sr_revision, nr_applied.1, input_revision);
+            if chain.xess_controls != Some(controls) {
+                // Async XeSS copies can still be using the last frame. Retire
+                // them on control changes before freeing/rebuilding SR/NR/input
+                // resources, while keeping ordinary frames free of this wait.
+                crate::xess_fg::drain_dual(handle)?;
+                chain.xess_controls = Some(controls);
+            }
+        }
+        let backend_changed = false;
+        #[cfg(feature = "hybrid-xess-fg")]
+        let backend_changed = if crate::dual_fg_enabled()
+            && crate::dual_fg::xess()
+                != (fg_options.backend == crate::advanced_settings::FgBackend::Xess)
+        {
+            wait_inputs(&device, &crate::fg_api::state(&api)?)?;
+            device.device_wait_idle()?;
+            crate::xess_fg::suspend_dual(handle)?;
+            crate::dual_fg::select(fg_options.backend);
+            chain.dynamic = Default::default();
+            chain.temporal_boundary = Default::default();
+            #[cfg(feature = "native-nr")]
+            chain.nr_history.recreated();
+            trace::event!(
+                "target_fg_backend_switched",
+                json!({"backend":fg_options.backend,"revision":control_revision,"swapchain":handle.as_raw(),"device_idle_completed":true})
+            );
+            true
+        } else {
+            backend_changed
+        };
         let frame = FRAME.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut token = 0;
         let sleep_frame_limit_us = chain.applied_frame_limit_us;
         let begin_started = Instant::now();
         checked(
-            probe_fg_begin(&api, frame, &mut token),
+            if crate::xess_output() {
+                probe_fg_begin_unpaced(&api, frame, &mut token)
+            } else {
+                probe_fg_begin(&api, frame, &mut token)
+            },
             "frame token and Reflex pacing",
         )?;
         let begin_us = begin_started.elapsed().as_micros();
@@ -306,12 +357,6 @@ pub(super) unsafe fn present(
             chain.hwnd as _,
             windows_sys::Win32::UI::WindowsAndMessaging::GA_ROOT,
         );
-        let (
-            (requested, control_revision, fg_options),
-            (sr_mode, sr_revision, sr_scale, sr_preset, sr_options),
-            nr_applied,
-            (input_sizing, input_revision),
-        ) = crate::live::frame_controls();
         #[cfg(feature = "native-nr")]
         let (nr_controls, nr_revision) = nr_applied;
         #[cfg(not(feature = "native-nr"))]
@@ -391,31 +436,35 @@ pub(super) unsafe fn present(
             Some([_, _, w, h]) if w < s.minimum || h < s.minimum => Some("fg_region_too_small"),
             _ => None,
         };
-        let off_reason = crate::target_fg_gate::Inputs {
-            status: s.status,
-            minimum: s.minimum,
-            maximum: s.maximum,
-            width: chain.extent.width,
-            height: chain.extent.height,
-            warmed_up: chain.created.elapsed().as_secs() >= 10,
-            foreground: foreground == root,
-            window_stop: crate::target_window::stopping(),
-            on_frames: chain.on_frames,
-            frame_budget: chain.frame_budget,
-            stopped: chain.stopped,
-        }
-        .off_reason()
-        .or(if requested {
-            None
+        let off_reason = if crate::xess_output() {
+            Some("xess_fg_output")
         } else {
-            Some("user_disabled")
-        })
-        .or(region_off)
-        .or(if !fg_options.supported(s.maximum) && s.maximum > 0 {
-            Some("fg_multiplier_unsupported")
-        } else {
-            None
-        });
+            crate::target_fg_gate::Inputs {
+                status: s.status,
+                minimum: s.minimum,
+                maximum: s.maximum,
+                width: chain.extent.width,
+                height: chain.extent.height,
+                warmed_up: chain.created.elapsed().as_secs() >= 10,
+                foreground: foreground == root,
+                window_stop: crate::target_window::stopping(),
+                on_frames: chain.on_frames,
+                frame_budget: chain.frame_budget,
+                stopped: chain.stopped,
+            }
+            .off_reason()
+            .or(if requested {
+                None
+            } else {
+                Some("user_disabled")
+            })
+            .or(region_off)
+            .or(if !fg_options.supported(s.maximum) && s.maximum > 0 {
+                Some("fg_multiplier_unsupported")
+            } else {
+                None
+            })
+        };
         let on = off_reason.is_none();
         let boundary_reset = chain.temporal_boundary.next(foreground == root, on);
         #[cfg(feature = "native-nr")]
@@ -476,7 +525,11 @@ pub(super) unsafe fn present(
             || region_changed
             || boundary_reset
             || chain.fg_revision != control_revision;
-        let mut sr_reset = chain.sr.is_none() || region_changed || boundary_reset || input_changed;
+        let mut sr_reset = chain.sr.is_none()
+            || region_changed
+            || boundary_reset
+            || input_changed
+            || backend_changed;
         #[cfg(feature = "native-nr")]
         let nr_identity = crate::target_nr::identity(handle, chain.extent, native_source.ok());
         #[cfg(feature = "native-nr")]
@@ -500,7 +553,7 @@ pub(super) unsafe fn present(
         // A reset flow produces zero motion for this frame. NR pauses rather
         // than consuming stale guidance, then resets on its first valid pair;
         // SR and FG receive the same boundary reset directly.
-        let flow_reset = flow_reset || boundary_reset || input_changed;
+        let flow_reset = flow_reset || boundary_reset || input_changed || backend_changed;
         if boundary_reset {
             trace::event!(
                 "target_temporal_boundary",
@@ -772,7 +825,7 @@ pub(super) unsafe fn present(
             }
             crate::live::input_scale(input.status(nr_completed, sr_completed, input_revision));
         }
-        if let Some(resources) = chain.resources {
+        if let Some(resources) = chain.resources.filter(|_| !crate::hybrid_enabled()) {
             let mut fg_resources = resources;
             if let Some(flow) = &chain.flow {
                 fg_resources[1] = flow.pixel_motion();
@@ -789,15 +842,27 @@ pub(super) unsafe fn present(
             )?;
         }
         // An external layer knows only the presentation boundary. Never invent game simulation markers.
-        checked(probe_fg_marker(&api, token, 4), "present start")?;
+        if !crate::hybrid_enabled() {
+            checked(probe_fg_marker(&api, token, 4), "present start")?;
+        }
         crate::target_window::active(on || chain.was_on);
-        let requested_frame_limit_us = if chain.reflex_ab {
+        let requested_frame_limit_us = if crate::xess_output() {
+            0
+        } else if chain.reflex_ab {
             crate::target_fg_gate::frame_limit_us(on, chain.on_frames)
         } else {
             fg_options.frame_limit_us()
         };
         // Unsupported multipliers never reach the SDK, even while FG is off.
-        let effective_fg = if !fg_options.supported(s.maximum) {
+        let effective_fg = if crate::xess_output() {
+            crate::advanced_settings::FgOptions {
+                mode: crate::advanced_settings::FgMode::Fixed,
+                multiplier: 2,
+                target_fps: 0,
+                input_fps: 0,
+                ..fg_options
+            }
+        } else if !fg_options.supported(s.maximum) {
             crate::advanced_settings::FgOptions {
                 multiplier: 2,
                 ..fg_options
@@ -805,13 +870,28 @@ pub(super) unsafe fn present(
         } else {
             fg_options
         };
+        let dynamic_target = if fg_options.target_fps == 0 {
+            chain.refresh_rate
+        } else {
+            u32::from(fg_options.target_fps)
+        };
+        let elapsed = chain.created.elapsed();
+        let (effective_fg, dynamic_suspended) = chain.dynamic.configure(
+            effective_fg,
+            s.dynamic_supported != 0,
+            dynamic_target,
+            elapsed,
+            on,
+            !duplicate && !reset,
+        );
         let options_started = Instant::now();
         let fg_motion_format = if chain.flow.is_some() {
             vk::Format::R16G16_SFLOAT
         } else {
             motion_format()
         };
-        if on && (duplicate || reset) {
+        let suspended = on && (duplicate || reset || dynamic_suspended);
+        if suspended {
             // Keep the application Present and resource-lifetime waits intact.
             // Streamline suspends interpolation for this pair while retaining
             // allocations, instead of generating from a repeat/reset frame.
@@ -870,7 +950,9 @@ pub(super) unsafe fn present(
         ) {
             return Err(format!("proxy present failed {result:?}").into());
         }
-        checked(probe_fg_marker(&api, token, 5), "present end")?;
+        if !crate::hybrid_enabled() {
+            checked(probe_fg_marker(&api, token, 5), "present end")?;
+        }
         let s = crate::fg_api::state(&api)?;
         let input_started = Instant::now();
         wait_inputs(&device, &s)?;
@@ -927,15 +1009,39 @@ pub(super) unsafe fn present(
         }
         chain.was_on = on;
         chain.fg_revision = control_revision;
-        let generation = s.generation(on, on && (duplicate || reset));
+        let generation = s.generation(on, suspended);
         crate::live::fg(
-            json!({"state":generation,"generationObserved":generation=="generated_observed",
-            "sdkPresented":s.presented,"requested":on,"suspended":on && (duplicate || reset),
-            "maximumGenerated":s.maximum,"options":effective_fg,"unsupportedMultiplier":off_reason==Some("fg_multiplier_unsupported"),
+            json!({"backend":"dlss","state":generation,"generationObserved":generation=="generated_observed",
+            "sdkPresented":s.presented,"requested":on,"suspended":suspended,"dynamicTargetMet":dynamic_suspended,
+            "maximumGenerated":s.maximum,"dlssMaximumGenerated":s.maximum,"options":effective_fg,"requestedOptions":fg_options,
+            "nativeDynamicSupported":s.dynamic_supported != 0,
+            "dynamicFallback":fg_options.mode == crate::advanced_settings::FgMode::Dynamic && s.dynamic_supported == 0,
+            "dynamicTargetFps":dynamic_target,"unsupportedMultiplier":off_reason==Some("fg_multiplier_unsupported"),
             "feedback":"streamline_present_count","perOutputDisableFlagAvailable":false}),
         );
+        #[cfg(feature = "hybrid-xess-fg")]
+        if crate::xess_output() {
+            if let Some(mut status) = crate::xess_fg::hybrid_status() {
+                status["options"] = json!(effective_fg);
+                status["requestedOptions"] = json!(fg_options);
+                status["dlssMaximumGenerated"] = json!(s.maximum);
+                crate::live::fg(status);
+            }
+        }
         crate::live::sr_applied(sr_mode, sr_revision, sr_preset, sr_options);
-        crate::live::frame(on, off_reason, control_revision);
+        crate::live::frame(
+            if crate::xess_output() { requested } else { on },
+            if crate::xess_output() {
+                if requested {
+                    None
+                } else {
+                    Some("user_disabled")
+                }
+            } else {
+                off_reason
+            },
+            control_revision,
+        );
         if crate::frame_capture::selected(frame) {
             trace::event!(
                 "target_capture_frame",
@@ -950,7 +1056,7 @@ pub(super) unsafe fn present(
         }
         trace::event!(
             "target_fg_frame",
-            json!({"frame":frame,"swapchain":handle.as_raw(),"composition_version":1,"fg_control_requested":requested,"fg_revision":control_revision,"sr_mode":sr_mode,"sr_revision":sr_revision,"nr_active":nr_completed,"nr_evaluated":nr_evaluated,"nr_output_reused":nr_completed && !nr_evaluated,"sr_evaluated":sr_completed,"color_source":if sr_completed {"sr_output"} else if nr_completed {"nr_output"} else if input_scaled {"scaled_input"} else {"original_present"},"history_reset":reset,"duplicate_color":duplicate,"interpolation_suspended":on && (duplicate || reset),"tail_deferred":sr_ready.is_some(),"present_waits":present_waits.iter().map(|s|s.as_raw()).collect::<Vec<_>>(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"retire_previous":retire_us,"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
+            json!({"frame":frame,"swapchain":handle.as_raw(),"composition_version":1,"fg_control_requested":requested,"fg_revision":control_revision,"sr_mode":sr_mode,"sr_revision":sr_revision,"nr_active":nr_completed,"nr_evaluated":nr_evaluated,"nr_output_reused":nr_completed && !nr_evaluated,"sr_evaluated":sr_completed,"color_source":if sr_completed {"sr_output"} else if nr_completed {"nr_output"} else if input_scaled {"scaled_input"} else {"original_present"},"history_reset":reset,"duplicate_color":duplicate,"interpolation_suspended":suspended,"dynamic_target_met":dynamic_suspended,"effective_fg_options":effective_fg,"tail_deferred":sr_ready.is_some(),"present_waits":present_waits.iter().map(|s|s.as_raw()).collect::<Vec<_>>(),"requested_on":on,"off_reason":off_reason,"fg_region":region,"source_error":native_source.err(),"input_wait_completed":true,"timing_us":{"retire_previous":retire_us,"begin_and_reflex_sleep":begin_us,"options":options_us,"proxy_present":present_us,"input_wait":input_wait_us},"reflex_frame_limit_us":requested_frame_limit_us,"sleep_frame_limit_us":sleep_frame_limit_us,"on_frames":chain.on_frames,"state":s.json(),"window_stop_reason":crate::target_window::reason(),"present_markers_only":true}),
         );
         Ok(result)
     })();
@@ -998,22 +1104,24 @@ pub(super) unsafe fn after_destroy(handle: vk::Device, swapchain: vk::SwapchainK
         crate::live::sr(json!({"active":false,"reason":"waiting"}));
         drop(chain.flow.take());
         if let Some(resources) = chain.resources {
-            let api = crate::target_runtime::fg_api().unwrap();
-            let mut token = 0;
-            if probe_fg_begin(
-                &api,
-                FRAME.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-                &mut token,
-            ) != 0
-            {
-                std::process::abort()
-            }
-            let nulls = resources.map(|mut r| {
-                r.image = 0;
-                r
-            });
-            if probe_fg_inputs(&api, token, 1, nulls.as_ptr(), std::ptr::null()) != 0 {
-                std::process::abort()
+            if !crate::hybrid_enabled() {
+                let api = crate::target_runtime::fg_api().unwrap();
+                let mut token = 0;
+                if probe_fg_begin(
+                    &api,
+                    FRAME.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+                    &mut token,
+                ) != 0
+                {
+                    std::process::abort()
+                }
+                let nulls = resources.map(|mut r| {
+                    r.image = 0;
+                    r
+                });
+                if probe_fg_inputs(&api, token, 1, nulls.as_ptr(), std::ptr::null()) != 0 {
+                    std::process::abort()
+                }
             }
             for r in resources {
                 device.destroy_image_view(vk::ImageView::from_raw(r.view), None);

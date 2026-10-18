@@ -7,7 +7,7 @@ export interface NrPipelineStatus {
   inferenceScalePercent?: number; inferenceSizingMode?: 'percentage' | 'max_edge'; inferenceMaxEdge?: number; originalExtent?: number[]; inferenceExtent?: number[]
   passes?: { pass: number; evaluated: boolean; reset: boolean; sourceFrameId: number; intensity: number }[]
 }
-import type { GraphicsAdvanced, FgOptions } from './graphicsAdvanced'
+import type { GraphicsAdvanced, FgOptions, OpticalFlowOptions } from './graphicsAdvanced'
 
 export interface FgCheck {
   id: string
@@ -50,6 +50,9 @@ export interface FgLive {
   sentInputScaleRevision?: number
   inputScale?: { active: boolean; appliedRevision?: number; mode?: 'percentage' | 'max_edge'; scalePercent?: number; maxEdge?: number; originalExtent?: number[]; inputExtent?: number[]; outputExtent?: number[]; error?: string; nrInputScaled?: boolean; srInputScaled?: boolean; presentationResampled?: boolean }
   advancedSettingsSupported?: boolean
+  fgBackendSwitchSupported?: boolean
+  opticalFlowSettingsSupported?: boolean
+  opticalFlow?: { appliedOptions: OpticalFlowOptions; startupOnly: boolean } | null
   nrLookSupported?: boolean
   nrSpatialLookSupported?: boolean; nrTwoPassSupported?: boolean; nrInterpassSupported?: boolean
   nrTemporalLookSupported?: boolean
@@ -60,7 +63,7 @@ export interface FgLive {
   nrConsolidatedSupported?: boolean
   nrInferenceScaleSupported?: boolean
   nrInferenceCapSupported?: boolean
-  fg?: { maximumGenerated?: number; options?: FgOptions; unsupportedMultiplier?: boolean } | null
+  fg?: { backend?: 'dlss' | 'xess'; guidance?: string; maximumGenerated?: number; dlssMaximumGenerated?: number; options?: FgOptions; requestedOptions?: FgOptions; unsupportedMultiplier?: boolean; nativeDynamicSupported?: boolean; dynamicFallback?: boolean; dynamicTargetFps?: number; dynamicTargetMet?: boolean } | null
   nrLiveSupported?: boolean
   sentNrRevision?: number
 nr?: { pipeline?: NrPipelineStatus | null; look?: NrLookStatus | null; active: boolean; requested?: boolean; appliedRevision?: number | null; intensity?: number; appliedIntensity?: number | null; evaluated?: boolean; firstEvaluated?: boolean; sourceObserved?: boolean; modelRecomputed?: boolean; outputReused?: boolean; lookRecomputed?: boolean; finalOutputReused?: boolean; sourceFrameId?: number | null; sourceFrameBasis?: string; controlsPending?: boolean; reason?: string; source?: string; depth?: string; motionValid?: boolean; input?: number[]; error?: string; reset?: boolean; resetReason?: string } | null

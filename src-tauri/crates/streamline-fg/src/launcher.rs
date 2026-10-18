@@ -14,6 +14,8 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         return crate::session_verify::verify(&PathBuf::from(&args[1]));
     }
     let (mut layer, mut session, mut game, mut runtime) = (None, None, None, None);
+    let mut xess_runtime = None;
+    let mut fg_switchable = false;
     let mut target = None;
     let mut expected_target_hash = None;
     let mut allow_unverified = false;
@@ -36,7 +38,9 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut nr_intensity = 1.0f32;
     let mut nr_readback = false;
     let mut nr_performance = false;
-    let mut graphics_launch = false;
+    // The independent XeSS component is a production launcher. Its frame events
+    // are not the Streamline diagnostic verifier's presentation contract.
+    let mut graphics_launch = cfg!(feature = "xess-component");
     let mut fixed_runtime = false;
     let mut nr_initial_off = false;
     let mut nr_consolidated = false;
@@ -106,7 +110,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         if flag == "--graphics-launch" {
             graphics_launch = true;
-            sdk_off = true;
+            sdk_off = !cfg!(feature = "xess-component");
             continue;
         }
         if flag == "--fixed-runtime" {
@@ -123,6 +127,10 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         if flag == "--nr-readback" {
             nr_readback = true;
+            continue;
+        }
+        if flag == "--fg-switchable" {
+            fg_switchable = true;
             continue;
         }
         if flag == "--native-nr" {
@@ -237,6 +245,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
             Some("--session") => &mut session,
             Some("--game") => &mut game,
             Some("--runtime") => &mut runtime,
+            Some("--xess-runtime") => &mut xess_runtime,
             Some("--nr-runtime") => &mut nr_runtime,
             Some("--nr-bridge") => &mut nr_bridge,
             Some("--validation-dir") => &mut validation_dir,
@@ -336,6 +345,71 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         json!({"executable":executable,"sha256":target_hash,"version":null,"build_test":target_policy::build_test(&target_hash),"publisher_authenticity_verified":false})
     };
     let layer = dunce::canonicalize(layer.ok_or("missing --layer")?)?;
+    let hybrid = advanced.fg.backend == streamline_probe_layer::advanced_settings::FgBackend::Xess;
+    let mut hybrid_paths = Vec::new();
+    if hybrid || fg_switchable {
+        if !cfg!(feature = "hybrid-xess-fg") || !graphics_launch {
+            return Err("DLSS/XeSS mixed mode requires the hybrid graphics component".into());
+        }
+        let bytes = fs::read(&layer)?;
+        let marker = streamline_probe_layer::advanced_settings::HYBRID_FG_MARKER;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("update the graphics component for DLSS/XeSS mixed mode".into());
+        }
+        if fg_switchable
+            && !bytes
+                .windows(b"NS_EMU_FG_SWITCH_V1".len())
+                .any(|v| v == b"NS_EMU_FG_SWITCH_V1")
+        {
+            return Err("update the graphics component for FG hot switching".into());
+        }
+        let dir = dunce::canonicalize(
+            xess_runtime
+                .as_ref()
+                .ok_or("missing --xess-runtime; install the XeSS component")?,
+        )?;
+        for (base, contents) in [
+            (
+                &dir,
+                include_str!("../../../tools/xess-fg-diagnostics/sdk.json"),
+            ),
+            (
+                &dir.join("D3D12"),
+                include_str!("../../../tools/xess-fg-diagnostics/agility.json"),
+            ),
+        ] {
+            let manifest: Value = serde_json::from_str(contents)?;
+            for file in manifest["files"]
+                .as_array()
+                .ok_or("invalid XeSS runtime contract")?
+            {
+                let name = file["path"].as_str().ok_or("invalid XeSS runtime file")?;
+                if name.ends_with(".dll") {
+                    let path = base.join(name);
+                    if hash(&path)? != file["sha256"].as_str().ok_or("invalid XeSS hash")? {
+                        return Err(format!("XeSS runtime hash mismatch: {name}").into());
+                    }
+                    hybrid_paths.push(path);
+                }
+            }
+        }
+        xess_runtime = Some(dir);
+    } else if xess_runtime.is_some() {
+        return Err("--xess-runtime requires the XeSS FG backend".into());
+    }
+    let _hybrid_files = streamline_probe_layer::runtime_files::hold(
+        &hybrid_paths,
+        streamline_probe_layer::runtime_files::Access::Runtime,
+    )?;
+    #[cfg(not(feature = "sdk-bridge"))]
+    let _ = &xess_runtime;
+    if !advanced.optical_flow.is_default() {
+        let bytes = fs::read(&layer)?;
+        let marker = streamline_probe_layer::advanced_settings::OPTICAL_FLOW_MARKER;
+        if !bytes.windows(marker.len()).any(|v| v == marker) {
+            return Err("selected layer does not support optical-flow settings; update it or restore optical-flow defaults".into());
+        }
+    }
     if input_scale != 100 || input_max_edge != 0 {
         if !graphics_launch
             || nr_readback
@@ -445,6 +519,27 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
     }
     let session = session.ok_or("missing --session")?;
+    #[cfg(feature = "xess-component")]
+    let _xess_files = if let Some(root) = std::env::var_os("NS_EMU_XESS_COMPONENT_ROOT") {
+        let root = dunce::canonicalize(root)?;
+        let files = [
+            "xess-component.exe",
+            "xess-layer.dll",
+            "libxess.dll",
+            "bin/libxess_fg.dll",
+            "bin/libxell.dll",
+            "D3D12/D3D12Core.dll",
+            "D3D12/d3d12SDKLayers.dll",
+            "D3D12/D3D12StateObjectCompiler.dll",
+            "package.json",
+        ];
+        streamline_probe_layer::runtime_files::hold(
+            &files.iter().map(|name| root.join(name)).collect::<Vec<_>>(),
+            streamline_probe_layer::runtime_files::Access::Runtime,
+        )?
+    } else {
+        Vec::new()
+    };
     for key in [
         "VK_INSTANCE_LAYERS",
         "VK_LOADER_LAYERS_ENABLE",
@@ -726,12 +821,31 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .stderr(fs::File::create(session.join("target.stderr.log"))?);
     family.configure_command(
         &mut command,
-        fg || native_nr || graphics_launch,
+        fg || native_nr || graphics_launch || cfg!(feature = "xess-component"),
         game.as_deref(),
     );
+    #[cfg(feature = "sdk-bridge")]
+    {
+        command
+            .env(
+                "NS_EMU_FG_SWITCHABLE",
+                if fg_switchable { "1" } else { "0" },
+            )
+            .env(
+                "NS_EMU_XESS_HYBRID",
+                if hybrid && !fg_switchable { "1" } else { "0" },
+            )
+            .env("NS_EMU_XESS_FG", if hybrid { "1" } else { "0" })
+            .env("NS_EMU_XESS_NATIVE_AA", "0");
+        if let Some(dir) = &xess_runtime {
+            command
+                .env("NS_EMU_XESS_FG_SDK", dir)
+                .env("NS_EMU_XESS_FG_AGILITY", dir.join("D3D12"));
+        }
+    }
     write_json(
         &session.join("target-inputs.json"),
-        &json!({"fixed_runtime":fixed_runtime,"runtime_directory":runtime_dest,"sdk_log_directory":sdk_logs,"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_consolidated":nr_consolidated,"nr_inference_scale_percent":nr_inference_scale,"nr_inference_max_edge":nr_inference_max_edge,"input_scale_percent":input_scale,"input_max_edge":input_max_edge,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
+        &json!({"fixed_runtime":fixed_runtime,"runtime_directory":runtime_dest,"sdk_log_directory":sdk_logs,"profile":profile,"compatibility":compatibility.as_str(),"allow_unverified_target":allow_unverified,"layer_sha256":hash(&layer)?,"game":game,"graphics_launch":graphics_launch,"nr_requested":native_nr && !nr_initial_off,"nr_available":native_nr,"nr_performance":nr_performance,"nr_consolidated":nr_consolidated,"nr_inference_scale_percent":nr_inference_scale,"nr_inference_max_edge":nr_inference_max_edge,"input_scale_percent":input_scale,"input_max_edge":input_max_edge,"nr_validation_requested":native_nr && !nr_performance && !graphics_launch,"nr_intensity":nr_intensity,"advanced_settings":advanced,"fg_switchable":fg_switchable,"nr_readback_requested":nr_readback,"nr_files":nr_files,"fg_requested":fg,"sr_mode":sr_mode,"sr_preset":sr_preset,"frame_trace_enabled":std::env::var("NS_STREAMLINE_TRACE_FRAMES").as_deref() != Ok("0"),"sr_input":"auto_native_or_present","sr_scale":sr_scale,"reflex_ab_requested":reflex_ab,"reference_parameters":reference_params,"motion_estimate":motion_estimate,"motion_backend":if motion_estimate {"nvof"} else {"zero"},"frame_budget":if bounded {Some(600)} else {None},"scale_probe":scale_probe,"scale_copy_probe":scale_copy,"scale_replace_probe":scale_replace,"layer_only":!sdk_off,"sdk_off_integration":sdk_off && !fg && !native_nr,"fg_experiment_requested":fg,"child_disable":disable}),
     )?;
     write_json(
         &session.join("target-command.json"),
@@ -805,11 +919,26 @@ mod experiment_arguments {
             ),
             (
                 vec!["--native-nr", "--nr-readback", "--nr-inference-scale", "50"],
-                "without legacy --nr-readback",
+                if cfg!(feature = "native-nr") {
+                    "without legacy --nr-readback"
+                } else {
+                    "native NR requires a native-nr build"
+                },
             ),
         ] {
             let args: Vec<OsString> = args.into_iter().map(OsString::from).collect();
-            assert!(run(&args).unwrap_err().to_string().contains(message));
+            let error = run(&args).unwrap_err().to_string();
+            assert!(error.contains(message), "{args:?}: {error}");
+        }
+    }
+
+    #[cfg(feature = "xess-component")]
+    #[test]
+    fn independent_xess_launch_defaults_to_production_mode() {
+        for flags in [vec!["--bounded"], vec!["--graphics-launch", "--bounded"]] {
+            let args: Vec<OsString> = flags.into_iter().map(OsString::from).collect();
+            let error = run(&args).unwrap_err().to_string();
+            assert!(error.contains("normal graphics launch cannot include diagnostic"));
         }
     }
 }

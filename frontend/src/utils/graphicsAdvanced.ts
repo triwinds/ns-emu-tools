@@ -84,17 +84,29 @@ export interface NrOptions {
 }
 export interface SrOptions { autoExposure: boolean; exposure: number }
 export interface FgOptions {
+  backend?: 'dlss' | 'xess'
   mode: 'fixed' | 'dynamic'
   multiplier: number
   targetFps: number
   reflex: 'low_latency' | 'boost'
   inputFps: number
 }
-export interface GraphicsAdvanced { nr: NrOptions; sr: SrOptions; fg: FgOptions }
+export interface OpticalFlowOptions {
+  quality: 'quality' | 'balanced' | 'performance'
+  temporalHints: boolean
+  staticGuard: boolean
+  edgeProtection: boolean
+  edgeThreshold: number
+}
+export function opticalFlowOptions(value?: OpticalFlowOptions): OpticalFlowOptions {
+  return { quality: 'balanced', temporalHints: true, staticGuard: true, edgeProtection: true, edgeThreshold: 2, ...value }
+}
+export interface GraphicsAdvanced { nr: NrOptions; sr: SrOptions; fg: FgOptions; opticalFlow?: OpticalFlowOptions }
 export function graphicsAdvanced(value?: GraphicsAdvanced): GraphicsAdvanced {
   return {
+    opticalFlow: opticalFlowOptions(value?.opticalFlow),
     nr: { style: 'a', globalTone: null, localTone: null, localStructure: null, skinStructure: 0, autoMask: false, ...value?.nr, look: cloneNrLook(value?.nr?.look), secondPass: cloneNrSecondPass(value?.nr?.secondPass) },
     sr: { autoExposure: true, exposure: 100, ...value?.sr },
-    fg: { mode: 'fixed', multiplier: 2, targetFps: 0, reflex: 'low_latency', inputFps: 0, ...value?.fg },
+    fg: { backend: 'dlss' as const, mode: 'fixed', multiplier: 2, targetFps: 0, reflex: 'low_latency', inputFps: 0, ...value?.fg },
   }
 }

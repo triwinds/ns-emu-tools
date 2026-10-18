@@ -1,6 +1,66 @@
 //! Process-scoped FG Vulkan layer; transparent unless explicitly enabled by the launcher.
 #![allow(clippy::missing_safety_doc)]
+#[cfg(all(
+    feature = "sdk-bridge",
+    any(
+        feature = "xess-native-aa",
+        all(feature = "xess-fg", not(feature = "hybrid-xess-fg"))
+    )
+))]
+compile_error!("Build XeSS separately from the Streamline/optical-flow component");
+#[cfg(any(
+    feature = "sdk-bridge",
+    feature = "xess-fg",
+    feature = "xess-native-aa"
+))]
+pub(crate) fn hybrid_enabled() -> bool {
+    cfg!(feature = "hybrid-xess-fg") && std::env::var("NS_EMU_XESS_HYBRID").as_deref() == Ok("1")
+}
+#[cfg(any(
+    feature = "sdk-bridge",
+    feature = "xess-fg",
+    feature = "xess-native-aa"
+))]
+pub(crate) fn dual_fg_enabled() -> bool {
+    cfg!(feature = "hybrid-xess-fg") && std::env::var("NS_EMU_FG_SWITCHABLE").as_deref() == Ok("1")
+}
+#[cfg(feature = "sdk-bridge")]
+pub(crate) fn xess_output() -> bool {
+    #[cfg(all(windows, feature = "hybrid-xess-fg"))]
+    if dual_fg_enabled() {
+        return dual_fg::xess();
+    }
+    hybrid_enabled()
+}
+#[cfg(all(windows, feature = "hybrid-xess-fg"))]
+mod dual_fg;
+#[cfg(all(windows, feature = "hybrid-xess-fg"))]
+#[used]
+#[no_mangle]
+pub static nsEmuFgSwitchV1: [u8; b"NS_EMU_FG_SWITCH_V1".len()] = *b"NS_EMU_FG_SWITCH_V1";
+#[cfg(all(windows, feature = "hybrid-xess-fg"))]
+#[used]
+#[no_mangle]
+pub static nsEmuDlssXeSSFGV1: [u8; b"NS_EMU_DLSS_XESS_FG_V1".len()] = *b"NS_EMU_DLSS_XESS_FG_V1";
+#[cfg(all(windows, feature = "xess-component"))]
+mod xess_status;
+#[cfg(all(windows, feature = "xess-component"))]
+#[used]
+#[no_mangle]
+pub static nsEmuXeSSComponentV1: [u8; b"NS_EMU_XESS_COMPONENT_V1".len()] =
+    *b"NS_EMU_XESS_COMPONENT_V1";
+#[cfg(all(windows, feature = "xess-fg"))]
+#[used]
+#[no_mangle]
+pub static nsEmuXeSSFrameGenerationV1: [u8; b"NS_EMU_XESS_FG_GAME_V1".len()] =
+    *b"NS_EMU_XESS_FG_GAME_V1";
+#[cfg(all(windows, feature = "xess-native-aa"))]
+#[used]
+#[no_mangle]
+pub static nsEmuXeSSNativeAaV1: [u8; b"NS_EMU_XESS_NATIVE_AA_V1".len()] =
+    *b"NS_EMU_XESS_NATIVE_AA_V1";
 mod abi;
+pub mod input_dimensions;
 #[path = "../../streamline-runtime-files.rs"]
 pub mod runtime_files;
 #[cfg(all(windows, feature = "sdk-bridge"))]
@@ -15,6 +75,10 @@ pub mod advanced_settings;
 #[used]
 #[no_mangle]
 pub static nsEmuGraphicsAdvancedV1: [u8; 27] = *b"NS_EMU_GRAPHICS_ADVANCED_V1";
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuOpticalFlowV1: [u8; b"NS_EMU_OPTICAL_FLOW_V1".len()] = *b"NS_EMU_OPTICAL_FLOW_V1";
 #[cfg(all(windows, feature = "sdk-bridge"))]
 #[used]
 #[no_mangle]
@@ -113,6 +177,8 @@ mod validation_calls;
 pub extern "C" fn nrLayerAbi() -> u64 {
     0x0001_0000_0000_0001
 }
+#[cfg(any(test, all(windows, feature = "sdk-bridge")))]
+mod fg_dynamic;
 mod present_layout;
 mod queue_sync;
 mod route_objects;
@@ -135,9 +201,20 @@ mod target_device_plan;
 mod target_fg_gate;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_runtime;
+#[cfg(all(windows, feature = "xess-native-aa"))]
+mod target_xess_aa;
 mod trace;
 #[cfg(any(test, all(windows, feature = "native-nr")))]
 mod validation_context;
+#[cfg(all(windows, any(feature = "xess-native-aa", feature = "xess-fg")))]
+mod vulkan_features;
+#[cfg(all(windows, feature = "xess-native-aa"))]
+#[path = "../../../tools/xess-vulkan-diagnostics/src/api.rs"]
+mod xess_api;
+#[cfg(all(windows, feature = "xess-fg"))]
+mod xess_fg;
+#[cfg(all(windows, feature = "xess-native-aa"))]
+mod xess_native;
 use abi::*;
 use ash::vk::{self, Handle};
 use serde_json::json;
@@ -234,8 +311,21 @@ pub unsafe extern "system" fn vkCreateInstance(
     );
     // Only advance the Loader-owned link, never application creation parameters.
     (*chain).data[0] = (*link).next as usize;
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    let native_xess =
+        target_xess_aa::enabled().then(|| xess_native::create_instance(next, info, alloc, output));
+    #[cfg(not(all(windows, feature = "xess-native-aa")))]
+    let native_xess: Option<vk::Result> = None;
+    #[cfg(all(windows, feature = "xess-fg"))]
+    let native_xess = if native_xess.is_none() && xess_fg::enabled() && !hybrid_enabled() {
+        Some(xess_fg::create_instance(next, info, alloc, output))
+    } else {
+        native_xess
+    };
     #[cfg(all(windows, feature = "sdk-bridge"))]
-    let result = if target_runtime::enabled() {
+    let result = if let Some(result) = native_xess {
+        result
+    } else if target_runtime::enabled() {
         target_runtime::create_instance(next, info, alloc, output)
     } else {
         #[cfg(feature = "native-nr")]
@@ -254,7 +344,7 @@ pub unsafe extern "system" fn vkCreateInstance(
         result
     };
     #[cfg(not(all(windows, feature = "sdk-bridge")))]
-    let result = next(info, alloc, output);
+    let result = native_xess.unwrap_or_else(|| next(info, alloc, output));
     (*chain).data[0] = link as usize;
     if result == vk::Result::SUCCESS {
         state().instances.insert(
@@ -365,14 +455,29 @@ pub unsafe extern "system" fn vkCreateDevice(
         json!({"queues":queues,"feature_chain":feature_chain,"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count)}),
     );
     (*chain).data = (*link).next as usize;
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    let native_xess = target_xess_aa::enabled()
+        .then(|| xess_native::create_device(parent, next, physical, info, alloc, output));
+    #[cfg(not(all(windows, feature = "xess-native-aa")))]
+    let native_xess: Option<vk::Result> = None;
+    #[cfg(all(windows, feature = "xess-fg"))]
+    let native_xess = if native_xess.is_none() && xess_fg::enabled() && !hybrid_enabled() {
+        Some(xess_fg::create_device(
+            parent, next, physical, info, alloc, output,
+        ))
+    } else {
+        native_xess
+    };
     #[cfg(all(windows, feature = "sdk-bridge"))]
-    let result = if target_runtime::enabled() {
+    let result = if let Some(result) = native_xess {
+        result
+    } else if target_runtime::enabled() {
         target_runtime::create_device(parent, next, physical, info, alloc, output)
     } else {
         next(physical, info, alloc, output)
     };
     #[cfg(not(all(windows, feature = "sdk-bridge")))]
-    let result = next(physical, info, alloc, output);
+    let result = native_xess.unwrap_or_else(|| next(physical, info, alloc, output));
     (*chain).data = link as usize;
     if result == vk::Result::SUCCESS {
         state().devices.insert(
@@ -384,6 +489,14 @@ pub unsafe extern "system" fn vkCreateDevice(
                 gdpa,
             },
         );
+        #[cfg(all(windows, feature = "xess-fg"))]
+        if xess_fg::enabled() || dual_fg_enabled() {
+            xess_fg::device_created(*output, info);
+        }
+        #[cfg(all(windows, feature = "xess-native-aa"))]
+        if xess_native::enabled() {
+            xess_native::device_created(*output, info);
+        }
     }
     #[cfg(all(windows, feature = "sdk-bridge"))]
     if result == vk::Result::SUCCESS && target_runtime::enabled() {
@@ -411,6 +524,14 @@ pub unsafe extern "system" fn vkDestroyDevice(
         return;
     };
     let k = key(handle);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() || dual_fg_enabled() {
+        xess_fg::destroy_device(handle);
+    }
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if xess_native::enabled() {
+        xess_native::destroy_device(handle);
+    }
     #[cfg(all(windows, feature = "sdk-bridge"))]
     target_fg::drain_device(handle);
     if route_objects::drain_device(handle).is_err() {
@@ -612,6 +733,10 @@ pub unsafe extern "system" fn vkGetInstanceProcAddr(
             Some(std::mem::transmute(vkCreateWin32SurfaceKHR as *const ()))
         }
         b"vkDestroySurfaceKHR" => Some(std::mem::transmute(vkDestroySurfaceKHR as *const ())),
+        #[cfg(all(windows, feature = "xess-fg"))]
+        b"vkGetPhysicalDeviceSurfaceCapabilitiesKHR" if xess_fg::enabled() => Some(
+            std::mem::transmute(xess_fg::get_surface_capabilities as *const ()),
+        ),
         _ => device_intercept(name_str).or(next),
     };
     result
@@ -624,6 +749,12 @@ unsafe extern "system" fn physical_gpa(
         return None;
     }
     let d = instance(handle)?;
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() && CStr::from_ptr(name) == c"vkGetPhysicalDeviceSurfaceCapabilitiesKHR" {
+        return Some(std::mem::transmute(
+            xess_fg::get_surface_capabilities as *const (),
+        ));
+    }
     d.physical_gpa.and_then(|f| f(handle, name))
 }
 
@@ -731,7 +862,18 @@ pub unsafe extern "system" fn vkCreateWin32SurfaceKHR(
     };
     let next: vk::PFN_vkCreateWin32SurfaceKHR =
         std::mem::transmute((d.gipa)(handle, c"vkCreateWin32SurfaceKHR".as_ptr()).unwrap());
+    #[cfg(all(windows, feature = "xess-fg"))]
+    let result = if xess_fg::enabled() {
+        xess_fg::create_surface(handle, next, info, alloc, out)
+    } else {
+        next(handle, info, alloc, out)
+    };
+    #[cfg(not(all(windows, feature = "xess-fg")))]
     let result = next(handle, info, alloc, out);
+    #[cfg(all(windows, feature = "hybrid-xess-fg"))]
+    if dual_fg_enabled() && result == vk::Result::SUCCESS {
+        xess_fg::track_dual_surface(*out, (*info).hwnd);
+    }
     #[cfg(all(windows, feature = "sdk-bridge"))]
     if target_runtime::enabled() && result == vk::Result::SUCCESS {
         target_runtime::surface_created(handle, info, *out);
@@ -756,6 +898,10 @@ pub unsafe extern "system" fn vkDestroySurfaceKHR(
     let next: vk::PFN_vkDestroySurfaceKHR =
         std::mem::transmute((d.gipa)(handle, c"vkDestroySurfaceKHR".as_ptr()).unwrap());
     next(handle, surface, alloc);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() || dual_fg_enabled() {
+        xess_fg::destroy_surface(surface);
+    }
     trace::event!("vkDestroySurfaceKHR", json!({"object":handle.as_raw()}));
 }
 #[no_mangle]
@@ -780,19 +926,44 @@ pub unsafe extern "system" fn vkCreateSwapchainKHR(
         std::mem::transmute((d.gdpa)(handle, c"vkCreateSwapchainKHR".as_ptr()).unwrap());
     let mut copy = *info;
     copy.image_usage = scale_copy::swapchain_usage(d, &copy);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() {
+        xess_fg::before_swapchain(d, &mut copy);
+    }
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if xess_native::enabled() {
+        copy.image_usage = xess_native::swapchain_usage(d, &copy);
+    }
     let result = next(handle, &copy, alloc, out);
     if result == vk::Result::SUCCESS {
         scale_copy::swapchain_created(d, *out, &copy, result);
+        #[cfg(all(windows, feature = "xess-fg"))]
+        if xess_fg::enabled() {
+            xess_fg::swapchain_created(d, *out, &copy);
+        }
+        #[cfg(all(windows, feature = "xess-native-aa"))]
+        if xess_native::enabled() {
+            xess_native::swapchain_created(d, *out, &copy);
+        }
     }
     result
 }
 
-#[cfg(all(windows, feature = "sdk-bridge"))]
+#[cfg(all(
+    windows,
+    any(
+        feature = "sdk-bridge",
+        feature = "xess-native-aa",
+        feature = "xess-fg"
+    )
+))]
+#[cfg_attr(not(feature = "sdk-bridge"), allow(dead_code))]
 mod fg_api;
 
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod fg_pause;
-#[cfg(all(windows, feature = "sdk-bridge"))]
+#[cfg(all(windows, any(feature = "sdk-bridge", feature = "xess-native-aa")))]
+#[cfg_attr(not(feature = "sdk-bridge"), allow(dead_code))]
 mod frame_capture;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 mod target_fg;
@@ -825,6 +996,22 @@ pub unsafe extern "system" fn vkQueuePresentKHR(
     #[cfg(not(all(windows, feature = "sdk-bridge")))]
     let address = native;
     let next: vk::PFN_vkQueuePresentKHR = std::mem::transmute(address);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() && !hybrid_enabled() {
+        return xess_fg::present(d, queue, info, next);
+    }
+    #[cfg(all(windows, feature = "hybrid-xess-fg"))]
+    let next = if dual_fg_enabled() {
+        xess_fg::dual_present
+    } else if hybrid_enabled() {
+        xess_fg::hybrid_present
+    } else {
+        next
+    };
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if target_xess_aa::enabled() {
+        return xess_native::present(d, queue, info, next);
+    }
     trace::event!(
         "vkQueuePresentKHR",
         json!({"object":queue.as_raw(),"next":address as usize,"hook":vkQueuePresentKHR as *const () as usize}),
@@ -850,6 +1037,14 @@ pub unsafe extern "system" fn vkDestroySwapchainKHR(
     alloc: *const vk::AllocationCallbacks,
 ) {
     let Some(d) = device(handle) else { return };
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() || dual_fg_enabled() {
+        xess_fg::destroy_swapchain(handle, swapchain);
+    }
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if xess_native::enabled() {
+        xess_native::destroy_swapchain(handle, swapchain);
+    }
     let native = (d.gdpa)(handle, c"vkDestroySwapchainKHR".as_ptr()).unwrap();
     #[cfg(all(windows, feature = "sdk-bridge"))]
     let address = if target_runtime::enabled() {

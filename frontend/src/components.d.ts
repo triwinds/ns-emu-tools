@@ -13,7 +13,9 @@ declare module 'vue' {
     EmulatorRunningDialog: typeof import('./components/EmulatorRunningDialog.vue')['default']
     FaqGroup: typeof import('./components/FaqGroup.vue')['default']
     GraphicsAdvancedDialog: typeof import('./components/GraphicsAdvancedDialog.vue')['default']
+    GraphicsEnhancementPanel: typeof import('./components/GraphicsEnhancementPanel.vue')['default']
     InputScaleControls: typeof import('./components/InputScaleControls.vue')['default']
+    InputSizingControls: typeof import('./components/InputSizingControls.vue')['default']
     MarkdownContentBox: typeof import('./components/MarkdownContentBox.vue')['default']
     NativeNrControls: typeof import('./components/NativeNrControls.vue')['default']
     NewVersionDialog: typeof import('./components/NewVersionDialog.vue')['default']
@@ -26,6 +28,7 @@ declare module 'vue' {
     SpeedDial: typeof import('./components/SpeedDial.vue')['default']
     StreamlineFgLive: typeof import('./components/StreamlineFgLive.vue')['default']
     StreamlineFgPanel: typeof import('./components/StreamlineFgPanel.vue')['default']
+    XessPanel: typeof import('./components/XessPanel.vue')['default']
     YuzuSaveCommonPart: typeof import('./components/YuzuSaveCommonPart.vue')['default']
     YuzuSaveRestoreTab: typeof import('./components/YuzuSaveRestoreTab.vue')['default']
   }

@@ -1,4 +1,13 @@
 pub use streamline_probe_layer::advanced_settings;
+// Standalone Streamline diagnostics never activate the game's XeSS route.
+#[cfg(all(windows, feature = "sdk-bridge"))]
+fn hybrid_enabled() -> bool {
+    false
+}
+#[cfg(all(windows, feature = "sdk-bridge"))]
+fn xess_output() -> bool {
+    false
+}
 #[cfg(windows)]
 mod host;
 #[cfg(windows)]
@@ -40,6 +49,8 @@ fn main() {
 
 #[cfg(all(windows, feature = "sdk-bridge"))]
 #[path = "../fg_api.rs"]
+// This diagnostic uses only the paced subset of the game's FG helpers.
+#[allow(dead_code)]
 mod fg_api;
 #[cfg(all(windows, feature = "sdk-bridge"))]
 #[path = "../fg_pause.rs"]

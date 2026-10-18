@@ -2,6 +2,9 @@ use sha2::{Digest, Sha256};
 use std::{env, fs, path::PathBuf};
 
 fn main() {
+    if env::var_os("CARGO_FEATURE_XESS_FG").is_some() {
+        xess_fg_sdk();
+    }
     if (env::var_os("CARGO_FEATURE_NR_DIAGNOSTICS").is_some()
         || env::var_os("CARGO_FEATURE_NATIVE_NR").is_some())
         && env::var("TARGET").unwrap() == "x86_64-pc-windows-msvc"
@@ -111,6 +114,46 @@ static_assert(offsetof(sl::ReflexOptions, idThread) == 44);
         .file(fg_pause_abi)
         .warnings_into_errors(true)
         .compile("streamline_query_bridge");
+}
+
+fn xess_fg_sdk() {
+    assert_eq!(env::var("TARGET").unwrap(), "x86_64-pc-windows-msvc");
+    let manifest_path = "../../tools/xess-fg-diagnostics/sdk.json";
+    let manifest: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(manifest_path).unwrap()).unwrap();
+    let frozen = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("xess-fg-headers");
+    for file in manifest["files"].as_array().unwrap() {
+        let name = file["path"].as_str().unwrap();
+        if !name.starts_with("inc/") {
+            continue;
+        }
+        let source = PathBuf::from("../../target/xess-fg-sdk-v3.0.2").join(name);
+        println!("cargo:rerun-if-changed={}", source.display());
+        let bytes = fs::read(source).unwrap();
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&bytes)),
+            file["sha256"].as_str().unwrap()
+        );
+        let dest = frozen.join(name.strip_prefix("inc/").unwrap());
+        fs::create_dir_all(dest.parent().unwrap()).unwrap();
+        fs::write(dest, bytes).unwrap();
+    }
+    println!("cargo:rerun-if-changed={manifest_path}");
+    println!("cargo:rerun-if-changed=../../tools/xess-fg-diagnostics/bridge.cpp");
+    println!("cargo:rerun-if-changed=../../tools/xess-fg-diagnostics/game_runtime.inl");
+    cc::Build::new()
+        .cpp(true)
+        .std("c++17")
+        .flag("/EHsc")
+        .flag("/permissive-")
+        .define("XESS_FG_GAME", "1")
+        .include(frozen)
+        .file("../../tools/xess-fg-diagnostics/bridge.cpp")
+        .warnings_into_errors(true)
+        .compile("xess_fg_game");
+    for library in ["d3d12", "dxgi", "dxguid", "user32"] {
+        println!("cargo:rustc-link-lib={library}");
+    }
 }
 
 fn nr_sdk() {

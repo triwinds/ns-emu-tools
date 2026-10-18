@@ -1,5 +1,55 @@
 # Streamline FG runtime
 
+## Optical-flow advanced controls (2026-10-18)
+
+FG advanced settings expose `opticalFlow` startup options: quality (`quality`,
+`balanced`, `performance`, mapped to Vulkan SLOW/MEDIUM/FAST), temporal hints,
+FG exact-static protection, FG motion-boundary protection and its 0–32 pixel
+agreement threshold. Defaults preserve balanced quality, all protections/hints
+enabled and a two-pixel threshold. Zero only blends equal vectors; disabling
+boundary protection restores ordinary bilinear FG motion. NR/SR guides are
+unaffected by the FG protection controls. Quality/hints affect all consumers.
+
+Changes save automatically for the next dedicated game launch. Session telemetry
+reports the actual creation options; the UI identifies pending restart settings.
+Nondefault options require `NS_EMU_OPTICAL_FLOW_V1` in the verified layer, checked
+by both toolbox and launcher. Default options omit the new JSON field for older
+components. Live updates deliberately reject this startup-only field. Normal
+toolbox launches clear inherited temporal/static environment overrides; explicit
+diagnostic launches retain them and report the effective values.
+
+GPU regression covers all three real hardware quality levels, motion/reset,
+static protection, the boundary-protection switch and thresholds 0/2/32 with
+shipped SPIR-V and core/synchronization validation. These tests verify controls
+and motion resources, not game-specific quality improvements.
+
+## FG motion boundaries and dynamic fallback (2026-10-18)
+
+By default, FG upsampling blends only flow taps within two presentation pixels of the
+nearest grid vector. Opposing foreground/background motion no longer produces
+invented intermediate trajectories. NR/SR retain their existing raw bilinear
+motion and FG retains exact-static tile protection. This is a boundary mitigation,
+not occlusion confidence or a guarantee against rapid-character-rotation artifacts.
+
+The latest game session's SDK log reports `Dynamic MFG not supported: driver
+missing required components`. Query the actual `bIsDynamicMFGSupported` flag,
+independently of the maximum fixed multiplier. If unavailable, dynamic requests
+use fixed SDK mode with a toolbox-controlled multiplier, bounded by the selected
+maximum. New color arrival intervals drive a smoothed estimate; exact repeats
+do not advance color history, but their original presentations count toward the
+target. Changes are held for one second, and meeting the target
+suspends interpolation while retaining resources. Target zero uses the game
+window's monitor refresh rate at swapchain creation (60 Hz if discovery fails).
+Integer multipliers can overshoot or fall short of the target. Telemetry and UI
+identify the fallback, requested/effective options and resolved target.
+
+Validation: CPU controller regressions and shipped-SPIR-V GPU readback cover
+opposing +/-16 pixel trajectories, reset, static protection, partial edge tiles,
+exact repeats and fast pans up to 64 pixels/frame with temporal hints both on
+and off. Core/synchronization validation reports no errors. Real-game head
+rotation quality and the fallback's actual presented FPS still require a new
+game session using the updated component.
+
 ## Native NR interpass comparison (2026-10-17)
 
 The Feeder experiment was reverted. Under the second NR pass, optional
@@ -292,3 +342,33 @@ keeps tuning values, while restoring defaults resets tuning. See the
 ## Experimental present-source SR
 
 Use the toolbox SR switch or `--sr-mode quality` alongside `--fg`. Default off. This version downsamples the final emulator image and reconstructs it to the same window size; it does not lower emulator rendering resolution. See [scope, tests and known exit failures](docs/SR-present-experiment.md).
+
+## Experimental DLSS SR / NR with XeSS FG
+
+The explicit `hybrid-xess-fg` feature combines the NVIDIA processing path with
+XeSS FG. In the DLSS panel, choose **FG → 高级设置 → 帧生成引擎 → XeSS FG**,
+install both verified component packages, then restart through the DLSS launcher.
+SR/DLAA and optional NR run before XeSS FG. The independent XeSS panel and its
+Native AA path retain their own settings and executable.
+
+This mode keeps the existing XeSS zero-motion-vector / fixed-depth (0.5) inputs.
+It supports 2× only; DLSS FG and Reflex are disabled, while XeLL controls XeSS
+pacing. NVIDIA optical flow still feeds DLSS SR/NR where needed. Backend changes
+require a restart; FG pause/resume and SR/NR controls remain live. The current
+launcher retains its NVIDIA native-FG GPU gate (RTX 40/50), even though XeSS FG
+itself supports more hardware.
+
+Streamline creates the Vulkan device, but presentation uses a native hidden
+swapchain and the existing Vulkan-to-D3D12 XeSS bridge. Completed SR/NR color is
+copied into that bridge. The pinned `sl.common.dll` plugin gateway receives
+pre/post-present notifications through a C++ ABI adapter, without invoking DLSSG
+or Reflex. This adapter depends on the verified bundled SDK ABI. Intel and
+Agility DLLs are separately verified and held open for the session lifetime.
+
+Real-game checks on 2026-10-18 covered DLAA, 1.5× SR, NR, FG pause/resume,
+SR/NR off/on, and normal process exit. Streamline logged no errors after the
+present-notification fix; existing startup warnings remain. About 30 application
+frames/s produced 60 SDK-queued frames/s. These counters do not independently
+measure displayed frames, and the checks do not certify strict Vulkan validation
+or fast-motion image quality. Compare head rotation in the original scene before
+judging whether this mode improves flicker.

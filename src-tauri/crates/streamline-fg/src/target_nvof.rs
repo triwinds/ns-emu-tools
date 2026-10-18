@@ -308,6 +308,7 @@ pub(super) struct Flow {
     last_frame: Option<Instant>,
     temporal_hints: bool,
     static_guard: bool,
+    options: crate::advanced_settings::OpticalFlowOptions,
     hint_reset_pending: bool,
     difference: Option<difference::Difference>,
 }
@@ -338,6 +339,33 @@ impl Flow {
         swapchain: vk::SwapchainKHR,
         output: Resource,
     ) -> Result<Self> {
+        Self::create_tuned(
+            instance,
+            physical,
+            device,
+            graphics,
+            optical,
+            swapchain,
+            output,
+            crate::live::optical_flow_options(),
+        )
+    }
+    unsafe fn create_tuned(
+        instance: &ash::Instance,
+        physical: vk::PhysicalDevice,
+        device: &ash::Device,
+        graphics: u32,
+        optical: u32,
+        swapchain: vk::SwapchainKHR,
+        output: Resource,
+        mut options: crate::advanced_settings::OpticalFlowOptions,
+    ) -> Result<Self> {
+        if let Ok(value) = std::env::var("NS_STREAMLINE_NVOF_TEMPORAL_HINTS") {
+            options.temporal_hints = value != "0";
+        }
+        if let Ok(value) = std::env::var("NS_STREAMLINE_NVOF_STATIC_GUARD") {
+            options.static_guard = value != "0";
+        }
         let api = ash::nv::optical_flow::Device::new(instance, device);
         let extent = vk::Extent2D {
             width: output.width,
@@ -379,9 +407,9 @@ impl Flow {
             last_frame: None,
             // Like Magpie, retain hints between new color frames. Exact repeats
             // never run OF; static-tile protection only changes FG motion.
-            temporal_hints: std::env::var("NS_STREAMLINE_NVOF_TEMPORAL_HINTS").as_deref()
-                != Ok("0"),
-            static_guard: std::env::var("NS_STREAMLINE_NVOF_STATIC_GUARD").as_deref() != Ok("0"),
+            temporal_hints: options.temporal_hints,
+            static_guard: options.static_guard,
+            options,
             hint_reset_pending: true,
             difference: None,
         };
@@ -406,7 +434,17 @@ impl Flow {
             .flow_vector_format(vk::Format::R16G16_S10_5_NV)
             .cost_format(vk::Format::UNDEFINED)
             .output_grid_size(vk::OpticalFlowGridSizeFlagsNV::TYPE_4X4)
-            .performance_level(vk::OpticalFlowPerformanceLevelNV::MEDIUM);
+            .performance_level(match options.quality {
+                crate::advanced_settings::OpticalFlowQuality::Quality => {
+                    vk::OpticalFlowPerformanceLevelNV::SLOW
+                }
+                crate::advanced_settings::OpticalFlowQuality::Balanced => {
+                    vk::OpticalFlowPerformanceLevelNV::MEDIUM
+                }
+                crate::advanced_settings::OpticalFlowQuality::Performance => {
+                    vk::OpticalFlowPerformanceLevelNV::FAST
+                }
+            });
         (f.api.fp().create_optical_flow_session_nv)(
             device.handle(),
             &info,
@@ -611,7 +649,7 @@ impl Flow {
                 .set_layouts(&[f.layout])
                 .push_constant_ranges(&[vk::PushConstantRange::default()
                     .stage_flags(vk::ShaderStageFlags::COMPUTE)
-                    .size(16)]),
+                    .size(20)]),
             None,
         )?;
         let code = ash::util::read_spv(&mut std::io::Cursor::new(include_bytes!(
@@ -655,9 +693,10 @@ impl Flow {
             .result()?;
             f.images.truncate(count as usize);
         }
+        crate::live::optical_flow(f.options);
         trace::event!(
             "target_nvof_ready",
-            json!({"backend":"VK_NV_optical_flow","width":extent.width,"height":extent.height,"grid":4,"quality":"balanced","bidirectional":false,"cost":false,"confidence_available":false,"temporal_hints":f.temporal_hints,"exact_duplicate_filter":true,"unchanged_tile_zero_motion":f.static_guard,"shared_motion_static_guard":false,"confidence_masked":false,"fg_motion":"fp16_pixels","shared_motion":"fp32_uv"}),
+            json!({"backend":"VK_NV_optical_flow","width":extent.width,"height":extent.height,"grid":4,"quality":options.quality,"options":f.options,"bidirectional":false,"cost":false,"confidence_available":false,"temporal_hints":f.temporal_hints,"exact_duplicate_filter":true,"unchanged_tile_zero_motion":f.static_guard,"shared_motion_static_guard":false,"confidence_masked":false,"fg_motion":"fp16_pixels","shared_motion":"fp32_uv"}),
         );
         Ok(f)
     }
@@ -954,13 +993,15 @@ impl Flow {
             &[self.set],
             &[],
         );
-        let mut constants = [0u8; 16];
-        let flags = u32::from(self.static_guard) << 2;
+        let mut constants = [0u8; 20];
+        let flags =
+            (u32::from(self.static_guard) << 2) | (u32::from(self.options.edge_protection) << 3);
         for (i, value) in [
             self.grid.width,
             self.grid.height,
             u32::from(!evaluate),
             flags,
+            u32::from(self.options.edge_threshold),
         ]
         .iter()
         .enumerate()

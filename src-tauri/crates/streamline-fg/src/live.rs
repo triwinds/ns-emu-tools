@@ -29,6 +29,13 @@ static NATIVE: AtomicU64 = AtomicU64::new(0);
 static LAST: Mutex<Option<(Instant, bool, String, u64)>> = Mutex::new(None);
 static SR: Mutex<Option<Value>> = Mutex::new(None);
 static INPUT_SCALE: Mutex<Option<Value>> = Mutex::new(None);
+static OPTICAL_FLOW: Mutex<Option<Value>> = Mutex::new(None);
+pub fn optical_flow_options() -> crate::advanced_settings::OpticalFlowOptions {
+    initial_advanced().optical_flow
+}
+pub fn optical_flow(options: crate::advanced_settings::OpticalFlowOptions) {
+    *OPTICAL_FLOW.lock().unwrap() = Some(json!({"appliedOptions":options,"startupOnly":true}));
+}
 static INPUT_CONTROL: OnceLock<Mutex<(InputSizing, u64)>> = OnceLock::new();
 fn input_control() -> &'static Mutex<(InputSizing, u64)> {
     INPUT_CONTROL.get_or_init(|| {
@@ -310,6 +317,9 @@ fn worker(dir: std::path::PathBuf) {
             let status = json!({"srPresetSupported":true,"srScaleSupported":true,"srScaleBasis":"source_output","srLiveSupported":crate::target_sr::available(),"sr":SR.lock().unwrap().clone(),"protocol":1,"updatedAt":now,"fresh":fresh,"requested":control.0,"revision":control.1,"appliedRevision":applied,"active":active && fresh,"reason":if fresh {reason} else {"waiting".into()},"samples":samples});
             let mut status = status;
             status["advancedSettingsSupported"] = json!(true);
+            status["fgBackendSwitchSupported"] = json!(crate::dual_fg_enabled());
+            status["opticalFlowSettingsSupported"] = json!(true);
+            status["opticalFlow"] = OPTICAL_FLOW.lock().unwrap().clone().unwrap_or(Value::Null);
             status["inputScalingSupported"] = json!(true);
             status["inputScalingLiveSupported"] = json!(true);
             status["inputScale"] = INPUT_SCALE
@@ -378,6 +388,14 @@ fn apply_control(control: &mut (bool, u64), v: &Value) {
     }
 }
 fn apply_fg_control(control: &mut (bool, u64), options: &mut FgOptions, v: &Value) {
+    apply_fg_control_with_switch(control, options, v, crate::dual_fg_enabled());
+}
+fn apply_fg_control_with_switch(
+    control: &mut (bool, u64),
+    options: &mut FgOptions,
+    v: &Value,
+    switchable: bool,
+) {
     if v["revision"]
         .as_u64()
         .is_none_or(|revision| revision <= control.1)
@@ -385,19 +403,72 @@ fn apply_fg_control(control: &mut (bool, u64), options: &mut FgOptions, v: &Valu
     {
         return;
     }
-    let next = match v.get("fgOptions") {
+    let next: FgOptions = match v.get("fgOptions") {
         None => *options,
         Some(value) => match serde_json::from_value(value.clone()) {
             Ok(v) => v,
             Err(_) => return,
         },
     };
+    if next.backend != options.backend && !switchable {
+        return;
+    }
     apply_control(control, v);
     *options = next;
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn switchable_session_applies_backend_and_pause_atomically_and_rejects_stale_updates() {
+        let mut control = (true, 1);
+        let mut options = FgOptions::default();
+        apply_fg_control_with_switch(
+            &mut control,
+            &mut options,
+            &json!({"enabled":false,"revision":2,"fgOptions":{"backend":"xess"}}),
+            true,
+        );
+        assert_eq!(control, (false, 2));
+        assert_eq!(options.backend, crate::advanced_settings::FgBackend::Xess);
+        for v in [
+            json!({"enabled":true,"revision":1,"fgOptions":{"backend":"dlss"}}),
+            json!({"enabled":true,"revision":3,"fgOptions":{"backend":"invalid"}}),
+        ] {
+            apply_fg_control_with_switch(&mut control, &mut options, &v, true);
+            assert_eq!(control, (false, 2));
+            assert_eq!(options.backend, crate::advanced_settings::FgBackend::Xess);
+        }
+        apply_fg_control_with_switch(
+            &mut control,
+            &mut options,
+            &json!({"enabled":true,"revision":4,"fgOptions":{"backend":"dlss"}}),
+            true,
+        );
+        assert_eq!(control, (true, 4));
+        assert_eq!(options.backend, crate::advanced_settings::FgBackend::Dlss);
+    }
+    #[test]
+    fn fg_backend_switch_requires_restart_but_legacy_pause_keeps_backend() {
+        let mut control = (true, 1);
+        let mut options = FgOptions {
+            backend: crate::advanced_settings::FgBackend::Xess,
+            ..Default::default()
+        };
+        apply_fg_control(
+            &mut control,
+            &mut options,
+            &json!({"enabled":false,"revision":2,"fgOptions":{"backend":"dlss"}}),
+        );
+        assert_eq!(control, (true, 1));
+        apply_fg_control(
+            &mut control,
+            &mut options,
+            &json!({"enabled":false,"revision":3}),
+        );
+        assert_eq!(control, (false, 3));
+        assert_eq!(options.backend, crate::advanced_settings::FgBackend::Xess);
+    }
     #[test]
     fn advanced_updates_are_atomic_and_legacy_commands_keep_tuning() {
         let mut fg = (true, 1);

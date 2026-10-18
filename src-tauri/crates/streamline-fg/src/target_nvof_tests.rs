@@ -39,14 +39,27 @@ unsafe fn ordinary_image(
 #[test]
 #[ignore = "Runs the NVIDIA hardware optical-flow engine on a local Vulkan GPU"]
 fn hardware_translation_reset_and_static() {
-    run_hardware_sequence(false, None);
+    run_hardware_sequence(false, None, Default::default());
 }
 
 #[test]
 #[ignore = "Runs both temporal-hint modes on a local NVIDIA Vulkan GPU"]
 fn hardware_fast_pan_with_and_without_temporal_hints() {
     for hints in [false, true] {
-        run_hardware_sequence(true, Some(hints));
+        run_hardware_sequence(true, Some(hints), Default::default());
+    }
+}
+
+#[test]
+#[ignore = "Validates all three hardware optical-flow quality levels and configurable FG protection on a local GPU"]
+fn hardware_optical_flow_quality_levels() {
+    use crate::advanced_settings::OpticalFlowQuality;
+    for quality in [
+        OpticalFlowQuality::Quality,
+        OpticalFlowQuality::Balanced,
+        OpticalFlowQuality::Performance,
+    ] {
+        run_hardware_sequence(false, None, quality);
     }
 }
 
@@ -386,7 +399,229 @@ fn sample_flow(raw: &[u32], grid: vk::Extent2D, p: [f32; 2]) -> [f32; 2] {
         })
     })
 }
-fn run_hardware_sequence(fast_pan: bool, temporal_hints: Option<bool>) {
+fn sample_fg_flow(raw: &[u32], grid: vk::Extent2D, p: [f32; 2]) -> [f32; 2] {
+    let at = |x: i32, y: i32| {
+        let x = x.clamp(0, grid.width as i32 - 1) as usize;
+        let y = y.clamp(0, grid.height as i32 - 1) as usize;
+        let word = raw[y * grid.width as usize + x];
+        [
+            word as u16 as i16 as f32 / 32.,
+            (word >> 16) as u16 as i16 as f32 / 32.,
+        ]
+    };
+    let anchor = at((p[0] / 4.).floor() as i32, (p[1] / 4.).floor() as i32);
+    let pos = [p[0] / 4. - 0.5, p[1] / 4. - 0.5];
+    let base = pos.map(|v| v.floor() as i32);
+    let f = [pos[0] - base[0] as f32, pos[1] - base[1] as f32];
+    let mut sum = [0.; 2];
+    let mut support = 0.;
+    for y in 0..2 {
+        for x in 0..2 {
+            let v = at(base[0] + x, base[1] + y);
+            if (v[0] - anchor[0]).powi(2) + (v[1] - anchor[1]).powi(2) <= 4. {
+                let weight = (if x == 0 { 1. - f[0] } else { f[0] })
+                    * (if y == 0 { 1. - f[1] } else { f[1] });
+                for axis in 0..2 {
+                    sum[axis] += v[axis] * weight;
+                }
+                support += weight;
+            }
+        }
+    }
+    sum.map(|v| v / support)
+}
+
+// Exercise the actual shipped shader with opposing velocities, independently
+// of optical-flow estimation. No pixel at the boundary may acquire a fictitious
+// in-between velocity. Also cover reset and exact-static protection.
+unsafe fn verify_dense_boundary(
+    flow: &Flow,
+    queue: vk::Queue,
+    cmd: vk::CommandBuffer,
+    read: &Buffer,
+) {
+    let d = &flow.device;
+    let words = (0..flow.grid.height)
+        .flat_map(|_| {
+            (0..flow.grid.width).map(|x| {
+                let velocity: i16 = if x < flow.grid.width / 2 { 512 } else { -512 };
+                u32::from(velocity as u16)
+            })
+        })
+        .collect::<Vec<_>>();
+    let bytes = words
+        .iter()
+        .flat_map(|w| w.to_ne_bytes())
+        .collect::<Vec<_>>();
+    let region = vk::BufferImageCopy::default()
+        .image_subresource(
+            vk::ImageSubresourceLayers::default()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .layer_count(1),
+        )
+        .image_extent(vk::Extent3D {
+            width: flow.extent.width,
+            height: flow.extent.height,
+            depth: 1,
+        });
+    for (reset, flags, threshold) in [
+        (0u32, 8u32, 0u32),
+        (0, 8, 2),
+        (0, 8, 32),
+        (0, 0, 2),
+        (1, 8, 2),
+        (0, 12, 2),
+    ] {
+        d.reset_command_buffer(cmd, vk::CommandBufferResetFlags::empty())
+            .unwrap();
+        d.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())
+            .unwrap();
+        d.cmd_pipeline_barrier(
+            cmd,
+            vk::PipelineStageFlags::ALL_COMMANDS,
+            vk::PipelineStageFlags::TRANSFER,
+            vk::DependencyFlags::empty(),
+            &[vk::MemoryBarrier::default()
+                .src_access_mask(vk::AccessFlags::MEMORY_READ | vk::AccessFlags::MEMORY_WRITE)
+                .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)],
+            &[],
+            &[],
+        );
+        for (i, chunk) in bytes.chunks(65536).enumerate() {
+            d.cmd_update_buffer(
+                cmd,
+                flow.data.as_ref().unwrap().buffer,
+                (i * 65536) as u64,
+                chunk,
+            );
+        }
+        d.cmd_fill_buffer(
+            cmd,
+            flow.difference.as_ref().unwrap().flags.buffer,
+            0,
+            vk::WHOLE_SIZE,
+            1,
+        );
+        d.cmd_pipeline_barrier(
+            cmd,
+            vk::PipelineStageFlags::TRANSFER,
+            vk::PipelineStageFlags::COMPUTE_SHADER,
+            vk::DependencyFlags::empty(),
+            &[vk::MemoryBarrier::default()
+                .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+                .dst_access_mask(vk::AccessFlags::SHADER_READ | vk::AccessFlags::SHADER_WRITE)],
+            &[],
+            &[],
+        );
+        d.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::COMPUTE, flow.pipeline);
+        d.cmd_bind_descriptor_sets(
+            cmd,
+            vk::PipelineBindPoint::COMPUTE,
+            flow.pipeline_layout,
+            0,
+            &[flow.set],
+            &[],
+        );
+        let constants = [flow.grid.width, flow.grid.height, reset, flags, threshold]
+            .iter()
+            .flat_map(|v| v.to_ne_bytes())
+            .collect::<Vec<_>>();
+        d.cmd_push_constants(
+            cmd,
+            flow.pipeline_layout,
+            vk::ShaderStageFlags::COMPUTE,
+            0,
+            &constants,
+        );
+        d.cmd_dispatch(
+            cmd,
+            flow.extent.width.div_ceil(8),
+            flow.extent.height.div_ceil(8),
+            1,
+        );
+        let image = flow.pixel_motion.as_ref().unwrap().0.image;
+        transition(
+            d,
+            cmd,
+            image,
+            vk::ImageLayout::GENERAL,
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+        );
+        d.cmd_copy_image_to_buffer(
+            cmd,
+            image,
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            read.buffer,
+            &[region],
+        );
+        transition(
+            d,
+            cmd,
+            image,
+            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            vk::ImageLayout::GENERAL,
+        );
+        d.cmd_pipeline_barrier(
+            cmd,
+            vk::PipelineStageFlags::TRANSFER,
+            vk::PipelineStageFlags::HOST,
+            vk::DependencyFlags::empty(),
+            &[vk::MemoryBarrier::default()
+                .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
+                .dst_access_mask(vk::AccessFlags::HOST_READ)],
+            &[],
+            &[],
+        );
+        d.end_command_buffer(cmd).unwrap();
+        d.queue_submit(
+            queue,
+            &[vk::SubmitInfo::default().command_buffers(&[cmd])],
+            vk::Fence::null(),
+        )
+        .unwrap();
+        d.queue_wait_idle(queue).unwrap();
+        let count = (flow.extent.width * flow.extent.height * 2) as usize;
+        let ptr = d
+            .map_memory(
+                read.memory,
+                0,
+                (count * 2) as u64,
+                vk::MemoryMapFlags::empty(),
+            )
+            .unwrap();
+        let values = std::slice::from_raw_parts(ptr.cast::<u16>(), count);
+        for y in 0..flow.extent.height {
+            for x in 0..flow.extent.width {
+                let at = ((y * flow.extent.width + x) * 2) as usize;
+                let boundary = (flow.grid.width / 2 * 4) as i32;
+                let expected = if reset != 0 || flags & 4 != 0 {
+                    0.
+                } else if (flags & 8 == 0 || threshold == 32)
+                    && (boundary - 2..boundary + 2).contains(&(x as i32))
+                {
+                    [12., 4., -4., -12.][(x as i32 - boundary + 2) as usize]
+                } else if x / 4 < flow.grid.width / 2 {
+                    16.
+                } else {
+                    -16.
+                };
+                assert_eq!(
+                    crate::frame_capture::half(values[at]),
+                    expected,
+                    "opposing FG layers mixed at ({x},{y}) reset={reset} flags={flags}"
+                );
+                assert_eq!(crate::frame_capture::half(values[at + 1]), 0.);
+            }
+        }
+        d.unmap_memory(read.memory);
+    }
+    println!("GPU FG boundary/reset/static regression passed");
+}
+fn run_hardware_sequence(
+    fast_pan: bool,
+    temporal_hints: Option<bool>,
+    quality: crate::advanced_settings::OpticalFlowQuality,
+) {
     unsafe {
         let entry = ash::Entry::load().unwrap();
         let validation = std::env::var_os("NS_NVOF_VALIDATION").is_some();
@@ -552,7 +787,7 @@ fn run_hardware_sequence(fast_pan: bool, temporal_hints: Option<bool>) {
         let app_ready = d
             .create_semaphore(&vk::SemaphoreCreateInfo::default(), None)
             .unwrap();
-        let mut flow = Flow::create(
+        let mut flow = Flow::create_tuned(
             &instance,
             physical,
             d,
@@ -560,6 +795,10 @@ fn run_hardware_sequence(fast_pan: bool, temporal_hints: Option<bool>) {
             optical,
             vk::SwapchainKHR::null(),
             r,
+            crate::advanced_settings::OpticalFlowOptions {
+                quality,
+                ..Default::default()
+            },
         )
         .unwrap();
         if let Some(hints) = temporal_hints {
@@ -907,7 +1146,7 @@ fn run_hardware_sequence(fast_pan: bool, temporal_hints: Option<bool>) {
                         let expected_fg = if flow.static_guard && unchanged {
                             0.
                         } else {
-                            forward[axis]
+                            sample_fg_flow(&raw, flow.grid, p)[axis]
                         };
                         assert!(
                             (pixel_motion[at * 2 + axis] - expected_fg).abs()
@@ -976,6 +1215,7 @@ fn run_hardware_sequence(fast_pan: bool, temporal_hints: Option<bool>) {
             previous_pixels = Some(current_pixels);
         }
         d.device_wait_idle().unwrap();
+        verify_dense_boundary(&flow, q, cmd, &read);
         drop(flow);
         drop(source);
         drop(output);

@@ -1,4 +1,9 @@
 pub use streamline_probe_layer::advanced_settings;
+// NR coexistence diagnostics use Streamline resource helpers without XeSS.
+#[cfg(all(windows, feature = "nr-coexistence"))]
+fn hybrid_enabled() -> bool {
+    false
+}
 #[cfg(all(windows, feature = "nr-coexistence"))]
 #[path = "../fg_api.rs"]
 // Reuse its resource helpers; this binary deliberately does not activate FG.

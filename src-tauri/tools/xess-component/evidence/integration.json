@@ -1,0 +1,544 @@
+{
+  "date": "2026-10-17",
+  "componentVersion": "local-xess-7504af9236e203ac",
+  "mainSha256": "6cd0faba135d18d9ed59d5a04800f0df2f9a53990c9953e8497a1a36c5bf31a3",
+  "manifestSha256": "0e292e5d2b4bd0cc919b47f20fe4435b8aca44f7e10782b72fa897fc65e0818d",
+  "componentFiles": [
+    {
+      "name": "D3D12/D3D12Core.dll",
+      "sha256": "37fa14281a58cc834076971873006feb8a8d25cddc908d1a345bda1b149ffc7d"
+    },
+    {
+      "name": "D3D12/D3D12StateObjectCompiler.dll",
+      "sha256": "023ba81d3a9c37ae805b746bb9c77bf2f6659044ee2fef2604154b507faca817"
+    },
+    {
+      "name": "D3D12/d3d12SDKLayers.dll",
+      "sha256": "7ab48d56d1c18708ebcf16c7c9259b2d783e2b935b85add4a244573b9f03cab4"
+    },
+    {
+      "name": "bin/libxell.dll",
+      "sha256": "d2030dcd694fda8f2ec7e044b13e6db8f0b56d4ba9113a5efad334e3f3ded8c7"
+    },
+    {
+      "name": "bin/libxess_fg.dll",
+      "sha256": "ec5e0c65e075570c6ede72618bb666d0be0c2e10b2ea9762c0fe8cb8e375ab27"
+    },
+    {
+      "name": "libxess.dll",
+      "sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7"
+    },
+    {
+      "name": "licenses/Intel-LICENSE.txt",
+      "sha256": "784be42c39a4a4d03cf85d88e15e59d75828fca773ce45b8dbfffbd7eaf208df"
+    },
+    {
+      "name": "licenses/Intel-third-party-programs.txt",
+      "sha256": "e8d8899dbfc4de0e8ca25560be9358e03c1405d7c956d20a1838c3c709b9b51c"
+    },
+    {
+      "name": "licenses/Microsoft-LICENSE-CODE.txt",
+      "sha256": "903df5512f7d02609fed0c780a9b704f5a3eeb6e4d84ebe42a29845c81899a3c"
+    },
+    {
+      "name": "licenses/Microsoft-LICENSE.txt",
+      "sha256": "5239850894610071566f7ecee0b751fde43c862032d92b99d7d0f596b3433ebd"
+    },
+    {
+      "name": "licenses/NS-Emu-Tools-LICENSE.txt",
+      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+    },
+    {
+      "name": "xess-component.exe",
+      "sha256": "4afcb2dfe9f726ac48fb9fa8e697e3633bde3d5e272928260c082a3d8fe44525"
+    },
+    {
+      "name": "xess-layer.dll",
+      "sha256": "caff0ec23b7b3637dfed7b431644a275b2afa134bd3257ec6c2a5568c90709e2"
+    }
+  ],
+  "combinedGame": {
+    "coverage": "AMD controllable opening battle; independent AA/FG pause and resume",
+    "exit": {
+      "code": 0,
+      "fg_requested": false,
+      "success": true
+    },
+    "aaActiveFrames": 7895,
+    "fgSuccessfulTwoFramePresents": 8252,
+    "failureEvents": [],
+    "traceSha256": "af4ecfd568f55d2e984b5f47af90de7c00ddfa5d9dde5b24ae1a919ec4da5ba8",
+    "componentVersion": "local-xess-a8f920ce66f3f4d1",
+    "switchStates": {
+      "state-aa-off-fg-on": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "lastUpdateMs": 1792223268366,
+        "nativeAaActive": false,
+        "nativeAaRequested": false,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 56.18512494942127,
+        "sourceFps": 28.092562474710636
+      },
+      "state-aa-on-fg-off": {
+        "failed": false,
+        "fgActive": false,
+        "fgFramesQueued": 1,
+        "fgRequested": false,
+        "fgResult": 0,
+        "lastUpdateMs": 1792223313463,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 20.907178400057266,
+        "sourceFps": 20.907178400057266
+      },
+      "state-both-off": {
+        "failed": false,
+        "fgActive": false,
+        "fgFramesQueued": 1,
+        "fgRequested": false,
+        "fgResult": 0,
+        "lastUpdateMs": 1792223295983,
+        "nativeAaActive": false,
+        "nativeAaRequested": false,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 29.851459139322728,
+        "sourceFps": 29.851459139322728
+      },
+      "state-both-on-restored": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "lastUpdateMs": 1792223378255,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 42.14393475505897,
+        "sourceFps": 21.071967377529486
+      }
+    },
+    "loadedModules": [
+      "xess-layer.dll",
+      "libxess.dll",
+      "libxell.dll",
+      "libxess_fg.dll"
+    ]
+  },
+  "guiAaOnly": {
+    "coverage": "GUI game selection, AA-only launch, GUI pause/resume; startup prompt only",
+    "exit": {
+      "code": 0,
+      "fg_requested": false,
+      "success": true
+    },
+    "aaActiveFrames": 3988,
+    "fgSuccessfulTwoFramePresents": 0,
+    "failureEvents": [],
+    "traceSha256": "6a23d45e98072c0dc83b385759485859465e0b054397ff7a92c76fdc50c1b0db",
+    "settings": {
+      "fg": false,
+      "fgMaxEdge": 640,
+      "nativeAa": true
+    },
+    "componentVersion": "local-xess-a8f920ce66f3f4d1"
+  },
+  "fgOnlyFinal": {
+    "coverage": "AMD startup prompt; final packaged FG-only smoke",
+    "exit": {
+      "code": 0,
+      "fg_requested": false,
+      "success": true
+    },
+    "aaActiveFrames": 0,
+    "fgSuccessfulTwoFramePresents": 1901,
+    "failureEvents": [],
+    "traceSha256": "ce8227136e676dde58287ef8cb52ca0dc5541545de0bec10c85ed482aa925331",
+    "loadedModules": [
+      "xess-layer.dll",
+      "libxell.dll",
+      "libxess_fg.dll"
+    ],
+    "runtime": {
+      "failed": false,
+      "fgActive": true,
+      "fgFramesQueued": 2,
+      "fgRequested": true,
+      "fgResult": 0,
+      "lastUpdateMs": 1792224164542,
+      "nativeAaActive": false,
+      "nativeAaRequested": false,
+      "schemaVersion": 1,
+      "sdkQueuedFps": 59.644311150454264,
+      "sourceFps": 29.822155575227132
+    },
+    "componentVersion": "local-xess-c0b6e1434cc3e98a"
+  },
+  "checks": {
+    "layerUnitTestsPassed": 105,
+    "managerTestsPassed": 7,
+    "hostCargoCheck": "passed, no warnings",
+    "windowsTargetCargoCheck": "passed, no warnings",
+    "nativeNrHostAndWindowsChecks": "passed, no warnings",
+    "frontendTypeCheck": "passed",
+    "tauriNoBundleBuild": "passed",
+    "finalSidecarAndInstalledRuntime": "13 file hashes and both manifests match embedded source manifest",
+    "frontendStyleReview": {
+      "xess": "DLSS-aligned title, steps, status, launch and vertical effect sections; details dialog checked",
+      "switches": "Standard Vuetify v-switch without inset for XeSS and DLSS NR/SR/FG including advanced options",
+      "interaction": "XeSS FG toggle saved and expanded options; original off state restored",
+      "lint": "Three changed Vue components passed with zero warnings",
+      "typeCheck": "passed",
+      "tauriNoBundleBuild": "passed"
+    },
+    "inputSizingReview": {
+      "sharedUi": "InputSizingControls.vue used by DLSS and XeSS",
+      "sharedGeometry": "input_dimensions::resized used by both Vulkan paths",
+      "hostAndWindowsChecks": "passed, no warnings",
+      "frontendTypesAndLint": "passed",
+      "tauriNoBundleBuild": "passed",
+      "finalGuiReview": "stopped by user; no further computer-use input",
+      "gpuSelection": "preferred_gpu restored to null; production XeSS follows emulator adapter LUID"
+    }
+  },
+  "originalGraphicsPackage": {
+    "verifiedFiles": 23,
+    "hashMismatches": 0
+  },
+  "defaults": {
+    "nativeAa": true,
+    "fg": false,
+    "inputSizing": {
+      "scalePercent": 100,
+      "maxEdge": 0
+    }
+  },
+  "limits": "Placeholder motion/depth, no injected jitter, per-frame AA history reset; counts include startup, menus and switching. SDK queued frames are not independently measured scanout; no game quality/latency claim.",
+  "abiFinal": {
+    "coverage": "AMD startup prompt; final packaged AA and FG; Vulkan callback ABI compiler-checked",
+    "componentVersion": "local-xess-2bf035994789f9a8",
+    "exit": {
+      "code": 0,
+      "fg_requested": false,
+      "success": true
+    },
+    "aaActiveFrames": 2293,
+    "fgSuccessfulTwoFramePresents": 2292,
+    "failureEvents": [],
+    "traceSha256": "ba119154aa629c956d7c8a29d8f2e0941cc281245a037610c97855f458ce13ca",
+    "loadedModules": [
+      "xess-layer.dll",
+      "libxess.dll",
+      "libxell.dll",
+      "libxess_fg.dll"
+    ],
+    "runtime": {
+      "failed": false,
+      "fgActive": true,
+      "fgFramesQueued": 2,
+      "fgRequested": true,
+      "fgResult": 0,
+      "lastUpdateMs": 1792224603036,
+      "nativeAaActive": true,
+      "nativeAaRequested": true,
+      "schemaVersion": 1,
+      "sdkQueuedFps": 60.99858020885324,
+      "sourceFps": 30.49929010442662
+    }
+  },
+  "inputSizingGame": {
+    "coverage": "AMD Xenoblade 3 startup prompt, live resizing and window-size changes; no motion-quality benchmark",
+    "componentVersion": "local-xess-7504af9236e203ac",
+    "exit": {
+      "code": 0,
+      "fg_requested": false,
+      "success": true
+    },
+    "traceSha256": "69534b3728d821cb6e2791f3c49640b50977016956746e87d77504c8e872ba88",
+    "aaActiveFrames": 4369,
+    "fgSuccessfulTwoFramePresents": 3754,
+    "failureEvents": [],
+    "fgExtents": [
+      {
+        "depth": 0.5,
+        "fg_output": [
+          1200,
+          656
+        ],
+        "input": [
+          1200,
+          656
+        ],
+        "input_sizing_stage": "before_aa_full_size_fg",
+        "jitter": [
+          0,
+          0
+        ],
+        "motion": [
+          0,
+          0
+        ],
+        "nvof": false,
+        "original_window_presentation": true,
+        "streamline": false
+      },
+      {
+        "depth": 0.5,
+        "fg_output": [
+          2560,
+          1391
+        ],
+        "input": [
+          2560,
+          1391
+        ],
+        "input_sizing_stage": "before_aa_full_size_fg",
+        "jitter": [
+          0,
+          0
+        ],
+        "motion": [
+          0,
+          0
+        ],
+        "nvof": false,
+        "original_window_presentation": true,
+        "streamline": false
+      },
+      {
+        "depth": 0.5,
+        "fg_output": [
+          1200,
+          656
+        ],
+        "input": [
+          1200,
+          656
+        ],
+        "input_sizing_stage": "before_aa_full_size_fg",
+        "jitter": [
+          0,
+          0
+        ],
+        "motion": [
+          0,
+          0
+        ],
+        "nvof": false,
+        "original_window_presentation": true,
+        "streamline": false
+      }
+    ],
+    "states": {
+      "state-aa-paused-scaled": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "inputScale": {
+          "active": true,
+          "appliedRevision": 2,
+          "error": null,
+          "fgExtent": "presentation_output",
+          "inputExtent": [
+            900,
+            492
+          ],
+          "maxEdge": 0,
+          "originalExtent": [
+            1200,
+            656
+          ],
+          "outputExtent": [
+            1200,
+            656
+          ],
+          "scalePercent": 75,
+          "startupOnly": false
+        },
+        "lastUpdateMs": 1792241935791,
+        "nativeAaActive": false,
+        "nativeAaRequested": false,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 41.32812454643613,
+        "sourceFps": 20.664062273218065
+      },
+      "state-cap640": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "inputScale": {
+          "active": true,
+          "appliedRevision": 0,
+          "error": null,
+          "fgExtent": "presentation_output",
+          "inputExtent": [
+            640,
+            349
+          ],
+          "maxEdge": 640,
+          "originalExtent": [
+            1200,
+            656
+          ],
+          "outputExtent": [
+            1200,
+            656
+          ],
+          "scalePercent": 100,
+          "startupOnly": false
+        },
+        "lastUpdateMs": 1792241824413,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 60.89539408847158,
+        "sourceFps": 30.44769704423579
+      },
+      "state-fg-paused-scaled": {
+        "failed": false,
+        "fgActive": false,
+        "fgFramesQueued": 1,
+        "fgRequested": false,
+        "fgResult": 0,
+        "inputScale": {
+          "active": true,
+          "appliedRevision": 2,
+          "error": null,
+          "fgExtent": "presentation_output",
+          "inputExtent": [
+            900,
+            492
+          ],
+          "maxEdge": 0,
+          "originalExtent": [
+            1200,
+            656
+          ],
+          "outputExtent": [
+            1200,
+            656
+          ],
+          "scalePercent": 75,
+          "startupOnly": false
+        },
+        "lastUpdateMs": 1792241973408,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 25.945988236288517,
+        "sourceFps": 25.945988236288517
+      },
+      "state-percent75": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "inputScale": {
+          "active": true,
+          "appliedRevision": 2,
+          "error": null,
+          "fgExtent": "presentation_output",
+          "inputExtent": [
+            1920,
+            1043
+          ],
+          "maxEdge": 0,
+          "originalExtent": [
+            2560,
+            1391
+          ],
+          "outputExtent": [
+            2560,
+            1391
+          ],
+          "scalePercent": 75,
+          "startupOnly": false
+        },
+        "lastUpdateMs": 1792241899909,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 11.358591686078814,
+        "sourceFps": 5.679295843039407
+      },
+      "state-rejected-small": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "inputScale": {
+          "active": true,
+          "appliedRevision": 1,
+          "error": "scaled input must be at least 320x180",
+          "fgExtent": "presentation_output",
+          "inputExtent": [
+            640,
+            349
+          ],
+          "maxEdge": 640,
+          "originalExtent": [
+            1200,
+            656
+          ],
+          "outputExtent": [
+            1200,
+            656
+          ],
+          "scalePercent": 100,
+          "startupOnly": false
+        },
+        "lastUpdateMs": 1792241838949,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 39.67351081013904,
+        "sourceFps": 19.83675540506952
+      },
+      "state-restored-original": {
+        "failed": false,
+        "fgActive": true,
+        "fgFramesQueued": 2,
+        "fgRequested": true,
+        "fgResult": 0,
+        "inputScale": {
+          "active": false,
+          "appliedRevision": 3,
+          "error": null,
+          "fgExtent": "presentation_output",
+          "inputExtent": [
+            1200,
+            656
+          ],
+          "maxEdge": 0,
+          "originalExtent": [
+            1200,
+            656
+          ],
+          "outputExtent": [
+            1200,
+            656
+          ],
+          "scalePercent": 100,
+          "startupOnly": false
+        },
+        "lastUpdateMs": 1792242000960,
+        "nativeAaActive": true,
+        "nativeAaRequested": true,
+        "schemaVersion": 1,
+        "sdkQueuedFps": 34.83910526984048,
+        "sourceFps": 17.41955263492024
+      }
+    }
+  }
+}

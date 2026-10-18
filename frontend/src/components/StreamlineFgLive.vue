@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { liveStreamlineFg, type FgLive, type FgSample } from '@/utils/streamlineFg'
-const props = defineProps<{ executable: string }>()
+import { fgEngineNeedsRestart, type GraphicsEngine } from '@/utils/graphicsPipeline'
+const props = defineProps<{ executable: string; expectedFgBackend?: GraphicsEngine }>()
 const emit = defineEmits<{ status: [value: FgLive] }>()
 const live = ref<FgLive>({ connected: false })
 const error = ref('')
@@ -21,6 +22,7 @@ let timer: ReturnType<typeof setTimeout> | undefined
 let disposed = false
 let deadline = 0
 const srModeLabel = computed(() => live.value.sr?.scale ? `${(live.value.sr.scale / 100).toFixed(2)}×` : '')
+const backendMismatch = computed(() => fgEngineNeedsRestart(props.expectedFgBackend, live.value.connected ? live.value.fg?.backend ?? 'dlss' : null))
 const samples = computed(() => live.value.samples ?? [])
 const current = computed(() => samples.value[samples.value.length - 1])
 const inspected = computed(() => selected.value === null ? current.value : samples.value[selected.value])
@@ -33,6 +35,8 @@ const state = computed(() => {
   if (pending.value || sending.value) return '正在应用设置'
   if (!live.value.requested) return 'FG 已关闭'
   if (!live.value.fresh) return '等待游戏画面'
+  if (live.value.active && live.value.fg?.backend === 'xess') return 'XeSS FG 正在运行 · 2× · DLSS 重建可独立开关'
+  if (live.value.active && live.value.fg?.dynamicFallback) return `FG 正在运行 · ${live.value.fg.dynamicTargetMet ? '已达到目标，暂不插帧' : `自动调节 ${live.value.fg.options?.multiplier ?? 2}×`} · 目标 ${live.value.fg.dynamicTargetFps ?? '—'} FPS（当前运行库不支持原生动态模式）`
   if (live.value.active) return 'FG 正在运行'
   const reasons: Record<string, string> = { background: '已暂停：游戏不在前台', warmup: '正在预热', window_operation: '已停用：窗口变化触发保护，请重新启动游戏', sdk_status: '已暂停：SDK 状态异常', below_minimum_extent: '窗口尺寸过小', user_disabled: 'FG 已关闭', frame_budget: '诊断帧数已用完', fg_multiplier_unsupported: '已暂停：当前 GPU / 运行库不支持所选倍数，请在 FG 高级配置中降低倍数' }
   return reasons[live.value.reason ?? ''] ?? '等待运行条件满足'
@@ -66,7 +70,7 @@ async function poll(token: number) {
   }
 }
 async function toggle(value: boolean | null) {
-  if (!live.value.connected || sending.value || pending.value) return
+  if (!live.value.connected || sending.value || pending.value || backendMismatch.value) return
   const token = generation
   sending.value = true
   desired.value = !!value
@@ -107,8 +111,8 @@ onBeforeUnmount(() => { disposed = true; generation++; clearTimeout(timer); resi
       </div>
       <v-switch
         :model-value="pending || sending ? desired : !!live.requested"
-        :disabled="!live.connected || !!pending || sending"
-        label="FG 帧生成"
+        :disabled="!live.connected || !!pending || sending || backendMismatch"
+        :label="`${live.fg?.backend === 'xess' ? 'XeSS' : 'DLSS'} FG（本次）`"
         color="secondary"
         hide-details
         density="compact"

@@ -251,8 +251,7 @@ async function removeRuntime() {
         :model-value="supported && enabled"
         label="启用 NR"
         color="primary"
-        density="compact"
-        inset
+        density="comfortable"
         hide-details
         :loading="working"
         :disabled="disabled || working || (!!pending && !enabled) || (!enabled && (!component?.installed || !component?.packageReady))"
@@ -370,7 +369,7 @@ async function removeRuntime() {
           :model-value="options[field.key] === null"
           :label="`${field.label}跟随重建强度`"
           color="primary"
-          density="compact"
+          density="comfortable"
           hide-details
           :disabled="disabled || working || !!pending"
           @update:model-value="value => linkTone(field.key, value)"
@@ -402,7 +401,6 @@ async function removeRuntime() {
           color="primary"
           density="comfortable"
           hide-details
-          inset
           :disabled="disabled || working || !!pending"
           @update:model-value="saveOptions"
         />
@@ -629,7 +627,6 @@ async function removeRuntime() {
           label="启用 Look 调整"
           color="primary"
           hide-details
-          inset
           :disabled="disabled || working || !!pending"
           @update:model-value="saveOptions"
         />
@@ -701,7 +698,6 @@ async function removeRuntime() {
             label="启用时间平滑"
             color="primary"
             hide-details
-            inset
             :disabled="disabled || working || !!pending || !options.look.enabled"
             @update:model-value="saveOptions"
           />
@@ -780,7 +776,6 @@ async function removeRuntime() {
             label="启用空间 Look"
             color="primary"
             hide-details
-            inset
             :disabled="disabled || working || !!pending || !options.look.enabled"
             @update:model-value="saveOptions"
           />
@@ -902,7 +897,6 @@ async function removeRuntime() {
           :model-value="savedConsolidated"
           label="集中提交多遍 NR"
           color="primary"
-          inset
           hide-details
           :disabled="disabled || working"
           @update:model-value="value => value !== null && saveScheduling(value)"

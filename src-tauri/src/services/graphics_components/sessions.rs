@@ -134,41 +134,78 @@ pub(super) fn monitor(
 
 pub(super) fn status(session: &Path) -> Result<Value, String> {
     super::runtime_package::safe_path(session)?;
-    let launcher = session.join("launcher-exit.json");
-    let target = session.join("run/target-exit.json");
-    let exit = if launcher.exists() {
-        Some(read_live_json(&launcher)?)
-    } else if target.exists() {
-        Some(read_live_json(&target)?)
-    } else {
-        None
+    let read_exit = |path: &Path| {
+        if path.exists() {
+            read_live_json(path).map(Some)
+        } else {
+            Ok(None)
+        }
     };
-    let (state, message) = if let Some(exit) = exit {
+    let target = read_exit(&session.join("run/target-exit.json"))?;
+    let launcher = read_exit(&session.join("launcher-exit.json"))?;
+    let launcher_failed = launcher.as_ref().is_some_and(|v| v["success"] == false);
+    // Only the target's own completion record establishes its exit result.
+    // A launcher can fail its diagnostics after a successful target exit, or
+    // exit early while the target is still running.
+    let (state, message) = if let Some(exit) = &target {
         if exit["success"] == true {
-            ("finished", "本次模拟器会话已结束。".to_owned())
+            let message = if launcher_failed {
+                format!(
+                    "模拟器已正常退出。增强启动器另报异常（退出码 {}），详情见启动器日志。",
+                    launcher.as_ref().unwrap()["code"]
+                )
+            } else {
+                "本次模拟器会话已正常结束。".to_owned()
+            };
+            ("finished", message)
         } else {
             (
                 "failed",
                 format!(
-                    "本次启动或模拟器运行失败（退出码 {}）。请查看 {} 和 {}。",
+                    "模拟器启动或运行失败（退出码 {}）。请查看 {} 和 {}。",
                     exit["code"],
                     session.join("launcher.error.log").display(),
                     session.join("run/target.stderr.log").display()
                 ),
             )
         }
-    } else if session.join("run/target-process.json").exists() {
+    } else if session.join("run/target-process.json").exists()
+        || session.join("run/target-spawning.json").exists()
+    {
         (
             "started",
-            "模拟器进程已启动，等待游戏画面与增强状态。".to_owned(),
+            if launcher.is_some() {
+                "增强启动器已退出，尚未确认模拟器进程退出。".to_owned()
+            } else {
+                "模拟器进程正在启动或运行，等待游戏画面与增强状态。".to_owned()
+            },
         )
+    } else if let Some(exit) = &launcher {
+        if exit["success"] == true {
+            (
+                "finished",
+                "增强启动器已结束，未记录模拟器进程。".to_owned(),
+            )
+        } else {
+            (
+                "failed",
+                format!(
+                    "增强启动器启动失败（退出码 {}）。请查看 {}。",
+                    exit["code"],
+                    session.join("launcher.error.log").display()
+                ),
+            )
+        }
     } else {
         (
             "launching",
             "启动器正在准备，尚未确认模拟器进程启动。".to_owned(),
         )
     };
-    Ok(json!({"connected":false, "launchState":state, "launchMessage":message}))
+    Ok(
+        json!({"connected":false, "launchState":state, "launchMessage":message,
+        "targetExit":target, "launcherExit":launcher}),
+    )
 }
 
 #[cfg(test)]
@@ -210,7 +247,71 @@ mod tests {
             &json!({"success":false,"code":1}),
         )
         .unwrap();
-        assert_eq!(status(&session).unwrap()["launchState"], "failed");
+        let result = status(&session).unwrap();
+        assert_eq!(result["launchState"], "finished");
+        assert_eq!(result["targetExit"]["code"], 0);
+        assert_eq!(result["launcherExit"]["code"], 1);
+        assert!(result["launchMessage"]
+            .as_str()
+            .unwrap()
+            .contains("模拟器已正常退出"));
+    }
+
+    #[test]
+    fn target_failure_is_not_hidden_by_successful_launcher_exit() {
+        let (_base, session) = fixture();
+        atomic_json(
+            &session.join("run/target-exit.json"),
+            &json!({"success":false,"code":7}),
+        )
+        .unwrap();
+        for success in [true, false] {
+            atomic_json(
+                &session.join("launcher-exit.json"),
+                &json!({"success":success,"code":if success {0} else {1}}),
+            )
+            .unwrap();
+            let result = status(&session).unwrap();
+            assert_eq!(result["launchState"], "failed");
+            assert!(result["launchMessage"]
+                .as_str()
+                .unwrap()
+                .contains("退出码 7"));
+        }
+    }
+
+    #[test]
+    fn launcher_exit_does_not_establish_target_completion() {
+        for record in ["target-process.json", "target-spawning.json"] {
+            for success in [true, false] {
+                let (_base, session) = fixture();
+                atomic_json(&session.join("run").join(record), &json!({"pid":42})).unwrap();
+                atomic_json(
+                    &session.join("launcher-exit.json"),
+                    &json!({"success":success,"code":if success {0} else {1}}),
+                )
+                .unwrap();
+                let result = status(&session).unwrap();
+                assert_eq!(result["launchState"], "started");
+                assert!(result["targetExit"].is_null());
+            }
+        }
+    }
+
+    #[test]
+    fn launcher_failure_before_spawning_is_reported_separately() {
+        let (_base, session) = fixture();
+        atomic_json(
+            &session.join("launcher-exit.json"),
+            &json!({"success":false,"code":1}),
+        )
+        .unwrap();
+        let result = status(&session).unwrap();
+        assert_eq!(result["launchState"], "failed");
+        assert!(result["launchMessage"]
+            .as_str()
+            .unwrap()
+            .contains("增强启动器启动失败"));
     }
 
     #[test]

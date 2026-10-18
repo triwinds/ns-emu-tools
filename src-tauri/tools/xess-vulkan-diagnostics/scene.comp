@@ -1,0 +1,97 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(binding=0,rgba16f) uniform writeonly image2D colorImage;
+layout(binding=1,rg16f) uniform writeonly image2D motionImage;
+layout(binding=2,r32f) uniform writeonly image2D depthImage;
+layout(binding=3,rgba16f) uniform writeonly image2D referenceImage;
+layout(binding=4,rgba16f) uniform writeonly image2D baselineImage;
+layout(push_constant) uniform Parameters {
+    uvec2 inputSize;
+    uvec2 outputSize;
+    uint frame;
+    uint capture;
+    vec2 jitter;
+    uint highMotion;
+    uint flatDepth;
+    uint zeroMotion;
+} p;
+
+// Output-pixel coordinates. A moving textured foreground occludes a planar
+// background; guides are analytic and exclude sampling jitter.
+vec2 camera(uint f) {
+    return f < 48u ? vec2(0) : vec2(float(f-48u)*0.73,float(f-48u)*0.21);
+}
+vec2 object(uint f) {
+    return f < 48u ? vec2(0) : vec2(float(f-48u)*1.31,-float(f-48u)*0.17);
+}
+bool foreground(vec2 q,uint f) {
+    vec2 t=q-camera(f)-object(f)-vec2(p.outputSize)*vec2(0.52,0.63);
+    return abs(t.x)<float(p.outputSize.x)*0.105 && abs(t.y)<float(p.outputSize.y)*0.13;
+}
+vec3 scene(vec2 q,uint f) {
+    bool front=foreground(q,f);
+    vec2 w=q-camera(f);
+    vec2 uv=w/vec2(p.outputSize);
+    vec3 c=vec3(0.12,0.17,0.23)+vec3(0.07)*uv.y;
+    if(uv.y<0.48) {
+        // Oblique wires, repeating steps, checkerboard and curved silhouettes.
+        if(uv.x<0.33) {
+            float d=abs(mod(w.x-w.y*0.63,19.0)-9.5);
+            c=d<0.65 ? vec3(0.86,0.75,0.26) : vec3(0.025,0.04,0.06);
+        } else if(uv.x<0.66) {
+            float check=mod(floor(w.x/3.4)+floor(w.y/3.4),2.0);
+            c=mix(vec3(0.045),vec3(0.72),check);
+        } else {
+            vec2 v=w-vec2(p.outputSize)*vec2(0.82,0.24);
+            float r=length(v);
+            c=abs(mod(r,13.0)-6.5)<0.7 ? vec3(0.85,0.4,0.16) : vec3(0.025,0.04,0.06);
+        }
+    } else {
+        float wave=sin(w.x*0.16+sin(w.y*0.10)*2.0);
+        c+=vec3(0.12,0.09,0.055)*wave;
+        if(abs(w.y-0.26*w.x-float(p.outputSize.y)*0.60)<0.7) c=vec3(0.9);
+    }
+    if(front) {
+        vec2 t=w-object(f);
+        float check=mod(floor(t.x/9.0)+floor(t.y/9.0),2.0);
+        c=mix(vec3(0.12,0.025,0.04),vec3(0.75,0.12,0.065),check);
+    }
+    if(f>=112u) c=c.bgr; // Explicit scene cut, with a matching history reset.
+    return c;
+}
+void main() {
+    ivec2 id=ivec2(gl_GlobalInvocationID.xy);
+    vec2 scale=vec2(p.outputSize)/vec2(p.inputSize);
+    if(all(lessThan(id,ivec2(p.inputSize)))) {
+        // XeSS jitter is projection displacement; sampling moves oppositely.
+        vec2 q=(vec2(id)+0.5-p.jitter)*scale;
+        imageStore(colorImage,id,vec4(scene(q,p.frame),1));
+        imageStore(depthImage,id,vec4(p.flatDepth!=0u ? 0.5 : (foreground(q,p.frame)?0.2:0.8)));
+    }
+    uvec2 mvSize=p.highMotion!=0u ? p.outputSize : p.inputSize;
+    if(all(lessThan(id,ivec2(mvSize)))) {
+        vec2 q=(vec2(id)+0.5)*(vec2(p.outputSize)/vec2(mvSize));
+        if(p.highMotion==0u) q-=p.jitter*scale;
+        bool front=foreground(q,p.frame);
+        if(p.highMotion!=0u) {
+            // Foremost surface in a 3x3 output-pixel neighbourhood.
+            for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++)
+                front=front||foreground(q+vec2(x,y),p.frame);
+        }
+        uint prev=p.frame>0u ? p.frame-1u : 0u;
+        vec2 motion=camera(prev)-camera(p.frame);
+        if(front) motion+=object(prev)-object(p.frame);
+        // Pixel velocities are expressed on the motion texture's grid. The
+        // matched low/high-res comparison is part of the validation matrix.
+        motion*=vec2(mvSize)/vec2(p.outputSize);
+        if(p.zeroMotion!=0u) motion=vec2(0);
+        imageStore(motionImage,id,vec4(motion,0,0));
+    }
+    if(p.capture!=0u && all(lessThan(id,ivec2(p.outputSize)))) {
+        vec3 ref=vec3(0);
+        for(int y=0;y<8;y++) for(int x=0;x<8;x++)
+            ref+=scene(vec2(id)+(vec2(x,y)+0.5)/8.0,p.frame);
+        imageStore(referenceImage,id,vec4(ref/64.0,1));
+        imageStore(baselineImage,id,vec4(scene(vec2(id)+0.5,p.frame),1));
+    }
+}

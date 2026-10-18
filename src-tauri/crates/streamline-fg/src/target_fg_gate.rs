@@ -315,7 +315,7 @@ pub(super) fn nr_window_paused(stopping: bool, fg_was_on: bool, bounded: bool) -
 pub(super) fn terminal_stop(reason: Option<&'static str>, bounded: bool) -> Option<&'static str> {
     if matches!(
         reason,
-        Some("fg_region_unavailable" | "fg_region_too_small")
+        Some("fg_region_unavailable" | "fg_region_too_small" | "xess_fg_output")
     ) || (matches!(reason, Some("background" | "user_disabled")) && !bounded)
     {
         None
@@ -341,6 +341,7 @@ mod lifecycle_tests {
     #[test]
     fn focus_can_resume_but_window_and_sdk_failures_remain_terminal() {
         for bounded in [false, true] {
+            assert_eq!(terminal_stop(Some("xess_fg_output"), bounded), None);
             assert_eq!(terminal_stop(Some("fg_region_unavailable"), bounded), None);
             assert_eq!(terminal_stop(Some("fg_region_too_small"), bounded), None);
         }

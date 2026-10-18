@@ -1,0 +1,19 @@
+{
+  "sdk_version": 619,
+  "files": [
+    {
+      "path": "D3D12Core.dll",
+      "sha256": "37fa14281a58cc834076971873006feb8a8d25cddc908d1a345bda1b149ffc7d"
+    },
+    {
+      "path": "d3d12SDKLayers.dll",
+      "sha256": "7ab48d56d1c18708ebcf16c7c9259b2d783e2b935b85add4a244573b9f03cab4"
+    },
+    {
+      "sha256": "023ba81d3a9c37ae805b746bb9c77bf2f6659044ee2fef2604154b507faca817",
+      "path": "D3D12StateObjectCompiler.dll"
+    }
+  ],
+  "version": "1.619.6",
+  "package_sha256": "08f0489281401aa430fc37322d6c3fc98a8025175aacd714c10d562f4963f1e9"
+}

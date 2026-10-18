@@ -19,6 +19,7 @@ pub(crate) struct State {
     pub(crate) maximum: u32,
     pub(crate) fence: u64,
     pub(crate) value: u64,
+    pub(crate) dynamic_supported: u32,
 }
 impl State {
     // This is observed presentation feedback, not NGX's per-output disable flag.
@@ -38,12 +39,17 @@ impl State {
         }
     }
     pub(crate) fn json(&self) -> serde_json::Value {
-        json!({"status":self.status,"minimum":self.minimum,"presented":self.presented,"maximum":self.maximum,"fence":self.fence,"value":self.value})
+        json!({"status":self.status,"minimum":self.minimum,"presented":self.presented,"maximum":self.maximum,"fence":self.fence,"value":self.value,"dynamicSupported":self.dynamic_supported != 0})
     }
 }
 #[cfg(test)]
 mod generation_tests {
     use super::State;
+    #[test]
+    fn bridge_state_layout_matches_cpp() {
+        assert_eq!(std::mem::size_of::<State>(), 40);
+        assert_eq!(std::mem::offset_of!(State, dynamic_supported), 32);
+    }
     #[test]
     fn requests_and_pending_feedback_do_not_claim_generated_frames() {
         let mut state = State::default();
@@ -72,6 +78,7 @@ pub(crate) struct Resource {
 unsafe extern "C" {
     pub(crate) fn probe_fg_state(api: &Api, state: &mut State) -> i32;
     pub(crate) fn probe_fg_begin(api: &Api, frame: u32, token: &mut u64) -> i32;
+    pub(crate) fn probe_fg_begin_unpaced(api: &Api, frame: u32, token: &mut u64) -> i32;
     pub(crate) fn probe_fg_marker(api: &Api, token: u64, marker: u32) -> i32;
     pub(crate) fn probe_fg_inputs(
         api: &Api,
@@ -88,6 +95,9 @@ pub(crate) fn checked(result: i32, operation: &str) -> Result<()> {
     Ok(())
 }
 pub(crate) unsafe fn state(api: &Api) -> Result<State> {
+    if crate::hybrid_enabled() {
+        return Ok(State::default());
+    }
     let mut state = State::default();
     checked(probe_fg_state(api, &mut state), "FG state")?;
     Ok(state)

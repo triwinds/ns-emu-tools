@@ -64,7 +64,7 @@ impl Options {
         retain: bool,
         tuning: crate::advanced_settings::FgOptions,
     ) {
-        self.mode = if !enabled {
+        self.mode = if !enabled || tuning.backend == crate::advanced_settings::FgBackend::Xess {
             0
         } else if tuning.mode == crate::advanced_settings::FgMode::Dynamic {
             3
@@ -77,7 +77,13 @@ impl Options {
         } else {
             0.0
         };
-        self.flags = if retain { 8 } else { 0 };
+        // XeSS takes over for multiple frames; retaining DLSS FG history/output
+        // allocations here can leave both engines competing for the VRAM budget.
+        self.flags = if retain && tuning.backend != crate::advanced_settings::FgBackend::Xess {
+            8
+        } else {
+            0
+        };
     }
     fn paused(extent: vk::Extent2D, count: u32, motion: vk::Format) -> Self {
         Self {
@@ -174,14 +180,25 @@ pub(super) unsafe fn configure_tuned(
                 ],
                 1,
             ),
-            mode: tuning.reflex.sdk_value(),
-            frame_limit_us,
+            mode: if crate::xess_output() {
+                0
+            } else {
+                tuning.reflex.sdk_value()
+            },
+            frame_limit_us: if crate::xess_output() {
+                0
+            } else {
+                frame_limit_us
+            },
             optimize_markers: 0,
             virtual_key: 0,
             thread: 0,
         }),
         "FG suspension Reflex options",
     )?;
+    if crate::hybrid_enabled() {
+        return Ok(());
+    }
     function = std::ptr::null_mut();
     checked(
         get(1000, c"slDLSSGSetOptions".as_ptr(), &mut function),
@@ -209,9 +226,34 @@ pub(super) unsafe fn configure_tuned(
 mod tests {
     use super::*;
     #[test]
+    fn xess_selection_cannot_enable_dlss_interpolation() {
+        let mut options = Options::paused(
+            vk::Extent2D {
+                width: 1920,
+                height: 1080,
+            },
+            3,
+            vk::Format::R16G16_SFLOAT,
+        );
+        options.apply_tuning(
+            true,
+            true,
+            crate::advanced_settings::FgOptions {
+                backend: crate::advanced_settings::FgBackend::Xess,
+                ..Default::default()
+            },
+        );
+        assert_eq!(options.mode, 0);
+        assert_eq!(
+            options.flags, 0,
+            "XeSS must release inactive DLSS FG resources"
+        );
+    }
+    #[test]
     fn dynamic_generation_maps_to_sdk_and_suspension_retains_tuning() {
         use crate::advanced_settings::{FgMode, FgOptions, ReflexMode};
         let tuning = FgOptions {
+            backend: Default::default(),
             mode: FgMode::Dynamic,
             multiplier: 4,
             target_fps: 144,

@@ -410,13 +410,13 @@ pub async fn install_latest(
 ) -> Result<Operation, String> {
     let canonical = exe.canonicalize().map_err(|e| e.to_string())?;
     let package = super::streamline_update::candidate_for(&canonical);
-    let source = super::streamline_download::ensure_package(&package, reporter).await?;
-    tauri::async_runtime::spawn_blocking(move || {
-        super::native_nr::import_package(&source, &package)?;
-        install_package(exe, api, consent, expected, source, package)
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    let source = super::streamline_download::ensure_package(&package, reporter.clone()).await?;
+    reporter
+        .run_blocking_step("install", "安装画面增强组件", move || {
+            super::native_nr::import_package(&source, &package)?;
+            install_package(exe, api, consent, expected, source, package)
+        })
+        .await
 }
 pub(super) fn install_package(
     exe: PathBuf,
@@ -518,9 +518,10 @@ pub fn launch(
     if graphics_settings.streamline_fg {
         let fg = graphics_settings.streamline_advanced.fg;
         if gpu.fg_max_multiplier < 2
-            || fg.multiplier > gpu.fg_max_multiplier
-            || (matches!(fg.mode, crate::config::advanced_settings::FgMode::Dynamic)
-                && gpu.fg_max_multiplier < 3)
+            || (fg.backend == crate::config::advanced_settings::FgBackend::Dlss
+                && (fg.multiplier > gpu.fg_max_multiplier
+                    || (matches!(fg.mode, crate::config::advanced_settings::FgMode::Dynamic)
+                        && gpu.fg_max_multiplier < 3)))
         {
             return Err("当前显卡不支持所选 FG 配置：2× 需要 RTX 40／50 系列，更高倍数及动态模式需要 RTX 50 系列".into());
         }
@@ -563,6 +564,27 @@ pub fn launch(
         }
     }
     let advanced = graphics_settings.streamline_advanced;
+    let hybrid = advanced.fg.backend == crate::config::advanced_settings::FgBackend::Xess;
+    let layer_bytes =
+        fs::read(installed.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
+    let switch_marker = b"NS_EMU_FG_SWITCH_V1";
+    let switch_capable = gpu.fg_max_multiplier >= 2
+        && layer_bytes
+            .windows(switch_marker.len())
+            .any(|v| v == switch_marker);
+    let xess_runtime = if hybrid {
+        Some(super::xess::hybrid_runtime()?)
+    } else if switch_capable {
+        super::xess::hybrid_runtime().ok()
+    } else {
+        None
+    };
+    let fg_switchable = switch_capable && xess_runtime.is_some();
+    let (hybrid_runtime, hybrid_files) = if let Some((dir, files)) = xess_runtime {
+        (Some(dir), files)
+    } else {
+        (None, Vec::new())
+    };
     // Older verified packages ignore this environment variable. Reject tuned
     // launches rather than silently starting with different settings.
     if advanced != Default::default() || graphics_settings.streamline_nr_intensity > 100 {
@@ -576,6 +598,16 @@ pub fn launch(
         let two_pass_marker = crate::config::advanced_settings::NR_TWO_PASS_MARKER;
         let temporal_marker = crate::config::advanced_settings::NR_TEMPORAL_LOOK_MARKER;
         for (needed, marker, name) in [
+            (
+                hybrid,
+                crate::config::advanced_settings::HYBRID_FG_MARKER,
+                "DLSS SR + XeSS FG 混合模式",
+            ),
+            (
+                !advanced.optical_flow.is_default(),
+                crate::config::advanced_settings::OPTICAL_FLOW_MARKER,
+                "光流高级配置",
+            ),
             (
                 advanced.nr.look.needs_experiments(),
                 crate::config::advanced_settings::NR_LOOK_EXPERIMENTS_MARKER,
@@ -665,7 +697,8 @@ pub fn launch(
     if let Some(runtime) = &nr_runtime {
         paths.push(runtime.clone());
     }
-    let runtime_files = hold_runtime_files(&paths, false)?;
+    let mut runtime_files = hold_runtime_files(&paths, false)?;
+    runtime_files.extend(hybrid_files);
     let marker = b"NS_EMU_FIXED_RUNTIME_V1";
     for name in ["streamline-layer-probe.exe", "streamline_probe_layer.dll"] {
         let bytes = fs::read(bundle.join(name)).map_err(|e| e.to_string())?;
@@ -682,6 +715,8 @@ pub fn launch(
     for name in [
         "NS_STREAMLINE_SR_TIMING",
         "NS_STREAMLINE_NVOF_TIMING",
+        "NS_STREAMLINE_NVOF_TEMPORAL_HINTS",
+        "NS_STREAMLINE_NVOF_STATIC_GUARD",
         "NS_STREAMLINE_SOURCE_MEASURE",
         "NS_STREAMLINE_SOURCE_TRACK_ONLY",
         "NS_STREAMLINE_SOURCE_BENCH_OFF",
@@ -704,6 +739,9 @@ pub fn launch(
     }
     cmd.env("NS_STREAMLINE_TRACE_VERBOSE", "0");
     cmd.env("NS_STREAMLINE_TRACE_FRAMES", "0");
+    cmd.env_remove("NS_EMU_XESS_HYBRID");
+    cmd.env_remove("NS_EMU_FG_SWITCHABLE");
+    cmd.env_remove("NS_EMU_XESS_FG");
     cmd.env(
         "NS_STREAMLINE_ADVANCED_SETTINGS",
         serde_json::to_string(&advanced).map_err(|e| e.to_string())?,
@@ -721,6 +759,12 @@ pub fn launch(
         .arg(&bundle)
         .arg("--session")
         .arg(stage.path().join("run"));
+    if let Some(runtime) = hybrid_runtime {
+        cmd.arg("--xess-runtime").arg(runtime);
+    }
+    if fg_switchable {
+        cmd.arg("--fg-switchable");
+    }
     if graphics_settings.streamline_fg {
         cmd.args(["--fg", "--reference-params"]);
     }
@@ -1297,11 +1341,26 @@ pub fn live(
             return Err("当前会话不支持新增高级配置，请更新画面增强组件并重新专用启动".into());
         }
         if let Some(fg) = advanced.fg {
+            let current = v["fg"]["backend"].as_str().unwrap_or("dlss");
+            let wanted = if fg.backend == crate::config::advanced_settings::FgBackend::Xess {
+                "xess"
+            } else {
+                "dlss"
+            };
+            if current != wanted && v["fgBackendSwitchSupported"] != true {
+                return Err("切换帧生成引擎需要重新启动游戏；设置已保存供下次启动使用".into());
+            }
             if enabled.is_none() {
                 return Err("FG 配置更新必须同时指定开关状态".into());
             }
-            if let Some(maximum) = v["fg"]["maximumGenerated"].as_u64() {
-                if maximum > 0 && !fg.supported(maximum as u32) {
+            if let Some(maximum) = v["fg"]["dlssMaximumGenerated"]
+                .as_u64()
+                .or_else(|| v["fg"]["maximumGenerated"].as_u64())
+            {
+                if maximum > 0
+                    && fg.backend == crate::config::advanced_settings::FgBackend::Dlss
+                    && !fg.supported(maximum as u32)
+                {
                     return Err(format!("当前 GPU / 运行库最高支持 {}× 帧生成", maximum + 1));
                 }
             }

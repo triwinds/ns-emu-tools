@@ -81,6 +81,21 @@ extern "C" int32_t probe_sl_init_sr(void* function, const wchar_t* directory) no
 extern "C" int32_t probe_sl_init_at(void* function, const wchar_t* directory, const wchar_t* logs, int combined) noexcept {
     return initFeatures(function, directory, combined ? 2 : 0, logs);
 }
+// The pinned common plugin's manual Vulkan hooks maintain Streamline's
+// frame bookkeeping even when XeSS owns the actual presentation.
+extern "C" int32_t probe_common_present(void* gateway, uint64_t queue, const VkPresentInfoKHR* info, uint32_t after) noexcept {
+    try {
+        using Gateway = void*(*)(const char*);
+        auto get = reinterpret_cast<Gateway>(gateway);
+        if (after) {
+            auto f = reinterpret_cast<VkResult(*)()>(get("slHookVkAfterPresent"));
+            return f ? int32_t(f()) : -1000;
+        }
+        auto f = reinterpret_cast<VkResult(*)(VkQueue,const VkPresentInfoKHR*,bool&)>(get("slHookVkPresent"));
+        bool skip = false;
+        return f ? int32_t(f(reinterpret_cast<VkQueue>(queue),info,skip)) : -1000;
+    } catch (...) { return -1001; }
+}
 extern "C" int32_t probe_sl_requirements(void* function, uint32_t feature, ProbeRequirements* out) noexcept {
     if (!function || !out) return -1000;
     *out = {};
@@ -189,9 +204,9 @@ extern "C" int32_t probe_sl_register_route(void* function, uint64_t instance,
 #include "sl_reflex.h"
 #include "sl_pcl.h"
 struct ProbeFGApi { void *feature, *token, *constants, *tags; };
-struct ProbeFGState { uint32_t status, minimum, presented, maximum; uint64_t fence, value; };
+struct ProbeFGState { uint32_t status, minimum, presented, maximum; uint64_t fence, value; uint32_t dynamicSupported; };
 struct ProbeFGResource { uint64_t image, memory, view; uint32_t width, height, format, usage; };
-static_assert(sizeof(ProbeFGState) == 32);
+static_assert(sizeof(ProbeFGState) == 40);
 static_assert(sizeof(ProbeFGResource) == 40);
 template<class T> static T* fgFunction(const ProbeFGApi* api, sl::Feature feature, const char* name) {
     void* ptr{};
@@ -204,7 +219,8 @@ extern "C" int32_t probe_fg_state(const ProbeFGApi* api, ProbeFGState* output) n
         sl::DLSSGState state;
         auto result = fgFunction<PFun_slDLSSGGetState>(api, sl::kFeatureDLSS_G, "slDLSSGGetState")(sl::ViewportHandle(0), state, nullptr);
         *output = {uint32_t(state.status), state.minWidthOrHeight, state.numFramesActuallyPresented,
-            state.numFramesToGenerateMax, uint64_t(state.inputsProcessingCompletionFence), state.lastPresentInputsProcessingCompletionFenceValue};
+            state.numFramesToGenerateMax, uint64_t(state.inputsProcessingCompletionFence), state.lastPresentInputsProcessingCompletionFenceValue,
+            uint32_t(state.bIsDynamicMFGSupported == sl::Boolean::eTrue)};
         return int32_t(result);
     } catch (...) { return -1001; }
 }
@@ -230,6 +246,14 @@ extern "C" int32_t probe_fg_begin(const ProbeFGApi* api, uint32_t frame, uint64_
         if (r != sl::Result::eOk) return int32_t(r);
         *token = uint64_t(ptr);
         return int32_t(fgFunction<PFun_slReflexSleep>(api, sl::kFeatureReflex, "slReflexSleep")(*ptr));
+    } catch (...) { return -1001; }
+}
+extern "C" int32_t probe_fg_begin_unpaced(const ProbeFGApi* api, uint32_t frame, uint64_t* token) noexcept {
+    try {
+        sl::FrameToken* ptr{};
+        auto r = reinterpret_cast<PFun_slGetNewFrameToken*>(api->token)(ptr, &frame);
+        *token = uint64_t(ptr);
+        return int32_t(r);
     } catch (...) { return -1001; }
 }
 extern "C" int32_t probe_fg_marker(const ProbeFGApi* api, uint64_t token, uint32_t marker) noexcept {

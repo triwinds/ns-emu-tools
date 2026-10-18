@@ -166,10 +166,12 @@ pub async fn install(
     reporter: crate::services::installer::InstallReporter,
 ) -> Result<Component, String> {
     let package = super::streamline_update::candidate();
-    let source = super::streamline_download::ensure_package(&package, reporter).await?;
-    tauri::async_runtime::spawn_blocking(move || import_package(&source, &package))
+    let source = super::streamline_download::ensure_package(&package, reporter.clone()).await?;
+    reporter
+        .run_blocking_step("install", "安装 NR 组件", move || {
+            import_package(&source, &package)
+        })
         .await
-        .map_err(|e| e.to_string())?
 }
 pub(super) fn import_package(
     source: &Path,

@@ -1,4 +1,5 @@
 //! Shared SDR input downsampling before NR/SR and full-size presentation for FG.
+use crate::input_dimensions::resized;
 use crate::{advanced_settings::InputSizing, fg_api::*, source_auto::Source, target_runtime};
 use ash::vk::{self, Handle};
 use serde_json::json;
@@ -10,29 +11,7 @@ pub(super) fn extent(window: vk::Extent2D, native: Option<Source>) -> vk::Extent
         height: n.offsets[0].y.abs_diff(n.offsets[1].y),
     })
 }
-fn resized(size: vk::Extent2D, sizing: InputSizing) -> Result<vk::Extent2D> {
-    if !sizing.valid() {
-        return Err("invalid shared input sizing".into());
-    }
-    let (percent, cap) = (sizing.scale_percent, sizing.max_edge);
-    let longest = size.width.max(size.height);
-    if size.width == 0 || size.height == 0 || longest > 8192 {
-        return Err("input scaling extent exceeds limits".into());
-    }
-    let (n, d) = if cap == 0 {
-        (percent, 100)
-    } else {
-        (cap.min(longest), longest)
-    };
-    let low = vk::Extent2D {
-        width: (u64::from(size.width) * u64::from(n) / u64::from(d)) as u32,
-        height: (u64::from(size.height) * u64::from(n) / u64::from(d)) as u32,
-    };
-    if low != size && (low.width < 320 || low.height < 180) {
-        return Err("scaled input must be at least 320x180".into());
-    }
-    Ok(low)
-}
+
 fn offsets(size: vk::Extent2D) -> [vk::Offset3D; 2] {
     [
         vk::Offset3D::default(),

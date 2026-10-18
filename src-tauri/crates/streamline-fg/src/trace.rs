@@ -46,6 +46,9 @@ fn frame_event(name: &str) -> bool {
     matches!(
         name,
         "vkQueuePresentKHR"
+            | "xess_input_scale"
+            | "xess_native_frame"
+            | "xess_fg_frame"
             | "route_present_submitted"
             | "route_present_retired"
             | "target_fg_frame"
@@ -95,6 +98,8 @@ pub fn record(name: &str, details: Value) {
             .map(|file| Mutex::new(BufWriter::with_capacity(64 * 1024, file)))
     });
     if let Some(sink) = sink {
+        #[cfg(all(windows, feature = "xess-component"))]
+        crate::xess_status::event(name, &details);
         let row = json!({"event": name, "phase": PHASE.with(Cell::get), "thread": format!("{:?}", std::thread::current().id()), "elapsed_us": START.get_or_init(Instant::now).elapsed().as_micros(), "details": details});
         if let Ok(mut file) = sink.lock() {
             let _ = writeln!(file, "{row}");
@@ -104,7 +109,10 @@ pub fn record(name: &str, details: Value) {
                 || !(frame_event(name)
                     || matches!(
                         name,
-                        "target_sr_profile" | "target_nvof_gpu" | "target_nvof_profile"
+                        "target_sr_profile"
+                            | "target_nvof_gpu"
+                            | "target_nvof_profile"
+                            | "target_xess_aa_profile"
                     ))
             {
                 let _ = file.flush();

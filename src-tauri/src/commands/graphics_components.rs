@@ -5,6 +5,97 @@ use crate::services::graphics_components;
 use std::path::PathBuf;
 
 #[tauri::command]
+pub async fn get_xess_component(
+    executable: Option<PathBuf>,
+    graphics_api: GraphicsApi,
+) -> ApiResponse<serde_json::Value> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::xess::status(executable, graphics_api)
+    })
+    .await
+    {
+        Ok(value) => ApiResponse::success(value),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+#[tauri::command]
+pub async fn install_xess_component(window: tauri::Window) -> ApiResponse<serde_json::Value> {
+    use crate::services::installer::*;
+    let reporter = InstallReporter::from_window(window);
+    reporter.start(vec![
+        running_download_step("download", "下载并校验 XeSS 组件"),
+        pending_step("install", "安装 XeSS 组件"),
+    ]);
+    match graphics_components::xess::install(reporter.clone()).await {
+        Ok(value) => {
+            reporter.step(success_step("install", "XeSS 组件已安装"));
+            reporter.finish_success();
+            ApiResponse::success(value)
+        }
+        Err(error) => {
+            reporter.finish_error(&error);
+            ApiResponse::fail(error)
+        }
+    }
+}
+#[tauri::command]
+pub async fn uninstall_xess_component() -> ApiResponse<serde_json::Value> {
+    match tauri::async_runtime::spawn_blocking(graphics_components::xess::uninstall).await {
+        Ok(Ok(value)) => ApiResponse::success(value),
+        Ok(Err(error)) => ApiResponse::fail(error),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+#[tauri::command]
+pub async fn save_xess_settings(
+    settings: graphics_components::xess::Settings,
+) -> ApiResponse<graphics_components::xess::Settings> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::xess::save_settings(settings)
+    })
+    .await
+    {
+        Ok(Ok(value)) => ApiResponse::success(value),
+        Ok(Err(error)) => ApiResponse::fail(error),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+#[tauri::command]
+pub async fn launch_xess(
+    executable: PathBuf,
+    graphics_api: GraphicsApi,
+    expected_sha256: String,
+    game: Option<PathBuf>,
+) -> ApiResponse<serde_json::Value> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::xess::launch(executable, graphics_api, expected_sha256, game)
+    })
+    .await
+    {
+        Ok(Ok(value)) => ApiResponse::success(value),
+        Ok(Err(error)) => ApiResponse::fail(error),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+#[tauri::command]
+pub async fn live_xess(
+    executable: PathBuf,
+    native_aa: Option<bool>,
+    fg: Option<bool>,
+    input_sizing: Option<crate::config::advanced_settings::InputSizing>,
+) -> ApiResponse<serde_json::Value> {
+    match tauri::async_runtime::spawn_blocking(move || {
+        graphics_components::xess::live(executable, native_aa, fg, input_sizing)
+    })
+    .await
+    {
+        Ok(Ok(value)) => ApiResponse::success(value),
+        Ok(Err(error)) => ApiResponse::fail(error),
+        Err(error) => ApiResponse::fail(error.to_string()),
+    }
+}
+
+#[tauri::command]
 pub async fn get_graphics_gpu_capabilities() -> ApiResponse<graphics_components::gpu::Capabilities>
 {
     match tauri::async_runtime::spawn_blocking(graphics_components::gpu::detect).await {
@@ -68,7 +159,7 @@ pub async fn install_streamline_fg(
     use crate::services::installer::*;
     let reporter = InstallReporter::from_window(window);
     reporter.start(vec![
-        pending_download_step("download", "下载并校验画面增强组件"),
+        running_download_step("download", "下载并校验画面增强组件"),
         pending_step("install", "安装画面增强组件"),
     ]);
     let validation_exe = executable.clone();
@@ -194,7 +285,7 @@ pub async fn install_native_nr_runtime(
     use crate::services::installer::*;
     let reporter = InstallReporter::from_window(window);
     reporter.start(vec![
-        pending_download_step("download", "下载并校验 NR 组件"),
+        running_download_step("download", "下载并校验 NR 组件"),
         pending_step("install", "安装 NR 组件"),
     ]);
     match graphics_components::native_nr::install(reporter.clone()).await {

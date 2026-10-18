@@ -20,6 +20,7 @@ mod shared_runtime;
 pub mod streamline_download;
 pub mod streamline_fg;
 pub(super) mod streamline_update;
+pub mod xess;
 #[cfg(test)]
 use std::path::Path;
 use std::path::PathBuf;

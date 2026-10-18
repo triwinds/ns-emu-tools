@@ -7,7 +7,7 @@ use crate::error::{AppError, AppResult};
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep};
 use crate::services::downloader::{get_download_manager, DownloadOptions};
 use crate::services::installer::{
-    cancelled_step, emit_steps, is_cancelled_error_message, StepKind,
+    cancelled_step, emit_steps, error_step, is_cancelled_error_message, InstallReporter, StepKind,
 };
 use crate::services::network::{get_download_source_name, request_github_api};
 use crate::utils::common::{format_size, spawn_blocking_io};
@@ -515,15 +515,26 @@ pub fn get_ryujinx_keys_path() -> PathBuf {
 pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> AppResult<String> {
     use tauri::Emitter;
 
+    let reporter = window
+        .map(|window| InstallReporter::from_window(window.clone()))
+        .unwrap_or_else(|| InstallReporter::new(|_| {}));
+
     info!("开始检测 Yuzu 固件版本");
 
     let firmware_path = get_yuzu_firmware_path();
 
     if !firmware_path.exists() {
-        return Err(AppError::DirectoryNotFound(format!(
+        let error = AppError::DirectoryNotFound(format!(
             "Yuzu 固件目录不存在: {}",
             firmware_path.display()
-        )));
+        ));
+        reporter.step(error_step(
+            "find_nca",
+            "查找固件文件",
+            StepKind::Normal,
+            error.to_string(),
+        ));
+        return Err(error);
     }
 
     // Step 1: Load keys
@@ -623,43 +634,45 @@ pub async fn detect_yuzu_firmware_version(window: Option<&tauri::Window>) -> App
     }
 
     // 查找系统版本归档 NCA 文件
-    let nca_path = crate::services::nca::find_system_version_nca(&firmware_path)?;
-
-    match nca_path {
-        Some(path) => {
-            info!("已找到系统版本归档：{}", path.display());
-
-            // 提取固件版本
-            let version = crate::services::nca::extract_firmware_version(&path)?;
-
-            info!("检测到的 Yuzu 固件版本为：{}", version);
-
-            // 更新配置并保存
-            {
-                let mut config = CONFIG.write();
-                config.yuzu.yuzu_firmware = Some(version.clone());
-                config.save()?;
-            }
-
-            Ok(version)
-        }
-        None => Err(AppError::FileNotFound("未找到系统版本归档文件".to_string())),
-    }
+    let path = reporter.run_step("find_nca", "查找固件文件", || {
+        crate::services::nca::find_system_version_nca(&firmware_path)?
+            .ok_or_else(|| AppError::FileNotFound("未找到系统版本归档文件".to_string()))
+    })?;
+    info!("已找到系统版本归档：{}", path.display());
+    reporter.run_step("extract_version", "提取版本信息", || {
+        let version = crate::services::nca::extract_firmware_version(&path)?;
+        info!("检测到的 Yuzu 固件版本为：{}", version);
+        let mut config = CONFIG.write();
+        config.yuzu.yuzu_firmware = Some(version.clone());
+        config.save()?;
+        Ok::<_, AppError>(version)
+    })
 }
 
 /// 检测 Ryujinx 固件版本
 pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> AppResult<String> {
     use tauri::Emitter;
 
+    let reporter = window
+        .map(|window| InstallReporter::from_window(window.clone()))
+        .unwrap_or_else(|| InstallReporter::new(|_| {}));
+
     info!("开始检测 Ryujinx 固件版本");
 
     let firmware_path = get_ryujinx_firmware_path();
 
     if !firmware_path.exists() {
-        return Err(AppError::DirectoryNotFound(format!(
+        let error = AppError::DirectoryNotFound(format!(
             "Ryujinx 固件目录不存在: {}",
             firmware_path.display()
-        )));
+        ));
+        reporter.step(error_step(
+            "find_nca",
+            "查找固件文件",
+            StepKind::Normal,
+            error.to_string(),
+        ));
+        return Err(error);
     }
 
     // Step 1: Load keys
@@ -759,28 +772,19 @@ pub async fn detect_ryujinx_firmware_version(window: Option<&tauri::Window>) -> 
     }
 
     // 查找系统版本归档 NCA 文件（Ryujinx 格式）
-    let nca_path = crate::services::nca::find_system_version_nca_ryujinx(&firmware_path)?;
-
-    match nca_path {
-        Some(path) => {
-            info!("已找到系统版本归档：{}", path.display());
-
-            // 提取固件版本
-            let version = crate::services::nca::extract_firmware_version(&path)?;
-
-            info!("检测到的 Ryujinx 固件版本为：{}", version);
-
-            // 更新配置并保存
-            {
-                let mut config = CONFIG.write();
-                config.ryujinx.firmware = Some(version.clone());
-                config.save()?;
-            }
-
-            Ok(version)
-        }
-        None => Err(AppError::FileNotFound("未找到系统版本归档文件".to_string())),
-    }
+    let path = reporter.run_step("find_nca", "查找固件文件", || {
+        crate::services::nca::find_system_version_nca_ryujinx(&firmware_path)?
+            .ok_or_else(|| AppError::FileNotFound("未找到系统版本归档文件".to_string()))
+    })?;
+    info!("已找到系统版本归档：{}", path.display());
+    reporter.run_step("extract_version", "提取版本信息", || {
+        let version = crate::services::nca::extract_firmware_version(&path)?;
+        info!("检测到的 Ryujinx 固件版本为：{}", version);
+        let mut config = CONFIG.write();
+        config.ryujinx.firmware = Some(version.clone());
+        config.save()?;
+        Ok::<_, AppError>(version)
+    })
 }
 
 #[cfg(test)]

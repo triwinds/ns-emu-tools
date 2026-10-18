@@ -48,6 +48,44 @@ unsafe extern "C" {
         gdpa: vk::PFN_vkGetDeviceProcAddr,
     ) -> i32;
     fn probe_sl_shutdown(function: *mut c_void) -> i32;
+    #[cfg(feature = "hybrid-xess-fg")]
+    fn probe_common_present(
+        gateway: *mut c_void,
+        queue: u64,
+        info: *const vk::PresentInfoKHR,
+        after: u32,
+    ) -> i32;
+}
+#[cfg(feature = "hybrid-xess-fg")]
+pub(super) unsafe fn hybrid_common_present(
+    queue: vk::Queue,
+    info: *const vk::PresentInfoKHR,
+    after: bool,
+) -> Result<()> {
+    static COMMON: OnceLock<(Library, usize)> = OnceLock::new();
+    if COMMON.get().is_none() {
+        let path = PathBuf::from(
+            std::env::var_os("NS_STREAMLINE_TARGET_RUNTIME").ok_or("missing runtime")?,
+        )
+        .join("sl.common.dll");
+        let library: Library =
+            libloading::os::windows::Library::load_with_flags(path, 0x100 | 0x1000)
+                .map_err(|e| e.to_string())?
+                .into();
+        let gateway = *library
+            .get::<unsafe extern "C" fn(*const c_char) -> *mut c_void>(b"slGetPluginFunction\0")
+            .map_err(|e| e.to_string())? as usize;
+        let _ = COMMON.set((library, gateway));
+    }
+    require(
+        probe_common_present(
+            COMMON.get().unwrap().1 as *mut c_void,
+            queue.as_raw(),
+            info,
+            u32::from(after),
+        ),
+        "hybrid Streamline common present",
+    )
 }
 struct Sdk {
     library: Library,
@@ -366,6 +404,16 @@ pub(super) unsafe fn create_device(
             (*info).enabled_extension_count,
             &sdk.device_ext,
         );
+        if crate::hybrid_enabled() || crate::dual_fg_enabled() {
+            for name in [
+                ash::khr::external_memory_win32::NAME,
+                ash::khr::external_semaphore_win32::NAME,
+            ] {
+                if !names.iter().any(|n| n.as_c_str() == name) {
+                    names.push(name.to_owned());
+                }
+            }
+        }
         let optical_family = if crate::target_nvof::requested() {
             match crate::target_nvof::capability(&instance, physical, original.queue_family_index) {
                 Ok(family) => Some(family),
@@ -675,6 +723,10 @@ pub(super) unsafe fn device_proc(device: vk::Device, name: &CStr) -> vk::PFN_vkV
     ) {
         return None;
     }
+    if crate::hybrid_enabled() {
+        let d = crate::device(device)?;
+        return (d.gdpa)(device, name.as_ptr());
+    }
     let sdk = SDK.get()?;
     let gdpa = *sdk
         .library
@@ -700,7 +752,7 @@ pub(super) unsafe fn create_swapchain(
             .get(&(*info).surface.as_raw())
             .copied()
             .ok_or("unknown application surface")?;
-        if surface.shadow == 0 {
+        if surface.shadow == 0 && !crate::hybrid_enabled() {
             let create = *sdk
                 .library
                 .get::<vk::PFN_vkCreateWin32SurfaceKHR>(b"vkCreateWin32SurfaceKHR\0")
@@ -723,8 +775,28 @@ pub(super) unsafe fn create_swapchain(
             .library
             .get::<vk::PFN_vkCreateSwapchainKHR>(b"vkCreateSwapchainKHR\0")
             .map_err(|e| e.to_string())?;
+        let create = if crate::hybrid_enabled() {
+            let d = crate::device(device).ok_or("hybrid device missing")?;
+            std::mem::transmute(
+                (d.gdpa)(device, c"vkCreateSwapchainKHR".as_ptr())
+                    .ok_or("native swapchain creation missing")?,
+            )
+        } else {
+            create
+        };
         let mut sr_allowed = false;
-        let mut copy = (*info).surface(vk::SurfaceKHR::from_raw(surface.shadow));
+        let mut copy = if crate::hybrid_enabled() {
+            *info
+        } else {
+            (*info).surface(vk::SurfaceKHR::from_raw(surface.shadow))
+        };
+        #[cfg(feature = "hybrid-xess-fg")]
+        if crate::hybrid_enabled() {
+            crate::xess_fg::before_swapchain(
+                crate::device(device).ok_or("hybrid device missing")?,
+                &mut copy,
+            );
+        }
         if crate::target_fg::enabled() {
             let dispatch =
                 instance(vk::Instance::from_raw(surface.instance)).ok_or("instance missing")?;
@@ -749,7 +821,11 @@ pub(super) unsafe fn create_swapchain(
                 return Err("Immediate presentation required for FG".into());
             }
             copy.present_mode = vk::PresentModeKHR::IMMEDIATE;
-            if crate::target_nvof::enabled() || crate::target_sr::available() || nr_requested() {
+            if crate::target_nvof::enabled()
+                || crate::target_sr::available()
+                || nr_requested()
+                || crate::dual_fg_enabled()
+            {
                 let caps_query: vk::PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR =
                     std::mem::transmute(
                         (dispatch.gipa)(
@@ -790,8 +866,21 @@ pub(super) unsafe fn create_swapchain(
             }
         }
         let result = create(device, &copy, alloc, out);
-        if result == vk::Result::SUCCESS {
+        if result == vk::Result::SUCCESS && !crate::hybrid_enabled() {
             crate::present_layout::created(device, *out);
+        }
+        #[cfg(feature = "hybrid-xess-fg")]
+        if result == vk::Result::SUCCESS && (crate::hybrid_enabled() || crate::dual_fg_enabled()) {
+            let xess_info = if crate::dual_fg_enabled() {
+                copy.surface((*info).surface)
+            } else {
+                copy
+            };
+            crate::xess_fg::swapchain_created(
+                crate::device(device).ok_or("hybrid device missing")?,
+                *out,
+                &xess_info,
+            );
         }
         if result == vk::Result::SUCCESS && crate::target_fg::enabled() {
             crate::target_fg::created(
