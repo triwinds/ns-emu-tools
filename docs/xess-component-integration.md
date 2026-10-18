@@ -1,5 +1,7 @@
 # 独立 XeSS 组件与工具界面（2026-10-17）
 
+2026-10-18 三分包调整：当前交付改为公共启动器与两个独立外部运行库包。以下 `xess-component.exe`、`xess-package` 和单 ZIP 发布描述保留作历史记录；当前目录、下载校验及构建命令以[三分包说明](../src-tauri/tools/graphics-components/README.md)为准。XeSS 图形层仍独立编译。
+
 已将 Native AA 与 FG 合并为独立 XeSS 组件，支持分别启用和同时启用。
 没有加入 XeSS SR，也没有接入 DLSS、Streamline SDK 或外部光流。
 

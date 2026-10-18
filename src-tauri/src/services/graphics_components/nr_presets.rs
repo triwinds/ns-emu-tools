@@ -20,11 +20,20 @@ pub fn environment(executable: &Path) -> Environment {
         report.target_sha256 = file_digest(&exe).ok();
         if let Ok(package) = streamline_install::verified_preset_package(&exe) {
             report.component_version = package.version;
-            report.component_sha256 = package
-                .files
-                .iter()
-                .find(|f| f.name == "streamline_probe_layer.dll")
-                .map(|f| f.sha256.clone());
+            report.component_sha256 = if package.common_version.is_some() {
+                super::distribution::part("common").ok().and_then(|p| {
+                    p.files
+                        .into_iter()
+                        .find(|f| f.name == "streamline_probe_layer.dll")
+                        .map(|f| f.sha256)
+                })
+            } else {
+                package
+                    .files
+                    .iter()
+                    .find(|f| f.name == "streamline_probe_layer.dll")
+                    .map(|f| f.sha256.clone())
+            };
         }
     }
     report

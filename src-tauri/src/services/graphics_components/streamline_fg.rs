@@ -89,6 +89,38 @@ impl FgPreflight {
     fn apply_update(&mut self, update: super::streamline_update::Update) {
         self.component_update_pending = update.refreshing;
         let installed = streamline_install::installed_package(&self.executable).ok();
+        if let Some(latest) = update
+            .package
+            .as_ref()
+            .filter(|p| p.common_version.is_some())
+        {
+            let current = installed.as_ref().is_some_and(|p| {
+                p.version == latest.version && super::streamline_update::same_files(p, latest)
+            });
+            if self.installation_state == "installed" && !current {
+                self.installation_state = "outdated";
+            }
+            self.package_available = super::streamline_download::available();
+            let detail = if self.installation_state == "installed" && current {
+                "公共程序和 NVIDIA 运行库已安装并通过校验。".to_owned()
+            } else if super::distribution::local_ready("nvidia") {
+                "公共程序和 NVIDIA 运行库已就绪，可离线安装；XeSS 运行库按需单独安装。".into()
+            } else {
+                "安装时自动下载并校验公共程序和 NVIDIA 运行库；已有分包缓存会复用。".into()
+            };
+            self.package_message = detail.clone();
+            self.checks.push(PreflightCheck {
+                id: "component-version",
+                label: "图形组件版本",
+                status: if self.installation_state == "installed" && current {
+                    CheckStatus::Passed
+                } else {
+                    CheckStatus::Pending
+                },
+                detail,
+            });
+            return;
+        }
         let verified_latest = update.fresh
             && update.package.as_ref().is_some_and(|latest| {
                 installed.as_ref().is_some_and(|current| {

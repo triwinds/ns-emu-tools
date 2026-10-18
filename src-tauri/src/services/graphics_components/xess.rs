@@ -79,6 +79,9 @@ fn root() -> PathBuf {
     effective_config_dir().join("graphics/xess")
 }
 fn bundled() -> Result<PathBuf, String> {
+    if package().schema_version == 2 {
+        return super::distribution::bundled("xess");
+    }
     Ok(std::env::current_exe()
         .map_err(|e| e.to_string())?
         .parent()
@@ -97,19 +100,26 @@ pub(super) fn hybrid_runtime() -> Result<(PathBuf, Vec<fs::File>), String> {
     Ok((dir, files))
 }
 fn manifest_valid(p: &Package) -> Result<(), String> {
-    if p.schema_version != 1
+    let expected: BTreeSet<_> = MEMBERS
+        .iter()
+        .copied()
+        .filter(|name| {
+            p.schema_version != 2 || !matches!(*name, "xess-component.exe" | "xess-layer.dll")
+        })
+        .collect();
+    if !matches!(p.schema_version, 1 | 2)
         || p.version.is_empty()
         || p.version.len() > 96
         || !p
             .version
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b".-_".contains(&b))
-        || p.files.len() != MEMBERS.len()
+        || p.files.len() != expected.len()
     {
         return Err("XeSS 组件清单无效，请使用主程序配套版本".into());
     }
     let names: BTreeSet<_> = p.files.iter().map(|f| f.name.as_str()).collect();
-    if names != MEMBERS.iter().copied().collect()
+    if names != expected
         || p.files
             .iter()
             .any(|f| f.sha256.len() != 64 || !f.sha256.bytes().all(|b| b.is_ascii_hexdigit()))
@@ -241,12 +251,22 @@ pub fn status(executable: Option<PathBuf>, api: GraphicsApi) -> Value {
     let p = package();
     let base = root();
     let source = bundled().and_then(|d| verify(&d, &p).map(|_| d));
-    let installed = verify(&destination(&base, &p), &p);
+    let installed = verify(&destination(&base, &p), &p).and_then(|files| {
+        if p.schema_version == 2 {
+            super::distribution::programs(&super::distribution::common_version()?)?;
+        }
+        Ok(files)
+    });
+    let downloadable = if p.schema_version == 2 {
+        super::distribution::available("xess")
+    } else {
+        download::release(&p).is_ok()
+    };
     let target = executable.as_deref().map(|e| target(e, api, None));
     json!({"supported":cfg!(all(windows,target_arch="x86_64")),"version":p.version,
         "bundledReady":source.is_ok(),"installed":installed.is_ok(),
-        "downloadAvailable":download::release(&p).is_ok(),
-        "message":if installed.is_ok(){"独立 XeSS 组件已安装并通过校验".to_owned()}else if source.is_ok(){"配套 XeSS 组件已就绪，可离线安装".into()}else if download::release(&p).is_ok(){"点击下载并安装 XeSS 组件，下载完成后自动校验并安装".into()}else{format!("XeSS 组件不可用：{}",source.err().unwrap_or_default())},
+        "downloadAvailable":downloadable,
+        "message":if installed.is_ok(){"XeSS 运行库和公共程序已安装并通过校验".to_owned()}else if source.is_ok() && (p.schema_version != 2 || super::distribution::local_ready("xess")){"配套 XeSS 运行库和公共程序已就绪，可离线安装".into()}else if downloadable{"点击下载并安装 XeSS 运行库及公共程序，下载完成后自动校验并安装".into()}else{format!("XeSS 组件不可用：{}",source.err().unwrap_or_default())},
         "targetReady":matches!(target,Some(Ok(_))),"targetHash":target.as_ref().and_then(|r|r.as_ref().ok()).map(|v|&v.1),
         "targetMessage":match &target {Some(Ok(_))=>"Vulkan x64 目标可启动；兼容性以实际运行结果为准".to_owned(),Some(Err(e))=>e.clone(),None=>"请先选择模拟器".into()},
         "settings":settings_at(&base).unwrap_or_default()})
@@ -473,7 +493,15 @@ pub fn launch(
     }
     let p = package();
     let dir = destination(&base, &p);
-    let files = verify(&dir, &p)?;
+    let mut files = verify(&dir, &p)?;
+    let programs = if p.schema_version == 2 {
+        let (programs, handles) =
+            super::distribution::programs(&super::distribution::common_version()?)?;
+        files.extend(handles);
+        programs
+    } else {
+        dir.clone()
+    };
     let sessions = base.join("sessions");
     safe_dir(&sessions)?;
     let session = sessions.join(format!("game-{}", uuid::Uuid::new_v4()));
@@ -482,15 +510,22 @@ pub fn launch(
         &session.join("session.json"),
         &json!({"executable":exe,"targetSha256":hash,"componentVersion":p.version,"inputSizingSupported":true,"settings":settings}),
     )?;
-    let mut command = Command::new(dir.join("xess-component.exe"));
+    let mut command = Command::new(programs.join(if p.schema_version == 2 {
+        "graphics-launcher.exe"
+    } else {
+        "xess-component.exe"
+    }));
     clean_environment(&mut command);
     command
         .args(["--target-probe", "--graphics-launch", "--target"])
         .arg(&exe)
         .arg("--layer")
-        .arg(dir.join("xess-layer.dll"))
+        .arg(programs.join("xess-layer.dll"))
         .arg("--session")
         .arg(session.join("run"));
+    if p.schema_version == 2 {
+        command.args(["--backend", "xess"]);
+    }
     command
         .env("NS_EMU_XESS_COMPONENT_ROOT", &dir)
         .env(

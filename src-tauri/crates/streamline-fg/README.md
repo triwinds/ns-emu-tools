@@ -1,5 +1,7 @@
 # Streamline FG runtime
 
+Packaging update (2026-10-18): the current toolbox uses one launcher and three independent common/NVIDIA/XeSS packages. The protocol-1 two-ZIP Release and per-engine EXE descriptions below document the previous layout. See [current packaging, installation and build instructions](../../tools/graphics-components/README.md). The NVIDIA and independent XeSS layers remain separate builds.
+
 ## Optical-flow advanced controls (2026-10-18)
 
 FG advanced settings expose `opticalFlow` startup options: quality (`quality`,

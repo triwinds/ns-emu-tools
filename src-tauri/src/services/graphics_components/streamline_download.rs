@@ -21,7 +21,10 @@ pub(super) fn cached_source() -> PathBuf {
 }
 
 pub(super) fn available() -> bool {
-    cfg!(all(windows, target_arch = "x86_64")) && super::streamline_update::candidate().online()
+    cfg!(all(windows, target_arch = "x86_64"))
+        && (super::streamline_update::candidate().online()
+            || install::package().common_version.is_some()
+                && super::distribution::available("nvidia"))
 }
 
 fn single_name(name: &str) -> bool {
@@ -228,6 +231,13 @@ pub(super) async fn ensure_package(
         return Err("在线画面增强组件仅支持 Windows x64，请更新工具后重试".into());
     }
     let _guard = DOWNLOAD_LOCK.lock().await;
+    if let Some(version) = &package.common_version {
+        super::streamline_update::validate_selected(package)?;
+        if *version != super::distribution::common_version()? {
+            return Err("公共程序与 NVIDIA 组件版本不匹配".into());
+        }
+        return super::distribution::ensure("nvidia", reporter).await;
+    }
     // A verified cache does not need a network backend, even when offline.
     let source = if package.online() {
         install::root().join("packages").join(&package.version)

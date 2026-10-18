@@ -166,6 +166,21 @@ pub(super) fn validate_selected(package: &Package) -> Result<(), String> {
     if package.version == embedded.version && same_files(package, &embedded) {
         return Ok(());
     }
+    if let Some(common) = &package.common_version {
+        let suffix = common
+            .strip_prefix("graphics-common-")
+            .ok_or("公共程序版本无效")?;
+        if package.schema_version != 2
+            || package.launcher_protocol != 2
+            || !package.native_nr
+            || suffix.len() != 16
+            || !suffix.bytes().all(|v| v.is_ascii_hexdigit())
+        {
+            return Err("图形分包协议无效".into());
+        }
+        // Previously installed local versions retain their own full digests for safe migration.
+        // Only the embedded version may be selected for new split downloads.
+    }
     if !package.online() && package.version.starts_with("local-") {
         if package.version.contains(['/', '\\', ':'])
             || package.files.is_empty()
@@ -188,7 +203,11 @@ pub(super) fn validate_selected(package: &Package) -> Result<(), String> {
     validate_contract(package, false)
 }
 pub(super) fn same_files(a: &Package, b: &Package) -> bool {
-    a.files.len() == b.files.len()
+    a.common_version == b.common_version
+        && a.schema_version == b.schema_version
+        && a.launcher_protocol == b.launcher_protocol
+        && a.native_nr == b.native_nr
+        && a.files.len() == b.files.len()
         && a.files.iter().all(|f| {
             b.files
                 .iter()
@@ -199,6 +218,17 @@ pub(super) fn validate(package: &Package) -> Result<(), String> {
     validate_contract(package, true)
 }
 fn validate_contract(package: &Package, require_current_runtime: bool) -> Result<(), String> {
+    if package.common_version.is_some() {
+        let embedded = install::package();
+        if package.schema_version == 2
+            && package.launcher_protocol == 2
+            && package.version == embedded.version
+            && same_files(package, &embedded)
+        {
+            return Ok(());
+        }
+        return Err("图形分包版本与工具不匹配，请更新工具".into());
+    }
     if package.schema_version != 1
         || package.launcher_protocol != 1
         || !package.native_nr
@@ -249,6 +279,7 @@ fn validate_contract(package: &Package, require_current_runtime: bool) -> Result
         (f.name.ends_with(".dll") || f.name.ends_with(".exe"))
             && !embedded.files.iter().any(|old| old.name == f.name)
             && f.name != "nvngx_dlssnr.dll"
+            && !MUTABLE.contains(&f.name.as_str())
     }) {
         return Err("组件清单包含未知二进制文件，请更新工具箱".into());
     }
@@ -367,7 +398,7 @@ pub(super) async fn check() -> Update {
         // never replace it with an older published layer discovered online.
         return Update {
             package: Some(embedded),
-            message: "使用随本地构建附带的组件包，不切换到远端组件版本".into(),
+            message: "使用当前工具配套的组件清单；安装时校验并复用本地文件或下载缓存".into(),
             fresh: true,
             refreshing: false,
         };
@@ -413,6 +444,16 @@ pub(super) mod tests {
     pub(crate) fn fixture() -> Package {
         let embedded = install::package();
         let mut files = embedded.files;
+        // Keep exercising legacy two-ZIP updates after the embedded package moves
+        // its programs into the shared distribution.
+        for name in MUTABLE {
+            if !files.iter().any(|f| f.name == name) {
+                files.push(install::Artifact {
+                    name: name.into(),
+                    sha256: "f".repeat(64),
+                });
+            }
+        }
         if !files.iter().any(|f| f.name == "nvngx_dlssnr.dll") {
             files.push(install::Artifact {
                 name: "nvngx_dlssnr.dll".into(),

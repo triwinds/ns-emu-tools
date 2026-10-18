@@ -1,19 +1,7 @@
 {
-  "schemaVersion": 1,
-  "version": "local-xess-4667e3b88b6fc8f2",
+  "schemaVersion": 2,
+  "version": "local-xess-5d429cdd589e7e0d",
   "files": [
-    {
-      "name": "D3D12/D3D12Core.dll",
-      "sha256": "37fa14281a58cc834076971873006feb8a8d25cddc908d1a345bda1b149ffc7d"
-    },
-    {
-      "name": "D3D12/D3D12StateObjectCompiler.dll",
-      "sha256": "023ba81d3a9c37ae805b746bb9c77bf2f6659044ee2fef2604154b507faca817"
-    },
-    {
-      "name": "D3D12/d3d12SDKLayers.dll",
-      "sha256": "7ab48d56d1c18708ebcf16c7c9259b2d783e2b935b85add4a244573b9f03cab4"
-    },
     {
       "name": "bin/libxell.dll",
       "sha256": "d2030dcd694fda8f2ec7e044b13e6db8f0b56d4ba9113a5efad334e3f3ded8c7"
@@ -21,6 +9,18 @@
     {
       "name": "bin/libxess_fg.dll",
       "sha256": "ec5e0c65e075570c6ede72618bb666d0be0c2e10b2ea9762c0fe8cb8e375ab27"
+    },
+    {
+      "name": "D3D12/D3D12Core.dll",
+      "sha256": "37fa14281a58cc834076971873006feb8a8d25cddc908d1a345bda1b149ffc7d"
+    },
+    {
+      "name": "D3D12/d3d12SDKLayers.dll",
+      "sha256": "7ab48d56d1c18708ebcf16c7c9259b2d783e2b935b85add4a244573b9f03cab4"
+    },
+    {
+      "name": "D3D12/D3D12StateObjectCompiler.dll",
+      "sha256": "023ba81d3a9c37ae805b746bb9c77bf2f6659044ee2fef2604154b507faca817"
     },
     {
       "name": "libxess.dll",
@@ -45,14 +45,6 @@
     {
       "name": "licenses/NS-Emu-Tools-LICENSE.txt",
       "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
-    },
-    {
-      "name": "xess-component.exe",
-      "sha256": "af853b8040e28fc87de39d12085559cd5fdc79e5145d2664b2d0e5a9c289b749"
-    },
-    {
-      "name": "xess-layer.dll",
-      "sha256": "ace65d9122e2aebc0a69d3db4aba877849f97c52e67608af8fe0b6ac451fe237"
     }
   ]
 }

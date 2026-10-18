@@ -55,6 +55,8 @@ pub(super) fn lock_store() -> Result<fs::File, String> {
 #[derive(Clone, Deserialize, Serialize)]
 pub(super) struct Package {
     pub version: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub common_version: Option<String>,
     pub files: Vec<Artifact>,
     #[serde(default)]
     pub download: Option<super::runtime_package::Asset>,
@@ -148,6 +150,9 @@ pub(super) fn verified_preset_package(exe: &Path) -> Result<Package, String> {
 fn verified_preset_package_at(base: &Path, exe: &Path) -> Result<Package, String> {
     let (dir, package) = selected_at(base, exe)?;
     owned_for(&dir, exe, true, &package)?;
+    if let Some(version) = &package.common_version {
+        super::distribution::programs(version)?;
+    }
     Ok(package)
 }
 pub(super) fn plain(path: &Path, directory: bool) -> Result<(), String> {
@@ -190,6 +195,9 @@ pub(super) fn verify_artifacts(dir: &Path, files: &[Artifact]) -> Result<(), Str
     Ok(())
 }
 pub(super) fn source() -> PathBuf {
+    if package().common_version.is_some() {
+        return super::distribution::bundled("nvidia").unwrap_or_default();
+    }
     if package().online() {
         return super::streamline_download::cached_source();
     }
@@ -212,6 +220,11 @@ fn package_availability_at(path: &Path) -> Result<(), String> {
     })
 }
 pub(super) fn availability() -> Result<(), String> {
+    if let Some(version) = package().common_version {
+        if !super::distribution::local_ready("nvidia") {
+            return Err(format!("公共程序或 NVIDIA 运行库未就绪：{version}"));
+        }
+    }
     package_availability_at(&source())
 }
 pub(super) fn native_bridge() -> Result<PathBuf, String> {
@@ -219,7 +232,15 @@ pub(super) fn native_bridge() -> Result<PathBuf, String> {
         return Err("当前组件包未包含 NR，请更新画面增强组件包".into());
     }
     availability()?;
-    let bridge = source().join("nvngx.dll");
+    let bridge = if let Some(version) = package().common_version {
+        // Status can inspect a verified local delivery before installation.
+        let dir = super::distribution::programs(&version)
+            .map(|v| v.0)
+            .or_else(|_| super::distribution::bundled("common"))?;
+        dir.join("nvngx.dll")
+    } else {
+        source().join("nvngx.dll")
+    };
     plain(&bridge, false)?;
     Ok(bridge)
 }
@@ -283,6 +304,15 @@ pub(super) fn state(exe: &Path) -> &'static str {
     let Ok((dir, package)) = selected_at(&root(), exe) else {
         return "damaged";
     };
+    if let Some(version) = &package.common_version {
+        if super::distribution::programs(version).is_err() {
+            return if dir.exists() {
+                "outdated"
+            } else {
+                "unmanaged"
+            };
+        }
+    }
     if !dir.exists() {
         "unmanaged"
     } else if dir == destination(&root(), exe) {
@@ -504,6 +534,11 @@ pub fn launch(
     }
     let (installed, package) = selected_at(&root(), &exe)?;
     owned_for(&installed, &exe, true, &package)?;
+    let (programs, program_files) = if let Some(version) = &package.common_version {
+        super::distribution::programs(version)?
+    } else {
+        (installed.clone(), Vec::new())
+    };
     let graphics_settings = crate::config::CONFIG.read().setting.other.clone();
     let gpu = super::gpu::detect()?;
     if !gpu.has_nvidia {
@@ -543,7 +578,7 @@ pub fn launch(
         || graphics_settings.streamline_input_scale != 100;
     if nr_experiments || input_scaled {
         let bytes =
-            fs::read(installed.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
+            fs::read(programs.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
         for (needed, marker, name) in [
             (
                 graphics_settings.streamline_nr_consolidated,
@@ -566,7 +601,7 @@ pub fn launch(
     let advanced = graphics_settings.streamline_advanced;
     let hybrid = advanced.fg.backend == crate::config::advanced_settings::FgBackend::Xess;
     let layer_bytes =
-        fs::read(installed.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
+        fs::read(programs.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
     let switch_marker = b"NS_EMU_FG_SWITCH_V1";
     let switch_capable = gpu.fg_max_multiplier >= 2
         && layer_bytes
@@ -589,7 +624,7 @@ pub fn launch(
     // launches rather than silently starting with different settings.
     if advanced != Default::default() || graphics_settings.streamline_nr_intensity > 100 {
         let bytes =
-            fs::read(installed.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
+            fs::read(programs.join("streamline_probe_layer.dll")).map_err(|e| e.to_string())?;
         let marker = crate::config::advanced_settings::CAPABILITY_MARKER;
         if !bytes.windows(marker.len()).any(|v| v == marker) {
             return Err("当前画面增强组件不支持新增高级配置，请更新组件后再专用启动；也可先在三个弹窗恢复默认配置".into());
@@ -698,10 +733,25 @@ pub fn launch(
         paths.push(runtime.clone());
     }
     let mut runtime_files = hold_runtime_files(&paths, false)?;
+    runtime_files.extend(program_files);
     runtime_files.extend(hybrid_files);
     let marker = b"NS_EMU_FIXED_RUNTIME_V1";
-    for name in ["streamline-layer-probe.exe", "streamline_probe_layer.dll"] {
-        let bytes = fs::read(bundle.join(name)).map_err(|e| e.to_string())?;
+    let launcher = if package.common_version.is_some() {
+        "graphics-launcher.exe"
+    } else {
+        "streamline-layer-probe.exe"
+    };
+    for name in [launcher, "streamline_probe_layer.dll"] {
+        let bytes = fs::read(programs.join(name)).map_err(|e| e.to_string())?;
+        if name == "graphics-launcher.exe" {
+            if !bytes
+                .windows(b"NS_EMU_UNIFIED_LAUNCHER_V2".len())
+                .any(|v| v == b"NS_EMU_UNIFIED_LAUNCHER_V2")
+            {
+                return Err("公共启动器协议不兼容".into());
+            }
+            continue;
+        }
         if !bytes.windows(marker.len()).any(|v| v == marker) {
             return Err("当前组件不支持固定版本目录启动，请更新画面增强组件".into());
         }
@@ -710,7 +760,10 @@ pub fn launch(
         &stage.path().join("runtime-reference.json"),
         &serde_json::json!({"package":bundle,"version":package.version,"files":package.files,"nrRuntime":nr_runtime}),
     )?;
-    let mut cmd = Command::new(bundle.join("streamline-layer-probe.exe"));
+    let mut cmd = Command::new(programs.join(launcher));
+    if package.common_version.is_some() {
+        cmd.args(["--target-probe", "--backend", "nvidia"]);
+    }
     // Diagnostic flags must never leak into a normal game launch from the parent.
     for name in [
         "NS_STREAMLINE_SR_TIMING",
@@ -746,15 +799,17 @@ pub fn launch(
         "NS_STREAMLINE_ADVANCED_SETTINGS",
         serde_json::to_string(&advanced).map_err(|e| e.to_string())?,
     );
-    cmd.arg("--target-probe")
-        .arg("--graphics-launch")
+    if package.common_version.is_none() {
+        cmd.arg("--target-probe");
+    }
+    cmd.arg("--graphics-launch")
         .arg("--fixed-runtime")
         .arg("--expected-target-sha256")
         .arg(&expected)
         .arg("--target")
         .arg(&exe)
         .arg("--layer")
-        .arg(bundle.join("streamline_probe_layer.dll"))
+        .arg(programs.join("streamline_probe_layer.dll"))
         .arg("--runtime")
         .arg(&bundle)
         .arg("--session")
@@ -776,7 +831,7 @@ pub fn launch(
             .arg("--nr-runtime")
             .arg(runtime)
             .arg("--nr-bridge")
-            .arg(bundle.join("nvngx.dll"))
+            .arg(programs.join("nvngx.dll"))
             .arg("--nr-intensity")
             .arg((f32::from(graphics_settings.streamline_nr_intensity) / 100.0).to_string());
         if !graphics_settings.streamline_nr {
@@ -924,6 +979,7 @@ mod tests {
             parts: vec![],
             native_nr: false,
             schema_version: 0,
+            common_version: None,
             launcher_protocol: 0,
         };
         let old = make_package("local-old", b"first release");
@@ -1021,6 +1077,7 @@ mod tests {
             parts: vec![],
             native_nr: false,
             schema_version: 0,
+            common_version: None,
             launcher_protocol: 0,
         };
         let exe = temp.path().join("eden.exe");

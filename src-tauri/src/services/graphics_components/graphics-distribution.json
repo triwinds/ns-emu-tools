@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 2,
+  "common": {
+    "version": "graphics-common-eb2386a617e9af8c",
+    "files": [
+      {
+        "name": "graphics-launcher.exe",
+        "sha256": "e14e01dcdc9c9ee4f367cf92294e6094dfe13506976031d8497caffa61bda3e6"
+      },
+      {
+        "name": "LICENSE.txt",
+        "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+      },
+      {
+        "name": "nvngx.dll",
+        "sha256": "0f23c0fce4bc0a144fc87f9a5706dbe91d3aa6132533fb0adf9f0f03c858a2dc"
+      },
+      {
+        "name": "streamline_probe_layer.dll",
+        "sha256": "8fcd9d2642e245eeb2b230e153fc0e91800ea7497e4b3e654a4456815641ce57"
+      },
+      {
+        "name": "xess-layer.dll",
+        "sha256": "92e8701be81dd78ad0cb2973f9dfbaf9e6ec80508967edf88e5a188757671193"
+      }
+    ],
+    "download": {
+      "name": "graphics-common-eb2386a617e9af8c.zip",
+      "sha256": "dda7a455981c8764adab846c263c42193fe549bc58b35d423e76bff200f1b80e",
+      "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/graphics-common-eb2386a617e9af8c/graphics-common-eb2386a617e9af8c.zip"
+    }
+  },
+  "nvidia": {
+    "version": "graphics-nvidia-63330fa934adb0bd",
+    "files": [
+      {
+        "name": "LICENSE-DLSS.txt",
+        "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294"
+      },
+      {
+        "name": "LICENSE-NGX.txt",
+        "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294"
+      },
+      {
+        "name": "LICENSE-NsEmuTools.txt",
+        "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+      },
+      {
+        "name": "LICENSE-Streamline-third-party.md",
+        "sha256": "cb251639994465f31d2178c16acedf1ff4f9cef1c370a09782ed36d4c86c1dca"
+      },
+      {
+        "name": "LICENSE-Streamline.txt",
+        "sha256": "7b6f23e7d6f3ad6292f9308d2b42cdc3d82ae4e9b2abb55f230279d83bedd43d"
+      },
+      {
+        "name": "NvLowLatencyVk.dll",
+        "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+      },
+      {
+        "name": "nvngx_dlss.dll",
+        "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+      },
+      {
+        "name": "nvngx_dlssg.dll",
+        "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+      },
+      {
+        "name": "nvngx_dlssnr.dll",
+        "sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e"
+      },
+      {
+        "name": "README-RUNTIMES.txt",
+        "sha256": "471c3f6190020f5a5911ff46bcd58d2303dbc78a82ad228e618cb69e9fd3213b"
+      },
+      {
+        "name": "sl.common.dll",
+        "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+      },
+      {
+        "name": "sl.dlss.dll",
+        "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+      },
+      {
+        "name": "sl.dlss_g.dll",
+        "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+      },
+      {
+        "name": "sl.interposer.dll",
+        "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+      },
+      {
+        "name": "sl.pcl.dll",
+        "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+      },
+      {
+        "name": "sl.reflex.dll",
+        "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+      },
+      {
+        "name": "SOURCE-NR.json",
+        "sha256": "064488f53b6aec7e17f3b32adc78200775eb4496327397ecd80448926ec6922a"
+      },
+      {
+        "name": "SOURCE-Streamline.json",
+        "sha256": "68b487acf86010c9a2b1930ed6624778f1bf97410cfbdfd61b7d453f0c2f2d53"
+      }
+    ],
+    "download": {
+      "name": "graphics-nvidia-63330fa934adb0bd.zip",
+      "sha256": "c36c2f3f18bdd9707e780390ee2022ce694c4a449b8d745506e3c53d454b2baf",
+      "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/graphics-nvidia-63330fa934adb0bd/graphics-nvidia-63330fa934adb0bd.zip"
+    }
+  },
+  "xess": {
+    "version": "graphics-xess-7d7f127905a00113",
+    "files": [
+      {
+        "name": "bin/libxell.dll",
+        "sha256": "d2030dcd694fda8f2ec7e044b13e6db8f0b56d4ba9113a5efad334e3f3ded8c7"
+      },
+      {
+        "name": "bin/libxess_fg.dll",
+        "sha256": "ec5e0c65e075570c6ede72618bb666d0be0c2e10b2ea9762c0fe8cb8e375ab27"
+      },
+      {
+        "name": "D3D12/D3D12Core.dll",
+        "sha256": "37fa14281a58cc834076971873006feb8a8d25cddc908d1a345bda1b149ffc7d"
+      },
+      {
+        "name": "D3D12/d3d12SDKLayers.dll",
+        "sha256": "7ab48d56d1c18708ebcf16c7c9259b2d783e2b935b85add4a244573b9f03cab4"
+      },
+      {
+        "name": "D3D12/D3D12StateObjectCompiler.dll",
+        "sha256": "023ba81d3a9c37ae805b746bb9c77bf2f6659044ee2fef2604154b507faca817"
+      },
+      {
+        "name": "libxess.dll",
+        "sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7"
+      },
+      {
+        "name": "licenses/Intel-LICENSE.txt",
+        "sha256": "784be42c39a4a4d03cf85d88e15e59d75828fca773ce45b8dbfffbd7eaf208df"
+      },
+      {
+        "name": "licenses/Intel-third-party-programs.txt",
+        "sha256": "e8d8899dbfc4de0e8ca25560be9358e03c1405d7c956d20a1838c3c709b9b51c"
+      },
+      {
+        "name": "licenses/Microsoft-LICENSE-CODE.txt",
+        "sha256": "903df5512f7d02609fed0c780a9b704f5a3eeb6e4d84ebe42a29845c81899a3c"
+      },
+      {
+        "name": "licenses/Microsoft-LICENSE.txt",
+        "sha256": "5239850894610071566f7ecee0b751fde43c862032d92b99d7d0f596b3433ebd"
+      },
+      {
+        "name": "licenses/NS-Emu-Tools-LICENSE.txt",
+        "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+      },
+      {
+        "name": "package.json",
+        "sha256": "7c8cb1a08b93fa716bfadfd3e3693d82f2e02fda963b8d0eaf0740aaef358b29"
+      }
+    ],
+    "download": {
+      "name": "graphics-xess-7d7f127905a00113.zip",
+      "sha256": "f9bc211737ab6c7dda0827b53d970710dd2947c3abad2d721bd1f39b3dc728b1",
+      "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/graphics-xess-7d7f127905a00113/graphics-xess-7d7f127905a00113.zip"
+    }
+  }
+}

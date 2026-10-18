@@ -13,6 +13,8 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         return crate::session_verify::verify(&PathBuf::from(&args[1]));
     }
+    // Backend selection belongs to the launcher, not the layer's Cargo features.
+    let xess = launch_backend(args)?;
     let (mut layer, mut session, mut game, mut runtime) = (None, None, None, None);
     let mut xess_runtime = None;
     let mut fg_switchable = false;
@@ -40,7 +42,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     let mut nr_performance = false;
     // The independent XeSS component is a production launcher. Its frame events
     // are not the Streamline diagnostic verifier's presentation contract.
-    let mut graphics_launch = cfg!(feature = "xess-component");
+    let mut graphics_launch = xess;
     let mut fixed_runtime = false;
     let mut nr_initial_off = false;
     let mut nr_consolidated = false;
@@ -56,6 +58,10 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         };
     let mut args = args.iter();
     while let Some(flag) = args.next() {
+        if flag == "--backend" {
+            args.next().ok_or("missing backend")?;
+            continue;
+        }
         if flag == "--input-scale" {
             input_scale = args
                 .next()
@@ -110,7 +116,7 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
         if flag == "--graphics-launch" {
             graphics_launch = true;
-            sdk_off = !cfg!(feature = "xess-component");
+            sdk_off = !xess;
             continue;
         }
         if flag == "--fixed-runtime" {
@@ -318,6 +324,16 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     if bounded && !fg {
         return Err("--bounded/--reflex-ab requires --fg".into());
     }
+    if xess
+        && (sdk_off
+            || native_nr
+            || fg
+            || sr_mode != "off"
+            || fg_switchable
+            || xess_runtime.is_some())
+    {
+        return Err("independent XeSS cannot use NVIDIA or hybrid launch flags".into());
+    }
     let baseline: Value = serde_json::from_str(include_str!("../target-profile.json"))?;
     let executable = dunce::canonicalize(
         target.unwrap_or_else(|| PathBuf::from(baseline["executable"].as_str().unwrap())),
@@ -519,12 +535,11 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         }
     }
     let session = session.ok_or("missing --session")?;
-    #[cfg(feature = "xess-component")]
-    let _xess_files = if let Some(root) = std::env::var_os("NS_EMU_XESS_COMPONENT_ROOT") {
+    let _xess_files = if xess {
+        let root =
+            std::env::var_os("NS_EMU_XESS_COMPONENT_ROOT").ok_or("missing XeSS component root")?;
         let root = dunce::canonicalize(root)?;
         let files = [
-            "xess-component.exe",
-            "xess-layer.dll",
             "libxess.dll",
             "bin/libxess_fg.dll",
             "bin/libxell.dll",
@@ -533,8 +548,10 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
             "D3D12/D3D12StateObjectCompiler.dll",
             "package.json",
         ];
+        let mut paths: Vec<_> = files.iter().map(|name| root.join(name)).collect();
+        paths.push(layer.clone());
         streamline_probe_layer::runtime_files::hold(
-            &files.iter().map(|name| root.join(name)).collect::<Vec<_>>(),
+            &paths,
             streamline_probe_layer::runtime_files::Access::Runtime,
         )?
     } else {
@@ -821,11 +838,11 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
         .stderr(fs::File::create(session.join("target.stderr.log"))?);
     family.configure_command(
         &mut command,
-        fg || native_nr || graphics_launch || cfg!(feature = "xess-component"),
+        fg || native_nr || graphics_launch,
         game.as_deref(),
     );
     #[cfg(feature = "sdk-bridge")]
-    {
+    if !xess {
         command
             .env(
                 "NS_EMU_FG_SWITCHABLE",
@@ -899,9 +916,62 @@ pub(super) fn run(args: &[OsString]) -> Result<()> {
     }
     crate::session_verify::verify(&session)
 }
+
+fn launch_backend(args: &[OsString]) -> Result<bool> {
+    let mut selected = None;
+    let mut flags = args.iter();
+    while let Some(flag) = flags.next() {
+        if flag != "--backend" {
+            continue;
+        }
+        if selected.is_some() {
+            return Err("duplicate backend".into());
+        }
+        selected = Some(match flags.next().and_then(|v| v.to_str()) {
+            Some("nvidia") => false,
+            Some("xess") => true,
+            _ => return Err("backend must be nvidia or xess".into()),
+        });
+    }
+    Ok(selected.unwrap_or(cfg!(feature = "xess-component")))
+}
 #[cfg(test)]
 mod experiment_arguments {
     use super::*;
+    #[test]
+    fn unified_launcher_selects_both_backends_and_rejects_ambiguous_arguments() {
+        for (flags, expected) in [
+            (vec!["--backend", "nvidia"], false),
+            (vec!["--backend", "xess"], true),
+        ] {
+            let args: Vec<_> = flags.into_iter().map(OsString::from).collect();
+            assert_eq!(launch_backend(&args).unwrap(), expected);
+        }
+        for flags in [
+            vec!["--backend"],
+            vec!["--backend", "other"],
+            vec!["--backend", "xess", "--backend", "nvidia"],
+        ] {
+            let args: Vec<_> = flags.into_iter().map(OsString::from).collect();
+            assert!(launch_backend(&args).is_err());
+        }
+        let args: Vec<_> = ["--backend", "xess", "--fg"]
+            .into_iter()
+            .map(OsString::from)
+            .collect();
+        assert!(run(&args)
+            .unwrap_err()
+            .to_string()
+            .contains("independent XeSS cannot use NVIDIA"));
+        let args: Vec<_> = ["--backend", "xess", "--bounded"]
+            .into_iter()
+            .map(OsString::from)
+            .collect();
+        assert!(run(&args)
+            .unwrap_err()
+            .to_string()
+            .contains("normal graphics launch cannot include diagnostic"));
+    }
     #[test]
     fn scheduling_and_scaling_require_nr_and_bounded_explicit_scale() {
         for (args, message) in [

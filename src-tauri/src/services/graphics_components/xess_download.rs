@@ -141,6 +141,9 @@ async fn download_at(
 }
 
 pub(super) async fn ensure(reporter: InstallReporter) -> Result<PathBuf, String> {
+    if package().schema_version == 2 {
+        return super::super::distribution::ensure("xess", reporter).await;
+    }
     let _guard = DOWNLOAD.lock().await;
     let p = package();
     let packages = root().join("packages");
