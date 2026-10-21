@@ -39,7 +39,11 @@ use uuid::Uuid;
 #[cfg(target_os = "macos")]
 const DETECT_EXE_LIST: &[&str] = &["Eden.app", "Citron.app", "yuzu.app"];
 
-#[cfg(not(target_os = "macos"))]
+/// Linux: 安装器把 AppImage 统一落盘成无扩展名的可执行文件
+#[cfg(target_os = "linux")]
+const DETECT_EXE_LIST: &[&str] = &[EDEN_NAME, "Citron", "yuzu", "suzu"];
+
+#[cfg(target_os = "windows")]
 const DETECT_EXE_LIST: &[&str] = &["yuzu.exe", "eden.exe", "citron.exe", "suzu.exe", "cemu.exe"];
 
 const EDEN_NAME: &str = "Eden";
@@ -187,7 +191,19 @@ fn expected_yuzu_exe_path_for_branch(yuzu_path: &Path, branch: &str) -> PathBuf 
             .join(get_default_macos_executable_name(branch))
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: AppImage 被安装器统一落盘为 <yuzu_path>/Eden 之类的可执行文件
+        let exe_name = match normalize_yuzu_branch(branch) {
+            Some(EDEN_BRANCH) => EDEN_NAME,
+            Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => "Citron",
+            Some(YUZU_MAINLINE_BRANCH | YUZU_EA_BRANCH | LEGACY_YUZU_BRANCH) => "yuzu",
+            _ => "yuzu",
+        };
+        yuzu_path.join(exe_name)
+    }
+
+    #[cfg(target_os = "windows")]
     {
         if get_config().setting.other.rename_yuzu_to_cemu && yuzu_path.join("cemu.exe").exists() {
             return yuzu_path.join("cemu.exe");
@@ -432,6 +448,58 @@ fn select_windows_asset(
     }
 }
 
+/// Linux 平台资产选择（目前仅 Eden 的 AppImage）
+///
+/// Eden 官方每个平台会发布若干变体，这里按「通用桌面优先」的顺序挑选：
+/// `gcc-standard`（通用） → `clang-pgo`（PGO 优化） → `legacy-gcc-standard` /
+/// `legacy-clang-pgo`（老 glibc 发行版兜底）。
+/// 明确排除手持设备专用变体（`rog-ally` / `steamdeck`）、Android 的 `.apk`
+/// 以及增量同步用的 `.AppImage.zsync`。
+#[cfg(any(target_os = "linux", test))]
+fn select_linux_asset(
+    release_info: &crate::models::release::ReleaseInfo,
+    branch: &str,
+) -> Option<String> {
+    let branch = normalize_downloadable_yuzu_branch(branch)?;
+
+    if branch != EDEN_BRANCH {
+        // Citron 的 Linux AppImage 暂不支持（见 validate_yuzu_install_platform）
+        return None;
+    }
+
+    let arch = if cfg!(target_arch = "aarch64") {
+        "aarch64"
+    } else {
+        "amd64"
+    };
+
+    const VARIANT_PRIORITY: &[&str] = &[
+        "gcc-standard",
+        "clang-pgo",
+        "legacy-gcc-standard",
+        "legacy-clang-pgo",
+    ];
+
+    for variant in VARIANT_PRIORITY {
+        let suffix = format!("-{}-{}.AppImage", arch, variant);
+        for asset in &release_info.assets {
+            let name = &asset.name;
+            if !name.starts_with("Eden-Linux-") || !name.ends_with(&suffix) {
+                continue;
+            }
+            // 手持设备专用构建后缀与通用桌面一致，必须显式排除
+            if name.contains("-rog-ally-") || name.contains("-steamdeck-") {
+                continue;
+            }
+            debug!("选择 Eden Linux 资源: {}", name);
+            return Some(asset.download_url.clone());
+        }
+    }
+
+    warn!("未找到适用于 linux/{} 的 Eden 资源", arch);
+    None
+}
+
 pub fn select_current_platform_yuzu_asset(
     release_info: &crate::models::release::ReleaseInfo,
     branch: &str,
@@ -441,12 +509,21 @@ pub fn select_current_platform_yuzu_asset(
         select_macos_asset(release_info, branch)
     }
 
+    #[cfg(target_os = "linux")]
+    {
+        select_linux_asset(release_info, branch)
+    }
+
     #[cfg(target_os = "windows")]
     {
         select_windows_asset(release_info, branch)
     }
 
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(
+        target_os = "macos",
+        target_os = "linux",
+        target_os = "windows"
+    )))]
     {
         let _ = (release_info, branch);
         None
@@ -993,6 +1070,62 @@ where
     install_windows_zip_step(package_path, yuzu_path, on_event, branch).await
 }
 
+#[cfg(target_os = "linux")]
+async fn install_eden_linux_step<F>(
+    package_path: &Path,
+    yuzu_path: &Path,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    // Linux 上 Eden 以单文件 AppImage 发布，无需解压，直接落盘 + 授予执行权限
+    emit_step(&on_event, running_step(STEP_EXTRACT, TITLE_EXTRACT));
+    emit_step(&on_event, success_step(STEP_EXTRACT, TITLE_EXTRACT));
+    emit_step(&on_event, running_step(STEP_INSTALL, TITLE_INSTALL));
+
+    let package_path = package_path.to_path_buf();
+    let yuzu_path = yuzu_path.to_path_buf();
+    let target_path = expected_yuzu_exe_path_for_branch(&yuzu_path, EDEN_BRANCH);
+    let target_path_for_install = target_path.clone();
+
+    if let Err(error) = spawn_blocking_io("install_eden_appimage", move || {
+        std::fs::create_dir_all(&yuzu_path)?;
+
+        if target_path_for_install.exists() {
+            info!("删除旧的 Eden 可执行文件: {}", target_path_for_install.display());
+            std::fs::remove_file(&target_path_for_install)?;
+        }
+
+        std::fs::copy(&package_path, &target_path_for_install)?;
+        set_executable_permissions(&target_path_for_install)?;
+        Ok(())
+    })
+    .await
+    {
+        emit_step(
+            &on_event,
+            error_step(STEP_INSTALL, TITLE_INSTALL, StepKind::Normal, error.to_string()),
+        );
+        return Err(error);
+    }
+
+    info!("Eden 已安装到 {}", target_path.display());
+    emit_step(&on_event, success_step(STEP_INSTALL, TITLE_INSTALL));
+    Ok(())
+}
+
+/// 给文件授予 rwxr-xr-x 权限（AppImage 缺执行位会直接启动失败）
+#[cfg(target_os = "linux")]
+fn set_executable_permissions(path: &Path) -> AppResult<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut permissions = std::fs::metadata(path)?.permissions();
+    permissions.set_mode(0o755);
+    std::fs::set_permissions(path, permissions)?;
+    Ok(())
+}
+
 #[cfg(not(target_os = "macos"))]
 async fn run_windows_runtime_check_step<F>(on_event: F) -> AppResult<()>
 where
@@ -1044,14 +1177,18 @@ where
     #[cfg(target_os = "macos")]
     install_eden_macos_step(&package_path, &yuzu_path, on_event.clone()).await?;
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
+    install_eden_linux_step(&package_path, &yuzu_path, on_event.clone()).await?;
+
+    #[cfg(target_os = "windows")]
     install_eden_windows_step(&package_path, &yuzu_path, on_event.clone()).await?;
 
-    #[cfg(target_os = "macos")]
-    emit_step(&on_event, success_step(STEP_CHECK_ENV, TITLE_CHECK_ENV));
-
-    #[cfg(not(target_os = "macos"))]
+    // MSVC 运行库只对 Windows 有意义
+    #[cfg(target_os = "windows")]
     run_windows_runtime_check_step(on_event.clone()).await?;
+
+    #[cfg(not(target_os = "windows"))]
+    emit_step(&on_event, success_step(STEP_CHECK_ENV, TITLE_CHECK_ENV));
 
     // 如果配置了自动删除，删除下载文件
     if auto_delete {
@@ -1182,7 +1319,21 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
         }
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
+    {
+        let exe_name = match normalize_yuzu_branch(branch) {
+            Some(EDEN_BRANCH) => EDEN_NAME,
+            Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => "Citron",
+            _ => return Ok(()),
+        };
+        let exe_path = yuzu_path.join(exe_name);
+        if exe_path.exists() {
+            info!("删除旧可执行文件: {}", exe_path.display());
+            std::fs::remove_file(&exe_path)?;
+        }
+    }
+
+    #[cfg(target_os = "windows")]
     {
         let exe_name = match normalize_yuzu_branch(branch) {
             Some(EDEN_BRANCH) => "eden.exe",
@@ -1807,6 +1958,14 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
     if !exe_path.exists() {
         warn!("未找到 Yuzu 程序: {}", exe_path.display());
         return Ok(None);
+    }
+
+    // Linux: AppImage 没有可解析的 PE/Info.plist 版本信息，安装时写入的元数据才是准的
+    #[cfg(target_os = "linux")]
+    if let Some((version, branch)) = detect_yuzu_version_from_install_metadata(&exe_path) {
+        info!("通过安装元数据检测到版本: {}, 分支: {:?}", version, branch);
+        save_detected_yuzu_version(&version, branch.as_deref())?;
+        return Ok(Some(version));
     }
 
     if let Some((version, branch)) = detect_yuzu_version_from_binary(&exe_path) {
@@ -2580,7 +2739,8 @@ mod tests {
     #[test]
     fn test_detect_yuzu_version_from_install_metadata() {
         let dir = tempdir().unwrap();
-        let exe_path = dir.path().join("citron.exe");
+        // 可执行文件名随平台不同（Windows citron.exe / macOS Citron / Linux Citron）
+        let exe_path = expected_yuzu_exe_path_for_branch(dir.path(), CITRON_NIGHTLY_BRANCH);
         std::fs::write(&exe_path, b"citron nightly executable").unwrap();
 
         write_yuzu_install_metadata(dir.path(), "0237a9b", CITRON_NIGHTLY_BRANCH).unwrap();
@@ -2598,7 +2758,7 @@ mod tests {
     #[test]
     fn test_install_metadata_is_ignored_when_executable_changes() {
         let dir = tempdir().unwrap();
-        let exe_path = dir.path().join("citron.exe");
+        let exe_path = expected_yuzu_exe_path_for_branch(dir.path(), CITRON_NIGHTLY_BRANCH);
         std::fs::write(&exe_path, b"old citron executable").unwrap();
 
         write_yuzu_install_metadata(dir.path(), "0237a9b", CITRON_NIGHTLY_BRANCH).unwrap();
@@ -2974,5 +3134,140 @@ mod tests {
         let url = select_macos_asset(&release, "eden");
         // 应该只选择 macOS 版本，排除其他平台
         assert_eq!(url, Some("https://example.com/macos.tar.gz".to_string()));
+    }
+
+    fn linux_eden_release(asset_names: &[&str]) -> ReleaseInfo {
+        ReleaseInfo {
+            name: "test".to_string(),
+            tag_name: "v0.2.1".to_string(),
+            description: "".to_string(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: asset_names
+                .iter()
+                .map(|name| ReleaseAsset {
+                    name: name.to_string(),
+                    download_url: format!("https://example.com/{}", name),
+                    size: 0,
+                    content_type: None,
+                })
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn test_select_linux_asset_prefers_generic_desktop_build() {
+        // 按真实发布顺序排列：手持设备变体排在最前，也不应被选中
+        let release = linux_eden_release(&[
+            "Eden-Linux-v0.2.1-steamdeck-amd64-clang-pgo.AppImage",
+            "Eden-Linux-v0.2.1-rog-ally-amd64-clang-pgo.AppImage",
+            "Eden-Linux-v0.2.1-amd64-clang-pgo.AppImage",
+            "Eden-Linux-v0.2.1-amd64-gcc-standard.AppImage",
+            "Eden-Windows-v0.2.1-amd64-msvc-standard.zip",
+            "Eden-macOS-v0.2.1.dmg",
+            "Eden-Linux-v0.2.1-amd64-gcc-standard.AppImage.zsync",
+        ]);
+
+        let arch = if cfg!(target_arch = "aarch64") {
+            "aarch64"
+        } else {
+            "amd64"
+        };
+        let expected = format!("https://example.com/Eden-Linux-v0.2.1-{arch}-gcc-standard.AppImage");
+        assert_eq!(select_linux_asset(&release, EDEN_BRANCH), Some(expected));
+    }
+
+    #[test]
+    fn test_select_linux_asset_falls_back_to_pgo_then_legacy() {
+        let arch = if cfg!(target_arch = "aarch64") {
+            "aarch64"
+        } else {
+            "amd64"
+        };
+
+        // 只有 PGO 构建可选
+        let pgo = linux_eden_release(&[&format!(
+            "Eden-Linux-v0.2.1-{arch}-clang-pgo.AppImage"
+        )]);
+        assert_eq!(
+            select_linux_asset(&pgo, EDEN_BRANCH),
+            Some(format!("https://example.com/Eden-Linux-v0.2.1-{arch}-clang-pgo.AppImage").into())
+        );
+
+        // 只剩老 glibc 兜底构建
+        let legacy = linux_eden_release(&[
+            &format!("Eden-Linux-v0.2.1-steamdeck-{arch}-gcc-standard.AppImage"),
+            &format!("Eden-Linux-v0.2.1-legacy-{arch}-gcc-standard.AppImage"),
+        ]);
+        assert_eq!(
+            select_linux_asset(&legacy, EDEN_BRANCH),
+            Some(
+                format!("https://example.com/Eden-Linux-v0.2.1-legacy-{arch}-gcc-standard.AppImage")
+                    .into()
+            )
+        );
+    }
+
+    #[test]
+    fn test_select_linux_asset_excludes_other_platforms_and_arches() {
+        let release = linux_eden_release(&[
+            "Eden-Windows-v0.2.1-amd64-msvc-standard.zip",
+            "Eden-macOS-v0.2.1.dmg",
+            "Eden-Android-v0.2.1-standard.apk",
+            "Eden-Linux-v0.2.1-aarch64-gcc-standard.AppImage",
+            "Eden-Linux-v0.2.1-amd64-gcc-standard.AppImage.zsync",
+            "eden-room-x86_64-unknown-linux-musl",
+        ]);
+
+        // 如果宿主机恰好是 aarch64，aarch64 资产会被选中；x86_64 宿主则应无匹配
+        let other_arch = if cfg!(target_arch = "aarch64") {
+            "amd64"
+        } else {
+            "aarch64"
+        };
+        let _ = other_arch;
+        let selected = select_linux_asset(&release, EDEN_BRANCH);
+        if cfg!(target_arch = "aarch64") {
+            assert!(selected.is_some());
+        } else {
+            assert_eq!(selected, None);
+        }
+    }
+
+    #[test]
+    fn test_select_linux_asset_rejects_citron() {
+        let release = linux_eden_release(&["citron-stable-linux-x86_64.AppImage"]);
+        assert_eq!(select_linux_asset(&release, CITRON_STABLE_BRANCH), None);
+    }
+
+    #[test]
+    fn test_expected_yuzu_exe_path_for_branch_on_linux() {
+        let dir = tempdir().unwrap();
+        assert_eq!(
+            expected_yuzu_exe_path_for_branch(dir.path(), EDEN_BRANCH),
+            dir.path().join("Eden")
+        );
+        assert_eq!(
+            expected_yuzu_exe_path_for_branch(dir.path(), CITRON_STABLE_BRANCH),
+            dir.path().join("Citron")
+        );
+    }
+
+    #[test]
+    fn test_set_executable_permissions() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("Eden");
+        std::fs::write(&path, b"appimage placeholder").unwrap();
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+            set_executable_permissions(&path).unwrap();
+
+            let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o755);
+        }
     }
 }
