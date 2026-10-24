@@ -10,7 +10,7 @@
       <!-- Stepper Content -->
       <v-card-text class="dialog-content">
         <div class="stepper">
-          <template v-for="(step, index) in store.steps" :key="step.id">
+          <template v-for="(step, index) in store.displaySteps" :key="step.id">
             <div
               class="step-item"
               :class="{
@@ -21,7 +21,7 @@
             >
               <!-- Timeline connector -->
               <div
-                v-if="index < store.steps.length - 1"
+                v-if="index < store.displaySteps.length - 1"
                 class="step-connector"
                 :class="{
                   'connector-completed': step.status === 'success',
@@ -134,6 +134,9 @@
             </div>
           </template>
         </div>
+        <div v-if="store.errorMessage && !store.steps.some(step => step.status === 'error')" class="error-message">
+          {{ store.errorMessage }}
+        </div>
       </v-card-text>
 
       <v-divider></v-divider>
@@ -241,12 +244,13 @@ const showDeleteConfirm = ref(false);
 // Compute dialog title based on current state
 const title = computed(() => {
   if (hasError.value) return '安装失败';
-  if (store.steps.every(s => s.status === 'success')) return '安装完成';
+  if (store.finishedStatus === 'cancelled') return '安装已取消';
+  if (!store.displayBusy && store.finishedStatus === 'success') return '安装完成';
   return '安装进度';
 });
 
 const isInstalling = computed(() => {
-  return store.steps.some(s => s.status === 'running');
+  return store.displayBusy || (!store.finishedStatus && store.steps.some(s => s.status === 'pending' || s.status === 'running'));
 });
 
 const isDownloading = computed(() => {
@@ -254,7 +258,7 @@ const isDownloading = computed(() => {
 });
 
 const hasError = computed(() => {
-  return store.steps.some(s => s.status === 'error');
+  return store.finishedStatus === 'error' || store.steps.some(s => s.status === 'error');
 });
 
 async function handleCancelDownload() {

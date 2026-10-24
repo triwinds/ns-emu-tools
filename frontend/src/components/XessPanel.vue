@@ -103,7 +103,7 @@ async function saveInput(percent: number, maxEdge: number) {
 async function component(install: boolean) {
   await action(async () => {
     const value = await graphicsCommand<{ message: string }>(install ? 'install_xess_component' : 'uninstall_xess_component')
-    if (install) progress.closeDialog()
+    if (install) await progress.closeDialogAfterDisplay()
     feedback.value = value.message; await refresh()
   })
 }

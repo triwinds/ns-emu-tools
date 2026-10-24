@@ -139,13 +139,7 @@ onMounted(async () => {
                   progressStore.updateStep(payload.step);
                   break;
               case 'finished':
-                  // 如果有成功消息（比如固件版本号），更新最后一个步骤的 title
-                  if (payload.success && payload.message) {
-                      const lastStep = progressStore.steps[progressStore.steps.length - 1];
-                      if (lastStep) {
-                          lastStep.title = payload.message;
-                      }
-                  }
+                  progressStore.finish(payload.success, payload.message);
                   break;
               case 'corruptedFile':
                   handleCorruptedFile(payload.path);

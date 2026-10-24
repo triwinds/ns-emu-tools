@@ -378,10 +378,10 @@ async function operate(action: 'install' | 'launch' | 'uninstall') {
       report.value = refreshed
       followComponentUpdate(token)
     }
+    if (action === 'install') await progress.closeDialogAfterDisplay()
   } catch (e) {
     if (token === revision) error.value = e instanceof Error ? e.message : String(e)
   } finally {
-    progress.closeDialog()
     if (token === revision) { loading.value = false; activeAction.value = null }
   }
 }

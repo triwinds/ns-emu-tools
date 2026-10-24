@@ -1,17 +1,28 @@
 import { defineStore } from 'pinia';
 import type { ProgressStep, ProgressStatus } from '@/types/progress';
+import { ProgressDisplay } from '../utils/progressDisplay';
+
+const displays = new WeakMap<object, ProgressDisplay>();
 
 export const useProgressStore = defineStore('progress', {
     state: () => ({
         dialogOpen: false,
         steps: [] as ProgressStep[],
+        displaySteps: [] as ProgressStep[],
+        displayBusy: false,
+        finishedStatus: null as 'success' | 'error' | 'cancelled' | null,
         currentStepId: null as string | null,
-        errorMessage: '', // To store a global error message if needed
+        errorMessage: '',
     }),
 
     actions: {
         reset() {
+            displays.get(this)?.dispose();
+            displays.delete(this);
             this.steps = [];
+            this.displaySteps = [];
+            this.displayBusy = false;
+            this.finishedStatus = null;
             this.currentStepId = null;
             this.errorMessage = '';
             this.dialogOpen = false;
@@ -22,47 +33,69 @@ export const useProgressStore = defineStore('progress', {
         },
 
         closeDialog() {
-            // Prevent closing if running? Or allow with warning?
-            // For now, simple close.
             this.dialogOpen = false;
         },
 
+        async closeDialogAfterDisplay() {
+            const display = displays.get(this);
+            await display?.whenIdle();
+            if (displays.get(this) === display && this.finishedStatus === 'success') {
+                this.closeDialog();
+            }
+        },
+
         setSteps(steps: ProgressStep[]) {
-            this.steps = steps;
-            if (steps.length > 0) {
-                // Don't auto-start, wait for specific trigger if needed,
-                // but usually we init with all pending.
-            }
+            displays.get(this)?.dispose();
+            this.steps = steps.map(step => ({ ...step }));
+            this.finishedStatus = null;
+            this.errorMessage = '';
+            this.currentStepId = steps.find(step => step.status === 'running')?.id ?? null;
+            displays.set(this, new ProgressDisplay(steps, (visible, busy) => {
+                this.displaySteps = visible;
+                this.displayBusy = busy;
+            }));
         },
 
-        // New unified method to update step - handles the new StepUpdate event
         updateStep(updatedStep: ProgressStep) {
-            const index = this.steps.findIndex(s => s.id === updatedStep.id);
-            if (index !== -1) {
-                // Update the step with new data
-                this.steps[index] = { ...this.steps[index], ...updatedStep };
+            const index = this.steps.findIndex(step => step.id === updatedStep.id);
+            if (index === -1) return;
+            this.steps[index] = { ...this.steps[index], ...updatedStep };
+            this.currentStepId = this.steps.find(step => step.status === 'running')?.id ?? null;
+            if (updatedStep.status === 'error' && updatedStep.error) this.errorMessage = updatedStep.error;
+            displays.get(this)?.update(this.steps[index]);
+        },
 
-                // Track current running step
-                if (updatedStep.status === 'running') {
-                    this.currentStepId = updatedStep.id;
+        finish(success: boolean, message?: string) {
+            const hasError = this.steps.some(step => step.status === 'error');
+            const cancelled = !success && !hasError && (
+                /取消|cancelled|canceled/i.test(message ?? '') ||
+                (!message && this.steps.some(step => step.status === 'cancelled'))
+            );
+            this.finishedStatus = success && !hasError ? 'success' : cancelled ? 'cancelled' : 'error';
+            if (cancelled) this.errorMessage = '';
+            if (!success && !cancelled && message) this.errorMessage = message;
+            let markedFailure = hasError;
+            const hasRunning = this.steps.some(step => step.status === 'running');
+            for (const step of [...this.steps]) {
+                if (step.status !== 'running' && step.status !== 'pending') continue;
+                let status: ProgressStatus = step.status === 'running' && success ? 'success' : 'cancelled';
+                if (!success && !cancelled && !markedFailure && (step.status === 'running' || !hasRunning)) {
+                    status = 'error';
+                    markedFailure = true;
                 }
-
-                // Store error message if any
-                if (updatedStep.error) {
-                    this.errorMessage = updatedStep.error;
-                }
+                this.updateStep({ ...step, status, error: status === 'error' ? message : undefined });
+            }
+            if (this.finishedStatus === 'success' && message) {
+                const last = this.steps[this.steps.length - 1];
+                if (last) last.title = message;
+                displays.get(this)?.setCompletionTitle(message);
             }
         },
 
-        // Legacy methods - kept for backwards compatibility
+        // Legacy updates use the same event and presentation path.
         updateStepStatus(id: string, status: ProgressStatus) {
-            const step = this.steps.find(s => s.id === id);
-            if (step) {
-                step.status = status;
-                if (status === 'running') {
-                    this.currentStepId = id;
-                }
-            }
+            const step = this.steps.find(step => step.id === id);
+            if (step) this.updateStep({ ...step, status });
         },
 
         setStepRunning(id: string) {
@@ -74,22 +107,15 @@ export const useProgressStore = defineStore('progress', {
         },
 
         setStepError(id: string, message?: string) {
-            this.updateStepStatus(id, 'error');
-            const step = this.steps.find(s => s.id === id);
-            if (step && message) {
-                step.error = message;
-            }
-            if (message) {
-                this.errorMessage = message;
-            }
+            const step = this.steps.find(step => step.id === id);
+            if (step) this.updateStep({ ...step, status: 'error', error: message });
+            if (message) this.errorMessage = message;
         },
 
         updateDownloadProgress(id: string, progress: number, speed: string, eta: string) {
-            const step = this.steps.find(s => s.id === id);
-            if (step && step.type === 'download') {
-                step.progress = progress;
-                step.downloadSpeed = speed;
-                step.eta = eta;
+            const step = this.steps.find(step => step.id === id);
+            if (step?.type === 'download') {
+                this.updateStep({ ...step, progress, downloadSpeed: speed, eta });
             }
         },
 

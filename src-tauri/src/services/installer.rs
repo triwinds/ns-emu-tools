@@ -40,26 +40,34 @@ impl InstallReporter {
     }
 
     pub fn emit(&self, event: ProgressEvent) {
+        // Services also forward events through emit(), so track those phases too.
+        {
+            let mut current = self.current.lock().unwrap();
+            match &event {
+                ProgressEvent::Started { steps } => {
+                    *current = steps
+                        .iter()
+                        .find(|step| step.status == ProgressStatus::Running)
+                        .cloned();
+                }
+                ProgressEvent::StepUpdate { step } => {
+                    if step.status == ProgressStatus::Running {
+                        *current = Some(step.clone());
+                    } else if current.as_ref().is_some_and(|active| active.id == step.id) {
+                        *current = None;
+                    }
+                }
+                _ => {}
+            }
+        }
         (self.emit)(event);
     }
 
     pub fn start(&self, steps: Vec<ProgressStep>) {
-        *self.current.lock().unwrap() = steps
-            .iter()
-            .find(|step| step.status == ProgressStatus::Running)
-            .cloned();
         self.emit(ProgressEvent::Started { steps });
     }
 
     pub fn step(&self, step: ProgressStep) {
-        {
-            let mut current = self.current.lock().unwrap();
-            if step.status == ProgressStatus::Running {
-                *current = Some(step.clone());
-            } else if current.as_ref().is_some_and(|active| active.id == step.id) {
-                *current = None;
-            }
-        }
         self.emit(ProgressEvent::StepUpdate { step });
     }
 
@@ -267,6 +275,39 @@ mod tests {
         let recorded = events.clone();
         let reporter = InstallReporter::new(move |event| recorded.lock().unwrap().push(event));
         (reporter, events)
+    }
+
+    #[test]
+    fn forwarded_service_events_track_the_active_phase_on_failure() {
+        let (reporter, events) = record_progress();
+        reporter.start(vec![pending_step("extract", "解压文件")]);
+        reporter.emit(ProgressEvent::StepUpdate {
+            step: running_step("extract", "解压文件"),
+        });
+        reporter.finish_error("无法读取压缩包");
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 4);
+        assert!(matches!(&events[2], ProgressEvent::StepUpdate { step }
+            if step.id == "extract" && step.status == ProgressStatus::Error
+                && step.error.as_deref() == Some("无法读取压缩包")));
+    }
+
+    #[test]
+    fn forwarded_completion_does_not_mark_a_successful_phase_as_failed() {
+        let (reporter, events) = record_progress();
+        reporter.emit(ProgressEvent::Started {
+            steps: vec![running_step("install", "安装文件")],
+        });
+        reporter.emit(ProgressEvent::StepUpdate {
+            step: success_step("install", "安装文件"),
+        });
+        reporter.finish_error("保存配置失败");
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 3);
+        assert!(matches!(
+            &events[2],
+            ProgressEvent::Finished { success: false, .. }
+        ));
     }
 
     #[tokio::test]

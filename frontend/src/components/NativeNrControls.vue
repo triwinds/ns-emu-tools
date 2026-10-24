@@ -211,8 +211,9 @@ async function installRuntime() {
   try {
     component.value = await installNativeNrRuntime()
     feedback.value = 'NR 组件已下载并校验安装。当前游戏需重新专用启动后才能使用新组件。'
+    await progress.closeDialogAfterDisplay()
   } catch (e) { error.value = String(e) }
-  finally { progress.closeDialog(); busy.value = false }
+  finally { busy.value = false }
 }
 async function removeRuntime() {
   if (busy.value || props.disabled) return
