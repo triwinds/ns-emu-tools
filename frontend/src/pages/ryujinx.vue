@@ -280,6 +280,7 @@ let selectedRyujinxPath = ref('')
 let targetRyujinxVersion = ref('')
 let isRunningInstall = ref(false)
 let isLoadingRyujinxVersions = ref(false)
+let ryujinxVersionsLoadFailed = ref(false)
 let platform = ref('')
 let changeLogHtml = ref('<p>加载中...</p>')
 let firmwareWarningMsg = ref(`一般来说，更新固件并不会改善你的游戏体验。只要你的模拟器能够正常识别游戏，并且游戏内的字体显示正常，
@@ -319,6 +320,7 @@ function showNotice(type: 'info' | 'success' | 'warning' | 'error', content: str
 }
 
 let latestRyujinxVersion = computed(() => {
+  if (ryujinxVersionsLoadFailed.value) return "加载失败"
   if (allRyujinxReleaseInfos.value.length > 0) {
     return allRyujinxReleaseInfos.value[0]['tag_name']
   }
@@ -341,6 +343,7 @@ onBeforeMount(async () => {
 async function updateRyujinxReleaseInfos() {
   const branch = selectedBranch.value
   isLoadingRyujinxVersions.value = true
+  ryujinxVersionsLoadFailed.value = false
   allRyujinxReleaseInfos.value = []
   targetRyujinxVersion.value = "加载中..."
   try {
@@ -352,12 +355,14 @@ async function updateRyujinxReleaseInfos() {
       targetRyujinxVersion.value = infos[0] ?? ''
     } else {
       cds.appendConsoleMessage('ryujinx 版本信息加载异常.')
+      ryujinxVersionsLoadFailed.value = true
       targetRyujinxVersion.value = "加载失败"
     }
   } catch (error) {
     if (selectedBranch.value !== branch) return
     cds.appendConsoleMessage('ryujinx 版本信息加载异常: ' + error)
     console.error('获取 Ryujinx 版本信息失败:', error)
+    ryujinxVersionsLoadFailed.value = true
     targetRyujinxVersion.value = "加载失败"
   } finally {
     if (selectedBranch.value === branch) {
