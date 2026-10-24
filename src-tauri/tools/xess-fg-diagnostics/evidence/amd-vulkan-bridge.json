@@ -1,0 +1,142 @@
+[
+  {
+    "session": "amd-vulkan-fg-final",
+    "report_sha256": "c7e80a6225b5040ebea6bb513080782c48187994fab58e351ed3c35a0c3868d7",
+    "binary_sha256": "49ec4a6513838c27b3da2e5120bbe218137b41c6e133fbe5dd72b773f37a1fda",
+    "conditions": {
+      "capabilities_only": false,
+      "d3d12_debug_requested": false,
+      "frames": 180,
+      "height": 360,
+      "nvof": false,
+      "scene": "analytic whole-frame translation, no jitter; true pixel motion and constant depth; synthetic, not game acceptance",
+      "streamline": false,
+      "target_source_fps": 40,
+      "vulkan_bridge": true,
+      "vulkan_validation_requested": true,
+      "width": 640
+    },
+    "events": [
+      {
+        "device": "AMD Radeon(TM) 610M",
+        "event": "vulkan_bridge_ready",
+        "luid": [
+          243,
+          19,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "memory_import": "D3D12_RESOURCE",
+        "semaphore_import": "D3D12_FENCE timeline",
+        "size": [
+          640,
+          360
+        ],
+        "validation": true,
+        "zero_cpu_color_copy": true
+      },
+      {
+        "event": "vulkan_color_readback",
+        "frame": 0,
+        "mismatched_pixels": 0,
+        "pixels": 230400
+      },
+      {
+        "event": "vulkan_color_readback",
+        "frame": 16,
+        "mismatched_pixels": 0,
+        "pixels": 230400
+      },
+      {
+        "event": "vulkan_bridge_finished",
+        "validation_warnings_errors": 0
+      },
+      {
+        "d3d12_debug_enabled": false,
+        "d3d12_warnings_errors": null,
+        "event": "summary",
+        "failures": 0,
+        "frames_queued": 296,
+        "generated_success_frames": 148,
+        "measured_frames": 148,
+        "sdk_queued_fps": 80.063276,
+        "seconds": 3.697076,
+        "source_fps": 40.031638
+      }
+    ]
+  },
+  {
+    "session": "amd-odd-size-alignment",
+    "report_sha256": "ace63ba2699781c188986d768d30f4a417201a46d722b81f93560ea90aff0b8d",
+    "binary_sha256": "54dc44f01da3cea56ada870ec42b2eed681e578d6db17ab6effc555be2136c31",
+    "conditions": {
+      "capabilities_only": false,
+      "d3d12_debug_requested": false,
+      "frames": 90,
+      "height": 351,
+      "nvof": false,
+      "scene": "analytic whole-frame translation, no jitter; true pixel motion and constant depth; synthetic, not game acceptance",
+      "streamline": false,
+      "target_source_fps": 40,
+      "vulkan_bridge": true,
+      "vulkan_validation_requested": true,
+      "width": 642
+    },
+    "events": [
+      {
+        "device": "AMD Radeon(TM) 610M",
+        "event": "vulkan_bridge_ready",
+        "luid": [
+          243,
+          19,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "memory_import": "D3D12_RESOURCE",
+        "semaphore_import": "D3D12_FENCE timeline",
+        "size": [
+          642,
+          351
+        ],
+        "validation": true,
+        "zero_cpu_color_copy": true
+      },
+      {
+        "event": "vulkan_color_readback",
+        "frame": 0,
+        "mismatched_pixels": 0,
+        "pixels": 225342
+      },
+      {
+        "event": "vulkan_color_readback",
+        "frame": 16,
+        "mismatched_pixels": 0,
+        "pixels": 225342
+      },
+      {
+        "event": "vulkan_bridge_finished",
+        "validation_warnings_errors": 0
+      },
+      {
+        "d3d12_debug_enabled": false,
+        "d3d12_warnings_errors": null,
+        "event": "summary",
+        "failures": 0,
+        "frames_queued": 116,
+        "generated_success_frames": 58,
+        "measured_frames": 58,
+        "sdk_queued_fps": 80.940371,
+        "seconds": 1.433154,
+        "source_fps": 40.470185
+      }
+    ]
+  }
+]

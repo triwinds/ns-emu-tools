@@ -1,0 +1,112 @@
+export interface NrLook {
+  algorithm: 'log_delta' | 'oklab'
+  protection: { hue: number; shadows: number; highlights: number; overcorrection: number }
+  diagnostic: 'off' | 'original' | 'first_pass' | 'model_output' | 'raw_delta' | 'controlled_delta' | 'low_frequency' | 'high_frequency' | 'protection' | 'history_validity' | 'history_weight'
+  scope: 'final_pass' | 'chain_total'
+  temporal: NrTemporalLook
+  spatial: NrSpatialLook
+  enabled: boolean
+  schemaVersion: 1
+  amount: number
+  brighten: number
+  darken: number
+  brightenCap: number
+  darkenCap: number
+  color: number
+  hue: number
+  shadows: number
+  midtones: number
+  highlights: number
+}
+export interface NrTemporalLook { mode: 'static' | 'optical_flow' | 'optical_flow_plus'; sampling: 'bilinear' | 'per_tap'; enabled: boolean; timeMs: number; strength: number; rejection: number }
+export function nrTemporalLook(): NrTemporalLook { return { mode: 'optical_flow', sampling: 'bilinear', enabled: false, timeMs: 80, strength: 75, rejection: 50 } }
+export interface NrSpatialLook {
+  enabled: boolean
+  lighting: number
+  detail: number
+  radius: number
+  halo: number
+}
+export function nrSpatialLook(): NrSpatialLook {
+  return { enabled: false, lighting: 100, detail: 100, radius: 8, halo: 0 }
+}
+export function nrLook(): NrLook {
+  return { algorithm: 'log_delta', protection: { hue: 0, shadows: 0, highlights: 0, overcorrection: 0 }, diagnostic: 'off', scope: 'final_pass', temporal: nrTemporalLook(), spatial: nrSpatialLook(), enabled: true, schemaVersion: 1, amount: 100, brighten: 100, darken: 100, brightenCap: 0, darkenCap: 0, color: 100, hue: 100, shadows: 100, midtones: 100, highlights: 100 }
+}
+function cloneNrLook(value?: NrLook): NrLook {
+  return { ...nrLook(), ...value, protection: { ...nrLook().protection, ...value?.protection }, temporal: { ...nrTemporalLook(), ...value?.temporal }, spatial: { ...nrSpatialLook(), ...value?.spatial } }
+}
+export function cloneNrOptions(value: NrOptions): NrOptions {
+  return { ...value, look: cloneNrLook(value.look), secondPass: cloneNrSecondPass(value.secondPass) }
+}
+/** Keep tuning values while selecting the original single-model output. */
+export function bypassNrAdditions(value: NrOptions): NrOptions {
+  const result = cloneNrOptions(value)
+  result.secondPass.enabled = false
+  result.look.enabled = false
+  return result
+}
+/** Preserve pass one and seed an explicit same-frame comparison for pass two. */
+export function nrHaloComparison(value: NrOptions, intensity: number): NrOptions {
+  const result = cloneNrOptions(value)
+  result.secondPass = {
+    ...nrSecondPass(), enabled: true, inherit: false, intensity,
+    style: value.style, globalTone: value.globalTone, localTone: 0,
+    localStructure: value.localStructure, skinStructure: value.skinStructure, autoMask: value.autoMask,
+    interpass: { clamp: true, feedback: 75 },
+  }
+  return result
+}
+export interface NrSecondPass {
+  interpass: NrInterpass
+  enabled: boolean; inherit: boolean; retry: number; intensity: number
+  style: 'a' | 'b' | 'c'
+  globalTone: number | null; localTone: number | null; localStructure: number | null
+  skinStructure: number; autoMask: boolean
+}
+export interface NrInterpass { clamp: boolean; feedback: number }
+export function nrInterpass(): NrInterpass { return { clamp: false, feedback: 100 } }
+function cloneNrSecondPass(value?: NrSecondPass): NrSecondPass {
+  return { ...nrSecondPass(), ...value, interpass: { ...nrInterpass(), ...value?.interpass } }
+}
+export function nrSecondPass(): NrSecondPass {
+  return { interpass: nrInterpass(), enabled: false, inherit: true, retry: 0, intensity: 100, style: 'a', globalTone: null, localTone: null, localStructure: null, skinStructure: 0, autoMask: false }
+}
+export interface NrOptions {
+  secondPass: NrSecondPass
+  look: NrLook
+  style: 'a' | 'b' | 'c'
+  globalTone: number | null
+  localTone: number | null
+  localStructure: number | null
+  skinStructure: number
+  autoMask: boolean
+}
+export interface SrOptions { autoExposure: boolean; exposure: number }
+export interface FgOptions {
+  backend?: 'dlss' | 'xess'
+  mode: 'fixed' | 'dynamic'
+  multiplier: number
+  targetFps: number
+  reflex: 'low_latency' | 'boost'
+  inputFps: number
+}
+export interface OpticalFlowOptions {
+  quality: 'quality' | 'balanced' | 'performance'
+  temporalHints: boolean
+  staticGuard: boolean
+  edgeProtection: boolean
+  edgeThreshold: number
+}
+export function opticalFlowOptions(value?: OpticalFlowOptions): OpticalFlowOptions {
+  return { quality: 'balanced', temporalHints: true, staticGuard: true, edgeProtection: true, edgeThreshold: 2, ...value }
+}
+export interface GraphicsAdvanced { nr: NrOptions; sr: SrOptions; fg: FgOptions; opticalFlow?: OpticalFlowOptions }
+export function graphicsAdvanced(value?: GraphicsAdvanced): GraphicsAdvanced {
+  return {
+    opticalFlow: opticalFlowOptions(value?.opticalFlow),
+    nr: { style: 'a', globalTone: null, localTone: null, localStructure: null, skinStructure: 0, autoMask: false, ...value?.nr, look: cloneNrLook(value?.nr?.look), secondPass: cloneNrSecondPass(value?.nr?.secondPass) },
+    sr: { autoExposure: true, exposure: 100, ...value?.sr },
+    fg: { backend: 'dlss' as const, mode: 'fixed', multiplier: 2, targetFps: 0, reflex: 'low_latency', inputFps: 0, ...value?.fg },
+  }
+}

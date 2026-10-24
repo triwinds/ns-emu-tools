@@ -1,0 +1,21 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(binding=0) uniform sampler2D sourceColor;
+layout(rgba16f,binding=1) uniform image2D linearInput;
+layout(rgba16f,binding=2) uniform image2D linearOutput;
+layout(rgba8,binding=3) uniform image2D encodedOutput;
+layout(push_constant) uniform Settings { uint encode; } settings;
+vec3 linearize(vec3 c) {
+    return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),greaterThan(c,vec3(0.04045)));
+}
+vec3 encode(vec3 c) {
+    c=clamp(c,0.0,1.0);
+    return mix(c*12.92,1.055*pow(c,vec3(1.0/2.4))-0.055,greaterThan(c,vec3(0.0031308)));
+}
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy);
+    if(any(greaterThanEqual(p,imageSize(linearInput)))) return;
+    vec4 source=texelFetch(sourceColor,p,0);
+    if(settings.encode==0u) imageStore(linearInput,p,vec4(linearize(source.rgb),source.a));
+    else imageStore(encodedOutput,p,vec4(encode(imageLoad(linearOutput,p).rgb),source.a));
+}

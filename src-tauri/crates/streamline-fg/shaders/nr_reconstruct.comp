@@ -1,0 +1,32 @@
+#version 450
+// Reconstruct the controlled total linear-light correction, never the low
+// resolution color itself. Original full-resolution alpha remains untouched.
+layout(local_size_x=8, local_size_y=8) in;
+layout(set=0,binding=0,rgba16f) readonly uniform image2D base;
+layout(set=0,binding=1,rgba16f) readonly uniform image2D lowBase;
+layout(set=0,binding=2,rgba16f) readonly uniform image2D lowOutput;
+layout(set=0,binding=3,rgba16f) writeonly uniform image2D outputImage;
+vec3 decode(vec3 c) {
+    c=clamp(c,0.0,1.0);
+    return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),greaterThan(c,vec3(0.04045)));
+}
+vec3 encode(vec3 c) {
+    c=clamp(c,0.0,1.0);
+    return mix(c*12.92,1.055*pow(c,vec3(1.0/2.4))-0.055,greaterThan(c,vec3(0.0031308)));
+}
+vec3 delta(ivec2 p) {
+    p=clamp(p,ivec2(0),imageSize(lowBase)-1);
+    return decode(imageLoad(lowOutput,p).rgb)-decode(imageLoad(lowBase,p).rgb);
+}
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy), fullSize=imageSize(base);
+    if(any(greaterThanEqual(p,fullSize))) return;
+    vec4 original=imageLoad(base,p);
+    vec2 q=(vec2(p)+0.5)*vec2(imageSize(lowBase))/vec2(fullSize)-0.5;
+    ivec2 a=ivec2(floor(q)); vec2 f=fract(q);
+    vec3 correction=mix(mix(delta(a),delta(a+ivec2(1,0)),f.x),
+                        mix(delta(a+ivec2(0,1)),delta(a+ivec2(1,1)),f.x),f.y);
+    // Exact zero retains the original bits, including dark/subnormal detail.
+    imageStore(outputImage,p,all(equal(correction,vec3(0))) ? original :
+               vec4(encode(decode(original.rgb)+correction),original.a));
+}

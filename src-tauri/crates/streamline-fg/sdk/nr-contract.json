@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "experimental": true,
+  "sdk_commit": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+  "api_version": 21,
+  "ngx_feature": 18,
+  "reference": "https://github.com/AlrikOlson/bevy_dlss5/blob/ed5ea6264338b2e19d81dcecbed1e06ab22a01ed/src/ngx.rs",
+  "artifacts": [
+    {"path": "include/nvsdk_ngx_defs.h", "sha256": "a9481cbc78d53ee56639f0a573ec095c6c1ea1e5f296d139c20c42bf342c2e1b"},
+    {"path": "include/nvsdk_ngx_defs_vk.h", "sha256": "43b821c5d297d86165e6d2f96a476f5c30f2158c7d5a0451425c6b927abfec88"},
+    {"path": "include/nvsdk_ngx_params.h", "sha256": "51a1f94116cf82f95c63a2c197371ed22e08bddb09918d36cc6e2ac712753c80"},
+    {"path": "include/nvsdk_ngx_vk.h", "sha256": "3be54d0103cce02174fd34912c60c9f40c73b5eec919e42613a2268c589c53ad"},
+    {"path": "lib/Windows_x86_64/nvsdk_ngx_d.lib", "sha256": "31e82b4ec3242ec6e5b42c73e1f5f5e260338a6ee213bd64444f6c2fa364aa84"}
+  ]
+}

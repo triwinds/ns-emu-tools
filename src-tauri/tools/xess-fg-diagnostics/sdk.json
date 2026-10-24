@@ -1,0 +1,50 @@
+{
+  "files": [
+    {
+      "sha256": "ec5e0c65e075570c6ede72618bb666d0be0c2e10b2ea9762c0fe8cb8e375ab27",
+      "path": "bin/libxess_fg.dll"
+    },
+    {
+      "sha256": "d2030dcd694fda8f2ec7e044b13e6db8f0b56d4ba9113a5efad334e3f3ded8c7",
+      "path": "bin/libxell.dll"
+    },
+    {
+      "sha256": "39f20fc1eef0b5d3fd41e25a2c5c04734d1a2cbdcf3f3da1c86cefef181ce976",
+      "path": "inc/xess_fg/xefg_swapchain.h"
+    },
+    {
+      "sha256": "1aa9a1c31214aaefb2c4ca4fd3bce29a166c8384148466d69f679ea554cf2dbc",
+      "path": "inc/xess_fg/xefg_swapchain_d3d12.h"
+    },
+    {
+      "sha256": "3600f2698fc747810948deb6fe568f105a8f40c003c73b6940262ae311f33aeb",
+      "path": "inc/xess_fg/xefg_swapchain_debug.h"
+    },
+    {
+      "sha256": "0a65a677001edf473156e6ed1d6cf97150fa12ff9930811bbaf4613b080c11b2",
+      "path": "inc/xell/xell.h"
+    },
+    {
+      "sha256": "e3b07f2f3adc317416a6aaa2343ae9b56c7707a34bb0e56fbefea14463a76bce",
+      "path": "inc/xell/xell_d3d12.h"
+    },
+    {
+      "sha256": "784be42c39a4a4d03cf85d88e15e59d75828fca773ce45b8dbfffbd7eaf208df",
+      "path": "LICENSE.txt"
+    },
+    {
+      "sha256": "e8d8899dbfc4de0e8ca25560be9358e03c1405d7c956d20a1838c3c709b9b51c",
+      "path": "third-party-programs.txt"
+    },
+    {
+      "sha256": "67ba86b2abcb701632309a51616d4e837324ea15d282c71a256228a351b5059a",
+      "path": "doc/xess_fg_developer_guide_english.md"
+    },
+    {
+      "sha256": "15406d8c71aef01ce9c7422a3eef04726e9538530321728c0f6878e5a799ef40",
+      "path": "doc/xell_developer_guide_english.md"
+    }
+  ],
+  "commit": "8fe81bdbbaf00b3c1b733fd0d830c333dc84e6f0",
+  "version": "v3.0.2"
+}

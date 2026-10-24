@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "version": "local-xess-5d429cdd589e7e0d",
+  "files": [
+    {
+      "name": "bin/libxell.dll",
+      "sha256": "d2030dcd694fda8f2ec7e044b13e6db8f0b56d4ba9113a5efad334e3f3ded8c7"
+    },
+    {
+      "name": "bin/libxess_fg.dll",
+      "sha256": "ec5e0c65e075570c6ede72618bb666d0be0c2e10b2ea9762c0fe8cb8e375ab27"
+    },
+    {
+      "name": "D3D12/D3D12Core.dll",
+      "sha256": "37fa14281a58cc834076971873006feb8a8d25cddc908d1a345bda1b149ffc7d"
+    },
+    {
+      "name": "D3D12/d3d12SDKLayers.dll",
+      "sha256": "7ab48d56d1c18708ebcf16c7c9259b2d783e2b935b85add4a244573b9f03cab4"
+    },
+    {
+      "name": "D3D12/D3D12StateObjectCompiler.dll",
+      "sha256": "023ba81d3a9c37ae805b746bb9c77bf2f6659044ee2fef2604154b507faca817"
+    },
+    {
+      "name": "libxess.dll",
+      "sha256": "251659dd84a3e84de67c886a4186e01f3eca49b00641906fe38bb6b807e5d5b7"
+    },
+    {
+      "name": "licenses/Intel-LICENSE.txt",
+      "sha256": "784be42c39a4a4d03cf85d88e15e59d75828fca773ce45b8dbfffbd7eaf208df"
+    },
+    {
+      "name": "licenses/Intel-third-party-programs.txt",
+      "sha256": "e8d8899dbfc4de0e8ca25560be9358e03c1405d7c956d20a1838c3c709b9b51c"
+    },
+    {
+      "name": "licenses/Microsoft-LICENSE-CODE.txt",
+      "sha256": "903df5512f7d02609fed0c780a9b704f5a3eeb6e4d84ebe42a29845c81899a3c"
+    },
+    {
+      "name": "licenses/Microsoft-LICENSE.txt",
+      "sha256": "5239850894610071566f7ecee0b751fde43c862032d92b99d7d0f596b3433ebd"
+    },
+    {
+      "name": "licenses/NS-Emu-Tools-LICENSE.txt",
+      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+    }
+  ]
+}

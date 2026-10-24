@@ -113,18 +113,20 @@ export function extractErrorMessage(error: unknown): string {
   }
 }
 
-function showGlobalError(cmd: string, error: unknown) {
+function showGlobalError(cmd: string, error: unknown, notifyOnError: boolean) {
   const msg = extractErrorMessage(error)
   const line = `[ERROR] ${cmd}: ${msg}`
 
-  // 统一记录到控制台，并通过应用级 snackbar 提示用户。
+  // 统一记录到控制台，按需通过应用级 snackbar 提示用户。
   try {
     ;(window as any)?.$bus?.emit?.('APPEND_CONSOLE_MESSAGE', line)
-    ;(window as any)?.$bus?.emit?.('showNotifyMessage', {
-      type: 'error',
-      content: msg || '操作失败',
-      persistent: true,
-    })
+    if (notifyOnError) {
+      ;(window as any)?.$bus?.emit?.('showNotifyMessage', {
+        type: 'error',
+        content: msg || '操作失败',
+        persistent: true,
+      })
+    }
   } catch {
     // ignore
   }
@@ -165,14 +167,19 @@ export const Events = {
  * 调用 Tauri 命令
  * @param cmd 命令名称
  * @param args 命令参数
+ * @param options 错误提示选项，默认显示报错气泡
  * @returns Promise<T>
  */
-export async function invokeCommand<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+export async function invokeCommand<T>(
+  cmd: string,
+  args?: Record<string, unknown>,
+  options: { notifyOnError?: boolean } = {},
+): Promise<T> {
   try {
     return await invoke<T>(cmd, args)
   } catch (error) {
     console.error(`Tauri command error [${cmd}]:`, error)
-    showGlobalError(cmd, error)
+    showGlobalError(cmd, error, options.notifyOnError !== false)
     throw error
   }
 }
@@ -376,6 +383,17 @@ export interface UiSetting {
 /** 其他设置 */
 export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
+  streamline_nvof: boolean
+  streamline_fg?: boolean
+  streamline_nr?: boolean
+  streamline_nr_intensity?: number
+  streamline_nr_consolidated?: boolean
+  streamline_input_scale?: number
+  streamline_input_max_edge?: number
+  streamline_advanced?: import('./graphicsAdvanced').GraphicsAdvanced
+  streamline_nr_presets?: import('./nrPresets').NrPreset[]
+  streamline_sr: boolean
+  streamline_sr_mode: 'quality' | 'balanced' | 'performance' | 'dlaa'
 }
 
 /** 通用设置 */
@@ -491,7 +509,12 @@ export async function deleteHistoryPath(emuType: string, path: string) {
 
 /** 获取所有 Ryujinx 版本 */
 export async function getAllRyujinxVersions(branch: string) {
-  return invokeCommand<ApiResponse<string[]>>('get_all_ryujinx_versions_command', { branch })
+  // 原版 Mainline / Canary 服务已下线，查询失败时保留日志，不显示报错气泡。
+  return invokeCommand<ApiResponse<string[]>>(
+    'get_all_ryujinx_versions_command',
+    { branch },
+    { notifyOnError: branch === 'nextendo' },
+  )
 }
 
 /** 安装 Ryujinx */

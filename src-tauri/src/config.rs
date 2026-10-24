@@ -12,6 +12,10 @@ use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, warn};
 
+#[path = "../crates/streamline-advanced-settings.rs"]
+pub mod advanced_settings;
+pub mod nr_presets;
+
 /// 应用程序版本（自动从 Cargo.toml 读取）
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -442,12 +446,15 @@ pub struct UiSetting {
     /// 是否深色模式
     #[serde(default = "default_true")]
     pub dark: bool,
-    /// 窗口宽度
+    /// 窗口宽度（逻辑像素）
     #[serde(default = "default_width")]
     pub width: u32,
-    /// 窗口高度
+    /// 窗口高度（逻辑像素）
     #[serde(default = "default_height")]
     pub height: u32,
+    /// 旧配置没有此字段，窗口尺寸按物理像素保存。
+    #[serde(default)]
+    pub window_size_is_logical: bool,
 }
 
 fn default_last_page() -> String {
@@ -488,16 +495,136 @@ impl Default for UiSetting {
             dark: true,
             width: default_width(),
             height: default_height(),
+            window_size_is_logical: true,
         }
     }
 }
 
+#[path = "../crates/streamline-sr-preset.rs"]
+mod sr_preset;
+pub use sr_preset::StreamlineSrPreset;
+
+/// SR operates on the presented frame; it does not control emulator rendering resolution.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum StreamlineSrMode {
+    Quality,
+    #[default]
+    Balanced,
+    Performance,
+    Dlaa,
+}
+impl StreamlineSrMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Quality => "quality",
+            Self::Balanced => "balanced",
+            Self::Performance => "performance",
+            Self::Dlaa => "dlaa",
+        }
+    }
+}
 /// 其他设置
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OtherSetting {
     /// 将 Yuzu 重命名为 Cemu
     #[serde(default)]
     pub rename_yuzu_to_cemu: bool,
+    /// FG 启动时请求 NVIDIA 硬件光流；旧配置保持开启。
+    #[serde(default = "default_true")]
+    pub streamline_nvof: bool,
+    /// 旧配置的专用启动保持 FG 开启；NR 和 SR 独立控制。
+    #[serde(default = "default_true")]
+    pub streamline_fg: bool,
+    #[serde(default)]
+    pub streamline_nr: bool,
+    #[serde(
+        default = "default_nr_intensity",
+        deserialize_with = "deserialize_nr_intensity"
+    )]
+    pub streamline_nr_intensity: u8,
+    /// 启动时选择的 NR 调度实验；不参与实时模型参数或游戏预设。
+    #[serde(default)]
+    pub streamline_nr_consolidated: bool,
+    #[serde(
+        alias = "streamline_nr_inference_scale",
+        default = "default_input_scale",
+        deserialize_with = "deserialize_input_scale"
+    )]
+    pub streamline_input_scale: u8,
+    /// 公共输入缩放：0 使用比例；非零时按固定长边上限等比缩小。
+    #[serde(
+        default,
+        alias = "streamline_nr_inference_max_edge",
+        deserialize_with = "deserialize_input_max_edge"
+    )]
+    pub streamline_input_max_edge: u32,
+    #[serde(default)]
+    pub streamline_sr: bool,
+    #[serde(default)]
+    pub streamline_sr_mode: StreamlineSrMode,
+    #[serde(default)]
+    pub streamline_sr_scale: Option<u16>,
+    #[serde(default)]
+    pub streamline_sr_preset: StreamlineSrPreset,
+    #[serde(default)]
+    pub streamline_advanced: advanced_settings::AdvancedSettings,
+    #[serde(default, deserialize_with = "nr_presets::deserialize_library")]
+    pub streamline_nr_presets: Vec<nr_presets::NrPreset>,
+}
+
+impl Default for OtherSetting {
+    fn default() -> Self {
+        Self {
+            rename_yuzu_to_cemu: false,
+            streamline_nvof: true,
+            streamline_fg: true,
+            streamline_nr: false,
+            streamline_nr_intensity: default_nr_intensity(),
+            streamline_nr_consolidated: false,
+            streamline_input_scale: 100,
+            streamline_input_max_edge: 0,
+            streamline_sr: false,
+            streamline_sr_mode: StreamlineSrMode::Balanced,
+            streamline_sr_scale: None,
+            streamline_sr_preset: StreamlineSrPreset::J,
+            streamline_advanced: advanced_settings::AdvancedSettings::default(),
+            streamline_nr_presets: Vec::new(),
+        }
+    }
+}
+
+fn default_nr_intensity() -> u8 {
+    100
+}
+fn deserialize_nr_intensity<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8, D::Error> {
+    let value = u8::deserialize(d)?;
+    if value > 200 {
+        return Err(serde::de::Error::custom("NR 强度必须为 0～200"));
+    }
+    Ok(value)
+}
+
+fn deserialize_input_scale<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8, D::Error> {
+    let value = u8::deserialize(d)?;
+    if !(50..=100).contains(&value) {
+        return Err(serde::de::Error::custom("输入尺寸比例必须为 50～100"));
+    }
+    Ok(value)
+}
+
+fn default_input_scale() -> u8 {
+    100
+}
+
+fn deserialize_input_max_edge<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    let value = u32::deserialize(d)?;
+    if !advanced_settings::valid_nr_inference_max_edge(value) {
+        return Err(serde::de::Error::custom(
+            "输入长边上限必须为 0 或 320～8192 像素",
+        ));
+    }
+    Ok(value)
 }
 
 /// 通用设置
@@ -646,6 +773,7 @@ pub fn update_setting(mut setting: CommonSetting) -> AppResult<()> {
 
     let snapshot = {
         let mut config = CONFIG.write();
+        setting.ui.window_size_is_logical = config.setting.ui.window_size_is_logical;
         if config.setting == setting {
             info!("设置未变化，跳过保存");
             return Ok(());
@@ -664,11 +792,15 @@ pub fn update_window_size(width: u32, height: u32) -> AppResult<()> {
 
     let snapshot = {
         let mut config = CONFIG.write();
-        if config.setting.ui.width == width && config.setting.ui.height == height {
+        if config.setting.ui.width == width
+            && config.setting.ui.height == height
+            && config.setting.ui.window_size_is_logical
+        {
             return Ok(());
         }
         config.setting.ui.width = width;
         config.setting.ui.height = height;
+        config.setting.ui.window_size_is_logical = true;
         info!("已将窗口大小更新为 {}x{}", width, height);
         config.clone()
     };
@@ -695,6 +827,7 @@ pub fn replace_config(mut config: Config) -> AppResult<()> {
 
     let snapshot = {
         let mut current = CONFIG.write();
+        config.setting.ui.window_size_is_logical = current.setting.ui.window_size_is_logical;
         if *current == config {
             info!("配置未变化，跳过保存");
             return Ok(());
@@ -721,10 +854,17 @@ mod tests {
         assert_eq!(config.yuzu.branch, "eden");
         assert_eq!(config.ryujinx.branch, "mainline");
         assert!(config.setting.ui.dark);
+        assert!(config.setting.ui.window_size_is_logical);
         assert_eq!(
             config.setting.network.eden_git_download_mirror,
             "auto-detect"
         );
+    }
+
+    #[test]
+    fn test_legacy_window_size_is_treated_as_physical() {
+        let ui: UiSetting = serde_json::from_str(r#"{"width":1950,"height":1275}"#).unwrap();
+        assert!(!ui.window_size_is_logical);
     }
 
     #[test]
@@ -795,6 +935,63 @@ mod tests {
         assert_eq!(
             clamp_window_size(320, MIN_WINDOW_HEIGHT - 1),
             (320, MIN_WINDOW_HEIGHT)
+        );
+    }
+}
+
+#[cfg(test)]
+mod streamline_sr_config_tests {
+    use super::*;
+    #[test]
+    fn nr_strength_roundtrips_and_rejects_invalid_configuration() {
+        for strength in [0, 50, 100, 200] {
+            let mut settings = OtherSetting::default();
+            settings.streamline_fg = false;
+            settings.streamline_nr = true;
+            settings.streamline_nr_intensity = strength;
+            let encoded = serde_json::to_string(&settings).unwrap();
+            assert_eq!(
+                serde_json::from_str::<OtherSetting>(&encoded).unwrap(),
+                settings
+            );
+        }
+        for value in ["-1", "201", "256", "0.5", "null", "\"50\""] {
+            let encoded = format!(r#"{{"streamline_nr_intensity":{value}}}"#);
+            assert!(serde_json::from_str::<OtherSetting>(&encoded).is_err());
+        }
+    }
+    #[test]
+    fn legacy_settings_leave_sr_off_and_preserve_nvof_default() {
+        let settings: OtherSetting =
+            serde_json::from_str(r#"{"rename_yuzu_to_cemu":true}"#).unwrap();
+        assert!(!settings.streamline_sr);
+        assert!(settings.streamline_nvof);
+        assert!(settings.streamline_fg);
+        assert!(!settings.streamline_nr);
+        assert_eq!(settings.streamline_nr_intensity, 100);
+        assert_eq!(settings.streamline_sr_mode, StreamlineSrMode::Balanced);
+        assert_eq!(settings.streamline_sr_preset, StreamlineSrPreset::J);
+        assert!(settings.rename_yuzu_to_cemu);
+    }
+    #[test]
+    fn sr_modes_roundtrip_and_reject_unknown_modes() {
+        for mode in [
+            StreamlineSrMode::Quality,
+            StreamlineSrMode::Balanced,
+            StreamlineSrMode::Performance,
+            StreamlineSrMode::Dlaa,
+        ] {
+            let mut settings = OtherSetting::default();
+            settings.streamline_sr = true;
+            settings.streamline_sr_mode = mode;
+            let encoded = serde_json::to_string(&settings).unwrap();
+            assert_eq!(
+                serde_json::from_str::<OtherSetting>(&encoded).unwrap(),
+                settings
+            );
+        }
+        assert!(
+            serde_json::from_str::<OtherSetting>(r#"{"streamline_sr_mode":"invalid"}"#).is_err()
         );
     }
 }

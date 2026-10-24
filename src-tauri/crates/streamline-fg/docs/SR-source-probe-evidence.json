@@ -1,0 +1,374 @@
+{
+  "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+  "sessions": [
+    {
+      "session": "scale-source-003",
+      "layer_sha256": "75db51c1c0fe251587ef0e45c79c53287e3ae7e38de7808c2e7d66a274ab0172",
+      "trace_sha256": "9a273367930810e705b1cb3a30a7eebbba3158784850aacf08720f03a44bec37",
+      "capture_complete": true,
+      "present_count": 120,
+      "unique_submitted_draw_and_source_count": 120,
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "first_candidate": {
+        "command_buffer": 4710277884112,
+        "destinations": [
+          4710262871760
+        ],
+        "draw": {
+          "first_instance": 0,
+          "first_vertex": 0,
+          "instances": 1,
+          "vertices": 4
+        },
+        "output_extent": [
+          2560,
+          1335
+        ],
+        "scissor": {
+          "first": 0,
+          "scissors": [
+            [
+              0,
+              0,
+              2560,
+              1335
+            ]
+          ]
+        },
+        "sources": [
+          {
+            "binding": 0,
+            "descriptor_layout": 1,
+            "element": 0,
+            "image": {
+              "extent": [
+                1920,
+                1080,
+                1
+              ],
+              "format": 37,
+              "image": 4710262877904,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "usage": 524319
+            },
+            "slot": 2,
+            "view": {
+              "base_layer": 0,
+              "base_mip": 0,
+              "format": 37,
+              "image": 4710262877904,
+              "view": 4710289846864
+            }
+          }
+        ],
+        "viewport": {
+          "first": 0,
+          "viewports": [
+            [
+              93.0,
+              0.0,
+              2374.0,
+              1335.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false
+    },
+    {
+      "session": "scale-source-004",
+      "layer_sha256": "75db51c1c0fe251587ef0e45c79c53287e3ae7e38de7808c2e7d66a274ab0172",
+      "trace_sha256": "6438c76bbf0816df4ed4a2babc0101238858199400c1251f72f4af52a52865eb",
+      "capture_complete": true,
+      "present_count": 120,
+      "unique_submitted_draw_and_source_count": 120,
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "first_candidate": {
+        "command_buffer": 4164586678480,
+        "destinations": [
+          4164571666128
+        ],
+        "draw": {
+          "first_instance": 0,
+          "first_vertex": 0,
+          "instances": 1,
+          "vertices": 4
+        },
+        "output_extent": [
+          1280,
+          703
+        ],
+        "scissor": {
+          "first": 0,
+          "scissors": [
+            [
+              0,
+              0,
+              1280,
+              703
+            ]
+          ]
+        },
+        "sources": [
+          {
+            "binding": 0,
+            "descriptor_layout": 1,
+            "element": 0,
+            "image": {
+              "extent": [
+                1920,
+                1080,
+                1
+              ],
+              "format": 37,
+              "image": 4164571672272,
+              "layers": 1,
+              "mips": 1,
+              "samples": 1,
+              "usage": 524319
+            },
+            "slot": 2,
+            "view": {
+              "base_layer": 0,
+              "base_mip": 0,
+              "format": 37,
+              "image": 4164571672272,
+              "view": 4164599034448
+            }
+          }
+        ],
+        "viewport": {
+          "first": 0,
+          "viewports": [
+            [
+              15.0,
+              0.0,
+              1250.0,
+              703.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false
+    }
+  ],
+  "extended_trials_2026_09_26": [
+    {
+      "session": "scale-source-005",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "layer_sha256": "09933f7fb6775747dcd2e87148f4a4f7e93b528acf17ba17f810a97391f442e7",
+      "trace_sha256": "93166e6788e0f6bb95c5ec5486b7ae024ae6184f3794c228f812ebfcf4f9bcf6",
+      "analysis_sha256": "50f12b877b691c2133aaec8ee5ebbbfd48e9efcbe8161a29740e4c8d261a40c7",
+      "capture_complete": true,
+      "presents": 120,
+      "unique_sources": 120,
+      "recorded_contract_matches": 120,
+      "output_extents": {
+        "[2560, 1335]": 120
+      },
+      "normalized_source_endpoints": {
+        "[0.0, 1.0, 1.0, 0.0]": 120
+      },
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false,
+      "scaling_filter": "Bilinear",
+      "anti_aliasing": "None"
+    },
+    {
+      "session": "scale-source-006",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "layer_sha256": "09933f7fb6775747dcd2e87148f4a4f7e93b528acf17ba17f810a97391f442e7",
+      "trace_sha256": "764dfed179ddabe7ffbd59c19191a31b8b6f03f1d6a0283a5088a04bf2f9d97a",
+      "analysis_sha256": "99f10a36566cffb33e4db14e4eaa383a29f9ae4267f077ba07a59feb0aeaa7bf",
+      "capture_complete": true,
+      "presents": 120,
+      "unique_sources": 120,
+      "recorded_contract_matches": 120,
+      "output_extents": {
+        "[2560, 1335]": 120
+      },
+      "normalized_source_endpoints": {
+        "[0.0, 1.0, 1.0, 0.0]": 120
+      },
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false,
+      "scaling_filter": "Nearest",
+      "anti_aliasing": "None"
+    },
+    {
+      "session": "scale-source-007",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "layer_sha256": "09933f7fb6775747dcd2e87148f4a4f7e93b528acf17ba17f810a97391f442e7",
+      "trace_sha256": "9922fda0a9df55d8d1833ab42b24606ac2e5a87ddad926dbdd38622fb8437147",
+      "analysis_sha256": "8d914632f1aadc187a7f45a8a567b16ca47edb813d74d7773db2459e963a37ea",
+      "capture_complete": true,
+      "presents": 120,
+      "unique_sources": 0,
+      "recorded_contract_matches": 0,
+      "output_extents": {},
+      "normalized_source_endpoints": {},
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false,
+      "scaling_filter": "Fsr",
+      "anti_aliasing": "None"
+    },
+    {
+      "session": "scale-source-008",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "layer_sha256": "09933f7fb6775747dcd2e87148f4a4f7e93b528acf17ba17f810a97391f442e7",
+      "trace_sha256": "55d121684f2a91ca38d0e413b30d97087acdfebfaf31ed67ae3bb1b4e53b25ba",
+      "analysis_sha256": "dbbbb32c9d2eca8236f2fd7acf363407eb93b8c4d3a75c786a55710bbe92b489",
+      "capture_complete": true,
+      "presents": 120,
+      "unique_sources": 120,
+      "recorded_contract_matches": 120,
+      "output_extents": {
+        "[2560, 1335]": 120
+      },
+      "normalized_source_endpoints": {
+        "[0.0, 1.0, 1.0, 0.0]": 120
+      },
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false,
+      "scaling_filter": "Bilinear",
+      "anti_aliasing": "Fxaa"
+    },
+    {
+      "session": "scale-source-009",
+      "game": "Xenoblade Chronicles Definitive Edition [0100FF500E34A000]+[v1.1.2].xci",
+      "layer_sha256": "09933f7fb6775747dcd2e87148f4a4f7e93b528acf17ba17f810a97391f442e7",
+      "trace_sha256": "508879f3c1f25e11d8720de6986ee2393791065b5e34d3804cdaa377e4797b18",
+      "analysis_sha256": "ac9260f45b83f76d71bf1bd677338f29a0b70f190db2f6ad4eed47613fb5cde3",
+      "capture_complete": true,
+      "presents": 120,
+      "unique_sources": 120,
+      "recorded_contract_matches": 120,
+      "output_extents": {
+        "[1280, 703]": 120
+      },
+      "normalized_source_endpoints": {
+        "[0.0, 1.0, 0.0, 1.0]": 120
+      },
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false,
+      "scaling_filter": "Bilinear",
+      "anti_aliasing": "None"
+    },
+    {
+      "session": "scale-source-010",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "layer_sha256": "6f276e787ab5301416b4d253aeb4d39d0788fd34f311a02cf04416313a2dd7ba",
+      "trace_sha256": "eb64d6b9939fce4b918c90c8c043c9a685ec72a6286667d3939c7ed7a51d404c",
+      "analysis_sha256": "5c2435ac562927420528b2deb898e82719bdd31aa833627df15099686d342d75",
+      "capture_complete": true,
+      "presents": 600,
+      "unique_sources": 600,
+      "recorded_contract_matches": 600,
+      "output_extents": {
+        "[1280, 703]": 66,
+        "[1584, 935]": 123,
+        "[1084, 695]": 411
+      },
+      "normalized_source_endpoints": {
+        "[0.0, 1.0, 1.0, 0.0]": 600
+      },
+      "unknown_templates": 0,
+      "descriptor_copies_unresolved": 0,
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "replacement_verified": false,
+      "window_actions": [
+        {
+          "action": "resize",
+          "size": [
+            1600,
+            1000
+          ],
+          "after_present": 66,
+          "ok": true
+        },
+        {
+          "action": "resize",
+          "size": [
+            1100,
+            760
+          ],
+          "after_present": 189,
+          "ok": true
+        },
+        {
+          "action": "minimize",
+          "after_present": 313
+        },
+        {
+          "action": "restore",
+          "after_present": 313
+        }
+      ],
+      "scaling_filter": "Bilinear",
+      "anti_aliasing": "None"
+    }
+  ],
+  "extended_validation": {
+    "tests_passed": 42,
+    "existing_hardware_test_ignored": 1,
+    "toolbox_host_check": "passed_no_warnings",
+    "toolbox_windows_check": "passed_no_warnings",
+    "component_host_check": "passed_no_warnings",
+    "component_windows_check": "passed_no_warnings",
+    "gpu_readback": "not_implemented_auto_review_rejected",
+    "sr_replacement_verified": false
+  },
+  "subsequent_gpu_trials": "SR-gpu-trial-evidence.json"
+}

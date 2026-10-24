@@ -1,0 +1,38 @@
+[
+  {
+    "path": "source/core/sl.api/sl.cpp",
+    "sha256_lf": "24482600e3455bc10ccdcb68a26e0b47386c40d471faedf7f716037471f36648"
+  },
+  {
+    "path": "source/core/sl.interposer/exports.def",
+    "sha256_lf": "d8031031e15409bddd21412694e5ba80eb19f05964ca6f885388cca41132c1d5"
+  },
+  {
+    "path": "source/core/sl.interposer/vulkan/layerRoute.cpp",
+    "sha256_lf": "de5fab8a672e37621a279013719f78ed40ca63669dfd8bc2503cb7ceede1c18f"
+  },
+  {
+    "path": "source/core/sl.interposer/vulkan/layerRoute.h",
+    "sha256_lf": "7d33f34cd603f921bcd27ec0c8987aa643478ecea29fb4d918523108bfa13e5a"
+  },
+  {
+    "path": "source/core/sl.interposer/vulkan/wrapper.cpp",
+    "sha256_lf": "940579fbe37339aace0eec5ffcf252c8a5f829113435996c0e7dfd6563baf76b"
+  },
+  {
+    "path": "source/platforms/sl.chi/vulkan.cpp",
+    "sha256_lf": "ffab5bcfe3b341c2ef1b17d122fc4a122f15fdc6801b106b1628bb6c87917ff1"
+  },
+  {
+    "path": "source/platforms/sl.chi/vulkan.h",
+    "sha256_lf": "fd313ee1973b9e9c454fadb0c72416e4a021dc0e8928ebee7074f0ec1142cbd6"
+  },
+  {
+    "path": "source/plugins/sl.common/commonEntry.cpp",
+    "sha256_lf": "201b345535884d1967f822264763eba6cbb4ba3f74ec59008a2cf682560bdb47"
+  },
+  {
+    "path": "tools/packman/bootstrap/fetch_file_from_packman_bootstrap.cmd",
+    "sha256_lf": "1df6429d64d3d894934cd5dd79264e3c14a431fec166df6d21e3ad323a2f347e"
+  }
+]

@@ -1,0 +1,3036 @@
+{
+  "date": "2026-10-01",
+  "scope": "Native Vulkan NR temporal continuity for the pinned emulator; synthetic depth, actual FG off.",
+  "method": "Trace reset flags checked against NR submissions; allocation and recognized route generations retained. CPU/GPU phases use complete consecutive presents, exclude readbacks, and do not claim a same-view comparison with previous sessions.",
+  "user_feedback": {
+    "validation_001": "Motion scene looked normal; pause not tested.",
+    "validation_002": "Motion scene looked normal; manually paused and resumed successfully.",
+    "performance_001": "User reported only 20+ FPS; subsequently confirmed picture normal and held the current scene/view for the on/off comparison.",
+    "pause_limit": "Pause feedback is visual. Presentation gaps also occur during loading/readback; those log events are not uniquely attributed to the manual pause."
+  },
+  "checks": {
+    "tests_passed": 113,
+    "tests_ignored": 1,
+    "cargo_fmt": true,
+    "host_check": true,
+    "windows_msvc_check": true,
+    "sdk_only_check": true,
+    "transparent_check": true,
+    "main_app_host_and_windows_check": true
+  },
+  "p1_passed": false,
+  "p2_passed": false,
+  "visual_quality_verified": false,
+  "sessions": [
+    {
+      "session": "nr-history-validation-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "0ab8080e66f821dda5575e881ca20a8ec71ee6d96e058a9bc6282ddcf70a3fb3",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "nr_validation_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 3304,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 2127,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 0,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 6,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 3,
+          "readbacks_valid": true,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "SourceChanged": 3304
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 0,
+            "logical_identities": 3304,
+            "longest_without_reset": 0,
+            "physical_rotations_without_reset": 0,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 11
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 3321,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 3321,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 219,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 220,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "module_check": null,
+      "phases": [],
+      "readback_cpu_ms": {
+        "n": 3,
+        "mean": 6051.878,
+        "median": 5893.285,
+        "p95": 6439.66
+      },
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "1de3dd6be75338661e5a2417f1a83087631ae0e81bf74d502a591d960780c935",
+          "bytes": 1661
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "9ec8dcc3e682f35298e0cab883172c3e3635352646acdf2c975043e96a5f01d8",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "7de91388d469d57dab71c9f03cd989f3bc02f39e3dff8ba50dc70c8cc607dba0",
+          "bytes": 2106
+        },
+        "layer.jsonl": {
+          "sha256": "9c1bfab6f72272a54e71f51ffa27e83754c97d2b06c67dfe7df80a81638d15b3",
+          "bytes": 9477363
+        },
+        "nr-validation.jsonl": {
+          "sha256": "6d4a700697464a0be4eafdb9c4b9f08c9e1f0be894e5aaf87930a968f42fd187",
+          "bytes": 156322
+        },
+        "runtime/sl.log": {
+          "sha256": "35653beeaa27ce0d2a7b9c894122dde07b14277df91c98a138d0b7a828dfd76f",
+          "bytes": 185998
+        }
+      },
+      "history": {
+        "revisions": {
+          "0": {
+            "frames": 1,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          },
+          "1": {
+            "frames": 3314,
+            "evaluations": 3304,
+            "resets": 3304,
+            "reset_reasons": {
+              "SourceChanged": 3304
+            },
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          },
+          "2": {
+            "frames": 6,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          }
+        },
+        "update_reasons": {
+          "not_recorded": 3321
+        },
+        "physical_images": [
+          [
+            13776880696045810,
+            7563
+          ],
+          [
+            13796671905345796,
+            null
+          ],
+          [
+            14091341021590032,
+            7640
+          ]
+        ],
+        "observed_routes": [],
+        "maximum_image_pool": 1,
+        "maximum_path_pool": 0,
+        "readbacks": [
+          {
+            "capture": 0,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-0.ppm",
+              "nr-output-1920-1080-0.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.00039185698732681985,
+            "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 1,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-1.ppm",
+              "nr-output-1920-1080-1.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.00039185698732681985,
+            "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 2,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-2.ppm",
+              "nr-output-1920-1080-2.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.00039185698732681985,
+            "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+            "sentinel_pixels": 0
+          }
+        ],
+        "motion_pauses": [
+          {
+            "elapsed_us": 15206017,
+            "frame": 1,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 21400543,
+            "frame": 3,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 27309611,
+            "frame": 5,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 33773088,
+            "frame": 7,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 39611114,
+            "frame": 166,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 40565631,
+            "frame": 167,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 40646088,
+            "frame": 168,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 63499481,
+            "frame": 707,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 65075946,
+            "frame": 712,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 120554964,
+            "frame": 1187,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 120660593,
+            "frame": 1188,
+            "revision": 1
+          }
+        ]
+      },
+      "validation_error_categories": {
+        "VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710": 10,
+        "VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749": 10,
+        "VUID-vkCmdDrawIndexed-None-08877": 1,
+        "other": 20,
+        "VUID-vkCmdDraw-None-09600": 10,
+        "VUID-vkDestroyBuffer-buffer-00922": 10,
+        "VUID-vkCmdPipelineBarrier-commandBuffer-recording": 10,
+        "VUID-vkCmdCopyBuffer-commandBuffer-recording": 6,
+        "VUID-vkCmdBindVertexBuffers2-commandBuffer-recording": 10,
+        "VUID-vkCmdSetBlendConstants-commandBuffer-recording": 6,
+        "VUID-vkCmdSetScissor-commandBuffer-recording": 6,
+        "VUID-vkCmdSetViewport-commandBuffer-recording": 6,
+        "VUID-vkCmdBindIndexBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindPipeline-commandBuffer-recording": 10,
+        "VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording": 10,
+        "VUID-vkCmdBindDescriptorSets-commandBuffer-recording": 10,
+        "VUID-vkCmdBeginRenderPass-commandBuffer-recording": 8,
+        "VUID-vkCmdDrawIndexed-commandBuffer-recording": 10,
+        "VUID-vkCmdEndRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdClearAttachments-commandBuffer-recording": 3,
+        "VUID-vkCmdEndQuery-commandBuffer-recording": 10,
+        "VUID-vkEndCommandBuffer-commandBuffer-00059": 6,
+        "VUID-vkCmdSetDepthBias-commandBuffer-recording": 1,
+        "VUID-vkDestroyImageView-imageView-01026": 1,
+        "VUID-vkCmdDrawIndexed-None-06479": 5,
+        "VUID-vkCmdEndQuery-None-07007": 10,
+        "VUID-vkCmdEndRenderPass-None-07004": 10,
+        "VUID-vkDestroyDevice-device-05137": 1
+      },
+      "nr_named_validation_messages": 0
+    },
+    {
+      "session": "nr-history-validation-002",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "a33a9c70b0e521939bd0ff09684052b3daade9f1832d2d0433bccc38c960c5be",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "nr_validation_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 3244,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 1179,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 1432,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 31,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 15,
+          "readbacks_valid": true,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 19,
+            "SourceChanged": 3,
+            "StrengthChanged": 3
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 3219,
+            "logical_identities": 4,
+            "longest_without_reset": 1178,
+            "physical_rotations_without_reset": 3219,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 21
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 3296,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 3296,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 244,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 245,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "module_check": null,
+      "phases": [
+        {
+          "name": "NR-only-history",
+          "revision": 1,
+          "trace_start_us": 140779633,
+          "trace_end_us": 191151899,
+          "seconds": 50.4954391,
+          "frames": 338,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 338
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 338,
+              "mean": 148.6288047337278,
+              "median": 146.876,
+              "p95": 167.727
+            },
+            "hook_ms": {
+              "n": 338,
+              "mean": 15.315399408284023,
+              "median": 15.1915,
+              "p95": 17.271
+            },
+            "outside_present_hook_ms": {
+              "n": 338,
+              "mean": 133.3134053254438,
+              "median": 131.43099999999998,
+              "p95": 152.594
+            },
+            "nr_evaluated": {
+              "n": 338,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 338,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 338,
+              "mean": 0.1366821301775148,
+              "median": 0.13619199999999998,
+              "p95": 0.15734399999999998
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 338,
+              "mean": 8.44875124260355,
+              "median": 8.320544,
+              "p95": 9.750816
+            },
+            "nr_gpu_output_ms": {
+              "n": 338,
+              "mean": 0.046418082840236685,
+              "median": 0.039536,
+              "p95": 0.047744
+            },
+            "nr_cpu_record_ms": {
+              "n": 338,
+              "mean": 2.5463905325443785,
+              "median": 2.3735,
+              "p95": 3.334
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 338,
+              "mean": 0.5882307692307692,
+              "median": 0.5045,
+              "p95": 0.743
+            },
+            "nr_cpu_submit_ms": {
+              "n": 338,
+              "mean": 1.4972721893491123,
+              "median": 1.436,
+              "p95": 2.015
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 338,
+              "mean": 9.053562130177514,
+              "median": 8.998999999999999,
+              "p95": 10.352
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 338,
+              "mean": 2.4774836449704143,
+              "median": 2.814768,
+              "p95": 3.4794560000000003
+            }
+          },
+          "fps_from_median_interval": 6.808464282796372,
+          "fps_from_mean_interval": 6.728170907325298,
+          "observer_ms_per_present": 1.9386724852071007,
+          "process_cpu_core_equivalents": 1.6997203416733928,
+          "top_thread_core_equivalents": 0.8809582764871927
+        },
+        {
+          "name": "NR-to-DLAA-history",
+          "revision": 2,
+          "trace_start_us": 226031770,
+          "trace_end_us": 279846692,
+          "seconds": 50.5014942,
+          "frames": 288,
+          "excluded_frames": 1,
+          "input_counts": {
+            "[1920, 1080]": 287
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 287,
+              "mean": 145.3688850174216,
+              "median": 143.575,
+              "p95": 162.107
+            },
+            "hook_ms": {
+              "n": 287,
+              "mean": 20.033759581881533,
+              "median": 19.574,
+              "p95": 22.741
+            },
+            "outside_present_hook_ms": {
+              "n": 287,
+              "mean": 125.33512543554006,
+              "median": 123.83,
+              "p95": 140.182
+            },
+            "nr_evaluated": {
+              "n": 287,
+              "mean": 0.9930313588850174,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 287,
+              "mean": 2,
+              "median": 2,
+              "p95": 2
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 287,
+              "mean": 0.028686271777003485,
+              "median": 0.026976,
+              "p95": 0.03904
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 287,
+              "mean": 0.08845524738675958,
+              "median": 0.08649599999999999,
+              "p95": 0.111296
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 287,
+              "mean": 2.7510948571428573,
+              "median": 2.72352,
+              "p95": 3.1795839999999997
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 287,
+              "mean": 0.04102478048780488,
+              "median": 0.038848,
+              "p95": 0.046464
+            },
+            "sr_gpu_total_ms": {
+              "n": 287,
+              "mean": 2.917328836236934,
+              "median": 2.884288,
+              "p95": 3.34992
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 287,
+              "mean": 0.008067679442508711,
+              "median": 0.007072,
+              "p95": 0.010816000000000001
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 287,
+              "mean": 0.5042473867595819,
+              "median": 0.477,
+              "p95": 0.633
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 287,
+              "mean": 3.2384146341463413,
+              "median": 3.197,
+              "p95": 3.739
+            },
+            "sr_cpu_record_ms": {
+              "n": 287,
+              "mean": 2.235703832752613,
+              "median": 2.183,
+              "p95": 2.698
+            },
+            "sr_cpu_submit_ms": {
+              "n": 287,
+              "mean": 1.2798188153310104,
+              "median": 1.24,
+              "p95": 1.59
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 287,
+              "mean": 2.235506174216028,
+              "median": 1.87472,
+              "p95": 3.2364479999999998
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 285,
+              "mean": 0.12776870175438595,
+              "median": 0.118688,
+              "p95": 0.147424
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 285,
+              "mean": 8.181581249122807,
+              "median": 7.880416,
+              "p95": 9.494976000000001
+            },
+            "nr_gpu_output_ms": {
+              "n": 285,
+              "mean": 0.00026924912280701754,
+              "median": 0.000192,
+              "p95": 0.000736
+            },
+            "nr_cpu_record_ms": {
+              "n": 285,
+              "mean": 1.6242736842105263,
+              "median": 1.491,
+              "p95": 2.145
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 285,
+              "mean": 0.5859754385964913,
+              "median": 0.504,
+              "p95": 0.707
+            },
+            "nr_cpu_submit_ms": {
+              "n": 285,
+              "mean": 0.7340771929824561,
+              "median": 0.693,
+              "p95": 0.989
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 285,
+              "mean": 8.884838596491228,
+              "median": 8.365,
+              "p95": 10.912
+            }
+          },
+          "fps_from_median_interval": 6.96500087062511,
+          "fps_from_mean_interval": 6.87905117990109,
+          "observer_ms_per_present": 1.8237538194444445,
+          "process_cpu_core_equivalents": 1.6110290653538721,
+          "top_thread_core_equivalents": 0.8929191247573027
+        }
+      ],
+      "readback_cpu_ms": {
+        "n": 15,
+        "mean": 5828.012066666667,
+        "median": 5810.632,
+        "p95": 5977.795
+      },
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "b7d7b2d62ec50d3928ff84b82d6c9e1432db6c44c141b889e0e91814f273b1d1",
+          "bytes": 1661
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "18f7a724bcad3997e8f3c4d9f1a84459bc289593c7516c9f546417e3c788b43b",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "b4bbfc8f6780756e6e5061c39007450111aecf7f3b378c8282cec8616bd36537",
+          "bytes": 2163
+        },
+        "layer.jsonl": {
+          "sha256": "9e7ae3de4e9a2b6d5d90ebdc695007c1ef87a074ae739811cb7a3f458a21a71f",
+          "bytes": 11582641
+        },
+        "nr-validation.jsonl": {
+          "sha256": "6fcefaf8c7ac207bbb869688ccffdd5e143288b74c862dec208965c04fa5dbeb",
+          "bytes": 173316
+        },
+        "runtime/sl.log": {
+          "sha256": "40c702fe8619dcca0b6ade43e00bb5ffa8b92bcf643c5c4866c9663a0734284f",
+          "bytes": 210126
+        },
+        "history-control-steps.json": {
+          "sha256": "96f54ab2e302f21431916f0198d58b318a730b757e6077da6153f115d318a4e7",
+          "bytes": 107693
+        }
+      },
+      "history": {
+        "revisions": {
+          "0": {
+            "frames": 1,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          },
+          "1": {
+            "frames": 1820,
+            "evaluations": 1812,
+            "resets": 9,
+            "reset_reasons": {
+              "SourceChanged": 3,
+              "Resumed": 6
+            },
+            "longest_without_reset": 1177,
+            "intensities": [
+              1.0
+            ]
+          },
+          "2": {
+            "frames": 808,
+            "evaluations": 805,
+            "resets": 3,
+            "reset_reasons": {
+              "Resumed": 3
+            },
+            "longest_without_reset": 801,
+            "intensities": [
+              1.0
+            ]
+          },
+          "3": {
+            "frames": 26,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          },
+          "4": {
+            "frames": 34,
+            "evaluations": 34,
+            "resets": 1,
+            "reset_reasons": {
+              "Resumed": 1
+            },
+            "longest_without_reset": 33,
+            "intensities": [
+              1.0
+            ]
+          },
+          "5": {
+            "frames": 163,
+            "evaluations": 160,
+            "resets": 4,
+            "reset_reasons": {
+              "StrengthChanged": 1,
+              "Resumed": 3
+            },
+            "longest_without_reset": 156,
+            "intensities": [
+              0.0
+            ]
+          },
+          "6": {
+            "frames": 77,
+            "evaluations": 74,
+            "resets": 4,
+            "reset_reasons": {
+              "StrengthChanged": 1,
+              "Resumed": 3
+            },
+            "longest_without_reset": 70,
+            "intensities": [
+              0.5
+            ]
+          },
+          "7": {
+            "frames": 362,
+            "evaluations": 359,
+            "resets": 4,
+            "reset_reasons": {
+              "StrengthChanged": 1,
+              "Resumed": 3
+            },
+            "longest_without_reset": 355,
+            "intensities": [
+              1.0
+            ]
+          },
+          "8": {
+            "frames": 5,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          }
+        },
+        "update_reasons": {
+          "initial": 1,
+          "new_image_and_path": 1,
+          "new_path": 4,
+          "continuous": 3290
+        },
+        "physical_images": [
+          [
+            13776880696045810,
+            7563
+          ],
+          [
+            14091341021590032,
+            7640
+          ]
+        ],
+        "observed_routes": [
+          [
+            13836254323945768,
+            7620,
+            13834055300690214,
+            7613
+          ],
+          [
+            13836254323945768,
+            7620,
+            14107833696006687,
+            7675
+          ],
+          [
+            13836254323945768,
+            7620,
+            14268362393662129,
+            7725
+          ],
+          [
+            42424656157775545,
+            365611,
+            13834055300690214,
+            7613
+          ],
+          [
+            42424656157775545,
+            365611,
+            14107833696006687,
+            7675
+          ],
+          [
+            42424656157775545,
+            365611,
+            14268362393662129,
+            7725
+          ]
+        ],
+        "maximum_image_pool": 2,
+        "maximum_path_pool": 6,
+        "readbacks": [
+          {
+            "capture": 0,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-0.ppm",
+              "nr-output-1920-1080-0.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.00039185698732681985,
+            "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 1,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-1.ppm",
+              "nr-output-1920-1080-1.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.00039185698732681985,
+            "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 2,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-2.ppm",
+              "nr-output-1920-1080-2.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.00039185698732681985,
+            "output_sha256": "1391787165701ef795a2259432a8672ec3bba779b9c09c7abe602848d8677f29",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 3,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-3.ppm",
+              "nr-output-1920-1080-3.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.024694756697870527,
+            "output_sha256": "c26f0d7b90dae654228dbcda8a00be45d31981a3e9a2c7badea8ad970c83d325",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 4,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-4.ppm",
+              "nr-output-1920-1080-4.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.024520310987402212,
+            "output_sha256": "b94d39b68657e7b1b2e06fa17dc778b8afacb85926218dbb1793be7f29d0f53b",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 5,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-5.ppm",
+              "nr-output-1920-1080-5.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.02468881321586611,
+            "output_sha256": "2bfc99f86207ee9af566aece3e699a95fa58320aa58eb21fbfb93be1494c8283",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 6,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-6.ppm",
+              "nr-output-1920-1080-6.ppm"
+            ],
+            "finite": true,
+            "intensity": 0.0,
+            "mean_absolute_input_difference": 0.0,
+            "output_sha256": "fe94a9310b4059a127f0422acf4c292e7493bb049a31abb98b7fcc8a15834eb4",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 7,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-7.ppm",
+              "nr-output-1920-1080-7.ppm"
+            ],
+            "finite": true,
+            "intensity": 0.0,
+            "mean_absolute_input_difference": 0.0,
+            "output_sha256": "0c00b1f4f1ea1493d3f7d6b9c471646a8cc34a32934a7cbafda4673b4ad08335",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 8,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-8.ppm",
+              "nr-output-1920-1080-8.ppm"
+            ],
+            "finite": true,
+            "intensity": 0.0,
+            "mean_absolute_input_difference": 0.0,
+            "output_sha256": "b8615e374ca3ce6eb4cd548a7a54ed9550c434d01d2a90b6de9099a13960b03a",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 9,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-9.ppm",
+              "nr-output-1920-1080-9.ppm"
+            ],
+            "finite": true,
+            "intensity": 0.5,
+            "mean_absolute_input_difference": 0.0068144768719593015,
+            "output_sha256": "b1e68e4228af7eb90e138d8eddbf99eaf2abaceefd92159b69fd3799e6d1810f",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 10,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-10.ppm",
+              "nr-output-1920-1080-10.ppm"
+            ],
+            "finite": true,
+            "intensity": 0.5,
+            "mean_absolute_input_difference": 0.00678687346428719,
+            "output_sha256": "1b50c6f30c9b7168805ba90a33fcccbf34899bb3ea5f3a48f7fdc49a39d2cfbb",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 11,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-11.ppm",
+              "nr-output-1920-1080-11.ppm"
+            ],
+            "finite": true,
+            "intensity": 0.5,
+            "mean_absolute_input_difference": 0.00678136556374806,
+            "output_sha256": "d73e5d1090ff9d6a4727577a66eda6bbf64884bd4d9b99d49e1d1688e4be3057",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 12,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-12.ppm",
+              "nr-output-1920-1080-12.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.025427808628473603,
+            "output_sha256": "bc222dda5cc09d27012c5ca728b508cc68c75db18b6c9b91f1b0cd65c8c987ee",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 13,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-13.ppm",
+              "nr-output-1920-1080-13.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.025536425871189605,
+            "output_sha256": "da3272184656d9150b95e119ca8f874e0ab134a5148451f0ea722b9ae374381d",
+            "sentinel_pixels": 0
+          },
+          {
+            "capture": 14,
+            "extent": [
+              1920,
+              1080
+            ],
+            "fence_completed": true,
+            "files": [
+              "nr-input-1920-1080-14.ppm",
+              "nr-output-1920-1080-14.ppm"
+            ],
+            "finite": true,
+            "intensity": 1.0,
+            "mean_absolute_input_difference": 0.02561037243238972,
+            "output_sha256": "aeaeec0f39d0c2ef7ba8f29a77d8f1c19fa511ecd5b5d4c4e385697a98547def",
+            "sentinel_pixels": 0
+          }
+        ],
+        "motion_pauses": [
+          {
+            "elapsed_us": 15370119,
+            "frame": 1,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 21574134,
+            "frame": 3,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 27211002,
+            "frame": 5,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 33209366,
+            "frame": 7,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 38841158,
+            "frame": 163,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 39792474,
+            "frame": 164,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 58107076,
+            "frame": 630,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 60583989,
+            "frame": 638,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 62260665,
+            "frame": 643,
+            "revision": 1
+          },
+          {
+            "elapsed_us": 225899054,
+            "frame": 1823,
+            "revision": 2
+          },
+          {
+            "elapsed_us": 232041360,
+            "frame": 1825,
+            "revision": 2
+          },
+          {
+            "elapsed_us": 238240043,
+            "frame": 1827,
+            "revision": 2
+          },
+          {
+            "elapsed_us": 372103088,
+            "frame": 2691,
+            "revision": 5
+          },
+          {
+            "elapsed_us": 378366714,
+            "frame": 2693,
+            "revision": 5
+          },
+          {
+            "elapsed_us": 384622760,
+            "frame": 2695,
+            "revision": 5
+          },
+          {
+            "elapsed_us": 413361110,
+            "frame": 2854,
+            "revision": 6
+          },
+          {
+            "elapsed_us": 419455387,
+            "frame": 2856,
+            "revision": 6
+          },
+          {
+            "elapsed_us": 425528708,
+            "frame": 2858,
+            "revision": 6
+          },
+          {
+            "elapsed_us": 441648362,
+            "frame": 2931,
+            "revision": 7
+          },
+          {
+            "elapsed_us": 447669885,
+            "frame": 2933,
+            "revision": 7
+          },
+          {
+            "elapsed_us": 453655638,
+            "frame": 2935,
+            "revision": 7
+          }
+        ]
+      },
+      "validation_error_categories": {
+        "VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710": 10,
+        "VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749": 10,
+        "VUID-vkCmdDrawIndexed-None-08877": 1,
+        "other": 20,
+        "VUID-vkCmdDraw-None-09600": 10,
+        "VUID-vkDestroyBuffer-buffer-00922": 10,
+        "VUID-vkCmdPipelineBarrier-commandBuffer-recording": 10,
+        "VUID-vkCmdCopyBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindVertexBuffers2-commandBuffer-recording": 10,
+        "VUID-vkCmdSetBlendConstants-commandBuffer-recording": 4,
+        "VUID-vkCmdSetScissor-commandBuffer-recording": 4,
+        "VUID-vkCmdSetViewport-commandBuffer-recording": 4,
+        "VUID-vkCmdBindIndexBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdBindPipeline-commandBuffer-recording": 10,
+        "VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording": 10,
+        "VUID-vkCmdBindDescriptorSets-commandBuffer-recording": 10,
+        "VUID-vkCmdBeginRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdDrawIndexed-commandBuffer-recording": 10,
+        "VUID-vkCmdEndRenderPass-commandBuffer-recording": 10,
+        "VUID-vkCmdClearAttachments-commandBuffer-recording": 2,
+        "VUID-vkCmdEndQuery-commandBuffer-recording": 10,
+        "VUID-vkEndCommandBuffer-commandBuffer-00059": 5,
+        "VUID-vkCmdDrawIndexed-None-06479": 6,
+        "VUID-vkCmdEndQuery-None-07007": 10,
+        "VUID-vkCmdEndRenderPass-None-07004": 10,
+        "VUID-vkCmdUpdateBuffer-commandBuffer-recording": 10,
+        "VUID-vkCmdCopyImage-pRegions-00124": 10,
+        "VUID-vkCmdSetDepthBias-commandBuffer-recording": 8,
+        "VUID-vkDestroyDevice-device-05137": 1
+      },
+      "nr_named_validation_messages": 0,
+      "controls": [
+        {
+          "step": {
+            "nr": false,
+            "strength": 1.0,
+            "seconds": 3,
+            "revision": 3
+          },
+          "applied": {
+            "active": false,
+            "appliedRevision": 3,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 3,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "applied_sr": {
+            "active": true,
+            "appliedRevision": 3,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "native_source"
+          },
+          "final_nr": {
+            "active": false,
+            "appliedRevision": 3,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "disabled",
+            "requested": false,
+            "reset": false,
+            "resetReason": "Disabled",
+            "revision": 3,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "final_sr": {
+            "active": true,
+            "appliedRevision": 3,
+            "colorImage": null,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "native_source"
+          }
+        },
+        {
+          "step": {
+            "nr": true,
+            "strength": 1.0,
+            "seconds": 4,
+            "revision": 4
+          },
+          "applied": {
+            "active": true,
+            "appliedRevision": 4,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 4,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "applied_sr": {
+            "active": true,
+            "appliedRevision": 4,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          },
+          "final_nr": {
+            "active": true,
+            "appliedRevision": 4,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 4,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "final_sr": {
+            "active": true,
+            "appliedRevision": 4,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          }
+        },
+        {
+          "step": {
+            "nr": true,
+            "strength": 0.0,
+            "seconds": 22,
+            "revision": 5
+          },
+          "applied": {
+            "active": true,
+            "appliedRevision": 5,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 5,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "applied_sr": {
+            "active": true,
+            "appliedRevision": 5,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          },
+          "final_nr": {
+            "active": true,
+            "appliedRevision": 5,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 5,
+            "source": "native_source",
+            "sourceGeneration": 7640,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "final_sr": {
+            "active": true,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          }
+        },
+        {
+          "step": {
+            "nr": true,
+            "strength": 0.5,
+            "seconds": 22,
+            "revision": 6
+          },
+          "applied": {
+            "active": true,
+            "appliedRevision": 6,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": true,
+            "reason": "active",
+            "requested": true,
+            "reset": true,
+            "resetReason": "StrengthChanged",
+            "revision": 6,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "applied_sr": {
+            "active": true,
+            "appliedRevision": 6,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          },
+          "final_nr": {
+            "active": true,
+            "appliedRevision": 6,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 0.5,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 6,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "final_sr": {
+            "active": true,
+            "appliedRevision": 6,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          }
+        },
+        {
+          "step": {
+            "nr": true,
+            "strength": 1.0,
+            "seconds": 22,
+            "revision": 7
+          },
+          "applied": {
+            "active": true,
+            "appliedRevision": 7,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 7,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "applied_sr": {
+            "active": true,
+            "appliedRevision": 7,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          },
+          "final_nr": {
+            "active": true,
+            "appliedRevision": 7,
+            "depth": "synthetic_constant",
+            "historyUpdate": "continuous",
+            "input": [
+              1920,
+              1080
+            ],
+            "intensity": 1.0,
+            "motionValid": true,
+            "pendingFgReset": true,
+            "pendingSrReset": false,
+            "reason": "active",
+            "requested": true,
+            "reset": false,
+            "resetReason": "Continuous",
+            "revision": 7,
+            "source": "native_source",
+            "sourceGeneration": 7563,
+            "sourceGroupSize": 2,
+            "sourceIdentity": 6,
+            "sourcePathCount": 6
+          },
+          "final_sr": {
+            "active": true,
+            "appliedRevision": 7,
+            "colorImage": 14119928323912234,
+            "fallbackReason": null,
+            "input": [
+              1920,
+              1080
+            ],
+            "mode": 6,
+            "motion": true,
+            "original_input": [
+              1920,
+              1080
+            ],
+            "output": [
+              2560,
+              1335
+            ],
+            "preset": "default",
+            "processing_output": [
+              1920,
+              1080
+            ],
+            "scale": 100,
+            "source": "nr_output"
+          }
+        }
+      ]
+    },
+    {
+      "session": "nr-history-performance-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "a33a9c70b0e521939bd0ff09684052b3daade9f1832d2d0433bccc38c960c5be",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": true,
+        "nr_readback_requested": false,
+        "nr_requested": true,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 12225,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 7421,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 9968,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 6557,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_matches_submission": true,
+          "reset_reasons": {
+            "Resumed": 4,
+            "SourceChanged": 7
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "temporal_history": {
+            "checked": true,
+            "continuous_evaluations": 12214,
+            "logical_identities": 7,
+            "longest_without_reset": 7419,
+            "physical_rotations_without_reset": 12214,
+            "valid": true,
+            "visual_quality_verified": false
+          },
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 6
+        },
+        "nr_performance": true,
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 18788,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 18788,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": false,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "enabled": false,
+          "validation_passed": false
+        }
+      },
+      "module_check": {
+        "validationLoaded": false,
+        "utc": "2026-10-01T06:06:46.8254224Z",
+        "graphicsModules": [
+          "streamline_probe_layer.dll",
+          "sl.interposer.dll",
+          "sl.common.dll",
+          "sl.dlss.dll",
+          "_nvngx.dll",
+          "sl.dlss_g.dll",
+          "sl.pcl.dll",
+          "sl.reflex.dll",
+          "nvngx_dlssnr.dll",
+          "nvngx.dll"
+        ],
+        "pid": 44736
+      },
+      "phases": [
+        {
+          "name": "NR-to-DLAA-current-scene",
+          "revision": 1,
+          "trace_start_us": 203083355,
+          "trace_end_us": 233399646,
+          "seconds": 30.3078547,
+          "frames": 696,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 696
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 696,
+              "mean": 43.475543103448274,
+              "median": 49.575500000000005,
+              "p95": 55.244
+            },
+            "hook_ms": {
+              "n": 696,
+              "mean": 14.627012931034482,
+              "median": 14.531,
+              "p95": 15.857
+            },
+            "outside_present_hook_ms": {
+              "n": 696,
+              "mean": 28.848530172413792,
+              "median": 34.329,
+              "p95": 40.749
+            },
+            "nr_evaluated": {
+              "n": 696,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 696,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 696,
+              "mean": 0.11779595402298851,
+              "median": 0.10766400000000001,
+              "p95": 0.141344
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 696,
+              "mean": 8.060857655172414,
+              "median": 8.028272000000001,
+              "p95": 8.777184
+            },
+            "nr_gpu_output_ms": {
+              "n": 696,
+              "mean": 0.0005090114942528736,
+              "median": 0.000608,
+              "p95": 0.000736
+            },
+            "nr_cpu_record_ms": {
+              "n": 696,
+              "mean": 0.48713218390804597,
+              "median": 0.405,
+              "p95": 0.658
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 696,
+              "mean": 0.44801867816091956,
+              "median": 0.37,
+              "p95": 0.599
+            },
+            "nr_cpu_submit_ms": {
+              "n": 696,
+              "mean": 0.014452586206896552,
+              "median": 0.011,
+              "p95": 0.032
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 696,
+              "mean": 9.667443965517242,
+              "median": 9.658000000000001,
+              "p95": 10.615
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 696,
+              "mean": 0.022543402298850577,
+              "median": 0.017856,
+              "p95": 0.029792000000000003
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 696,
+              "mean": 0.06927337931034483,
+              "median": 0.064288,
+              "p95": 0.08112
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 696,
+              "mean": 2.6507053333333332,
+              "median": 2.6454079999999998,
+              "p95": 3.048416
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 696,
+              "mean": 0.04104731034482759,
+              "median": 0.038624000000000006,
+              "p95": 0.041504
+            },
+            "sr_gpu_total_ms": {
+              "n": 696,
+              "mean": 2.7915538850574713,
+              "median": 2.7808,
+              "p95": 3.1934720000000003
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 696,
+              "mean": 0.007984459770114942,
+              "median": 0.006928,
+              "p95": 0.008032
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 696,
+              "mean": 0.26208189655172415,
+              "median": 0.241,
+              "p95": 0.373
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 696,
+              "mean": 2.915926724137931,
+              "median": 2.884,
+              "p95": 3.392
+            },
+            "sr_cpu_record_ms": {
+              "n": 696,
+              "mean": 0.3434367816091954,
+              "median": 0.318,
+              "p95": 0.489
+            },
+            "sr_cpu_submit_ms": {
+              "n": 696,
+              "mean": 0.049316091954022985,
+              "median": 0.044,
+              "p95": 0.083
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 696,
+              "mean": 1.9377170114942528,
+              "median": 1.8638560000000002,
+              "p95": 2.4349439999999998
+            }
+          },
+          "fps_from_median_interval": 20.171253946001553,
+          "fps_from_mean_interval": 23.001437788150017,
+          "observer_ms_per_present": 1.3738441091954023,
+          "process_cpu_core_equivalents": 2.392634705352471,
+          "top_thread_core_equivalents": 0.38098622005073823
+        },
+        {
+          "name": "NR-only-current-scene",
+          "revision": 2,
+          "trace_start_us": 267630377,
+          "trace_end_us": 297926835,
+          "seconds": 30.3239788,
+          "frames": 852,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 852
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 852,
+              "mean": 35.52843779342723,
+              "median": 33.3975,
+              "p95": 50.126
+            },
+            "hook_ms": {
+              "n": 852,
+              "mean": 11.530967136150235,
+              "median": 11.370000000000001,
+              "p95": 12.698
+            },
+            "outside_present_hook_ms": {
+              "n": 852,
+              "mean": 23.997470657276995,
+              "median": 22.1595,
+              "p95": 38.832
+            },
+            "nr_evaluated": {
+              "n": 852,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 852,
+              "mean": 2,
+              "median": 2.0,
+              "p95": 2
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 852,
+              "mean": 0.12258430046948357,
+              "median": 0.115728,
+              "p95": 0.14905600000000002
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 852,
+              "mean": 8.058491680751175,
+              "median": 7.997312,
+              "p95": 8.937888000000001
+            },
+            "nr_gpu_output_ms": {
+              "n": 852,
+              "mean": 0.0520404882629108,
+              "median": 0.038880000000000005,
+              "p95": 0.051936
+            },
+            "nr_cpu_record_ms": {
+              "n": 852,
+              "mean": 0.5037159624413146,
+              "median": 0.4225,
+              "p95": 0.68
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 852,
+              "mean": 0.454174882629108,
+              "median": 0.378,
+              "p95": 0.606
+            },
+            "nr_cpu_submit_ms": {
+              "n": 852,
+              "mean": 0.018092723004694836,
+              "median": 0.012,
+              "p95": 0.043
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 852,
+              "mean": 9.740899061032865,
+              "median": 9.691,
+              "p95": 10.709
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 852,
+              "mean": 1.9810133333333333,
+              "median": 1.892752,
+              "p95": 2.550688
+            }
+          },
+          "fps_from_median_interval": 29.942360955161313,
+          "fps_from_mean_interval": 28.146466946120558,
+          "observer_ms_per_present": 1.3766034037558685,
+          "process_cpu_core_equivalents": 2.8746846043831162,
+          "top_thread_core_equivalents": 0.4596197646728338
+        },
+        {
+          "name": "All-off-current-scene",
+          "revision": 3,
+          "trace_start_us": 349421890,
+          "trace_end_us": 379727402,
+          "seconds": 30.3029727,
+          "frames": 908,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 908
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 908,
+              "mean": 33.339283039647576,
+              "median": 33.326499999999996,
+              "p95": 39.543
+            },
+            "hook_ms": {
+              "n": 908,
+              "mean": 0.8232103524229075,
+              "median": 0.7135,
+              "p95": 1.274
+            },
+            "outside_present_hook_ms": {
+              "n": 908,
+              "mean": 32.51607268722467,
+              "median": 32.581,
+              "p95": 38.822
+            },
+            "nr_evaluated": {
+              "n": 908,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 908,
+              "mean": 3,
+              "median": 3.0,
+              "p95": 3
+            }
+          },
+          "fps_from_median_interval": 30.00615126100851,
+          "fps_from_mean_interval": 29.994646219919755,
+          "observer_ms_per_present": 1.4061714757709252,
+          "process_cpu_core_equivalents": 3.005068212334165,
+          "top_thread_core_equivalents": 0.4650946340983899
+        },
+        {
+          "name": "NR-to-DLAA-repeat",
+          "revision": 4,
+          "trace_start_us": 470081689,
+          "trace_end_us": 500331648,
+          "seconds": 30.2995731,
+          "frames": 773,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 773
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 773,
+              "mean": 39.0903893919793,
+              "median": 33.721,
+              "p95": 50.565
+            },
+            "hook_ms": {
+              "n": 773,
+              "mean": 14.641263906856404,
+              "median": 14.495,
+              "p95": 15.95
+            },
+            "outside_present_hook_ms": {
+              "n": 773,
+              "mean": 24.4491254851229,
+              "median": 19.521,
+              "p95": 36.29
+            },
+            "nr_evaluated": {
+              "n": 773,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 773,
+              "mean": 4,
+              "median": 4,
+              "p95": 4
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 773,
+              "mean": 0.1145437723156533,
+              "median": 0.110432,
+              "p95": 0.13088
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 773,
+              "mean": 8.018499353169469,
+              "median": 7.992992,
+              "p95": 8.821088
+            },
+            "nr_gpu_output_ms": {
+              "n": 773,
+              "mean": 0.00046952652005174646,
+              "median": 0.00047999999999999996,
+              "p95": 0.000768
+            },
+            "nr_cpu_record_ms": {
+              "n": 773,
+              "mean": 0.45372056921086673,
+              "median": 0.394,
+              "p95": 0.632
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 773,
+              "mean": 0.4171798188874515,
+              "median": 0.36,
+              "p95": 0.585
+            },
+            "nr_cpu_submit_ms": {
+              "n": 773,
+              "mean": 0.015402328589909444,
+              "median": 0.011,
+              "p95": 0.038
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 773,
+              "mean": 9.658611901681759,
+              "median": 9.586,
+              "p95": 10.784
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 773,
+              "mean": 0.022328093143596378,
+              "median": 0.018911999999999998,
+              "p95": 0.030528
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 773,
+              "mean": 0.07410661836998707,
+              "median": 0.069088,
+              "p95": 0.09248
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 773,
+              "mean": 2.663942126778784,
+              "median": 2.639552,
+              "p95": 3.07696
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 773,
+              "mean": 0.04342565588615783,
+              "median": 0.038624000000000006,
+              "p95": 0.041728
+            },
+            "sr_gpu_total_ms": {
+              "n": 773,
+              "mean": 2.8108694851228977,
+              "median": 2.7789439999999996,
+              "p95": 3.2267840000000003
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 773,
+              "mean": 0.0070669909443725745,
+              "median": 0.006944,
+              "p95": 0.008032
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 773,
+              "mean": 0.25438680465717983,
+              "median": 0.233,
+              "p95": 0.371
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 773,
+              "mean": 2.943868046571798,
+              "median": 2.89,
+              "p95": 3.451
+            },
+            "sr_cpu_record_ms": {
+              "n": 773,
+              "mean": 0.3326131953428202,
+              "median": 0.308,
+              "p95": 0.479
+            },
+            "sr_cpu_submit_ms": {
+              "n": 773,
+              "mean": 0.04841397153945666,
+              "median": 0.043,
+              "p95": 0.084
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 773,
+              "mean": 1.938628470892626,
+              "median": 1.85488,
+              "p95": 2.499168
+            }
+          },
+          "fps_from_median_interval": 29.655111058390915,
+          "fps_from_mean_interval": 25.58173544838577,
+          "observer_ms_per_present": 1.2988622250970245,
+          "process_cpu_core_equivalents": 2.4572334651143977,
+          "top_thread_core_equivalents": 0.38882561021957107
+        },
+        {
+          "name": "DLAA-only-current-scene",
+          "revision": 5,
+          "trace_start_us": 554838570,
+          "trace_end_us": 585104659,
+          "seconds": 30.2903759,
+          "frames": 907,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 907
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 907,
+              "mean": 33.33254244762955,
+              "median": 33.332,
+              "p95": 39.379
+            },
+            "hook_ms": {
+              "n": 907,
+              "mean": 5.900856670341786,
+              "median": 5.84,
+              "p95": 6.703
+            },
+            "outside_present_hook_ms": {
+              "n": 907,
+              "mean": 27.43168577728776,
+              "median": 27.439,
+              "p95": 33.585
+            },
+            "nr_evaluated": {
+              "n": 907,
+              "mean": 0,
+              "median": 0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 907,
+              "mean": 5,
+              "median": 5,
+              "p95": 5
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 907,
+              "mean": 0.018157618522601986,
+              "median": 0.017408,
+              "p95": 0.017984000000000003
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 907,
+              "mean": 0.08765241014332965,
+              "median": 0.073024,
+              "p95": 0.130336
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 907,
+              "mean": 2.7773418478500553,
+              "median": 2.734368,
+              "p95": 3.154528
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 907,
+              "mean": 0.04053549724366042,
+              "median": 0.039584,
+              "p95": 0.041887999999999995
+            },
+            "sr_gpu_total_ms": {
+              "n": 907,
+              "mean": 2.959104987872106,
+              "median": 2.920192,
+              "p95": 3.379584
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 907,
+              "mean": 0.035417614112458654,
+              "median": 0.031968,
+              "p95": 0.039744
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 907,
+              "mean": 0.22856119073869902,
+              "median": 0.208,
+              "p95": 0.343
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 907,
+              "mean": 4.5068158765159865,
+              "median": 4.454,
+              "p95": 5.249
+            },
+            "sr_cpu_record_ms": {
+              "n": 907,
+              "mean": 0.2747530319735391,
+              "median": 0.249,
+              "p95": 0.419
+            },
+            "sr_cpu_submit_ms": {
+              "n": 907,
+              "mean": 0.015154355016538038,
+              "median": 0.012,
+              "p95": 0.031
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 907,
+              "mean": 1.915728546857773,
+              "median": 1.8123520000000002,
+              "p95": 2.525088
+            }
+          },
+          "fps_from_median_interval": 30.00120004800192,
+          "fps_from_mean_interval": 30.00071181402231,
+          "observer_ms_per_present": 1.332651047409041,
+          "process_cpu_core_equivalents": 2.8433123538754104,
+          "top_thread_core_equivalents": 0.44259107395230446
+        },
+        {
+          "name": "NR-to-DLAA-final-repeat",
+          "revision": 6,
+          "trace_start_us": 651397622,
+          "trace_end_us": 681681344,
+          "seconds": 30.3013999,
+          "frames": 712,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 712
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 712,
+              "mean": 42.46257303370786,
+              "median": 47.649,
+              "p95": 53.984
+            },
+            "hook_ms": {
+              "n": 712,
+              "mean": 14.898969101123596,
+              "median": 14.698,
+              "p95": 16.391
+            },
+            "outside_present_hook_ms": {
+              "n": 712,
+              "mean": 27.563603932584268,
+              "median": 31.878500000000003,
+              "p95": 37.112
+            },
+            "nr_evaluated": {
+              "n": 712,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 712,
+              "mean": 6,
+              "median": 6.0,
+              "p95": 6
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 712,
+              "mean": 0.11962894382022472,
+              "median": 0.108384,
+              "p95": 0.140736
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 712,
+              "mean": 8.15359797752809,
+              "median": 8.090352,
+              "p95": 8.990912
+            },
+            "nr_gpu_output_ms": {
+              "n": 712,
+              "mean": 0.000560494382022472,
+              "median": 0.00064,
+              "p95": 0.000832
+            },
+            "nr_cpu_record_ms": {
+              "n": 712,
+              "mean": 0.46965308988764043,
+              "median": 0.409,
+              "p95": 0.65
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 712,
+              "mean": 0.43170084269662923,
+              "median": 0.374,
+              "p95": 0.594
+            },
+            "nr_cpu_submit_ms": {
+              "n": 712,
+              "mean": 0.01521067415730337,
+              "median": 0.011,
+              "p95": 0.035
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 712,
+              "mean": 9.827830056179776,
+              "median": 9.7345,
+              "p95": 10.981
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 712,
+              "mean": 0.020756539325842698,
+              "median": 0.018303999999999997,
+              "p95": 0.029312
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 712,
+              "mean": 0.07143793258426966,
+              "median": 0.067968,
+              "p95": 0.084928
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 712,
+              "mean": 2.6566702921348315,
+              "median": 2.650976,
+              "p95": 3.0267199999999996
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 712,
+              "mean": 0.040624314606741575,
+              "median": 0.038624000000000006,
+              "p95": 0.041792
+            },
+            "sr_gpu_total_ms": {
+              "n": 712,
+              "mean": 2.7966180674157304,
+              "median": 2.787072,
+              "p95": 3.1674559999999996
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 712,
+              "mean": 0.007128988764044944,
+              "median": 0.006912,
+              "p95": 0.008224
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 712,
+              "mean": 0.2634255617977528,
+              "median": 0.241,
+              "p95": 0.369
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 712,
+              "mean": 2.938436797752809,
+              "median": 2.9035,
+              "p95": 3.406
+            },
+            "sr_cpu_record_ms": {
+              "n": 712,
+              "mean": 0.3460688202247191,
+              "median": 0.321,
+              "p95": 0.483
+            },
+            "sr_cpu_submit_ms": {
+              "n": 712,
+              "mean": 0.05023174157303371,
+              "median": 0.045,
+              "p95": 0.083
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 712,
+              "mean": 1.986027820224719,
+              "median": 1.885408,
+              "p95": 2.676768
+            }
+          },
+          "fps_from_median_interval": 20.986799303238264,
+          "fps_from_mean_interval": 23.550150840039173,
+          "observer_ms_per_present": 1.3566196629213483,
+          "process_cpu_core_equivalents": 2.4411000892404315,
+          "top_thread_core_equivalents": 0.3676604063431406
+        }
+      ],
+      "readback_cpu_ms": null,
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "065ee46118fcc33204d1528885012156dacd744247155269cafb48d66d6401ae",
+          "bytes": 1538
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "37fbcc21c7fe0c1c00197626ca9d47b1bec4046c6d98371068f47d5f2c613210",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "0181477d03394a8f333103803d034730cfa7b84d6f0842249c1ce8b657e83f09",
+          "bytes": 1906
+        },
+        "module-check.json": {
+          "sha256": "2aef4ee01ef406cc3a9cbc0ffb97e76fc8c937429a8203bfde11154d93a8dbf2",
+          "bytes": 351
+        },
+        "layer.jsonl": {
+          "sha256": "6f759d2faa202184a9f5e6bc7af51dec8ae87e78e1f5879ddcea136c2444d213",
+          "bytes": 57587734
+        },
+        "runtime/sl.log": {
+          "sha256": "7c1f95fbad1214059ca7d23749571bf061022c607b515da115de0eccadf6b416",
+          "bytes": 50785
+        }
+      },
+      "history": {
+        "revisions": {
+          "0": {
+            "frames": 4356,
+            "evaluations": 4351,
+            "resets": 9,
+            "reset_reasons": {
+              "SourceChanged": 7,
+              "Resumed": 2
+            },
+            "longest_without_reset": 3608,
+            "intensities": [
+              1.0
+            ]
+          },
+          "1": {
+            "frames": 1554,
+            "evaluations": 1554,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 1554,
+            "intensities": [
+              1.0
+            ]
+          },
+          "2": {
+            "frames": 2257,
+            "evaluations": 2257,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 2257,
+            "intensities": [
+              1.0
+            ]
+          },
+          "3": {
+            "frames": 3634,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          },
+          "4": {
+            "frames": 2151,
+            "evaluations": 2150,
+            "resets": 1,
+            "reset_reasons": {
+              "Resumed": 1
+            },
+            "longest_without_reset": 2149,
+            "intensities": [
+              1.0
+            ]
+          },
+          "5": {
+            "frames": 2896,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          },
+          "6": {
+            "frames": 1913,
+            "evaluations": 1913,
+            "resets": 1,
+            "reset_reasons": {
+              "Resumed": 1
+            },
+            "longest_without_reset": 1912,
+            "intensities": [
+              1.0
+            ]
+          },
+          "7": {
+            "frames": 27,
+            "evaluations": 0,
+            "resets": 0,
+            "reset_reasons": {},
+            "longest_without_reset": 0,
+            "intensities": [
+              1.0
+            ]
+          }
+        },
+        "update_reasons": {
+          "initial": 2,
+          "new_image_and_path": 2,
+          "new_path": 5,
+          "continuous": 18778,
+          "null": 1
+        },
+        "physical_images": [
+          [
+            4910070575824,
+            null
+          ],
+          [
+            4910506968784,
+            7640
+          ],
+          [
+            4910686019280,
+            7563
+          ]
+        ],
+        "observed_routes": [
+          [
+            4910491209936,
+            7620,
+            4910359814096,
+            7613
+          ],
+          [
+            4910491209936,
+            7620,
+            4910507298000,
+            7693
+          ],
+          [
+            4910491209936,
+            7620,
+            4910507309904,
+            7743
+          ],
+          [
+            4910761989328,
+            410528,
+            4910359814096,
+            7613
+          ],
+          [
+            4910761989328,
+            410528,
+            4910507298000,
+            7693
+          ],
+          [
+            4910761989328,
+            410528,
+            4910507309904,
+            7743
+          ]
+        ],
+        "maximum_image_pool": 2,
+        "maximum_path_pool": 6,
+        "readbacks": [],
+        "motion_pauses": [
+          {
+            "elapsed_us": 12790798,
+            "frame": 1,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 19909415,
+            "frame": 175,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 38502751,
+            "frame": 679,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 41823246,
+            "frame": 745,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 41902404,
+            "frame": 746,
+            "revision": 0
+          },
+          {
+            "elapsed_us": 466056337,
+            "frame": 11802,
+            "revision": 4
+          }
+        ]
+      }
+    }
+  ]
+}

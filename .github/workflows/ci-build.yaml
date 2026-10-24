@@ -218,6 +218,7 @@ jobs:
       uses: softprops/action-gh-release@v2.2.2
       with:
         draft: true
+        prerelease: ${{ contains(github.ref_name, '-') }}
         body_path: dist/release-notes.md
         files: |
           dist/NsEmuTools-windows-zip/NsEmuTools-windows-portable.zip

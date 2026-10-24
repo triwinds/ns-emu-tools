@@ -1,0 +1,1623 @@
+{
+  "date": "2026-10-01",
+  "session": "nr-combinations-validation-001",
+  "change": "Add frame-boundary consumer/color/reset evidence and eight-combination analysis; require actual double presentation and input completion for FG coverage; exclude inactive requested consumers; prove continuous SR/FG via unchanged control revisions and fence identities.",
+  "user_scope": "Do not modify Ryujinx; confirmed pre-existing emulator errors remain outside repair scope. SDK FG clone initialization errors are retained as a separate unresolved integration finding.",
+  "user_feedback": "All combination switches and current moving picture normal; no obvious flicker, ghosting or corruption.",
+  "raw_session_directory": "src-tauri/target/nr-combinations-validation-001",
+  "inputs": {
+    "allow_unverified_target": false,
+    "child_disable": "~implicit~",
+    "compatibility": "verified",
+    "fg_experiment_requested": true,
+    "fg_requested": true,
+    "frame_budget": null,
+    "frame_trace_enabled": true,
+    "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+    "layer_only": false,
+    "layer_sha256": "ed4f79ccf53f990dc34b1968b0c9776dee15020eb21b5192f71de87cf1cdc9fc",
+    "motion_backend": "nvof",
+    "motion_estimate": true,
+    "nr_files": {
+      "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+      "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+      "synthetic_depth": true,
+      "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+      "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+    },
+    "nr_intensity": 1.0,
+    "nr_performance": false,
+    "nr_readback_requested": true,
+    "nr_requested": true,
+    "nr_validation_requested": true,
+    "profile": {
+      "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+      "file_version": "1.3.351.0",
+      "product_version": "1.3.351+475615f",
+      "publisher_authenticity_verified": false,
+      "schema_version": 1,
+      "selection": "explicit user choice on 2026-09-25",
+      "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+    },
+    "reference_parameters": false,
+    "reflex_ab_requested": false,
+    "scale_copy_probe": false,
+    "scale_probe": false,
+    "scale_replace_probe": false,
+    "sdk_off_integration": false,
+    "sr_input": "auto_native_or_present",
+    "sr_mode": "dlaa",
+    "sr_preset": "default",
+    "sr_scale": 100
+  },
+  "result": {
+    "nr": {
+      "call_chain_completed": true,
+      "clean_nr_shutdown": true,
+      "combinations": {
+        "all_combinations_observed": true,
+        "checked": true,
+        "combinations": [
+          {
+            "fg": false,
+            "frames": 2368,
+            "nr": false,
+            "sr": false
+          },
+          {
+            "fg": false,
+            "frames": 114,
+            "nr": true,
+            "sr": false
+          },
+          {
+            "fg": false,
+            "frames": 122,
+            "nr": false,
+            "sr": true
+          },
+          {
+            "fg": false,
+            "frames": 114,
+            "nr": true,
+            "sr": true
+          },
+          {
+            "fg": true,
+            "frames": 122,
+            "nr": false,
+            "sr": false
+          },
+          {
+            "fg": true,
+            "frames": 113,
+            "nr": true,
+            "sr": false
+          },
+          {
+            "fg": true,
+            "frames": 238,
+            "nr": false,
+            "sr": true
+          },
+          {
+            "fg": true,
+            "frames": 601,
+            "nr": true,
+            "sr": true
+          }
+        ],
+        "fg_enabled_frames": 1075,
+        "fg_reset_checks": 6,
+        "inactive_requested_frames": 1615,
+        "invalid_frames": [],
+        "nr_control_transitions": [
+          {
+            "enabled_changed": true,
+            "fg_continuous": false,
+            "fg_generated_on_transition": false,
+            "frame": 2,
+            "reset_valid": true,
+            "sr_continuous": false,
+            "strength_changed": false
+          },
+          {
+            "enabled_changed": true,
+            "fg_continuous": false,
+            "fg_generated_on_transition": false,
+            "frame": 2449,
+            "reset_valid": true,
+            "sr_continuous": true,
+            "strength_changed": false
+          },
+          {
+            "enabled_changed": true,
+            "fg_continuous": true,
+            "fg_generated_on_transition": true,
+            "frame": 2790,
+            "reset_valid": true,
+            "sr_continuous": false,
+            "strength_changed": false
+          },
+          {
+            "enabled_changed": true,
+            "fg_continuous": true,
+            "fg_generated_on_transition": true,
+            "frame": 3030,
+            "reset_valid": true,
+            "sr_continuous": true,
+            "strength_changed": false
+          },
+          {
+            "enabled_changed": false,
+            "fg_continuous": true,
+            "fg_generated_on_transition": true,
+            "frame": 3141,
+            "reset_valid": true,
+            "sr_continuous": true,
+            "strength_changed": true
+          },
+          {
+            "enabled_changed": true,
+            "fg_continuous": true,
+            "fg_generated_on_transition": true,
+            "frame": 3253,
+            "reset_valid": true,
+            "sr_continuous": true,
+            "strength_changed": false
+          },
+          {
+            "enabled_changed": true,
+            "fg_continuous": true,
+            "fg_generated_on_transition": true,
+            "frame": 3374,
+            "reset_valid": true,
+            "sr_continuous": true,
+            "strength_changed": true
+          },
+          {
+            "enabled_changed": true,
+            "fg_continuous": false,
+            "fg_generated_on_transition": false,
+            "frame": 5365,
+            "reset_valid": true,
+            "sr_continuous": false,
+            "strength_changed": false
+          }
+        ],
+        "safe_failure_tested": false,
+        "sr_reset_checks": 8,
+        "valid": true,
+        "visual_quality_verified": false
+      },
+      "count_matches": true,
+      "evaluate_successes": 2555,
+      "execution_verified": true,
+      "fg_requested_frames": 1075,
+      "longest_consecutive_evaluations": 1991,
+      "nonzero_intensity_changed_output": true,
+      "nr_to_sr_frames": 2328,
+      "nr_to_sr_handoff_valid": true,
+      "off_frames": 2851,
+      "p1_passed": false,
+      "p2_passed": false,
+      "performance_verified": false,
+      "readbacks": 15,
+      "readbacks_valid": true,
+      "reset_matches_submission": true,
+      "reset_reasons": {
+        "Resumed": 2,
+        "StrengthChanged": 2
+      },
+      "submissions_fenced": true,
+      "synthetic_depth": true,
+      "temporal_history": {
+        "checked": true,
+        "continuous_evaluations": 2551,
+        "logical_identities": 1,
+        "longest_without_reset": 1990,
+        "physical_rotations_without_reset": 2551,
+        "valid": true,
+        "visual_quality_verified": false
+      },
+      "valid_motion_only": true,
+      "visual_quality_verified": false,
+      "zero_motion_paused_frames": 1
+    },
+    "p1_passed": false,
+    "p2_passed": false,
+    "present_chain": {
+      "application_presents": 5407,
+      "bounded_activation_verified": true,
+      "clean_shutdown": true,
+      "input_timeline_advances": 1073,
+      "latency_verified": false,
+      "maximum_input_completion": 3750,
+      "native_present_fences_completed": true,
+      "native_presents": 6474,
+      "native_worker_presents": 2141,
+      "p4_passed": false,
+      "requested_on_frames": 1075,
+      "scanout_cadence_verified": false,
+      "sdk_x2_reports": 1074,
+      "validation_layer_enabled": true,
+      "visual_intermediate_frames_verified": false
+    },
+    "present_chain_error": null,
+    "sdk_error_lines": 223,
+    "session_verified": false,
+    "target_exit": {
+      "code": 0,
+      "fg_requested": true,
+      "success": true
+    },
+    "validation": {
+      "complete": true,
+      "core_validation": true,
+      "errors": 224,
+      "game_integration_accepted": false,
+      "log_failed": false,
+      "summary_matches_log": true,
+      "synchronization_validation": true,
+      "unreviewed_warnings": 30,
+      "validation_passed": false,
+      "warnings": 30
+    }
+  },
+  "target_exit": {
+    "code": 0,
+    "fg_requested": true,
+    "success": true
+  },
+  "launcher_exit_code": 1,
+  "checks": {
+    "crate_default_sdk_only_checks": true,
+    "cargo_errors": 0,
+    "initial_test_build": "Inherited +crt-static conflicted with pinned nvsdk_ngx_d.lib; rerun with dynamic CRT succeeded without warnings.",
+    "crate_host_windows_all_features_all_targets_checks": true,
+    "main_app_host_windows_checks": true,
+    "cargo_warnings": 0,
+    "test_and_native_nr_build_rustflags": "-C target-feature=-crt-static",
+    "hardware_tests_ignored": 1,
+    "tests_passed": 133,
+    "cargo_fmt": true,
+    "git_diff_check": true
+  },
+  "reverify": "Strengthened continuous-consumer analysis reread unchanged raw log after normal exit. Only analyzer changed; tested layer hash remains unchanged.",
+  "phases": [
+    {
+      "phase": "all-off",
+      "phase_revision": 2,
+      "control": {
+        "nrRevision": 1,
+        "revision": 1,
+        "sourceTrackingStop": false,
+        "enabled": false,
+        "srRevision": 1,
+        "srScale": 100,
+        "srMode": "off",
+        "nrIntensity": 1.0,
+        "nrEnabled": false
+      },
+      "start_elapsed_us": 229589373,
+      "end_elapsed_us": 241690415,
+      "seconds": 12.1366736,
+      "frames": 101,
+      "nr_evaluations": 0,
+      "sr_evaluations": 0,
+      "fg_enabled_frames": 0,
+      "fg_double_reports": 0,
+      "consumer_color_sources": [
+        "original_present"
+      ],
+      "sr_fences": [],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "c1dc2fe2edc7028f46b9f1bf67f90c98ca2126cc3e734394b297707179827d20"
+    },
+    {
+      "phase": "sr",
+      "phase_revision": 3,
+      "control": {
+        "nrRevision": 1,
+        "revision": 1,
+        "sourceTrackingStop": false,
+        "enabled": false,
+        "srRevision": 3,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 1.0,
+        "nrEnabled": false
+      },
+      "start_elapsed_us": 244714556,
+      "end_elapsed_us": 256851266,
+      "seconds": 12.1122619,
+      "frames": 98,
+      "nr_evaluations": 0,
+      "sr_evaluations": 98,
+      "fg_enabled_frames": 0,
+      "fg_double_reports": 0,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        234684159879233988
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "5cd5e4eb2430760417084c5396c84879c2125d7a7d182768704a20fcac4c71e2"
+    },
+    {
+      "phase": "nr-sr",
+      "phase_revision": 4,
+      "control": {
+        "nrRevision": 4,
+        "revision": 1,
+        "sourceTrackingStop": false,
+        "enabled": false,
+        "srRevision": 3,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 1.0,
+        "nrEnabled": true
+      },
+      "start_elapsed_us": 259970962,
+      "end_elapsed_us": 272010016,
+      "seconds": 12.1173222,
+      "frames": 94,
+      "nr_evaluations": 94,
+      "sr_evaluations": 94,
+      "fg_enabled_frames": 0,
+      "fg_double_reports": 0,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        234684159879233988
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "288334fa3b525d099103416cd3dd20528ba5b84bea1e40189ce20dece72f11c7"
+    },
+    {
+      "phase": "nr",
+      "phase_revision": 5,
+      "control": {
+        "nrRevision": 4,
+        "revision": 1,
+        "sourceTrackingStop": false,
+        "enabled": false,
+        "srRevision": 5,
+        "srScale": 100,
+        "srMode": "off",
+        "nrIntensity": 1.0,
+        "nrEnabled": true
+      },
+      "start_elapsed_us": 275060130,
+      "end_elapsed_us": 287181844,
+      "seconds": 12.1256719,
+      "frames": 93,
+      "nr_evaluations": 93,
+      "sr_evaluations": 0,
+      "fg_enabled_frames": 0,
+      "fg_double_reports": 0,
+      "consumer_color_sources": [
+        "nr_output"
+      ],
+      "sr_fences": [],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "99e5ba49e3e47226f6be2efd396946f9370f25b1e525c1f9e1dca191179c8590"
+    },
+    {
+      "phase": "nr-fg",
+      "phase_revision": 6,
+      "control": {
+        "nrRevision": 4,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 5,
+        "srScale": 100,
+        "srMode": "off",
+        "nrIntensity": 1.0,
+        "nrEnabled": true
+      },
+      "start_elapsed_us": 290275778,
+      "end_elapsed_us": 302388413,
+      "seconds": 12.1155399,
+      "frames": 92,
+      "nr_evaluations": 92,
+      "sr_evaluations": 0,
+      "fg_enabled_frames": 92,
+      "fg_double_reports": 92,
+      "consumer_color_sources": [
+        "nr_output"
+      ],
+      "sr_fences": [],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "8e72a9d03d311df127ff4c88679e3b7a7aa5f6de35128a944e3993d18b5d5983"
+    },
+    {
+      "phase": "fg",
+      "phase_revision": 7,
+      "control": {
+        "nrRevision": 7,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 5,
+        "srScale": 100,
+        "srMode": "off",
+        "nrIntensity": 1.0,
+        "nrEnabled": false
+      },
+      "start_elapsed_us": 304930226,
+      "end_elapsed_us": 317026019,
+      "seconds": 12.1267447,
+      "frames": 101,
+      "nr_evaluations": 0,
+      "sr_evaluations": 0,
+      "fg_enabled_frames": 101,
+      "fg_double_reports": 101,
+      "consumer_color_sources": [
+        "original_present"
+      ],
+      "sr_fences": [],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "a988b2f5077bbb061aa3ff8da2d940935274c75590ddc3ada6bfc84ad1515359"
+    },
+    {
+      "phase": "sr-fg",
+      "phase_revision": 8,
+      "control": {
+        "nrRevision": 7,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 8,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 1.0,
+        "nrEnabled": false
+      },
+      "start_elapsed_us": 320142476,
+      "end_elapsed_us": 332235138,
+      "seconds": 12.1272617,
+      "frames": 95,
+      "nr_evaluations": 0,
+      "sr_evaluations": 95,
+      "fg_enabled_frames": 95,
+      "fg_double_reports": 95,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        292077567337565611
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "91a43d9bdb0fed5344cc4386433b55bb681b9b48bb312f717eb3f06cb1fe4b6c"
+    },
+    {
+      "phase": "nr-sr-fg",
+      "phase_revision": 9,
+      "control": {
+        "nrRevision": 9,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 8,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 1.0,
+        "nrEnabled": true
+      },
+      "start_elapsed_us": 335300843,
+      "end_elapsed_us": 347434500,
+      "seconds": 12.1292524,
+      "frames": 89,
+      "nr_evaluations": 89,
+      "sr_evaluations": 89,
+      "fg_enabled_frames": 89,
+      "fg_double_reports": 89,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        292077567337565611
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "e3f36f1f07228d9645a3046b6599eda462558a9dd98d2a0f77e5fff3deedacae"
+    },
+    {
+      "phase": "nr-strength-half-with-sr-fg",
+      "phase_revision": 10,
+      "control": {
+        "nrRevision": 10,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 8,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 0.5,
+        "nrEnabled": true
+      },
+      "start_elapsed_us": 350442551,
+      "end_elapsed_us": 362559199,
+      "seconds": 12.1251751,
+      "frames": 91,
+      "nr_evaluations": 91,
+      "sr_evaluations": 91,
+      "fg_enabled_frames": 91,
+      "fg_double_reports": 91,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        292077567337565611
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "3fd7979aa77cdb2644a5b9e1042ac7058d77f17eebb26ca3768863f63b9e31cf"
+    },
+    {
+      "phase": "nr-off-with-sr-fg",
+      "phase_revision": 11,
+      "control": {
+        "nrRevision": 11,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 8,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 0.5,
+        "nrEnabled": false
+      },
+      "start_elapsed_us": 365672196,
+      "end_elapsed_us": 377765491,
+      "seconds": 12.1181436,
+      "frames": 96,
+      "nr_evaluations": 0,
+      "sr_evaluations": 96,
+      "fg_enabled_frames": 96,
+      "fg_double_reports": 96,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        292077567337565611
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "8f6350895c2479be495bc35edfc1473edd8bcfe766a97f12a2119ba9bc677b0c"
+    },
+    {
+      "phase": "nr-resume-with-sr-fg",
+      "phase_revision": 12,
+      "control": {
+        "nrRevision": 12,
+        "revision": 6,
+        "sourceTrackingStop": false,
+        "enabled": true,
+        "srRevision": 8,
+        "srScale": 100,
+        "srMode": "dlaa",
+        "nrIntensity": 1.0,
+        "nrEnabled": true
+      },
+      "start_elapsed_us": 380820780,
+      "end_elapsed_us": 392944599,
+      "seconds": 12.137384,
+      "frames": 88,
+      "nr_evaluations": 88,
+      "sr_evaluations": 88,
+      "fg_enabled_frames": 88,
+      "fg_double_reports": 88,
+      "consumer_color_sources": [
+        "sr_output"
+      ],
+      "sr_fences": [
+        292077567337565611
+      ],
+      "fg_timelines": [
+        185817465094313
+      ],
+      "fresh_samples": 13,
+      "sample_count": 13,
+      "phase_file_sha256": "e55f134117efedf87eb1432c196a9acd1e2b601194409c179f5d8dd9f9c40b3f"
+    }
+  ],
+  "readbacks": [
+    {
+      "elapsed_us": 257382579,
+      "details": {
+        "capture": 0,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-0.ppm",
+          "nr-output-1920-1080-0.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.026117827931446323,
+        "output_sha256": "bad26b10ba5fff0ce306f8c94c30923f8d31f94347609bfbb8cdc775fc2bc059",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-0.ppm": "24ef9219902de40c3626441f740e0b0c958c73c63d13e48bef086962cb7b69a5",
+        "nr-output-1920-1080-0.ppm": "f8f2ef63e813f0b8f9d940160be5af4d83d86975e73c68efca68ee9bcd574e59"
+      }
+    },
+    {
+      "elapsed_us": 257607541,
+      "details": {
+        "capture": 1,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-1.ppm",
+          "nr-output-1920-1080-1.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.02622314807021111,
+        "output_sha256": "c857414bbc1f4a39bbfd92a082088fb3bf5345946b61d08576354e2bed3b21b6",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-1.ppm": "ae2e2936fa5fa1b5ba6541dff194d2eb31d95c082908c173397f6117ed347fa2",
+        "nr-output-1920-1080-1.ppm": "aee657a38988a88189596998964a51e299572d5b3209cc4f0346836a5953d088"
+      }
+    },
+    {
+      "elapsed_us": 257849164,
+      "details": {
+        "capture": 2,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-2.ppm",
+          "nr-output-1920-1080-2.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.026250730548679175,
+        "output_sha256": "40966d7e115d1973dab397501a0001b2e4b0875311a9daf4ce9a01c3f26d4108",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-2.ppm": "dfa0f4c8ee32c306f8e0aab37d8426ca9ae3a0e2a857e993812e2e0208124c61",
+        "nr-output-1920-1080-2.ppm": "5a197732397f68a46d32d65d49f73224f59e1f237b5b9b26c879be499c06c70c"
+      }
+    },
+    {
+      "elapsed_us": 272373930,
+      "details": {
+        "capture": 3,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-3.ppm",
+          "nr-output-1920-1080-3.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.0267296883555339,
+        "output_sha256": "60a4b5763e13baf2fab10dd68aaae456abaf7edc3a5562d95f998d11ff5dd237",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-3.ppm": "e98485a270d652744ca79cd90f244556709963775d781dd05e467b01ba9f81f6",
+        "nr-output-1920-1080-3.ppm": "8e94926fe93cdd94144de577b348950be020d0311cc690d66ececfef0ad0c8ce"
+      }
+    },
+    {
+      "elapsed_us": 272600838,
+      "details": {
+        "capture": 4,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-4.ppm",
+          "nr-output-1920-1080-4.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.02673872295694489,
+        "output_sha256": "d4212a2813f311594d097b4cab251824ed4bae9d99630e1ef5063d32f67f03c3",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-4.ppm": "ae52044f0b53928abf8712f037c0c78010277fc12da7fb2aa23f059a1eb4b5ba",
+        "nr-output-1920-1080-4.ppm": "14b8373186b08cc2c9175526399586068ad890d9da0660bbb3f6d25040d3c5a3"
+      }
+    },
+    {
+      "elapsed_us": 272835350,
+      "details": {
+        "capture": 5,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-5.ppm",
+          "nr-output-1920-1080-5.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.026660475757082257,
+        "output_sha256": "c58f3d71dbae1afdb6b7334b1f3ede3ae391abc83d35f0cda2dd420f849c61a7",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-5.ppm": "eea4bf8b7ea07777b7c5245b04c4395ca0d7b2d5fa7e1878167814a5644505dc",
+        "nr-output-1920-1080-5.ppm": "3233796ca94f4dabf16b2d03dbf25afb8b58600e2935c30006718b5b84dd2008"
+      }
+    },
+    {
+      "elapsed_us": 332439149,
+      "details": {
+        "capture": 6,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-6.ppm",
+          "nr-output-1920-1080-6.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.02623526887907819,
+        "output_sha256": "aacbf1a52e235332a578cb46590458b25326dacfb8ef5d7484062d8cc059fb28",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-6.ppm": "dc94e1a1ab51d3c5bb01d771c45cc03b2f36f6e4620b8f1cb1d2358bab0179da",
+        "nr-output-1920-1080-6.ppm": "cb7a9f41b86da6d6799b4e77c9517f19fbbd32b67b5844fcb6fa10561303bded"
+      }
+    },
+    {
+      "elapsed_us": 332654216,
+      "details": {
+        "capture": 7,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-7.ppm",
+          "nr-output-1920-1080-7.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.02625083208226392,
+        "output_sha256": "079bb286c86dcea6da608b9d7dad21b998410ed0ceb237f772507a66f7c61feb",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-7.ppm": "71f64f0c54e5c2be342121f6c8aadb014b5a6eae276f5c38fd95dd31dba06872",
+        "nr-output-1920-1080-7.ppm": "a4ddfeb7283d702acb6d5dd04e564d176f1d6c87836b9ba0fc3bd70917a97cff"
+      }
+    },
+    {
+      "elapsed_us": 332877087,
+      "details": {
+        "capture": 8,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-8.ppm",
+          "nr-output-1920-1080-8.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.0261830727147933,
+        "output_sha256": "953426217b7f0e31e35ab4c4f4bdc035cb6839140b93c8998406b34c76280a11",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-8.ppm": "f1c9ebd605fa3335d79a3b3a294d7a3a56a6e4b54751a20d7eef56b32671fa4b",
+        "nr-output-1920-1080-8.ppm": "696f187bdec9e659f194e970545996058e08b381232fdd0294dfae3586b2b315"
+      }
+    },
+    {
+      "elapsed_us": 347712965,
+      "details": {
+        "capture": 9,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-9.ppm",
+          "nr-output-1920-1080-9.ppm"
+        ],
+        "finite": true,
+        "intensity": 0.5,
+        "mean_absolute_input_difference": 0.007071499550135887,
+        "output_sha256": "e78e69575ceb4ccb93ae8c00591e4e5e490decc51945f3eadc21fd0037a9a8b3",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-9.ppm": "a99a58b4f8c5f16d02c06dfc59684046e3a3e77c4536e7ecaa0ee768f383fbdc",
+        "nr-output-1920-1080-9.ppm": "7cddc501137c3b402f053c8c109b62634ea73f41effbbf292b240aafd0d6a75d"
+      }
+    },
+    {
+      "elapsed_us": 347926389,
+      "details": {
+        "capture": 10,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-10.ppm",
+          "nr-output-1920-1080-10.ppm"
+        ],
+        "finite": true,
+        "intensity": 0.5,
+        "mean_absolute_input_difference": 0.006984879809106919,
+        "output_sha256": "7f84453f397ad7b09cf8cd686f26269cb8e8303cbaad9fce184af3ef8c10f1c5",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-10.ppm": "ae822dfbf9558ece6b1dc833bd7b4ae39c4ac827f9a67211c5b3cd1c53b8a893",
+        "nr-output-1920-1080-10.ppm": "42f8a6155ac386e6d6901e16535eece315c8098c9aaaafe6559c17d68e4c1f7b"
+      }
+    },
+    {
+      "elapsed_us": 348129688,
+      "details": {
+        "capture": 11,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-11.ppm",
+          "nr-output-1920-1080-11.ppm"
+        ],
+        "finite": true,
+        "intensity": 0.5,
+        "mean_absolute_input_difference": 0.006948197181746192,
+        "output_sha256": "bb4646e9a12d94b26750534ccce8bd7bc6adb8a0d1b1a2982a5e35b67bc623a5",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-11.ppm": "82796fa574972986743494d1c52f5148baaae2449e7353e2319c9d7fb9256a72",
+        "nr-output-1920-1080-11.ppm": "e8ecce0a1325c1b3c307f1aa3ae7c19b3198e8ae2d2844e9c4250c4b438e23e4"
+      }
+    },
+    {
+      "elapsed_us": 378042339,
+      "details": {
+        "capture": 12,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-12.ppm",
+          "nr-output-1920-1080-12.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.024492941893605562,
+        "output_sha256": "dbf39def85352de4a9bfd8888d2978e11e4903f86647b97843a8ba2a0c5c04c5",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-12.ppm": "42c8e32b1c7ef0ab85ec3c62949f58870518cf212affa95d8aff1195bd7e1ac9",
+        "nr-output-1920-1080-12.ppm": "7c2e62d367905ad81674082421abaaefedd53d32d7f4e3423f34dc72403ca712"
+      }
+    },
+    {
+      "elapsed_us": 378263395,
+      "details": {
+        "capture": 13,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-13.ppm",
+          "nr-output-1920-1080-13.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.024430652834851595,
+        "output_sha256": "26d2a43b2c8187eb1afc1d5786e21a34199e6e8c03b897d9c04d0cde24794783",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-13.ppm": "ff8030d34ec759160717c6711bb4b8d0cdcbdf594be85f4e53e720f145ad79f9",
+        "nr-output-1920-1080-13.ppm": "08486177fecfa864ddb1f9cb4e6c1885092c2239fa7f3b020a6145bd2025b7f4"
+      }
+    },
+    {
+      "elapsed_us": 378475203,
+      "details": {
+        "capture": 14,
+        "extent": [
+          1920,
+          1080
+        ],
+        "fence_completed": true,
+        "files": [
+          "nr-input-1920-1080-14.ppm",
+          "nr-output-1920-1080-14.ppm"
+        ],
+        "finite": true,
+        "intensity": 1.0,
+        "mean_absolute_input_difference": 0.024394074926213188,
+        "output_sha256": "9fe2af29824b1b3fce83ff1df65e41a1fc4fe97e365b689abf41018e2e002a54",
+        "sentinel_pixels": 0
+      },
+      "ppm_sha256": {
+        "nr-input-1920-1080-14.ppm": "303f3edbb6322f03c87591550d6a55122b0725cf338bb6d8304bf513bcda9af3",
+        "nr-output-1920-1080-14.ppm": "703aaf75787b674ca3b3cb4fde39d3ab76fa7cb48a3f18add2636a6de3449db0"
+      }
+    }
+  ],
+  "readback_cpu_ms": [
+    80.925,
+    92.285,
+    97.111,
+    76.533,
+    92.328,
+    88.457,
+    89.688,
+    81.526,
+    89.085,
+    79.368,
+    85.22,
+    76.847,
+    78.66,
+    86.806,
+    80.928
+  ],
+  "readback_memory": [
+    {
+      "flags": 14,
+      "host_cached": true,
+      "host_coherent": true,
+      "memory_type": 3
+    }
+  ],
+  "proxy_image_proof": [
+    {
+      "device": 4486730023120,
+      "images": 3,
+      "native_images_unchanged": 0,
+      "sdk_created_ordinary_images": 3,
+      "swapchain": 1397479278904567
+    },
+    {
+      "device": 4486730023120,
+      "images": 3,
+      "native_images_unchanged": 0,
+      "sdk_created_ordinary_images": 3,
+      "swapchain": 13796671905345796
+    },
+    {
+      "device": 4486730023120,
+      "images": 3,
+      "native_images_unchanged": 0,
+      "sdk_created_ordinary_images": 3,
+      "swapchain": 25259080624921021
+    }
+  ],
+  "validation_messages": [
+    {
+      "id": -2063277991,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdCopyBuffer(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/copies.html#VUID-vkCmdCopyBuffer-commandBuffer-recording)"
+    },
+    {
+      "id": -2017440641,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdBindVertexBuffers2EXT(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers2-commandBuffer-recording)"
+    },
+    {
+      "id": -1744492148,
+      "severity": 256,
+      "count": 10,
+      "application_calls": [
+        "vkCreateGraphicsPipelines"
+      ],
+      "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 2], but there is no VkSubpassDescription::pColorAttachments[2] and this write is unused.\nSpec information at https://docs.vulkan.org/spec/latest/chapters/interfaces.html#interfaces-fragmentoutput"
+    },
+    {
+      "id": -1693624763,
+      "severity": 256,
+      "count": 10,
+      "application_calls": [
+        "vkCmdPipelineBarrier"
+      ],
+      "first_message": "vkCmdPipelineBarrier(): pImageMemoryBarriers[0].subresourceRange.layerCount is 1 for a 3D image (VkImage 0x36090000003609) created with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT. The maintenance9 feature is not currently enabled, so layerCount refers to all depth slices. When maintenance9 is enabled, it instead refers to a single depth slice. To remain forward-compatible, layerCount should be set to VK_REMAINING_ARRAY_LAYERS."
+    },
+    {
+      "id": -1551140702,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdEndRenderPass"
+      ],
+      "first_message": "vkCmdEndRenderPass(): query 0 from VkQueryPool 0x1460000000146 was begun in subpass 0 but never ended.\nThe Vulkan spec states: If vkCmdBeginQuery* was called within a subpass of the render pass, the corresponding vkCmdEndQuery* must have been called subsequently within the same subpass (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-None-07004)"
+    },
+    {
+      "id": -962408748,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdBindDescriptorSets"
+      ],
+      "first_message": "vkCmdBindDescriptorSets(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdBindDescriptorSets-commandBuffer-recording)"
+    },
+    {
+      "id": -937765618,
+      "severity": 256,
+      "count": 10,
+      "application_calls": [
+        "vkCreateGraphicsPipelines"
+      ],
+      "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pVertexInputState Vertex attribute at location 1 not consumed by vertex shader."
+    },
+    {
+      "id": -619758366,
+      "severity": 4096,
+      "count": 4,
+      "application_calls": [],
+      "first_message": "vkCmdSetBlendConstants(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/framebuffer.html#VUID-vkCmdSetBlendConstants-commandBuffer-recording)"
+    },
+    {
+      "id": -543181122,
+      "severity": 4096,
+      "count": 4,
+      "application_calls": [
+        "vkEndCommandBuffer"
+      ],
+      "first_message": "vkEndCommandBuffer(): was called in VkCommandBuffer 0x414a697e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x60450000006045 was destroyed\n   which was used by VkDescriptorSet 0x52770000005277\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/cmdbuffers.html#VUID-vkEndCommandBuffer-commandBuffer-00059)"
+    },
+    {
+      "id": -464217071,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkDestroyBuffer"
+      ],
+      "first_message": "vkDestroyBuffer(): can't be called on VkBuffer 0x61670000006167 that is currently in use by VkDescriptorSet 0x54a400000054a4 which is in use by VkCommandBuffer 0x414a69850d0\nThe Vulkan spec states: All submitted commands that refer to buffer, either directly or via a VkBufferView, must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyBuffer-buffer-00922)"
+    },
+    {
+      "id": -455515022,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdBeginRenderPass",
+        "vkQueueSubmit"
+      ],
+      "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] READ_AFTER_WRITE hazard detected. vkCmdBeginRenderPass (from VkCommandBuffer 0x414a697e0d0 submitted on the current VkQueue 0x414a5c914d0) reads the color aspect of attachment 0 (VkImageView 0x30f500000030f5) in subpass 0 of VkRenderPass 0x30fb00000030fb (loadOp VK_ATTACHMENT_LOAD_OP_LOAD), which was previously written by vkCmdCopyBufferToImage (from VkCommandBuffer 0x414a69818d0 submitted on VkQueue 0x414a5c914d0). \nNo sufficient synchronization is present to ensure that a read (VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT) at VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT does not conflict with a prior write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_COPY_BIT."
+    },
+    {
+      "id": -379806493,
+      "severity": 4096,
+      "count": 1,
+      "application_calls": [
+        "vkCmdDrawIndexed"
+      ],
+      "first_message": "vkCmdDrawIndexed(): VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT state is dynamic, but the command buffer never called vkCmdSetAttachmentFeedbackLoopEnableEXT\nVkPipelineRasterizationStateCreateInfo::rasterizerDiscardEnable was VK_FALSE in the last bound graphics pipeline.\nThe Vulkan spec states: If a shader object is bound to the VK_SHADER_STAGE_FRAGMENT_BIT stage or a graphics pipeline is bound which was created with the VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT dynamic state enabled, and the current value of rasterizerDiscardEnable is VK_FALSE, then vkCmdSetAttachmentFeedbackLoopEnableEXT must have been called and not subsequently invalidated in the current command buffer prior to this drawing command (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-08877)"
+    },
+    {
+      "id": -365328357,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdBindPipeline"
+      ],
+      "first_message": "vkCmdBindPipeline(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-vkCmdBindPipeline-commandBuffer-recording)"
+    },
+    {
+      "id": -308264800,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdEndRenderPass"
+      ],
+      "first_message": "vkCmdEndRenderPass(): was called in VkCommandBuffer 0x414a697e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x60450000006045 was destroyed\n   which was used by VkDescriptorSet 0x52770000005277\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdEndRenderPass-commandBuffer-recording)"
+    },
+    {
+      "id": -143113596,
+      "severity": 4096,
+      "count": 7,
+      "application_calls": [
+        "vkCmdSetViewport"
+      ],
+      "first_message": "vkCmdSetViewport(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/vertexpostproc.html#VUID-vkCmdSetViewport-commandBuffer-recording)"
+    },
+    {
+      "id": 28428915,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCreateGraphicsPipelines"
+      ],
+      "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pRasterizationState->lineWidth is 4.500000, but the line width state is static (pCreateInfos[0].pDynamicState->pDynamicStates does not contain VK_DYNAMIC_STATE_LINE_WIDTH) and wideLines feature was not enabled.\nThe Vulkan spec states: If the pipeline requires pre-rasterization shader state, and the wideLines feature is not enabled, and no element of the pDynamicStates member of pDynamicState is VK_DYNAMIC_STATE_LINE_WIDTH, the lineWidth member of pRasterizationState must be 1.0 (https://docs.vulkan.org/spec/latest/chapters/pipelines.html#VUID-VkGraphicsPipelineCreateInfo-pDynamicStates-00749)"
+    },
+    {
+      "id": 99965422,
+      "severity": 4096,
+      "count": 7,
+      "application_calls": [
+        "vkCmdSetScissor"
+      ],
+      "first_message": "vkCmdSetScissor(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/fragops.html#VUID-vkCmdSetScissor-commandBuffer-recording)"
+    },
+    {
+      "id": 102835677,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdUpdateBuffer(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x75450000007545 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdUpdateBuffer-commandBuffer-recording)"
+    },
+    {
+      "id": 218230825,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdPushDescriptorSetWithTemplateKHR(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-vkCmdPushDescriptorSetWithTemplate-commandBuffer-recording)"
+    },
+    {
+      "id": 522653285,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdEndQuery(): query (0) was started outside a renderpass.\nThe Vulkan spec states: If called within a subpass of a render pass instance, the corresponding vkCmdBeginQuery* command must have been called previously within the same subpass (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-None-07007)"
+    },
+    {
+      "id": 908748201,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdPipelineBarrier"
+      ],
+      "first_message": "vkCmdPipelineBarrier(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/synchronization.html#VUID-vkCmdPipelineBarrier-commandBuffer-recording)"
+    },
+    {
+      "id": 1180184443,
+      "severity": 4096,
+      "count": 2,
+      "application_calls": [],
+      "first_message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x414c85888d0[nv.sl.dlss_g.cmdCtx.dlssg.command-buffer] expects VkImage 0x3bd1e000003bd1e[nv.sl.dlss_g.clone.dlfg-output_0] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)"
+    },
+    {
+      "id": 1215490720,
+      "severity": 4096,
+      "count": 1,
+      "application_calls": [],
+      "first_message": "vkDestroyDevice(): VkDevice 0x414a5f300d0 has 26 leaked objects that have not been destroyed.\n(Only printing the first 10 objects, but can be increased by raising the VK_LAYER_DUPLICATE_MESSAGE_LIMIT/'duplicate_message_limit' setting value)\nVkImage 0x6c6c0000006c6c, VkImage 0x98da00000098da, VkImage 0x54820000005482, VkImage 0x97ac00000097ac, VkImage 0x5dd40000005dd4, VkImage 0xa9b2000000a9b2, VkImageView 0x6c710000006c71, VkImageView 0x98de00000098de, VkImageView 0xa9b7000000a9b7, VkImageView 0x5dd70000005dd7\nThe Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)"
+    },
+    {
+      "id": 1284016627,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdBeginRenderPass"
+      ],
+      "first_message": "vkCmdBeginRenderPass(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/renderpass.html#VUID-vkCmdBeginRenderPass-commandBuffer-recording)"
+    },
+    {
+      "id": 1355105800,
+      "severity": 4096,
+      "count": 1,
+      "application_calls": [
+        "vkCmdClearAttachments"
+      ],
+      "first_message": "vkCmdClearAttachments(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/clears.html#VUID-vkCmdClearAttachments-commandBuffer-recording)"
+    },
+    {
+      "id": 1355467935,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdBindIndexBuffer(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-commandBuffer-recording)"
+    },
+    {
+      "id": 1397510317,
+      "severity": 4096,
+      "count": 5,
+      "application_calls": [
+        "vkCmdDrawIndexed"
+      ],
+      "first_message": "vkCmdDrawIndexed(): the combined image sampler descriptor [VkDescriptorSet 0x56e800000056e8, Set 2, Binding 135, Index 0, variable \"fp_t_tcb_14\"] has VkImageView 0xb738000000b738 with format of VK_FORMAT_R32_SFLOAT which doesn't support VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT.\n(supported features: VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT|VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT|VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT|VK_FORMAT_FEATURE_2_BLIT_SRC_BIT|VK_FORMAT_FEATURE_2_BLIT_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT|VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT|VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT|VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT|VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT|VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT|VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR).\nThe Vulkan spec states: If a VkImageView is sampled with depth comparison, the image view's format features must contain VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-None-06479)"
+    },
+    {
+      "id": 1544472022,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkQueueSubmit"
+      ],
+      "first_message": "vkQueueSubmit(): pSubmits[0].pCommandBuffers[0] WRITE_AFTER_WRITE hazard detected. vkCmdCopyImage (from VkCommandBuffer 0x414a69930d0 submitted on the current VkQueue 0x414a5c914d0[nv.sl.dlss_g.cmdQ.game]) writes to VkImage 0x361f000000361f, which was previously written by vkCmdCopyBufferToImage (from VkCommandBuffer 0x414a698f8d0 submitted on VkQueue 0x414a5c914d0[nv.sl.dlss_g.cmdQ.game]). \nNo sufficient synchronization is present to ensure that a write (VK_ACCESS_2_TRANSFER_WRITE_BIT) at VK_PIPELINE_STAGE_2_COPY_BIT does not conflict with a prior write of the same type at the same stage.\nImage copy region 0: {\n  offset = {x = 0, y = 0, z = 0},\n  extent = {width = 16, height = 16, depth = 1},\n  subresource = {aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 1, baseArrayLayer = 0, layerCount = 1}\n}\n"
+    },
+    {
+      "id": 1602651847,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCmdDrawIndexed"
+      ],
+      "first_message": "vkCmdDrawIndexed(): was called in VkCommandBuffer 0x414a69850d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x70320000007032 was destroyed\n   which was used by VkDescriptorSet 0x54c100000054c1\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-commandBuffer-recording)"
+    },
+    {
+      "id": 1672225264,
+      "severity": 4096,
+      "count": 2,
+      "application_calls": [
+        "vkDestroyImageView"
+      ],
+      "first_message": "vkDestroyImageView(): can't be called on VkImageView 0x4e600000004e60 that is currently in use by VkDescriptorSet 0x52b300000052b3 which is in use by VkCommandBuffer 0x414a697e0d0\nThe Vulkan spec states: All submitted commands that refer to imageView must have completed execution (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-vkDestroyImageView-imageView-01026)"
+    },
+    {
+      "id": 1820876487,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [],
+      "first_message": "vkCmdEndQuery(): was called in VkCommandBuffer 0x414a697e0d0 which is now in an invalid state (instead of recording state) because the following objects bound to the command buffer were invalidated:\n- VkBuffer 0x60450000006045 was destroyed\n   which was used by VkDescriptorSet 0x52770000005277\nThe Vulkan spec states: commandBuffer must be in the recording state (https://docs.vulkan.org/spec/latest/chapters/queries.html#VUID-vkCmdEndQuery-commandBuffer-recording)"
+    },
+    {
+      "id": 2136492404,
+      "severity": 4096,
+      "count": 10,
+      "application_calls": [
+        "vkCreateGraphicsPipelines"
+      ],
+      "first_message": "vkCreateGraphicsPipelines(): pCreateInfos[0].pStages[0] shader [VK_SHADER_STAGE_VERTEX_BIT] has a ClipDistance BuiltIn array size of 8 and a CullDistance BuiltIn array size of 1 which sum to 9 and exceed maxCombinedClipAndCullDistances of 8.\nThe Vulkan spec states: If VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances is not zero, then any entry point interface variable declared with the ClipDistance BuiltIn and CullDistance BuiltIn decoration must not have array sizes which sum to more than VkPhysicalDeviceLimits::maxCombinedClipAndCullDistances (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-maxCombinedClipAndCullDistances-00710)"
+    }
+  ],
+  "targeted_error_counts": {
+    "fake_swapchain": 0,
+    "host_concurrent_access": 0,
+    "nr_internal": 0,
+    "fg_clone_initialization": 2
+  },
+  "fg_clone_errors": [
+    {
+      "application_call": null,
+      "id_number": 1180184443,
+      "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x414c85888d0[nv.sl.dlss_g.cmdCtx.dlssg.command-buffer] expects VkImage 0x3bd1e000003bd1e[nv.sl.dlss_g.clone.dlfg-output_0] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+      "review": null,
+      "severity": 4096,
+      "type": 2
+    },
+    {
+      "application_call": null,
+      "id_number": 1180184443,
+      "message": "vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x414c85888d0[nv.sl.dlss_g.cmdCtx.dlssg.command-buffer] expects VkImage 0x3bd21000003bd21[nv.sl.dlss_g.clone.dlfg-output_1] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.\nThe Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)",
+      "review": null,
+      "severity": 4096,
+      "type": 2
+    }
+  ],
+  "sdk_clone_source": {
+    "creation_initial_layout": "UNDEFINED",
+    "creation_function": "createTexture2DResourceSharedImpl",
+    "source": "src-tauri/target/streamline-sdk-route-repro-v3/source/platforms/sl.chi/vulkan.cpp",
+    "clone_initial_state_assignment": "desc.state = initialState",
+    "created_resource_state": "UNDEFINED",
+    "finding": "Local open SDK source confirms initial state; closed FG plugin first conversion/use remains untraced. No arbitrary transition or warning suppression introduced.",
+    "sdk_git": "e8aaa6eaac968711fb62473d4ae8256dde20919b",
+    "runtime_route": "downstream-v3"
+  },
+  "completion_counts": {
+    "native_present_retired": 6474,
+    "nr_completions": 2316,
+    "sr_completions": 111,
+    "native_present_submitted": 6474
+  },
+  "cleanup_tail": [
+    {
+      "details": {
+        "handle": 4486730023120,
+        "name": "vkCmdSetDepthBiasEnable",
+        "next": 140726245208272
+      },
+      "elapsed_us": 659136692,
+      "event": "route_gdpa",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "handle": 4486730023120,
+        "name": "vkCmdSetPrimitiveRestartEnable",
+        "next": 140726245208912
+      },
+      "elapsed_us": 659136737,
+      "event": "route_gdpa",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "handle": 4486730023120,
+        "name": "vkGetDeviceBufferMemoryRequirements",
+        "next": 140726245192016
+      },
+      "elapsed_us": 659136874,
+      "event": "route_gdpa",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "handle": 4486730023120,
+        "name": "vkGetDeviceImageMemoryRequirements",
+        "next": 140726245192704
+      },
+      "elapsed_us": 659136932,
+      "event": "route_gdpa",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "handle": 4486730023120,
+        "name": "vkGetDeviceImageSparseMemoryRequirements",
+        "next": 140726245193392
+      },
+      "elapsed_us": 659136999,
+      "event": "route_gdpa",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "result": 1,
+        "result_hex": "0x00000001"
+      },
+      "elapsed_us": 659159469,
+      "event": "target_nr_release_feature",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "result": 1,
+        "result_hex": "0x00000001"
+      },
+      "elapsed_us": 659159491,
+      "event": "target_nr_destroy_parameters",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "allowed": true,
+        "device_idle_completed": true,
+        "swapchain": 25259080624921021
+      },
+      "elapsed_us": 659170443,
+      "event": "target_fg_window_guard_rearmed",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "on_frames": 1075,
+        "swapchain": 25259080624921021
+      },
+      "elapsed_us": 659170473,
+      "event": "target_fg_retired",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "hook": 140728301336352,
+        "next": 140728350415344,
+        "object": 4486730023120
+      },
+      "elapsed_us": 659170623,
+      "event": "vkDestroySwapchainKHR",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "object": 2214792660256
+      },
+      "elapsed_us": 659247847,
+      "event": "vkDestroySurfaceKHR",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "result": 1,
+        "result_hex": "0x00000001"
+      },
+      "elapsed_us": 659299010,
+      "event": "target_nr_snippet_shutdown",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "result": 1,
+        "result_hex": "0x00000001"
+      },
+      "elapsed_us": 659299043,
+      "event": "target_nr_destroy_capabilities",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "all_features_released": true,
+        "owner": "Streamline"
+      },
+      "elapsed_us": 659299047,
+      "event": "target_nr_core_deferred",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "feature": 32765,
+        "level": 2,
+        "message": "[2026-10-01 16:54:56] [NGXSendTelemetryShutdownData:958] Sending Telemetry Shutdown Data\n"
+      },
+      "elapsed_us": 659305964,
+      "event": "target_nr_ngx",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "feature": 1,
+        "level": 2,
+        "message": "[2026-10-01 16:54:56] [tid:39940][NGXCubinGeneric::Shutdown:281] Delayed destroy resource list count 0\n"
+      },
+      "elapsed_us": 659306108,
+      "event": "target_nr_ngx",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "result": 0
+      },
+      "elapsed_us": 659401499,
+      "event": "target_sdk_shutdown",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "remaining_devices": 0
+      },
+      "elapsed_us": 659581303,
+      "event": "vkDestroyDevice",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "complete": true,
+        "core_validation": true,
+        "errors": 224,
+        "game_integration_accepted": false,
+        "log_failed": false,
+        "synchronization_validation": true,
+        "unreviewed_warnings": 30,
+        "validation_passed": false,
+        "warnings": 30
+      },
+      "elapsed_us": 659607541,
+      "event": "target_nr_validation_summary",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    },
+    {
+      "details": {
+        "remaining_instances": 0
+      },
+      "elapsed_us": 659608021,
+      "event": "vkDestroyInstance",
+      "phase": 0,
+      "thread": "ThreadId(5)"
+    }
+  ],
+  "file_sha256": {
+    "target-inputs.json": "8d24cbfb48f3d19ae581e554dc32aceefc884a0b22ffa2ec283750d0cfae989e",
+    "target-command.json": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+    "target-process.json": "85f0a1a0dbc5fea08c52afa85c6460943b70551f9ed9fc67f612fffdc7aec6cc",
+    "target-result.json": "d2ad1a20ef59ba88113525c267ea8cc439b8fa86341c127c734e5be3e3666a78",
+    "target-exit.json": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274",
+    "layer.jsonl": "b4e4acd28a28320e1760b60460396df6fef2cece4e8d134c619c03b9aef04308",
+    "nr-validation.jsonl": "eb03cce104dac4c7f62d90d388de2fb069f70b438a7e34a75a02f7b6bcb7f34e",
+    "nr-validation-result.json": "7516f051b2b26770da1772e3e3721c5ca401df23e4430c3b4cbdb168b0d07b05",
+    "target.stderr.log": "60e1c60fe8f63b1b71df90a3d3de308ccb0ac40c2443a47708d98d49cb679178",
+    "target.stdout.log": "5faaeda74524ea0343c76c6c02afa0ca11eaf60ae82c5a2c285139040e99541b",
+    "phase-13.json": "a5ce108c4ca5ddd81b413f6b83fdfc8b81170e46d96e4bf3403cd49589e29996",
+    "runtime/sl.log": "caccf852111e5800e61a17e6805a6c5d42bcaca83311eda6d79bab4504d3c029"
+  },
+  "limitations": [
+    "Eight combinations have actual runtime evidence; these short per-phase samples do not replace long-term, display-scanout, visual-quality or performance acceptance.",
+    "VVL core and synchronization enabled. Final strict zero-error gate fails with 224 recorded errors and 30 unreviewed warnings; existing emulator issues are retained, not repaired.",
+    "Two SDK DLFG clone image initial-layout errors occurred at first FG enable. They must not be silently grouped with known emulator errors or ignored by message ID alone.",
+    "No safe NR failure injection, ten FG-active NR toggles, minimized recovery or resize with active FG this round.",
+    "Continuous SR/FG toggle coverage uses matching revision, same SR fence and advancing FG timeline; control updates preserve unchanged consumers.",
+    "Depth is synthetic, NVOF estimates unprocessed-frame motion, and source is selected emulator color rather than native TAA input."
+  ]
+}

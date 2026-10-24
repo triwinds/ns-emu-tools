@@ -1,0 +1,25 @@
+#version 450
+// Same-frame feedback in the model's SDR input domain. No neighbouring pixels
+// or temporal samples: the first result and P0 remain untouched.
+layout(local_size_x=8, local_size_y=8) in;
+layout(set=0,binding=0,rgba16f) readonly uniform image2D original;
+layout(set=0,binding=1,rgba16f) readonly uniform image2D firstPass;
+layout(set=0,binding=2,rgba16f) writeonly uniform image2D prepared;
+layout(push_constant) uniform Params { float feedback; uint clampEnabled; } settings;
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy);
+    if(any(greaterThanEqual(p,imageSize(original)))) return;
+    vec4 base=imageLoad(original,p);
+    // Exact endpoint; avoids 0*NaN and preserves alpha and dark FP16 values.
+    if(settings.feedback==0.0) { imageStore(prepared,p,base); return; }
+    vec4 first=imageLoad(firstPass,p);
+    vec3 color=first.rgb;
+    if(settings.clampEnabled!=0u) {
+        if(any(isnan(color)) || any(isinf(color))) color=base.rgb;
+        color=max(color,vec3(0.0));
+        // Scale positive RGB together instead of clipping individual channels.
+        color/=max(1.0,max(color.r,max(color.g,color.b)));
+    }
+    vec3 result=settings.feedback==1.0 ? color : mix(base.rgb,color,settings.feedback);
+    imageStore(prepared,p,vec4(result,base.a));
+}

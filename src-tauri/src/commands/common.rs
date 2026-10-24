@@ -7,9 +7,7 @@ use crate::error::AppError;
 use crate::models::storage::{self, Storage};
 use crate::repositories::app_info::{self, UpdateCheckResult};
 use crate::repositories::config_data;
-use crate::services::installer::{
-    error_step, pending_step, running_step, success_step, InstallReporter, StepKind,
-};
+use crate::services::installer::{pending_step, InstallReporter};
 use tauri::{command, AppHandle, Emitter, Window};
 use tauri_plugin_opener::OpenerExt;
 use tracing::{error, info};
@@ -255,7 +253,6 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
         pending_step("find_nca", "查找固件文件"),
         pending_step("extract_version", "提取版本信息"),
     ]);
-    reporter.step(running_step("find_nca", "查找固件文件"));
 
     let result = match emu_type.as_str() {
         "yuzu" => crate::services::firmware::detect_yuzu_firmware_version(Some(&window))
@@ -269,18 +266,10 @@ pub async fn detect_firmware_version(emu_type: String, window: Window) -> Result
 
     match result {
         Ok(version) => {
-            reporter.step(success_step("find_nca", "查找固件文件"));
-            reporter.step(success_step("extract_version", "提取版本信息"));
             reporter.finish(true, Some(format!("检测到固件版本: {}", version)));
             Ok(version)
         }
         Err(e) => {
-            reporter.step(error_step(
-                "find_nca",
-                "查找固件文件",
-                StepKind::Normal,
-                e.clone(),
-            ));
             reporter.finish_error(e.clone());
             Err(e)
         }

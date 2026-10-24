@@ -1,0 +1,16 @@
+[package]
+name = "xess-vulkan-diagnostics"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0"
+
+[workspace]
+
+[dependencies]
+ash = "0.38"
+half = "2.7"
+libloading = "0.8"
+png = "0.17"
+serde_json = "1"
+sha2 = "0.10"

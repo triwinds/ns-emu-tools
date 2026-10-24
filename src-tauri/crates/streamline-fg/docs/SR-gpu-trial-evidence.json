@@ -1,0 +1,620 @@
+{
+  "schema": 1,
+  "date": "2026-09-26",
+  "experiments": [
+    {
+      "session": "scale-gpu-001",
+      "mode": "copy",
+      "filter": "Bilinear",
+      "anti_aliasing": "None",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "f94a564dbe2052a304f87ed9f73a69a249ffdcad1111610b9363d7acbf14cdb4",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "displayed_image_replaced": false,
+            "files": [
+              {
+                "bytes": 8294400,
+                "file": "source.rgba",
+                "saved": true
+              },
+              {
+                "bytes": 13670400,
+                "file": "present.bgra",
+                "saved": true
+              }
+            ],
+            "gpu_fence_completed": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 4809971,
+          "event": "scale_copy_complete",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 142,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 4196433,
+          "sha256": "7ff83dc2a7294b195ddee4495dd067605bc787ce96c4c0a71c8193a131a468db"
+        },
+        "scale-copy.json": {
+          "bytes": 6691,
+          "sha256": "9cfecfa8f57fd36069ff40e473e7faed9ac28da39fbfc6dfed4199fd34cdeccf"
+        },
+        "source.rgba": {
+          "bytes": 8294400,
+          "sha256": "e94446360474ad278f0927cc33fc7d5932773725255454fef4d618db9473aade"
+        },
+        "present.bgra": {
+          "bytes": 13670400,
+          "sha256": "9418d4807295d3c8008304efae6f734e152c3651dc21072d9b3ccda5347a261b"
+        },
+        "pixel-comparison.json": {
+          "bytes": 349,
+          "sha256": "8aa8b512ed280650cdfc069c9de1dbee40c5a38632d0444f6c69ad3426352282"
+        }
+      },
+      "source_extent": [
+        1920,
+        1080
+      ],
+      "output_extent": [
+        2560,
+        1335
+      ],
+      "source_endpoints": [
+        0.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "replacement": null,
+      "gpu_fence_completed": true
+    },
+    {
+      "session": "scale-gpu-002",
+      "mode": "replace",
+      "filter": "Bilinear",
+      "anti_aliasing": "None",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "e72a294851b148492137a8fe64a8367f4e17ee4589c939b96da1b4d2ff6425c1",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "comparison_passed": true,
+            "displayed_image_replaced": true,
+            "max_channel_error": 0,
+            "mean_channel_error": 0.0,
+            "method": "one_frame_gpu_linear_blit_output_overwrite",
+            "original_draw_retained": true,
+            "reduced_application_workload": false,
+            "replacement_fence_completed": true,
+            "replacement_readback": {
+              "identical_to_reconstruction": true,
+              "saved": true
+            },
+            "requested": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 4796993,
+          "event": "scale_replacement_result",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "files": [
+              {
+                "bytes": 8294400,
+                "file": "source.rgba",
+                "saved": true
+              },
+              {
+                "bytes": 13670400,
+                "file": "present.bgra",
+                "saved": true
+              }
+            ],
+            "gpu_fence_completed": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 4797680,
+          "event": "scale_copy_complete",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 143,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 4197202,
+          "sha256": "adc5d6a0d12da85f6d9b07a322ef46919ed509eeee622d4e5c8ad56bcdfe7a9c"
+        },
+        "scale-copy.json": {
+          "bytes": 7171,
+          "sha256": "e8a416f33f6bf09426b742aec566d4ad8e6fd9e2113b8b1af45d140de164beb0"
+        },
+        "source.rgba": {
+          "bytes": 8294400,
+          "sha256": "e94446360474ad278f0927cc33fc7d5932773725255454fef4d618db9473aade"
+        },
+        "present.bgra": {
+          "bytes": 13670400,
+          "sha256": "9418d4807295d3c8008304efae6f734e152c3651dc21072d9b3ccda5347a261b"
+        },
+        "gpu-reconstructed.bgra": {
+          "bytes": 13670400,
+          "sha256": "9418d4807295d3c8008304efae6f734e152c3651dc21072d9b3ccda5347a261b"
+        },
+        "replaced.bgra": {
+          "bytes": 13670400,
+          "sha256": "9418d4807295d3c8008304efae6f734e152c3651dc21072d9b3ccda5347a261b"
+        }
+      },
+      "source_extent": [
+        1920,
+        1080
+      ],
+      "output_extent": [
+        2560,
+        1335
+      ],
+      "source_endpoints": [
+        0.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "replacement": {
+        "comparison_passed": true,
+        "displayed_image_replaced": true,
+        "max_channel_error": 0,
+        "mean_channel_error": 0.0,
+        "method": "one_frame_gpu_linear_blit_output_overwrite",
+        "original_draw_retained": true,
+        "reduced_application_workload": false,
+        "replacement_fence_completed": true,
+        "replacement_readback": {
+          "identical_to_reconstruction": true,
+          "saved": true
+        },
+        "requested": true,
+        "sr_evaluated": false
+      },
+      "gpu_fence_completed": true,
+      "original_reconstruction_written_identical": true
+    },
+    {
+      "session": "scale-gpu-003",
+      "mode": "replace",
+      "filter": "Bilinear",
+      "anti_aliasing": "None",
+      "game": "Xenoblade Chronicles Definitive Edition [0100FF500E34A000]+[v1.1.2].xci",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "e72a294851b148492137a8fe64a8367f4e17ee4589c939b96da1b4d2ff6425c1",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "comparison_passed": true,
+            "displayed_image_replaced": true,
+            "max_channel_error": 0,
+            "mean_channel_error": 0.0,
+            "method": "one_frame_gpu_linear_blit_output_overwrite",
+            "original_draw_retained": true,
+            "reduced_application_workload": false,
+            "replacement_fence_completed": true,
+            "replacement_readback": {
+              "identical_to_reconstruction": true,
+              "saved": true
+            },
+            "requested": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 5654952,
+          "event": "scale_replacement_result",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "files": [
+              {
+                "bytes": 3686400,
+                "file": "source.rgba",
+                "saved": true
+              },
+              {
+                "bytes": 13670400,
+                "file": "present.bgra",
+                "saved": true
+              }
+            ],
+            "gpu_fence_completed": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 5656262,
+          "event": "scale_copy_complete",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 135,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 34144658,
+          "sha256": "da33a02e60f576d96fc2bdd770ed21570a93126316be31876e2ade34b90251d6"
+        },
+        "scale-copy.json": {
+          "bytes": 7177,
+          "sha256": "bc469a308a451fc97b822297e6bda84b9f6b06d0a42b6008346eb103c2e5b744"
+        },
+        "source.rgba": {
+          "bytes": 3686400,
+          "sha256": "85891d4805ab5246f154d7f2028939b3d1f303205c0850ef6a4675e1aa320740"
+        },
+        "present.bgra": {
+          "bytes": 13670400,
+          "sha256": "26277ac416b9cf09e907f6f2ec090ae42e2391fef2ecd6c08383727d3db21c69"
+        },
+        "gpu-reconstructed.bgra": {
+          "bytes": 13670400,
+          "sha256": "26277ac416b9cf09e907f6f2ec090ae42e2391fef2ecd6c08383727d3db21c69"
+        },
+        "replaced.bgra": {
+          "bytes": 13670400,
+          "sha256": "26277ac416b9cf09e907f6f2ec090ae42e2391fef2ecd6c08383727d3db21c69"
+        }
+      },
+      "source_extent": [
+        1280,
+        720
+      ],
+      "output_extent": [
+        2560,
+        1335
+      ],
+      "source_endpoints": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "replacement": {
+        "comparison_passed": true,
+        "displayed_image_replaced": true,
+        "max_channel_error": 0,
+        "mean_channel_error": 0.0,
+        "method": "one_frame_gpu_linear_blit_output_overwrite",
+        "original_draw_retained": true,
+        "reduced_application_workload": false,
+        "replacement_fence_completed": true,
+        "replacement_readback": {
+          "identical_to_reconstruction": true,
+          "saved": true
+        },
+        "requested": true,
+        "sr_evaluated": false
+      },
+      "gpu_fence_completed": true,
+      "original_reconstruction_written_identical": true
+    },
+    {
+      "session": "scale-gpu-004",
+      "mode": "replace",
+      "filter": "Nearest",
+      "anti_aliasing": "None",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "e72a294851b148492137a8fe64a8367f4e17ee4589c939b96da1b4d2ff6425c1",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "comparison_passed": false,
+            "displayed_image_replaced": false,
+            "max_channel_error": 165,
+            "mean_channel_error": 0.06799822975187265,
+            "requested": true
+          },
+          "elapsed_us": 4996217,
+          "event": "scale_replacement_result",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "files": [
+              {
+                "bytes": 8294400,
+                "file": "source.rgba",
+                "saved": true
+              },
+              {
+                "bytes": 13670400,
+                "file": "present.bgra",
+                "saved": true
+              }
+            ],
+            "gpu_fence_completed": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 4996857,
+          "event": "scale_copy_complete",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 144,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 4197308,
+          "sha256": "d8052faad8984aeecfe130b92a2f19a2c213252065d3976404c7f340bf7601e0"
+        },
+        "scale-copy.json": {
+          "bytes": 6885,
+          "sha256": "588343dfbeb8a1cd17b0fed7799591c0ba6d6af044dbe0f6543fe16885ded2b9"
+        },
+        "source.rgba": {
+          "bytes": 8294400,
+          "sha256": "e94446360474ad278f0927cc33fc7d5932773725255454fef4d618db9473aade"
+        },
+        "present.bgra": {
+          "bytes": 13670400,
+          "sha256": "9fc079928344c822db139f23ac39427cc2ec4cafea9a69518c6ee8c0b9297e0a"
+        },
+        "gpu-reconstructed.bgra": {
+          "bytes": 13670400,
+          "sha256": "9418d4807295d3c8008304efae6f734e152c3651dc21072d9b3ccda5347a261b"
+        }
+      },
+      "source_extent": [
+        1920,
+        1080
+      ],
+      "output_extent": [
+        2560,
+        1335
+      ],
+      "source_endpoints": [
+        0.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "replacement": {
+        "comparison_passed": false,
+        "displayed_image_replaced": false,
+        "max_channel_error": 165,
+        "mean_channel_error": 0.06799822975187265,
+        "requested": true
+      },
+      "gpu_fence_completed": true
+    },
+    {
+      "session": "scale-gpu-005",
+      "mode": "replace",
+      "filter": "Fsr",
+      "anti_aliasing": "None",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "e72a294851b148492137a8fe64a8367f4e17ee4589c939b96da1b4d2ff6425c1",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "reason": "observed contract mismatch"
+          },
+          "elapsed_us": 5595331,
+          "event": "scale_copy_skipped",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 125,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 4798631,
+          "sha256": "05d6f990ddbd7edec8da7d241d022a70971f1f6f099cfa486a6e76d1ec6a98a1"
+        }
+      }
+    },
+    {
+      "session": "scale-gpu-006",
+      "mode": "replace",
+      "filter": "Bilinear",
+      "anti_aliasing": "Fxaa",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "505447d6123c34eb4abc055b654c021b24d85b6e0ecf34a06926493c1d866c2e",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "reason": "source dependency not observed"
+          },
+          "elapsed_us": 6429850,
+          "event": "scale_copy_skipped",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 367,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 12870518,
+          "sha256": "86c2460c7e9dc53f5949ddf5123e5d7dace434a29652099222f26a2e0088d3dd"
+        },
+        "window-actions.json": {
+          "bytes": 254,
+          "sha256": "04a85af0657796e0f729840ea5a059cbef248448f63c302dd6f9f502a79d5f91"
+        }
+      }
+    },
+    {
+      "session": "scale-gpu-007",
+      "mode": "replace",
+      "filter": "Bilinear",
+      "anti_aliasing": "None",
+      "game": "Stardew Valley-0100E65002BB8000--US--v0-.nsp",
+      "target_sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85",
+      "layer_sha256": "505447d6123c34eb4abc055b654c021b24d85b6e0ecf34a06926493c1d866c2e",
+      "target_exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "experiment_events": [
+        {
+          "details": {
+            "comparison_passed": true,
+            "displayed_image_replaced": true,
+            "max_channel_error": 0,
+            "mean_channel_error": 0.0,
+            "method": "one_frame_gpu_linear_blit_output_overwrite",
+            "original_draw_retained": true,
+            "reduced_application_workload": false,
+            "replacement_fence_completed": true,
+            "replacement_readback": {
+              "identical_to_reconstruction": true,
+              "saved": true
+            },
+            "requested": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 6777574,
+          "event": "scale_replacement_result",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        },
+        {
+          "details": {
+            "files": [
+              {
+                "bytes": 8294400,
+                "file": "source.rgba",
+                "saved": true
+              },
+              {
+                "bytes": 5924160,
+                "file": "present.bgra",
+                "saved": true
+              }
+            ],
+            "gpu_fence_completed": true,
+            "sr_evaluated": false
+          },
+          "elapsed_us": 6778196,
+          "event": "scale_copy_complete",
+          "phase": 0,
+          "thread": "ThreadId(1)"
+        }
+      ],
+      "application_present_calls": 362,
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 11862265,
+          "sha256": "45b206c19bbc78f1c4fd7990eb9e4e6da08864ffcf40ab465cae036f1120e23e"
+        },
+        "scale-copy.json": {
+          "bytes": 7171,
+          "sha256": "817678b152b40cf6f0854a6a96695d2de12b8b594acbdd44d21e779615afe478"
+        },
+        "source.rgba": {
+          "bytes": 8294400,
+          "sha256": "edc6e38434677075fe129fd459143987846040d4040bd9111d7f9f301c5e6b9c"
+        },
+        "present.bgra": {
+          "bytes": 5924160,
+          "sha256": "9e98d13a0362dc418243efc255d989dab88fd3f74b3de310fa3c30e73246b7df"
+        },
+        "gpu-reconstructed.bgra": {
+          "bytes": 5924160,
+          "sha256": "9e98d13a0362dc418243efc255d989dab88fd3f74b3de310fa3c30e73246b7df"
+        },
+        "replaced.bgra": {
+          "bytes": 5924160,
+          "sha256": "9e98d13a0362dc418243efc255d989dab88fd3f74b3de310fa3c30e73246b7df"
+        },
+        "window-actions.json": {
+          "bytes": 118,
+          "sha256": "d9f1a3dd8561db1008837c2d1475bc56e5b2eb5d749a0db13f8355b24eb1684b"
+        }
+      },
+      "source_extent": [
+        1920,
+        1080
+      ],
+      "output_extent": [
+        1584,
+        935
+      ],
+      "source_endpoints": [
+        0.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "replacement": {
+        "comparison_passed": true,
+        "displayed_image_replaced": true,
+        "max_channel_error": 0,
+        "mean_channel_error": 0.0,
+        "method": "one_frame_gpu_linear_blit_output_overwrite",
+        "original_draw_retained": true,
+        "reduced_application_workload": false,
+        "replacement_fence_completed": true,
+        "replacement_readback": {
+          "identical_to_reconstruction": true,
+          "saved": true
+        },
+        "requested": true,
+        "sr_evaluated": false
+      },
+      "gpu_fence_completed": true,
+      "original_reconstruction_written_identical": true
+    }
+  ],
+  "validation": {
+    "test_invocations_passed": 48,
+    "shared_model_tests_duplicated_across_binaries": 4,
+    "existing_hardware_test_ignored": 1,
+    "checks": "toolbox and component: host and Windows passed without warnings",
+    "vulkan_validation_layer_run": false,
+    "dlss_sr_evaluated": false,
+    "original_scaling_draw_suppressed": false,
+    "sdk_fg_coexistence_verified": false
+  },
+  "scope": "One-frame original retained; GPU readback, private linear-blit comparison, conditional output overwrite, readback verification"
+}

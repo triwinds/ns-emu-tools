@@ -1,4 +1,6 @@
 // Composables
+import type { GraphicsAdvanced } from '@/utils/graphicsAdvanced'
+import type { NrPreset } from '@/utils/nrPresets'
 
 export interface AppConfig {
   yuzu: YuzuConfig
@@ -29,6 +31,19 @@ export interface Setting {
 
 export interface OtherSetting {
   rename_yuzu_to_cemu: boolean
+  streamline_nvof: boolean
+  streamline_sr: boolean
+  streamline_fg?: boolean
+  streamline_nr?: boolean
+  streamline_nr_intensity?: number
+  streamline_nr_consolidated?: boolean
+  streamline_input_scale?: number
+  streamline_input_max_edge?: number
+  streamline_advanced?: GraphicsAdvanced
+  streamline_nr_presets?: NrPreset[]
+  streamline_sr_scale?: number
+  streamline_sr_preset?: 'default' | 'j' | 'k' | 'l' | 'm'
+  streamline_sr_mode: 'quality' | 'balanced' | 'performance' | 'dlaa'
 }
 
 export interface UiSetting {

@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "session": "sr-auto-001",
+      "sr_frames": [
+        {
+          "source": "native_source",
+          "scale_percent": 150,
+          "count": 430
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 50,
+          "count": 98
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 100,
+          "count": 195
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 125,
+          "count": 188
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 175,
+          "count": 192
+        },
+        {
+          "source": "native_source",
+          "scale_percent": 200,
+          "count": 181
+        }
+      ],
+      "fg_on_frames": 0,
+      "fg_x2_reports": 0,
+      "fg_reasons": {
+        "background": 1475
+      },
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 1922323,
+          "sha256": "cf1b4ffff884cf4b937aee4175bcf660d13a76ac44435d6187a437611c2b863c"
+        },
+        "target-inputs.json": {
+          "bytes": 1032,
+          "sha256": "28d30c2c82f6f839d441803eba84a7492ba01158936c46a9c11f6f109b17eb0b"
+        },
+        "target-exit.json": {
+          "bytes": 59,
+          "sha256": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274"
+        }
+      }
+    },
+    {
+      "session": "sr-auto-002",
+      "sr_frames": [
+        {
+          "source": "present_source",
+          "scale_percent": 150,
+          "count": 1031
+        }
+      ],
+      "fg_on_frames": 0,
+      "fg_x2_reports": 0,
+      "fg_reasons": {
+        "background": 1146
+      },
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 1627503,
+          "sha256": "359a53641b6f060e5414d51fb675567b339204e3b5021f51113b627be61da9c8"
+        },
+        "target-inputs.json": {
+          "bytes": 1050,
+          "sha256": "c9a2d482f689f278f945426072a8e52d8037ee7dfae44213f763c4a12561e710"
+        },
+        "target-exit.json": {
+          "bytes": 59,
+          "sha256": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274"
+        }
+      }
+    },
+    {
+      "session": "sr-auto-003",
+      "sr_frames": [
+        {
+          "source": "present_source",
+          "scale_percent": 150,
+          "count": 1031
+        }
+      ],
+      "fg_on_frames": 0,
+      "fg_x2_reports": 0,
+      "fg_reasons": {
+        "background": 1151
+      },
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 1635366,
+          "sha256": "101ddccf2e9edc23c38b11a8036a79ed88a910b03e991f69ed3cb0c1982ae663"
+        },
+        "target-inputs.json": {
+          "bytes": 1050,
+          "sha256": "c9a2d482f689f278f945426072a8e52d8037ee7dfae44213f763c4a12561e710"
+        },
+        "target-exit.json": {
+          "bytes": 59,
+          "sha256": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274"
+        }
+      }
+    },
+    {
+      "session": "sr-auto-004",
+      "sr_frames": [
+        {
+          "source": "native_source",
+          "scale_percent": 150,
+          "count": 1043
+        }
+      ],
+      "fg_on_frames": 0,
+      "fg_x2_reports": 0,
+      "fg_reasons": {
+        "background": 1158
+      },
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 1614578,
+          "sha256": "7f7e3b757d3b3266213b6dcc2cd6a6515fd40f3375a5cb60d4abc1d05459c949"
+        },
+        "target-inputs.json": {
+          "bytes": 1050,
+          "sha256": "c9a2d482f689f278f945426072a8e52d8037ee7dfae44213f763c4a12561e710"
+        },
+        "target-exit.json": {
+          "bytes": 59,
+          "sha256": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274"
+        }
+      }
+    },
+    {
+      "session": "sr-auto-005",
+      "sr_frames": [
+        {
+          "source": "native_source",
+          "scale_percent": 150,
+          "count": 1278
+        }
+      ],
+      "fg_on_frames": 0,
+      "fg_x2_reports": 0,
+      "fg_reasons": {
+        "background": 1396
+      },
+      "errors": [],
+      "sdk_shutdown": {
+        "result": 0
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": true,
+        "success": true
+      },
+      "artifacts": {
+        "layer.jsonl": {
+          "bytes": 1890092,
+          "sha256": "fca96eb218780af781b2dcd83c4b64068b18cd326315c4cae5965a1bc7b68f7a"
+        },
+        "target-inputs.json": {
+          "bytes": 1050,
+          "sha256": "af6cd4c54e1207dda79cdfd8d2450305d50c8ddba6cf449ef3307b8f1744682b"
+        },
+        "target-exit.json": {
+          "bytes": 59,
+          "sha256": "9113e5264a68d89dffda8ba3595e4caa68cc01d4ff2142df7012b3896df65274"
+        }
+      }
+    }
+  ],
+  "limits": [
+    "No validation layer",
+    "No display quality or performance acceptance",
+    "Foreground activation denied by Windows; FG remained gated off",
+    "Original scaling draw retained"
+  ]
+}

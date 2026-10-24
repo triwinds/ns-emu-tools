@@ -8,8 +8,8 @@ import {
   mdiKeyVariant,
   mdiLinkVariant,
   mdiMemory,
+  mdiMonitorShimmer,
   mdiNewBox,
-  mdiSpeedometer,
   mdiTestTube,
 } from '@mdi/js'
 import {useEmitter} from "@/plugins/mitt";
@@ -18,10 +18,11 @@ import {useConfigStore} from "@/stores/ConfigStore";
 import {openUrlWithDefaultBrowser} from "@/utils/common";
 import {updateLastOpenEmuPage} from "@/utils/tauri";
 
+
 const emitter = useEmitter()
-let open = ref<string[]>([])
+const open = ref<string[]>([])
 const display = useDisplay()
-let drawer = ref(display.lgAndUp.value)
+const drawer = ref(display.lgAndUp.value)
 const configStore = useConfigStore()
 import router from "@/router";
 
@@ -118,6 +119,20 @@ function openReleasePage() {
             </template>
           </v-list-item>
         </template>
+        <v-list-item
+          link
+          to="/graphics"
+        >
+          <template #prepend>
+            <div class="my-prepend-box">
+              <v-icon
+                color="secondary"
+                :icon="mdiMonitorShimmer"
+              />
+            </div>
+          </template>
+          <v-list-item-title>图形增强</v-list-item-title>
+        </v-list-item>
         <v-list-item link to="/yuzuCheatsManagement">
           <template v-slot:prepend>
             <div class="my-prepend-box">

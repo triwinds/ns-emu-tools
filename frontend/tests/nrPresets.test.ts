@@ -1,0 +1,112 @@
+import { describe, expect, test } from 'bun:test'
+import { bypassNrAdditions, graphicsAdvanced, nrHaloComparison, type NrOptions } from '../src/utils/graphicsAdvanced'
+import { normalizeNrPreset, presetNotices, type NrPreset } from '../src/utils/nrPresets'
+
+function fixture(): NrPreset {
+  return { schemaVersion: 4, name: 'test', emulator: 'eden', game: '', displayMode: 'SDR', settings: { enabled: true, intensity: 150, options: graphicsAdvanced().nr }, environment: { toolboxVersion: '0.6.3', componentVersion: 'test', componentSha256: 'a'.repeat(64), modelVersion: '310.8.0', modelSha256: 'b'.repeat(64), targetSha256: 'c'.repeat(64) } }
+}
+describe('NR preset integration', () => {
+  test('halo comparison preserves first model and Look, and requires interpass support', () => {
+    const preset = fixture()
+    const first = preset.settings.options
+    first.style = 'c'
+    first.globalTone = 40
+    first.localTone = 130
+    first.localStructure = 80
+    first.autoMask = true
+    const compared = nrHaloComparison(first, 150)
+    expect({ ...compared, secondPass: first.secondPass }).toEqual(first)
+    expect(compared.secondPass).toMatchObject({ enabled: true, inherit: false, intensity: 150, style: 'c', globalTone: 40, localTone: 0, localStructure: 80, autoMask: true, interpass: { clamp: true, feedback: 75 } })
+    expect(first.secondPass.enabled).toBe(false)
+    preset.settings.options = compared
+    const draft = normalizeNrPreset(preset)
+    draft.settings.options.secondPass.interpass.feedback = 50
+    expect(compared.secondPass.interpass.feedback).toBe(75)
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true, nrTwoPassSupported: true }
+    expect(presetNotices(preset, preset.environment, live).some(note => note.includes('遍间'))).toBe(true)
+    expect(presetNotices(preset, preset.environment, { ...live, nrInterpassSupported: true })).toEqual([])
+  })
+  test('persistence is versioned and requires its own capability even with older temporal modes', () => {
+    const preset = fixture()
+    preset.settings.options.look.temporal.mode = 'optical_flow_plus'
+    const draft = normalizeNrPreset(preset)
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true, nrTemporalLookSupported: true, nrTemporalModesSupported: true }
+    expect(draft.schemaVersion).toBe(4)
+    expect(draft.settings.options.look.temporal.mode).toBe('optical_flow_plus')
+    expect(presetNotices(draft, draft.environment, live)).toEqual(['当前组件不支持光流累积＋。'])
+    expect(presetNotices(draft, draft.environment, { ...live, nrPersistenceSupported: true })).toEqual([])
+  })
+  test('scope/modes survive cloning and require their own component capabilities', () => {
+    const preset = fixture()
+    preset.settings.options.look.scope = 'chain_total'
+    preset.settings.options.look.temporal.mode = 'static'
+    preset.settings.options.look.temporal.sampling = 'per_tap'
+    const draft = normalizeNrPreset(preset)
+    expect(draft.schemaVersion).toBe(4)
+    expect(draft.settings.options.look).toEqual(preset.settings.options.look)
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true, nrTemporalLookSupported: true }
+    expect(presetNotices(draft, draft.environment, live).some(note => note.includes('作用范围'))).toBe(true)
+    expect(presetNotices(draft, draft.environment, live).some(note => note.includes('历史采样'))).toBe(true)
+    expect(presetNotices(draft, draft.environment, { ...live, nrLookScopeSupported: true, nrTemporalModesSupported: true })).toEqual([])
+    draft.settings.options.look.temporal.mode = 'optical_flow'
+    expect(preset.settings.options.look.temporal.mode).toBe('static')
+  })
+  test('old neutral wire options restore omitted defaults without losing zero', () => {
+    const preset = fixture()
+    preset.settings.options = { style: 'b', globalTone: 0, localTone: null, localStructure: 150, skinStructure: 0, autoMask: false } as NrOptions
+    const normalized = normalizeNrPreset(preset)
+    expect(normalized.settings.options.globalTone).toBe(0)
+    expect(normalized.settings.options.localStructure).toBe(150)
+    expect(normalized.settings.options.look).toEqual(graphicsAdvanced().nr.look)
+    expect(normalized.settings.options.secondPass).toEqual(graphicsAdvanced().nr.secondPass)
+  })
+  test('applying/editing a preview cannot mutate the stored preset', () => {
+    const preset = fixture()
+    const draft = normalizeNrPreset(preset)
+    draft.settings.options.look.temporal.timeMs = 100
+    draft.settings.options.look.protection.hue = 100
+    draft.settings.options.look.spatial.radius = 15
+    draft.settings.options.secondPass.intensity = 50
+    draft.environment.componentVersion = 'changed'
+    expect(preset).toEqual(fixture())
+  })
+  test('bypass retains model and all saved tuning, independently of defaults', () => {
+    const preset = fixture()
+    const options = preset.settings.options
+    options.style = 'c'
+    options.secondPass.enabled = true
+    options.secondPass.intensity = 50
+    options.look.amount = 130
+    options.look.spatial.enabled = true
+    options.look.temporal.enabled = true
+    const bypass = bypassNrAdditions(options)
+    expect(bypass).toEqual({ ...options, secondPass: { ...options.secondPass, enabled: false }, look: { ...options.look, enabled: false } })
+    expect(options.secondPass.enabled).toBe(true)
+    expect(options.look.enabled).toBe(true)
+    expect(bypass).not.toEqual(graphicsAdvanced().nr)
+  })
+  test('missing versions and disconnected games are explicit', () => {
+    const preset = fixture()
+    preset.environment.modelSha256 = null
+    const notes = presetNotices(preset, null, { connected: false })
+    expect(notes.some(note => note.includes('缺少'))).toBe(true)
+    expect(notes.some(note => note.includes('尚未连接'))).toBe(true)
+  })
+  test('component/model/target mismatches are distinguished', () => {
+    const preset = fixture()
+    const environment = { ...preset.environment, componentSha256: null, modelSha256: 'd'.repeat(64), targetSha256: 'e'.repeat(64) }
+    const notes = presetNotices(preset, environment, { connected: false })
+    expect(notes.filter(note => note.includes('不同或未就绪')).length).toBe(3)
+  })
+  test('nondefault inactive overrides require capability but NR off stays available', () => {
+    const preset = fixture()
+    preset.settings.options.secondPass.intensity = 50
+    preset.settings.options.look.temporal.timeMs = 100
+    const live = { connected: true, nrLiveSupported: true, advancedSettingsSupported: true, nrLookSupported: true }
+    const notes = presetNotices(preset, preset.environment, live)
+    expect(notes.some(note => note.includes('第二遍'))).toBe(true)
+    expect(notes.some(note => note.includes('时间 Look'))).toBe(true)
+    preset.settings.enabled = false
+    expect(presetNotices(preset, preset.environment, live)).toEqual([])
+  })
+})

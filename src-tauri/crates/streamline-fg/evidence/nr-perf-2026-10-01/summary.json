@@ -1,0 +1,1119 @@
+{
+  "date": "2026-10-01",
+  "measurement": "same save/location/view confirmed by user for each process; consecutive 30-second phases; readback frames excluded from timeline; timing markers remain enabled in both processes",
+  "sessions": [
+    {
+      "session": "nr-perf-validation-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "f25dd17442767e7e1d4fab0d96e57b6638992d569f36c59df3599069377e9a3c",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": "2acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac",
+          "validation_manifest_sha256": "672a281330703083230ff02cabdd1afd524b600e0a11ae8610119e06e4183b02"
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": false,
+        "nr_readback_requested": true,
+        "nr_requested": true,
+        "nr_validation_requested": true,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 1818,
+          "execution_verified": true,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 541,
+          "nonzero_intensity_changed_output": true,
+          "nr_to_sr_frames": 1555,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 731,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 6,
+          "readbacks_valid": true,
+          "reset_reasons": {
+            "SourceChanged": 1818
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 13
+        },
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 2562,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 2562,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": true,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "sdk_error_lines": 227,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "complete": true,
+          "core_validation": true,
+          "errors": 228,
+          "game_integration_accepted": false,
+          "log_failed": false,
+          "summary_matches_log": true,
+          "synchronization_validation": true,
+          "unreviewed_warnings": 30,
+          "validation_passed": false,
+          "warnings": 30
+        }
+      },
+      "module_check": null,
+      "phases": [
+        {
+          "name": "validation_on_nr_dlaa",
+          "revision": 1,
+          "trace_start_us": 103431906,
+          "trace_end_us": 133783473,
+          "seconds": 30.3649598,
+          "frames": 215,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 214,
+            "[2560, 1335]": 1
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 215,
+              "mean": 140.52992558139536,
+              "median": 137.783,
+              "p95": 162.968
+            },
+            "hook_ms": {
+              "n": 215,
+              "mean": 19.174130232558138,
+              "median": 18.693,
+              "p95": 21.214
+            },
+            "outside_present_hook_ms": {
+              "n": 215,
+              "mean": 121.3557953488372,
+              "median": 119.334,
+              "p95": 139.775
+            },
+            "nr_evaluated": {
+              "n": 215,
+              "mean": 0.9906976744186047,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 215,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 213,
+              "mean": 0.14390430046948358,
+              "median": 0.131424,
+              "p95": 0.17056
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 213,
+              "mean": 7.207552600938967,
+              "median": 7.067584,
+              "p95": 7.911136000000001
+            },
+            "nr_gpu_output_ms": {
+              "n": 213,
+              "mean": 0.00016150234741784037,
+              "median": 0.000128,
+              "p95": 0.000416
+            },
+            "nr_cpu_record_ms": {
+              "n": 213,
+              "mean": 1.5734460093896714,
+              "median": 1.484,
+              "p95": 2.048
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 213,
+              "mean": 0.5547230046948357,
+              "median": 0.506,
+              "p95": 0.707
+            },
+            "nr_cpu_submit_ms": {
+              "n": 213,
+              "mean": 0.728018779342723,
+              "median": 0.698,
+              "p95": 0.94
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 213,
+              "mean": 7.713868544600939,
+              "median": 7.612,
+              "p95": 8.633
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 215,
+              "mean": 0.027243162790697675,
+              "median": 0.024480000000000002,
+              "p95": 0.041152
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 215,
+              "mean": 0.10189931162790698,
+              "median": 0.10016,
+              "p95": 0.116928
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 215,
+              "mean": 2.4612310325581395,
+              "median": 2.413952,
+              "p95": 2.7808640000000002
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 215,
+              "mean": 0.0350014511627907,
+              "median": 0.034464,
+              "p95": 0.037664
+            },
+            "sr_gpu_total_ms": {
+              "n": 215,
+              "mean": 2.6330158139534885,
+              "median": 2.586784,
+              "p95": 2.953056
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 215,
+              "mean": 0.007640855813953488,
+              "median": 0.006752,
+              "p95": 0.009984
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 215,
+              "mean": 0.7877209302325582,
+              "median": 0.537,
+              "p95": 0.777
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 215,
+              "mean": 2.904353488372093,
+              "median": 2.847,
+              "p95": 3.251
+            },
+            "sr_cpu_record_ms": {
+              "n": 215,
+              "mean": 2.5930837209302324,
+              "median": 2.319,
+              "p95": 3.06
+            },
+            "sr_cpu_submit_ms": {
+              "n": 215,
+              "mean": 1.4613302325581394,
+              "median": 1.414,
+              "p95": 1.902
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 215,
+              "mean": 2.046800223255814,
+              "median": 1.936416,
+              "p95": 2.99696
+            }
+          },
+          "fps_from_median_interval": 7.257789422497696,
+          "fps_from_mean_interval": 7.115922077542103,
+          "observer_ms_per_present": 1.8216502325581396,
+          "process_cpu_core_equivalents": 1.7902007892663172,
+          "top_thread_core_equivalents": 0.8778621864007868
+        },
+        {
+          "name": "validation_on_nr_only",
+          "revision": 2,
+          "trace_start_us": 208216791,
+          "trace_end_us": 238584828,
+          "seconds": 30.3083055,
+          "frames": 230,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 230
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 230,
+              "mean": 131.5103347826087,
+              "median": 129.7965,
+              "p95": 149.101
+            },
+            "hook_ms": {
+              "n": 230,
+              "mean": 13.837895652173913,
+              "median": 13.619,
+              "p95": 15.406
+            },
+            "outside_present_hook_ms": {
+              "n": 230,
+              "mean": 117.67243913043478,
+              "median": 116.0695,
+              "p95": 134.445
+            },
+            "nr_evaluated": {
+              "n": 230,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 230,
+              "mean": 2,
+              "median": 2.0,
+              "p95": 2
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 230,
+              "mean": 0.14771645217391305,
+              "median": 0.14339200000000002,
+              "p95": 0.160352
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 230,
+              "mean": 7.177726747826087,
+              "median": 7.0632,
+              "p95": 7.822848
+            },
+            "nr_gpu_output_ms": {
+              "n": 230,
+              "mean": 0.03521544347826087,
+              "median": 0.033375999999999996,
+              "p95": 0.037952
+            },
+            "nr_cpu_record_ms": {
+              "n": 230,
+              "mean": 2.483791304347826,
+              "median": 2.3555,
+              "p95": 3.103
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 230,
+              "mean": 0.5589304347826087,
+              "median": 0.5035000000000001,
+              "p95": 0.673
+            },
+            "nr_cpu_submit_ms": {
+              "n": 230,
+              "mean": 1.4897521739130435,
+              "median": 1.4425,
+              "p95": 1.87
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 230,
+              "mean": 7.727473913043478,
+              "median": 7.631,
+              "p95": 8.439
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 230,
+              "mean": 1.973114852173913,
+              "median": 1.9008479999999999,
+              "p95": 2.35696
+            }
+          },
+          "fps_from_median_interval": 7.7043679914327425,
+          "fps_from_mean_interval": 7.603965130596282,
+          "observer_ms_per_present": 1.7611239130434784,
+          "process_cpu_core_equivalents": 1.9090270487078203,
+          "top_thread_core_equivalents": 0.9124974010836733
+        },
+        {
+          "name": "validation_on_both_off_tracking_on",
+          "revision": 3,
+          "trace_start_us": 242758181,
+          "trace_end_us": 273068135,
+          "seconds": 30.310083,
+          "frames": 254,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 254
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 254,
+              "mean": 118.87679133858268,
+              "median": 117.38900000000001,
+              "p95": 135.51
+            },
+            "hook_ms": {
+              "n": 254,
+              "mean": 1.3378976377952756,
+              "median": 1.2280000000000002,
+              "p95": 1.808
+            },
+            "outside_present_hook_ms": {
+              "n": 254,
+              "mean": 117.5388937007874,
+              "median": 116.093,
+              "p95": 134.226
+            },
+            "nr_evaluated": {
+              "n": 254,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 254,
+              "mean": 3,
+              "median": 3.0,
+              "p95": 3
+            }
+          },
+          "fps_from_median_interval": 8.51868573716447,
+          "fps_from_mean_interval": 8.412070924355778,
+          "observer_ms_per_present": 1.7562397637795275,
+          "process_cpu_core_equivalents": 1.962527618284648,
+          "top_thread_core_equivalents": 0.9727579762813583
+        },
+        {
+          "name": "validation_on_both_off_tracking_off",
+          "revision": 4,
+          "trace_start_us": 276710898,
+          "trace_end_us": 307003807,
+          "seconds": 30.3055791,
+          "frames": 266,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[2560, 1335]": 266
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 266,
+              "mean": 113.48427443609023,
+              "median": 112.8505,
+              "p95": 125.452
+            },
+            "hook_ms": {
+              "n": 266,
+              "mean": 1.2769924812030076,
+              "median": 1.2025000000000001,
+              "p95": 1.767
+            },
+            "outside_present_hook_ms": {
+              "n": 266,
+              "mean": 112.20728195488722,
+              "median": 111.5875,
+              "p95": 124.217
+            },
+            "nr_evaluated": {
+              "n": 266,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 266,
+              "mean": 4,
+              "median": 4.0,
+              "p95": 4
+            }
+          },
+          "fps_from_median_interval": 8.861281075405072,
+          "fps_from_mean_interval": 8.811793572008602,
+          "observer_ms_per_present": 0.0,
+          "process_cpu_core_equivalents": 1.9684906796583868,
+          "top_thread_core_equivalents": 0.9734181255094381
+        }
+      ],
+      "readback_cpu_ms": {
+        "n": 6,
+        "mean": 5696.5745,
+        "median": 5697.5064999999995,
+        "p95": 5800.068
+      },
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "fe90c2bf8ffab5be28bfe00e699710eacf3d6c3935f34efec4af0926107e1ae8",
+          "bytes": 1661
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "cd84e51d087985ad8f5ead3acaa48a7f92b88a22ea620f4cfdfebbc8a21c80d7",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "c4bc948d572472a91e53b6b27ff462eaa72e0da21720008b130335153361db41",
+          "bytes": 1808
+        },
+        "layer.jsonl": {
+          "sha256": "4e7151b6119629b656947d0ee21d280d62ff6468d6e1c4440a5a41cd5d0aa78a",
+          "bytes": 8400068
+        },
+        "nr-validation.jsonl": {
+          "sha256": "9a9d1fb59eb90acb69baf551fa05d8ada4976f2fcdc3020ed88f6ca6cc0f030f",
+          "bytes": 161103
+        },
+        "runtime/sl.log": {
+          "sha256": "aba4283fdd4caed84229fe855f186e317c04548f59cb071263ac669bd6db3f46",
+          "bytes": 191589
+        },
+        "phase-1.json": {
+          "sha256": "a187e7df9164108d312954d1129bf41f6dd4be0e5c347e2af571ee7116f2415f",
+          "bytes": 349994
+        },
+        "phase-2.json": {
+          "sha256": "310450087ed7754552aef453f19e09dae91dddb33d3203c793dac68225fedc31",
+          "bytes": 329776
+        },
+        "phase-3.json": {
+          "sha256": "ae3295603b241466b526b3e381ee98328468e49fe86a14c13fc85cef3d843174",
+          "bytes": 338308
+        },
+        "phase-4.json": {
+          "sha256": "d2145c7c3938147356e0b62aaaa1bd32f07c75b92848de68ab4906d60ca5535a",
+          "bytes": 343701
+        }
+      },
+      "sdk_error_lines": 227
+    },
+    {
+      "session": "nr-perf-no-validation-001",
+      "inputs": {
+        "allow_unverified_target": false,
+        "child_disable": "~implicit~",
+        "compatibility": "verified",
+        "fg_experiment_requested": false,
+        "fg_requested": false,
+        "frame_budget": null,
+        "frame_trace_enabled": true,
+        "game": "D:/game/yuzu_game/totk/TOTK [0100F2C0115B6000][v0].xci",
+        "layer_only": false,
+        "layer_sha256": "f25dd17442767e7e1d4fab0d96e57b6638992d569f36c59df3599069377e9a3c",
+        "motion_backend": "nvof",
+        "motion_estimate": true,
+        "nr_files": {
+          "bridge_sha256": "b3612653579d1af8a077921b425f00ed8e7bb574b1a0a80f58ea956d03dc2dc9",
+          "runtime_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+          "synthetic_depth": true,
+          "validation_dll_sha256": null,
+          "validation_manifest_sha256": null
+        },
+        "nr_intensity": 1.0,
+        "nr_performance": true,
+        "nr_readback_requested": false,
+        "nr_requested": true,
+        "nr_validation_requested": false,
+        "profile": {
+          "executable": "D:\\Ryujinx_test\\Ryujinx.exe",
+          "file_version": "1.3.351.0",
+          "product_version": "1.3.351+475615f",
+          "publisher_authenticity_verified": false,
+          "schema_version": 1,
+          "selection": "explicit user choice on 2026-09-25",
+          "sha256": "022c6fcbe4741661995b8e6e5f032ae017f874f893a7adaab82c57ec9e89dd85"
+        },
+        "reference_parameters": false,
+        "reflex_ab_requested": false,
+        "scale_copy_probe": false,
+        "scale_probe": false,
+        "scale_replace_probe": false,
+        "sdk_off_integration": false,
+        "sr_input": "auto_native_or_present",
+        "sr_mode": "dlaa",
+        "sr_preset": "default",
+        "sr_scale": 100
+      },
+      "exit": {
+        "code": 0,
+        "fg_requested": false,
+        "success": true
+      },
+      "result": {
+        "nr": {
+          "call_chain_completed": true,
+          "clean_nr_shutdown": true,
+          "count_matches": true,
+          "evaluate_successes": 3898,
+          "execution_verified": false,
+          "fg_requested_frames": 0,
+          "longest_consecutive_evaluations": 3175,
+          "nonzero_intensity_changed_output": false,
+          "nr_to_sr_frames": 2880,
+          "nr_to_sr_handoff_valid": true,
+          "off_frames": 2804,
+          "p1_passed": false,
+          "p2_passed": false,
+          "performance_verified": false,
+          "readbacks": 0,
+          "readbacks_valid": false,
+          "reset_reasons": {
+            "SourceChanged": 3898
+          },
+          "submissions_fenced": true,
+          "synthetic_depth": true,
+          "valid_motion_only": true,
+          "visual_quality_verified": false,
+          "zero_motion_paused_frames": 7
+        },
+        "nr_performance": true,
+        "p1_passed": false,
+        "p2_passed": false,
+        "present_chain": {
+          "application_presents": 6709,
+          "bounded_activation_verified": false,
+          "clean_shutdown": true,
+          "input_timeline_advances": 0,
+          "latency_verified": false,
+          "maximum_input_completion": 0,
+          "native_present_fences_completed": true,
+          "native_presents": 6709,
+          "native_worker_presents": 0,
+          "p4_passed": false,
+          "requested_on_frames": 0,
+          "scanout_cadence_verified": false,
+          "sdk_x2_reports": 0,
+          "validation_layer_enabled": false,
+          "visual_intermediate_frames_verified": false
+        },
+        "present_chain_error": null,
+        "session_verified": false,
+        "target_exit": {
+          "code": 0,
+          "fg_requested": false,
+          "success": true
+        },
+        "validation": {
+          "enabled": false,
+          "validation_passed": false
+        }
+      },
+      "module_check": {
+        "validationModulePresent": false,
+        "utc": "2026-10-01T05:06:04.4933047Z",
+        "pid": 17900,
+        "modules": [
+          {
+            "ModuleName": "streamline_probe_layer.dll",
+            "FileName": "D:\\py\\ns-emu-tools\\src-tauri\\crates\\streamline-fg\\target\\release\\streamline_probe_layer.dll"
+          },
+          {
+            "ModuleName": "_nvngx.dll",
+            "FileName": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvtfi.inf_amd64_884f78085512abd5\\_nvngx.dll"
+          },
+          {
+            "ModuleName": "nvngx_dlssnr.dll",
+            "FileName": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-perf-no-validation-001\\nr\\nvngx_dlssnr.dll"
+          },
+          {
+            "ModuleName": "nvngx.dll",
+            "FileName": "D:\\py\\ns-emu-tools\\src-tauri\\target\\nr-perf-no-validation-001\\nr\\nvngx.dll"
+          }
+        ]
+      },
+      "phases": [
+        {
+          "name": "validation_off_nr_dlaa",
+          "revision": 1,
+          "trace_start_us": 84174729,
+          "trace_end_us": 114484936,
+          "seconds": 30.3384891,
+          "frames": 908,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 908
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 908,
+              "mean": 33.33380066079295,
+              "median": 33.34,
+              "p95": 35.184
+            },
+            "hook_ms": {
+              "n": 908,
+              "mean": 13.97929845814978,
+              "median": 13.947,
+              "p95": 14.748
+            },
+            "outside_present_hook_ms": {
+              "n": 908,
+              "mean": 19.35450220264317,
+              "median": 19.386,
+              "p95": 21.093
+            },
+            "nr_evaluated": {
+              "n": 908,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 908,
+              "mean": 1,
+              "median": 1.0,
+              "p95": 1
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 908,
+              "mean": 0.11007619383259912,
+              "median": 0.108192,
+              "p95": 0.124992
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 908,
+              "mean": 7.820836052863436,
+              "median": 7.818528000000001,
+              "p95": 8.20752
+            },
+            "nr_gpu_output_ms": {
+              "n": 908,
+              "mean": 0.0003391718061674009,
+              "median": 0.000352,
+              "p95": 0.000608
+            },
+            "nr_cpu_record_ms": {
+              "n": 908,
+              "mean": 0.4658204845814978,
+              "median": 0.4025,
+              "p95": 0.665
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 908,
+              "mean": 0.43001321585903085,
+              "median": 0.371,
+              "p95": 0.607
+            },
+            "nr_cpu_submit_ms": {
+              "n": 908,
+              "mean": 0.01447907488986784,
+              "median": 0.011,
+              "p95": 0.029
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 908,
+              "mean": 9.378785242290748,
+              "median": 9.376999999999999,
+              "p95": 9.985
+            },
+            "sr_gpu_color_blit_ms": {
+              "n": 908,
+              "mean": 0.021751577092511014,
+              "median": 0.02032,
+              "p95": 0.028736
+            },
+            "sr_gpu_depth_motion_prepare_ms": {
+              "n": 908,
+              "mean": 0.06885420264317181,
+              "median": 0.068256,
+              "p95": 0.08048000000000001
+            },
+            "sr_gpu_dlss_evaluate_ms": {
+              "n": 908,
+              "mean": 2.412557885462555,
+              "median": 2.409856,
+              "p95": 2.631168
+            },
+            "sr_gpu_output_blit_ms": {
+              "n": 908,
+              "mean": 0.03694847577092511,
+              "median": 0.03536,
+              "p95": 0.038176
+            },
+            "sr_gpu_total_ms": {
+              "n": 908,
+              "mean": 2.547447577092511,
+              "median": 2.548704,
+              "p95": 2.7688960000000002
+            },
+            "sr_gpu_transitions_and_raw_copy_ms": {
+              "n": 908,
+              "mean": 0.007335436123348017,
+              "median": 0.007232000000000001,
+              "p95": 0.008352
+            },
+            "sr_cpu_evaluate_call_in_record_ms": {
+              "n": 908,
+              "mean": 0.2767874449339207,
+              "median": 0.248,
+              "p95": 0.399
+            },
+            "sr_cpu_fence_wait_ms": {
+              "n": 908,
+              "mean": 2.643,
+              "median": 2.6745,
+              "p95": 2.905
+            },
+            "sr_cpu_record_ms": {
+              "n": 908,
+              "mean": 0.351931718061674,
+              "median": 0.317,
+              "p95": 0.507
+            },
+            "sr_cpu_submit_ms": {
+              "n": 908,
+              "mean": 0.04647026431718062,
+              "median": 0.041,
+              "p95": 0.078
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 908,
+              "mean": 1.9018397885462555,
+              "median": 1.860656,
+              "p95": 2.25792
+            }
+          },
+          "fps_from_median_interval": 29.994001199760046,
+          "fps_from_mean_interval": 29.999579411182925,
+          "observer_ms_per_present": 1.889307488986784,
+          "process_cpu_core_equivalents": 3.1122800706644287,
+          "top_thread_core_equivalents": 0.59073063727488
+        },
+        {
+          "name": "validation_off_nr_only",
+          "revision": 2,
+          "trace_start_us": 118183985,
+          "trace_end_us": 148450567,
+          "seconds": 30.2843859,
+          "frames": 907,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 907
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 907,
+              "mean": 33.33342006615215,
+              "median": 33.327,
+              "p95": 33.94
+            },
+            "hook_ms": {
+              "n": 907,
+              "mean": 10.971737596471886,
+              "median": 10.864,
+              "p95": 11.605
+            },
+            "outside_present_hook_ms": {
+              "n": 907,
+              "mean": 22.361682469680265,
+              "median": 22.443,
+              "p95": 23.24
+            },
+            "nr_evaluated": {
+              "n": 907,
+              "mean": 1,
+              "median": 1,
+              "p95": 1
+            },
+            "nr_revision": {
+              "n": 907,
+              "mean": 2,
+              "median": 2,
+              "p95": 2
+            },
+            "nr_gpu_prepare_ms": {
+              "n": 907,
+              "mean": 0.1080473472987872,
+              "median": 0.10672,
+              "p95": 0.123648
+            },
+            "nr_gpu_evaluate_ms": {
+              "n": 907,
+              "mean": 7.760677327453142,
+              "median": 7.780992,
+              "p95": 8.072064000000001
+            },
+            "nr_gpu_output_ms": {
+              "n": 907,
+              "mean": 0.038212586549062844,
+              "median": 0.035744,
+              "p95": 0.038208
+            },
+            "nr_cpu_record_ms": {
+              "n": 907,
+              "mean": 0.4766725468577729,
+              "median": 0.412,
+              "p95": 0.672
+            },
+            "nr_cpu_evaluate_call_ms": {
+              "n": 907,
+              "mean": 0.43027563395810364,
+              "median": 0.368,
+              "p95": 0.604
+            },
+            "nr_cpu_submit_ms": {
+              "n": 907,
+              "mean": 0.015787210584343993,
+              "median": 0.011,
+              "p95": 0.038
+            },
+            "nr_cpu_fence_wait_ms": {
+              "n": 907,
+              "mean": 9.306314222712238,
+              "median": 9.302,
+              "p95": 9.875
+            },
+            "nvof_gpu_including_queue_gap_ms": {
+              "n": 907,
+              "mean": 1.8689155104740904,
+              "median": 1.82144,
+              "p95": 2.2025279999999996
+            }
+          },
+          "fps_from_median_interval": 30.00570108320581,
+          "fps_from_mean_interval": 29.999921940666173,
+          "observer_ms_per_present": 1.8849933847850056,
+          "process_cpu_core_equivalents": 3.0972024762106867,
+          "top_thread_core_equivalents": 0.5603134914484101
+        },
+        {
+          "name": "validation_off_both_off_tracking_on",
+          "revision": 3,
+          "trace_start_us": 152640265,
+          "trace_end_us": 182940620,
+          "seconds": 30.3605026,
+          "frames": 908,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[1920, 1080]": 908
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 908,
+              "mean": 33.33342731277533,
+              "median": 33.331,
+              "p95": 33.736
+            },
+            "hook_ms": {
+              "n": 908,
+              "mean": 0.7092896475770926,
+              "median": 0.638,
+              "p95": 1.083
+            },
+            "outside_present_hook_ms": {
+              "n": 908,
+              "mean": 32.62413766519824,
+              "median": 32.671499999999995,
+              "p95": 33.152
+            },
+            "nr_evaluated": {
+              "n": 908,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 908,
+              "mean": 3,
+              "median": 3.0,
+              "p95": 3
+            }
+          },
+          "fps_from_median_interval": 30.00210014701029,
+          "fps_from_mean_interval": 29.99991541874067,
+          "observer_ms_per_present": 1.8983612334801763,
+          "process_cpu_core_equivalents": 3.0570146095012274,
+          "top_thread_core_equivalents": 0.5434692639113293
+        },
+        {
+          "name": "validation_off_both_off_tracking_off",
+          "revision": 4,
+          "trace_start_us": 186640140,
+          "trace_end_us": 216940126,
+          "seconds": 30.3122297,
+          "frames": 908,
+          "excluded_frames": 0,
+          "input_counts": {
+            "[2560, 1335]": 908
+          },
+          "metrics": {
+            "present_interval_ms": {
+              "n": 908,
+              "mean": 33.33331167400881,
+              "median": 33.3425,
+              "p95": 33.757
+            },
+            "hook_ms": {
+              "n": 908,
+              "mean": 0.7088149779735683,
+              "median": 0.6385000000000001,
+              "p95": 1.078
+            },
+            "outside_present_hook_ms": {
+              "n": 908,
+              "mean": 32.624496696035244,
+              "median": 32.667500000000004,
+              "p95": 33.139
+            },
+            "nr_evaluated": {
+              "n": 908,
+              "mean": 0,
+              "median": 0.0,
+              "p95": 0
+            },
+            "nr_revision": {
+              "n": 908,
+              "mean": 4,
+              "median": 4.0,
+              "p95": 4
+            }
+          },
+          "fps_from_median_interval": 29.991752268126262,
+          "fps_from_mean_interval": 30.000019493404736,
+          "observer_ms_per_present": 0.0,
+          "process_cpu_core_equivalents": 2.9768306684479895,
+          "top_thread_core_equivalents": 0.4603133830171523
+        }
+      ],
+      "readback_cpu_ms": null,
+      "failure_events": [],
+      "evidence": {
+        "target-inputs.json": {
+          "sha256": "4bbef36c3df9f21d87acd96c54c99ec8c6ab554d1bc1ee1284012a9a82887784",
+          "bytes": 1538
+        },
+        "target-command.json": {
+          "sha256": "4b191c230884d0e5a4b66d049b4556f08f947b789bff1a271100f7940ebc2031",
+          "bytes": 167
+        },
+        "target-process.json": {
+          "sha256": "3b78e681889924fadfcf594c152d51943e3eecaac9d78c4761bc938b298ca91f",
+          "bytes": 19
+        },
+        "target-exit.json": {
+          "sha256": "376713e5258a74462774d36c40f9421b82cc36c984ccd2b333b80c1554d1d4e9",
+          "bytes": 60
+        },
+        "target-result.json": {
+          "sha256": "de24cb308ae1c2153f161663005690c0a6c91d3e923a47eada57d5877df45cb7",
+          "bytes": 1576
+        },
+        "module-check.json": {
+          "sha256": "f92ad9b71975fa9f233c1bcc5796dd0d54de9ec847cb5e506d67ef23107e91af",
+          "bytes": 795
+        },
+        "layer.jsonl": {
+          "sha256": "dece8d0cb74696c85bc5e74856de188cdb39bca79db78761d40020928055ee43",
+          "bytes": 18339935
+        },
+        "runtime/sl.log": {
+          "sha256": "7eece7cc27548f36145b61f49e58235cc62ac0cf3959304bd67f9264240e4f70",
+          "bytes": 50107
+        },
+        "phase-1.json": {
+          "sha256": "3af22f81e91eb8075206d3c430c4fbd98619b7b47ec1e790aa2641998fc3dff9",
+          "bytes": 351516
+        },
+        "phase-2.json": {
+          "sha256": "110f2ac93d02199071493b3620e9e6fdd12aa005a6f493a74731301c2d07a52e",
+          "bytes": 345087
+        },
+        "phase-3.json": {
+          "sha256": "f989dea88ce85f5fc572d369bd6ae2ef0a84d425dfcad95aacb74a5ad944b1eb",
+          "bytes": 346471
+        },
+        "phase-4.json": {
+          "sha256": "8fb6a23551c5d2aa6967e1d0615455c5e2a127e7eb725d8ca7044d7a2812ed8a",
+          "bytes": 348037
+        }
+      },
+      "sdk_error_lines": 0
+    }
+  ],
+  "interpretation": {
+    "main_bottleneck": "Vulkan core/synchronization validation on the render thread; stable NR+DLAA frame median drops 137.783 to 33.338 ms when validation is disabled. Readbacks are absent in every measured phase.",
+    "limits": [
+      "Restart A/B uses user-confirmed same save/location/view, not a recorded replay.",
+      "All unvalidated phases reach the current ~30 FPS baseline; this does not measure uncapped peak throughput.",
+      "NVOF timestamps include cross-queue gap; NR CPU fence wait includes upstream work.",
+      "Single scene, 1920x1080 NR/DLAA input, synthetic depth, physical-source reset every evaluated frame; no P1/P2/quality acceptance.",
+      "Both processes are shut down only after NR and SR are disabled; this does not prove the prior managed shutdown race is fixed.",
+      "Validation findings are retained; disabling validation for timing does not resolve them."
+    ]
+  },
+  "rust_checks": {
+    "cargo_fmt": true,
+    "crate_host_all_features_all_targets": true,
+    "crate_windows_all_features_all_targets": true,
+    "crate_sdk_only": true,
+    "main_app_host": true,
+    "main_app_windows": true,
+    "tests_passed": 102,
+    "tests_ignored": 1,
+    "warnings": 0
+  },
+  "source_sha256": {
+    "launcher.rs": "2f88be4201cf027a32ca32a15ba7e83cea97edd36cef4190b5d5410a40154710",
+    "target_runtime.rs": "b971cdf7db54d8c58e896fb9489c1e702bd2ec49d567f2afa37b4ea03751fa88",
+    "lib.rs": "3b57b20494a716f3455a13714b692db6949b9ff5cfcf406d650bbec0cc7eeca4",
+    "nr_validation.rs": "44b43c0d7de88d221ecf7fed68e60606b605a71756050847730885109183f3ce",
+    "target_nr.rs": "ab8a1d3edb96c5a0291e5ad5f0dacdef0caeff23d81f282f214fb3aa5069dabc",
+    "session_verify.rs": "3272d50d600a1c51077dae07b09d6a8028603f5d1868b4dc941e87fbba477663",
+    "source_auto.rs": "b937a6fde7ff22d67295e9e01bdc9ed22e54535a064fbc4a44a31128a09765b6",
+    "scale_probe.rs": "87539a7e16c3c2efc6b922e0d85e944285d6f0e2c5e92cb9a390bf435bc92b8e",
+    "target_sr.rs": "58532d47f9895955b2e44a265a7108ab15983e131d413405fa91d4a5089fae6f",
+    "target_nvof.rs": "8c125819ea571e007b69d51f43fa61caf9c1881bf61dbe8ca0176b05a6b367bc",
+    "live.rs": "229311dcb2df31788cd37b6fb2dae5a343266def35524bf4dad0d5cf75733c0b",
+    "trace.rs": "1e3772013981a33fc5b67a11141b95ef804bc6da7ae43ec3cfd606348d76a13b",
+    "main.rs": "b9fca365520f4c155b8249d4651092e2e90ee224bca4b1e552fedf01eae77d2a"
+  }
+}

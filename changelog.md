@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.6.4
+
+- 添加对 Eden Nightly 的支持
+- 添加对 Ryujinx NEXTENDO 分支的支持 (#140)
+- 新增实验性 DLSS / XeSS 画质增强功能，提供统一的效果配置与启动入口
+- DLSS 支持超分辨率（SR）、抗锯齿（DLAA）、神经渲染（NR）与帧生成（FG）；XeSS 支持原生抗锯齿（Native AA）与帧生成，并可搭配 DLSS 使用
+
 ## 0.6.3
 
 - 添加对 Citron NEO 的支持 (#137)

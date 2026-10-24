@@ -1,0 +1,61 @@
+{
+  "live_snapshot": true,
+  "session": "D:\\py\\ns-emu-tools\\src-tauri\\target\\ryujinx-fg-motion-002",
+  "on_frames": 1422,
+  "sdk_double_present_reports": 1416,
+  "motion_frames": 1422,
+  "motion_nonzero_frames": 1170,
+  "motion_cost_median_us": 717,
+  "motion_cost_p95_us": 1130,
+  "application_interval_median_ms": 33.382,
+  "sdk_nonzero_status": 0,
+  "native_retired": 3711,
+  "failures": [],
+  "last_motion": {
+    "app_waits_consumed": 1,
+    "blocks": 53440,
+    "elapsed_us": 691,
+    "frame": 2300,
+    "height": 180,
+    "magnitude_sum": 29401,
+    "moving_blocks": 40,
+    "output_format": 103,
+    "rejected_blocks": 0,
+    "replacement_wait": 3480280407632,
+    "reset": false,
+    "width": 345
+  },
+  "last_frame": {
+    "details": {
+      "frame": 2300,
+      "input_wait_completed": true,
+      "off_reason": null,
+      "on_frames": 1422,
+      "present_markers_only": true,
+      "reflex_frame_limit_us": 0,
+      "requested_on": true,
+      "sleep_frame_limit_us": 0,
+      "state": {
+        "fence": 3479609549776,
+        "maximum": 5,
+        "minimum": 100,
+        "presented": 2,
+        "status": 0,
+        "value": 2300
+      },
+      "swapchain": 3479900445904,
+      "timing_us": {
+        "begin_and_reflex_sleep": 100,
+        "input_wait": 3121,
+        "options": 9,
+        "proxy_present": 140
+      },
+      "window_stop_reason": -1
+    },
+    "elapsed_us": 93098481,
+    "event": "target_fg_frame",
+    "phase": 0,
+    "thread": "ThreadId(1)"
+  },
+  "not_scanout_or_visual_quality_proof": true
+}

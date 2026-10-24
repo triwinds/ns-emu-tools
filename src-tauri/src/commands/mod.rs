@@ -9,6 +9,7 @@ use tracing::warn;
 pub mod cheats;
 #[cfg(not(test))]
 pub mod common;
+pub mod graphics_components;
 pub mod ryujinx;
 pub mod save_manager;
 pub mod yuzu;

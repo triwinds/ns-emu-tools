@@ -1,0 +1,3399 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-05",
+  "captured_at_utc": "2026-10-05T15:54:14.887745+00:00",
+  "scope": "M2 persistence, M3 suffix recomputation, M4 color/diagnostics, M0 proxy-layout routing repair",
+  "plan_complete": false,
+  "game_integration_accepted": false,
+  "real_motion_video_quality_verified": false,
+  "implemented": [
+    "same-source model suffix recomputation without source/history advancement",
+    "optical_flow_plus conditional amplitude/presence with separate final delta",
+    "opt-in Oklab chroma decomposition, hue/shadow/highlight/overcorrection protection",
+    "ten diagnostic views isolated from model inputs",
+    "preset schema 4 and DLL capability gates",
+    "proxy image tracking and PRESENT translation independent of optional source probing",
+    "legacy and synchronization2 proxy image barriers",
+    "Submit2 queue serialization independent of source probing"
+  ],
+  "checks": {
+    "component_tests_passed": 223,
+    "default_ignored_gpu_tests": 5,
+    "strict_call_attribution_tests_passed": 2,
+    "toolbox_advanced_settings_tests_passed": 8,
+    "toolbox_preset_tests_passed": 6,
+    "frontend_preset_tests_passed": 8,
+    "host_and_windows_checks": true,
+    "rust_errors_or_warnings": 0,
+    "frontend_build_and_types": true,
+    "frontend_changed_files_lint": true,
+    "look_spirv_binaries_validated_vulkan_1_1": 7,
+    "shader_manifest_hash_mismatches": 0,
+    "look_gpu": {
+      "passed": true,
+      "device": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+      "motion_formats": [
+        "RG16F",
+        "RG32F"
+      ],
+      "validation_errors": 0,
+      "validation_warnings": 0,
+      "loader_installation_notices": 4
+    },
+    "logs": [
+      {
+        "path": "src-tauri/target/nr-attribution-host-check.log",
+        "sha256": "880b23c17c3f9881d994e7a1e1059bf2810e99913d1397bb839efb881cd0451e"
+      },
+      {
+        "path": "src-tauri/target/nr-attribution-windows-check.log",
+        "sha256": "a40f7c9e5802a53070bdf6ad12db86cf23ab8681056a90aaa37bd8a051d45118"
+      },
+      {
+        "path": "src-tauri/target/nr-attribution-regression.log",
+        "sha256": "acc885af28f650c35a4408fef285facf9f52f2c29cf5d199d5239db21588bfa3"
+      },
+      {
+        "path": "src-tauri/target/nr-attribution-release-build.log",
+        "sha256": "9284fb499baa6e1b7d063eda1ce27d689a11e83692439827ce07ad9b0a6a4f8d"
+      },
+      {
+        "path": "src-tauri/target/nr-attribution-toolbox-host-check.log",
+        "sha256": "546acd9e5f6461cca2ceb843574d0f860f2dab092a43dad9ee6c78d32a5709cb"
+      },
+      {
+        "path": "src-tauri/target/nr-attribution-toolbox-windows-check.log",
+        "sha256": "b3f957a8350e9ddfb5f3078cf0e18ab53678bcccf96f598c938f5c3932b822ba"
+      },
+      {
+        "path": "src-tauri/target/nr-proxy-host-check.log",
+        "sha256": "f606747e231a9cf05d6ff36db7408651f5a503bb0fb6ef0b06e8e43b00736a11"
+      },
+      {
+        "path": "src-tauri/target/nr-proxy-windows-check.log",
+        "sha256": "376312103460424fdf0c6595a19c0a5cec35dbec983248afe5f28ad1208bbf9d"
+      },
+      {
+        "path": "src-tauri/target/nr-proxy-regression.log",
+        "sha256": "1f77e876eb2c24c65b137ac78a67ef4301df7e5a88833f2957fe8a4839d771d1"
+      },
+      {
+        "path": "src-tauri/target/nr-proxy-release-build.log",
+        "sha256": "ecb88dad74448401f57de4e319b3207cbccbf2889e63aeee971d73409da88937"
+      },
+      {
+        "path": "src-tauri/target/nr-proxy-toolbox-host-check.log",
+        "sha256": "8895b049e6b6d6b8e00d668f006263cdbb860d43f4f37b6006184ab61622b389"
+      },
+      {
+        "path": "src-tauri/target/nr-proxy-toolbox-windows-check.log",
+        "sha256": "285443bcae51148a4b910b3dc957182e743309b9e83974eb0a41e15391349aa1"
+      },
+      {
+        "path": "src-tauri/target/nr-experiments-toolbox-settings.log",
+        "sha256": "31a77dfec41d50c7c232b5b1895df606bf25f30b9833e07593dcb3ec81e1d2a0"
+      },
+      {
+        "path": "src-tauri/target/nr-experiments-toolbox-presets.log",
+        "sha256": "29e97ae62a471901083cc098211ec7241eda40e490aa64638e278b1b34e74f8e"
+      },
+      {
+        "path": "src-tauri/target/nr-experiments-look-gpu.log",
+        "sha256": "d2b5f69071f870de82808f11458a36a32196af8eaa0cfacaa23a6e526f2d0928"
+      },
+      {
+        "path": "src-tauri/target/nr-experiments-frontend-build.log",
+        "sha256": "0c3cd3897cad4828ad8ae34f8202c51b62375a0f97454b75efcc21997da03fdd"
+      },
+      {
+        "path": "src-tauri/target/nr-experiments-frontend-presets.log",
+        "sha256": "c7148080b14e53d76bfa53dd36471e956b09f7985a3317790d80a1fb5bad3c58"
+      },
+      {
+        "path": "src-tauri/target/nr-experiments-frontend-lint.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "ngx_isolation": {
+    "synthetic_inputs": true,
+    "host": "e324f58a599bbced4414ec2422d974744c3b9bc25d60c8f7b9aa8b362e46fadf",
+    "moving_frames": 300,
+    "discarded_recordings": 1,
+    "second_recreations": 1,
+    "suffix": {
+      "deterministic_return": true,
+      "first_evaluations_added": 0,
+      "next_color_continuous": true,
+      "output_hashes": [
+        "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f",
+        "acc8f5c8478bfa5fbbbae4947205be0c8f385ce8faaa6ed6e694d15014a659bc",
+        "77eac7ed3ee4e0a8e497e9c0ca47838b74fadc07361af4d762d8b62722b8e80f"
+      ],
+      "prefix_unchanged": true,
+      "second_submitted_evaluations_added": 3,
+      "source_frame_id": 1,
+      "source_observations_added": 0
+    },
+    "validation_errors": 0,
+    "unreviewed_warnings": 0,
+    "loader_notices_reviewed": 6,
+    "p0_passed": false,
+    "raw": [
+      {
+        "path": "src-tauri/target/nr-suffix-ngx-003/nr-result.json",
+        "sha256": "33f34ed8e9d878a162f1c84f0305f427816a4eee927a7a48bb733e1ca5421b2c"
+      },
+      {
+        "path": "src-tauri/target/nr-suffix-ngx-003/nr-inputs.json",
+        "sha256": "5195b5bf8c231df5467ff42f61e03740243f07815c16c6c398a1cb38541c8472"
+      },
+      {
+        "path": "src-tauri/target/nr-suffix-ngx-003/nr-output-summary.json",
+        "sha256": "1dc1a7a5025265c6b8d45ef775fed401a7150eef10f9865bb52975c4bb1258df"
+      },
+      {
+        "path": "src-tauri/target/nr-suffix-ngx-003/validation.jsonl",
+        "sha256": "3c4f89ce3ca70388ce846ed46d323567f97881aa7ddb283043fbb937905195f8"
+      }
+    ],
+    "failed_attempt_retained": "src-tauri/target/nr-suffix-ngx-001: core shutdown timeout; 002/003 completed"
+  },
+  "release_before_proxy_fix": {
+    "launcher": "6d291e892cc9b5e27d0797422db5040c75a7bbd99fa356d208bc1cfd97e7ace1",
+    "layer": "38b83b463384c55beb91aa5ea482226c01007d25ed0e80068929b9d5ca67e77c"
+  },
+  "release_with_proxy_fix": {
+    "launcher": "c14b688728051b283800036b9f0524496117d73bbd373cb139faa72e3b0adf16",
+    "layer": "de0c7d8dcdb531e9c4480ab2d91930baafd859d7100856ee6ca5fc7c6affea0f"
+  },
+  "release_with_proxy_and_submit2_fix": {
+    "layer": "250746cbbbda2547ab30e4054bb51037cb19f1b10e46893da2fc5bb942c2ec85",
+    "launcher": "0a465d67f75ffbd7915efe9960025b9a550e0575dd6e9291b9eff1b03cfee204"
+  },
+  "release_with_strict_call_attribution": {
+    "layer": "17bfa392b2c7fd7711aec18a2c67d172e7347fea182af00365323c8931f4b845",
+    "launcher": "d2847e27efe658f1e81741e39fd660e4da4405f36c48ec343988eae03fd9486f",
+    "diagnostic": "4b47fde333eb281a953fd2729c18a402702872711d8d688ccd6f5a6b3e6df39e"
+  },
+  "game_before_proxy_fix": {
+    "scene": "XC3 v2.1.0 Everblight Plain after first battle, objective 61m, fixed camera",
+    "resolution": [
+      1718,
+      950
+    ],
+    "strict_validation_enabled": true,
+    "readback": false,
+    "timestamps": false,
+    "frame_success_logging": false,
+    "validation": {
+      "raw": {
+        "path": "src-tauri/target/nr-followup-20261005/eden-experiments-baseline-20261005-223557-148/nr-validation.jsonl",
+        "sha256": "785da219afe35996fc252c1714a1b73ee31a5e9ec98983f948411af658132eb9"
+      },
+      "errors": 54,
+      "warnings": 10,
+      "messages_by_id": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 3
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21
+        },
+        {
+          "severity": 256,
+          "id": -1693624763,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -526198175,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -60244330,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 115483881,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 522653285,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1180184443,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1823614687,
+          "count": 2
+        }
+      ],
+      "messages_by_entry_point": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "application_call": null,
+          "count": 3
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "application_call": null,
+          "count": 21
+        },
+        {
+          "severity": 256,
+          "id": -1693624763,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -526198175,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -60244330,
+          "application_call": null,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 115483881,
+          "application_call": null,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 522653285,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1180184443,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1823614687,
+          "application_call": null,
+          "count": 2
+        }
+      ],
+      "proxy_layout_errors": 10,
+      "duplicate_message_limit": 10,
+      "messages_filtered_by_us": false
+    },
+    "fps": [
+      {
+        "phase": "off-before",
+        "revision": 1,
+        "seconds": 20.036041899998963,
+        "distinct_samples": 20,
+        "fps_mean": 13.203147234324515,
+        "fps_min": 11.91162645218857,
+        "fps_max": 13.904904359088196,
+        "fps_median": 12.908947385997305,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-baseline-20261005-223557-148/fps-off-before.json",
+          "sha256": "9a16e20fb1df8b72bf1a9f4523c1026004a4e02c27f123b275fa43fdf6375488"
+        },
+        "nr_active_all": false,
+        "nr_disabled_all": true,
+        "nr_passes": [],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true,
+        "background_samples": 20,
+        "valid_foreground_performance_comparison": false
+      },
+      {
+        "phase": "one",
+        "revision": 2,
+        "seconds": 20.041367100006028,
+        "distinct_samples": 21,
+        "fps_mean": 11.249229901711622,
+        "fps_min": 9.9240413872222,
+        "fps_max": 11.914522830310785,
+        "fps_median": 10.926085034739986,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-baseline-20261005-223557-148/fps-one.json",
+          "sha256": "43e3602e453c807383c86dc3b4dbbfb3eb4f91647d63b302b107121616b5ac9a"
+        },
+        "nr_active_all": true,
+        "nr_disabled_all": false,
+        "nr_passes": [
+          1
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true,
+        "background_samples": 21,
+        "valid_foreground_performance_comparison": false
+      },
+      {
+        "phase": "two",
+        "revision": 3,
+        "seconds": 20.040790099999867,
+        "distinct_samples": 20,
+        "fps_mean": 10.322055989217914,
+        "fps_min": 9.915538451912761,
+        "fps_max": 10.922021137883965,
+        "fps_median": 9.931892086362492,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-baseline-20261005-223557-148/fps-two.json",
+          "sha256": "734f76c47ecf05087115c7085628cf32f0a7c01020d608f1dc57a008d90ccc7b"
+        },
+        "nr_active_all": true,
+        "nr_disabled_all": false,
+        "nr_passes": [
+          2
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true,
+        "background_samples": 20,
+        "valid_foreground_performance_comparison": false
+      },
+      {
+        "phase": "off-after",
+        "revision": 4,
+        "seconds": 20.040902699998696,
+        "distinct_samples": 20,
+        "fps_mean": 13.2963181056658,
+        "fps_min": 12.81731733942465,
+        "fps_max": 13.909240812772579,
+        "fps_median": 12.908527010006146,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-baseline-20261005-223557-148/fps-off-after.json",
+          "sha256": "9de15663fe3d85a1cdde4bb74209ad65515d402563262cc35ccdf5b90d3ed5d2"
+        },
+        "nr_active_all": false,
+        "nr_disabled_all": true,
+        "nr_passes": [],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true,
+        "background_samples": 20,
+        "valid_foreground_performance_comparison": false
+      }
+    ],
+    "foreground_verified_for_every_sample": false,
+    "quality_video_captured": false,
+    "retirement_result": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-experiments-baseline-20261005-223557-148/target-result.json",
+      "sha256": "ab0691aeeb100148fcfadf2128665547c1ef4d76a9bfdf13eaccdf04fad63a37"
+    },
+    "normal_retirement_accepted": false
+  },
+  "user_exclusion": {
+    "eden_exit_0xc0000409": "User confirms it also occurs with enhancement off; excluded from repair scope; other errors remain in gate."
+  },
+  "pending": [
+    "full strict Vulkan game baseline and owner attribution of remaining renderer errors",
+    "final Submit2 follow-up build strict game checks",
+    "real motion/occlusion/pause videos for M1-M4",
+    "normal retirement and long-running resources; all NR/SR/FG combinations",
+    "M5 consolidated scheduling after strict baseline passes",
+    "M6 inference downscale and separately justified low-frequency temporal reconstruction",
+    "completely absent Present cannot apply live Look controls"
+  ],
+  "shaders": {
+    "nr_look.comp": "26093d6dacdcc9c912829b3a6f0f62239798094a7ee4c21698447591abe4dbb2",
+    "nr_look.spv": "3feaecd3302c453f37b33917416728c92baae8303b91428d7aaa1efbee6d7e6f",
+    "nr_look_band.comp": "ba932bd02fa3e3f5e2d29bba4265eb08b258e71ec483b3d0a6bfb6d548a5a78e",
+    "nr_look_band.spv": "b436e35367be3310c6bcb17962e49628ff637a3b2c5cbc98ecab2afd28be4f86",
+    "nr_look_common.glsl": "3bfd7c3e999ef978d1717909ece2fb10b7a789e0dddd754608bf810eb0f526c4",
+    "nr_look_temporal.comp": "da6c05ceb14f293a8403f10ac1fc0622665d7a3f7aed9e2044cb6d8a25ffe722",
+    "nr_look_temporal.spv": "b4c5cc5727b5d29420f0ed6033076d2460203fc745461938ccc79bf49b6204e6",
+    "nr_look_temporal_fp16.spv": "a5c48496081efaf80eece3ade274f45fe339d3a90855a8a0104c3d35277a311f",
+    "nr_look_temporal_static.spv": "15e879088332ba314537b20584d353eb434e9fa5f1ffb9e53e77c1289b9a311f",
+    "nr_look_temporal_plus.spv": "2c54fa795a81cc6244056160bfb71c84a5456334085b6be78d83652bb75dd619",
+    "nr_look_temporal_plus_fp16.spv": "343e7cd68e989f1914d553b07e84f6126edea00f9a1384483131dc237fe2d913"
+  },
+  "game_with_proxy_fix_snapshot": {
+    "session": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279",
+    "running_snapshot": false,
+    "validation": {
+      "raw": {
+        "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/nr-validation.jsonl",
+        "sha256": "b68b2f0b4550dd8bf60d672d892ece38c6e3b9c7db119734020a786a91a5c52d"
+      },
+      "errors": 44,
+      "warnings": 10,
+      "messages_by_id": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 3
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21
+        },
+        {
+          "severity": 256,
+          "id": -1693624763,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -526198175,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -60244330,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 115483881,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 522653285,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1823614687,
+          "count": 2
+        }
+      ],
+      "messages_by_entry_point": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "application_call": null,
+          "count": 3
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "application_call": null,
+          "count": 21
+        },
+        {
+          "severity": 256,
+          "id": -1693624763,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -526198175,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -455515022,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": -60244330,
+          "application_call": null,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 115483881,
+          "application_call": null,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 522653285,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1544472022,
+          "application_call": null,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1823614687,
+          "application_call": null,
+          "count": 2
+        }
+      ],
+      "proxy_layout_errors": 0,
+      "duplicate_message_limit": 10,
+      "messages_filtered_by_us": false
+    },
+    "waiting_for_manual_scene_entry": false,
+    "final_clean_shutdown_verified": false,
+    "retirement_result": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/target-result.json",
+      "sha256": "23f3167e0f6f261dd896880f2eacc81947d7279d338d99374fb84c7f91c7826f"
+    },
+    "forced_retirement": {
+      "normalRetirementAccepted": false,
+      "pid": 45608,
+      "time": "2026-10-05T23:27:24.6620922+08:00",
+      "reason": "Normal UI exit stopped presentation but process remained busy; forced termination to continue quality session"
+    },
+    "user_quality_feedback": "Frame rate too low to assess trails; motion quality acceptance remains pending.",
+    "fps": [
+      {
+        "phase": "off-after",
+        "revision": 5,
+        "seconds": 20.035533700000087,
+        "distinct_samples": 21,
+        "fps_mean": 12.101369205193263,
+        "fps_min": 10.911747964810209,
+        "fps_max": 13.898695190495516,
+        "fps_median": 11.912185749094823,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/fps-off-after.json",
+          "sha256": "71df27cc0fb5fd929156b6d00e19f16b0c0d70ff0acfafa4ebfdb7478caa218d"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": false,
+        "nr_passes": [],
+        "input_extents": [
+          [
+            1724,
+            962
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      },
+      {
+        "phase": "off-before",
+        "revision": 2,
+        "seconds": 20.043194799996854,
+        "distinct_samples": 20,
+        "fps_mean": 11.664454136609383,
+        "fps_min": 10.908994982060653,
+        "fps_max": 12.90753557813249,
+        "fps_median": 11.910110848773025,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/fps-off-before.json",
+          "sha256": "a361c4889d70d945c1491f6a0a5e8c5e9e9ce1799396d2393ee974b60eb96c4e"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": false,
+        "nr_passes": [],
+        "input_extents": [
+          [
+            1724,
+            962
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      },
+      {
+        "phase": "one",
+        "revision": 3,
+        "seconds": 20.043198300001677,
+        "distinct_samples": 20,
+        "fps_mean": 10.022451353053437,
+        "fps_min": 8.931305754916636,
+        "fps_max": 10.927585079197176,
+        "fps_median": 9.927867123734647,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/fps-one.json",
+          "sha256": "4f86fe99d72ff3d90389277c40c3cb7d0aa7c7bf96858576af508a7f5da42127"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": true,
+        "nr_passes": [
+          1
+        ],
+        "input_extents": [
+          [
+            1724,
+            962
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      },
+      {
+        "phase": "two",
+        "revision": 4,
+        "seconds": 20.03857479999715,
+        "distinct_samples": 21,
+        "fps_mean": 9.595987868642823,
+        "fps_min": 8.928925751021866,
+        "fps_max": 9.93710409335154,
+        "fps_median": 9.925545505499597,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/fps-two.json",
+          "sha256": "fc890fabd2835e6d26e8666ddbd4ee72170aadd57de4344cb19603e29def2c0b"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": true,
+        "nr_passes": [
+          2
+        ],
+        "input_extents": [
+          [
+            1724,
+            962
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      }
+    ],
+    "live_experiments": [
+      {
+        "phase": "controlled_delta",
+        "revision": 12,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-controlled_delta.json",
+          "sha256": "eae271200a7a3c0b0724911b23180847e85326537a4a64bcddbcde06a54805da"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "controlled_delta",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 98,
+            "maximumHistoryWeight": 0.29375770688056946,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1064,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1064
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1064
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "first_pass",
+        "revision": 9,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-first_pass.json",
+          "sha256": "7c0b535dcb38fb8c86ca976b32b3154c128abbac17ad8f0e144a936a94bb8300"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "first_pass",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 112,
+            "maximumHistoryWeight": 0.24659697711467743,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 929,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 929
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 929
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "high_frequency",
+        "revision": 14,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-high_frequency.json",
+          "sha256": "09bcd1923f8929546b9cf35e67b29c95c4c2285348fea0b16c52123099d4c48d"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "high_frequency",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": true,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 95,
+            "maximumHistoryWeight": 0.3049827814102173,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1254,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            },
+            "second": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1254
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1254
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "history_validity",
+        "revision": 16,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-history_validity.json",
+          "sha256": "02747553fd7c08e1c9a3f5e9c16a0e5b43ef37c52e382965bf14668689c2d601"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "history_validity",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 97,
+            "maximumHistoryWeight": 0.2974527180194855,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1330,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            },
+            "second": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1330
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1330
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "history_weight",
+        "revision": 17,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-history_weight.json",
+          "sha256": "66230ba3f1a072cb93f3a9ecc6ed3a1709c56e9815bbecbb49004cc4bbf3a68d"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "history_weight",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 104,
+            "maximumHistoryWeight": 0.27253180742263794,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1537,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            },
+            "second": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1537
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1537
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "low_frequency",
+        "revision": 13,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-low_frequency.json",
+          "sha256": "22524304a7e37da6e0a2779b49c2f1f8882546b0bcc78fd32214f4e8d35c6337"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "low_frequency",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": true,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 113,
+            "maximumHistoryWeight": 0.2435336858034134,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1207,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            },
+            "second": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1207
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1207
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "model_output",
+        "revision": 10,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-model_output.json",
+          "sha256": "6147b5439ffe80f3e77b3ef6160ac7da113bd33a10e7b7e3c333bfbc075e4ca6"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "model_output",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 100,
+            "maximumHistoryWeight": 0.2865048050880432,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 978,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 978
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 978
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "off",
+        "revision": 20,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-off.json",
+          "sha256": "574bdb8cb8680dcaa693847759dac8a774004fbddb9ca519dacdf08def7b3192"
+        },
+        "all_samples_foreground": false,
+        "last_look": null,
+        "last_resources": null,
+        "video_quality_verified": false
+      },
+      {
+        "phase": "optical_flow",
+        "revision": 19,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-optical_flow.json",
+          "sha256": "c21fc8b682e2a53d8184443931f38dc4d63c4d4f1ac49c2e71a456646926b2ae"
+        },
+        "all_samples_foreground": false,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "off",
+          "diagnosticActive": false,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow",
+            "allocationBytes": 42467328,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "raw_log_model_delta",
+            "historyReady": true,
+            "intervalMs": 104,
+            "maximumHistoryWeight": 0.27253180742263794,
+            "persistence": null,
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 3028,
+            "textureCount": 3
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 3028
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 3028
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "original",
+        "revision": 6,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-original.json",
+          "sha256": "580b05b666f542ff9089a092f6dd4e001b9daf5c8eaea685f71b197ad3166f03"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "original",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 110,
+            "maximumHistoryWeight": 0.252839595079422,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 26,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 26
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 26
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "plus",
+        "revision": 18,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-plus.json",
+          "sha256": "387ec930d4d52eec488496467b7d6a90418348e0daecefc71d78ebfe3c57f05a"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "off",
+          "diagnosticActive": false,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 107,
+            "maximumHistoryWeight": 0.2625011205673218,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1863,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            },
+            "second": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1863
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1863
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "protection",
+        "revision": 15,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-protection.json",
+          "sha256": "08b8f63ed8b5f7add546af27d620ff6bc6a9919d45fe4e0fc77c0ef521c39a24"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "protection",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 14155776,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 1
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 114,
+            "maximumHistoryWeight": 0.24050848186016083,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1292,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            },
+            "second": {
+              "allocationBytes": 84934656,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 6
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1292
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1292
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "raw_delta",
+        "revision": 11,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/live-experiment-raw_delta.json",
+          "sha256": "3b221d008e2c47f4924e63a9582c2074a638114994e31e3db373f35ea8e03ea5"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "raw_delta",
+          "diagnosticActive": true,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 113,
+            "maximumHistoryWeight": 0.2435336858034134,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 1025,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1727687224656,
+              "inputImage": 46098124506178502,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46101423041061833,
+              "outputReused": false,
+              "parameters": 1727700345360,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 1025
+            },
+            {
+              "depthImage": 46104721575945164,
+              "evaluated": true,
+              "feature": 1730988314608,
+              "inputImage": 46101423041061833,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 46108020110828495,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 46127811320128481,
+              "outputReused": false,
+              "parameters": 1727700346000,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 1025
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      }
+    ],
+    "screenshots": [
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/screenshots/history-weight-0.jpg",
+        "sha256": "04dec95301dad960ad71668a1bb9d20338d529949dc145453cd73b2fc91123b5"
+      }
+    ],
+    "manual_motion_exercises": [
+      {
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/manual-motion-status.json",
+          "sha256": "ff49a8f994cee1742929e6b00002756afda4a0e09841f92781be12f5a09fff1d"
+        },
+        "distinct_samples": 41,
+        "foreground_samples": 0,
+        "nr_active_samples": 41,
+        "source_id_advance": 356,
+        "actual_modes": [
+          "optical_flow_plus"
+        ],
+        "actual_motion_coverage_synchronized_to_samples": false,
+        "video_quality_verified": false
+      },
+      {
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-proxy-baseline-20261005-225531-279/manual-optical-motion-status.json",
+          "sha256": "794145b520ae02c228d198a7a6c56754aba6f64b842c6650ba96d20c6f687e0b"
+        },
+        "distinct_samples": 41,
+        "foreground_samples": 41,
+        "nr_active_samples": 40,
+        "source_id_advance": 334,
+        "actual_modes": [
+          "optical_flow"
+        ],
+        "actual_motion_coverage_synchronized_to_samples": false,
+        "video_quality_verified": false
+      }
+    ]
+  },
+  "game_quality_session": {
+    "session": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320",
+    "prepared": {
+      "path": "src-tauri/target/nr-followup-20261005/quality.prepared.json",
+      "sha256": "e5d0cc086dfdeb44f6b67e3c2b50c1ee0ea21b743bc93de5005cef1855da3e94"
+    },
+    "strict_validation_acceptance": false,
+    "real_game_scene_performance_verified": true,
+    "video_quality_verified": false,
+    "waiting_for_manual_scene_entry": false,
+    "inputs": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/target-inputs.json",
+      "sha256": "d3b92c1bf68972ebe8df509f22b920c161d6ec38a126aa94c3bb9eedaad2d798"
+    },
+    "loaded_layer_sha256": "250746cbbbda2547ab30e4054bb51037cb19f1b10e46893da2fc5bb942c2ec85",
+    "graphics_launch": true,
+    "validation": false,
+    "readback": false,
+    "frame_trace": false,
+    "fps": [
+      {
+        "phase": "off-after",
+        "revision": 4,
+        "seconds": 20.039875999995274,
+        "distinct_samples": 20,
+        "fps_mean": 30.077142756670632,
+        "fps_min": 29.679288575581126,
+        "fps_max": 30.77975851591522,
+        "fps_median": 29.792474560188055,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/fps-off-after.json",
+          "sha256": "a0953349a2c66761071119aa8be9b65fc0ffffe1995157b1315784d6e912d121"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": false,
+        "nr_passes": [],
+        "input_extents": [
+          [
+            1724,
+            967
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      },
+      {
+        "phase": "off-before",
+        "revision": 1,
+        "seconds": 20.037387000003946,
+        "distinct_samples": 21,
+        "fps_mean": 30.069061476656536,
+        "fps_min": 29.756461218800847,
+        "fps_max": 30.797641019914547,
+        "fps_median": 29.799571064974092,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/fps-off-before.json",
+          "sha256": "bd55b9b841fdc9a29a3a911cf83b807e08731540b2c63c3eac75d8cf8ba3740a"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": false,
+        "nr_passes": [],
+        "input_extents": [
+          [
+            1724,
+            967
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      },
+      {
+        "phase": "one",
+        "revision": 2,
+        "seconds": 20.03787810000358,
+        "distinct_samples": 20,
+        "fps_mean": 30.084366806459798,
+        "fps_min": 29.754888157822307,
+        "fps_max": 30.80093356636061,
+        "fps_median": 29.790732030260077,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/fps-one.json",
+          "sha256": "980ddad844480fb5804e10cf4439c45dd6df36125cee9fd1976c355c12794be4"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": true,
+        "nr_passes": [
+          1
+        ],
+        "input_extents": [
+          [
+            1724,
+            967
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      },
+      {
+        "phase": "two",
+        "revision": 3,
+        "seconds": 20.038562000001548,
+        "distinct_samples": 20,
+        "fps_mean": 30.08085210763979,
+        "fps_min": 29.719692773666612,
+        "fps_max": 30.801178393470146,
+        "fps_median": 29.804870493837676,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/fps-two.json",
+          "sha256": "6096aff2f9198aad1ad0a6f9d91b7195947b15e9c148a83c39c3b65a9b65d17b"
+        },
+        "all_samples_foreground": true,
+        "nr_active_all": true,
+        "nr_passes": [
+          2
+        ],
+        "input_extents": [
+          [
+            1724,
+            967
+          ]
+        ],
+        "look_disabled_all": true,
+        "sr_disabled_all": true,
+        "fg_disabled_all": true
+      }
+    ],
+    "scene": {
+      "samePixelCameraAsStrictSession": false,
+      "userConfirmed": true,
+      "timestamp": "2026-10-05T23:31:05.4572081+08:00",
+      "scene": "XC3 v2.1.0 Everblight Plain after first battle, objective 55m, fixed camera for within-session comparison"
+    },
+    "live_experiments": [
+      {
+        "phase": "optical_flow",
+        "revision": 9,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/live-experiment-optical_flow.json",
+          "sha256": "d159d9847c42b78c9369031198824c723a47932ca5f48104636d25b9e2d8e212"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "off",
+          "diagnosticActive": false,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow",
+            "allocationBytes": 42467328,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "raw_log_model_delta",
+            "historyReady": true,
+            "intervalMs": 31,
+            "maximumHistoryWeight": 0.6787516474723816,
+            "persistence": null,
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 9413,
+            "textureCount": 3
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 56623104,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 4
+            },
+            "second": {
+              "allocationBytes": 56623104,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 4
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 1989319741136,
+              "evaluated": true,
+              "feature": 2558554385248,
+              "inputImage": 1989319738064,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 1989319736528,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 1989319739600,
+              "outputReused": false,
+              "parameters": 2558289129344,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 9413
+            },
+            {
+              "depthImage": 1989319741136,
+              "evaluated": true,
+              "feature": 2558514902304,
+              "inputImage": 1989319739600,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 1989319736528,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 1989315507408,
+              "outputReused": false,
+              "parameters": 2558289129600,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 9413
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "plus",
+        "revision": 12,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/live-experiment-plus.json",
+          "sha256": "67a61e1b9d7f560804a5d320f11a32422c0fa53d0b9b0f47311f187064ae05de"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "off",
+          "diagnosticActive": false,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "optical_flow_plus",
+            "allocationBytes": 56623104,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "conditional_log_amplitude_and_presence",
+            "historyReady": true,
+            "intervalMs": 31,
+            "maximumHistoryWeight": 0.6787516474723816,
+            "persistence": {
+              "amplitudeMs": 80,
+              "experimental": true,
+              "fallMs": 180,
+              "presence": "shared_rgb_support",
+              "riseMs": 60,
+              "thresholdStops": 0.01
+            },
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "optical_flow_plus",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 15067,
+            "textureCount": 4
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            },
+            "second": {
+              "allocationBytes": 70778880,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 5
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 1989319741136,
+              "evaluated": true,
+              "feature": 2558554385248,
+              "inputImage": 1989319738064,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 1989319736528,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 1989319739600,
+              "outputReused": false,
+              "parameters": 2558289129344,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 15067
+            },
+            {
+              "depthImage": 1989319741136,
+              "evaluated": true,
+              "feature": 2558514902304,
+              "inputImage": 1989319739600,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 1989319736528,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 1989315507408,
+              "outputReused": false,
+              "parameters": 2558289129600,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 15067
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      },
+      {
+        "phase": "static",
+        "revision": 7,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/live-experiment-static.json",
+          "sha256": "98799d3b8b857bb156fd3f278a4143d8eec66ab4b1d9b35da75b03bfddfe4ef7"
+        },
+        "all_samples_foreground": true,
+        "last_look": {
+          "active": true,
+          "algorithm": "oklab",
+          "base": "original_nr_input",
+          "codec": "sdr_srgb_rgba16f",
+          "diagnostic": "off",
+          "diagnosticActive": false,
+          "error": null,
+          "guide": "original_nr_input",
+          "history": "model_delta_only",
+          "passes": 2,
+          "protection": {
+            "highlights": 30,
+            "hue": 75,
+            "overcorrection": 40,
+            "shadows": 30
+          },
+          "reason": "active",
+          "requested": true,
+          "scope": "chain_total",
+          "spatial": {
+            "active": false,
+            "allocationBytes": 0,
+            "diagnosticBand": false,
+            "error": null,
+            "history": "none",
+            "radiusPixels": 8,
+            "reason": "bypassed",
+            "requested": false,
+            "textureCount": 0
+          },
+          "temporal": {
+            "active": true,
+            "actualMode": "static",
+            "allocationBytes": 42467328,
+            "error": null,
+            "evaluated": true,
+            "guide": "original_nr_input",
+            "history": "raw_log_model_delta",
+            "historyReady": true,
+            "intervalMs": 32,
+            "maximumHistoryWeight": 0.6703200340270996,
+            "persistence": null,
+            "pixelHistoryAcceptanceMeasured": false,
+            "reason": "active",
+            "requested": true,
+            "requestedMode": "static",
+            "resetReason": "continuous",
+            "sampling": "per_tap",
+            "sourceFrameId": 6781,
+            "textureCount": 3
+          }
+        },
+        "last_resources": {
+          "activeFeatureCount": 2,
+          "actualPasses": 2,
+          "error": null,
+          "lookCacheResources": {
+            "first": {
+              "allocationBytes": 56623104,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": false,
+                "textureCount": 1
+              },
+              "textureCount": 4
+            },
+            "second": {
+              "allocationBytes": 56623104,
+              "rawModelCache": {
+                "allocationBytes": 14155776,
+                "ready": true,
+                "textureCount": 1
+              },
+              "textureCount": 4
+            }
+          },
+          "passes": [
+            {
+              "depthImage": 1989319741136,
+              "evaluated": true,
+              "feature": 2558554385248,
+              "inputImage": 1989319738064,
+              "instance": 3,
+              "intensity": 1.0,
+              "motionImage": 1989319736528,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 1989319739600,
+              "outputReused": false,
+              "parameters": 2558289129344,
+              "pass": 1,
+              "reset": false,
+              "sourceFrameId": 6781
+            },
+            {
+              "depthImage": 1989319741136,
+              "evaluated": true,
+              "feature": 2558514902304,
+              "inputImage": 1989319739600,
+              "instance": 4,
+              "intensity": 1.0,
+              "motionImage": 1989319736528,
+              "options": {
+                "autoMask": false,
+                "globalTone": null,
+                "localStructure": null,
+                "localTone": null,
+                "skinStructure": 0,
+                "style": "a"
+              },
+              "outputImage": 1989315507408,
+              "outputReused": false,
+              "parameters": 2558289129600,
+              "pass": 2,
+              "reset": false,
+              "sourceFrameId": 6781
+            }
+          ],
+          "privateTextureCount": 6,
+          "reason": "active",
+          "requestedPasses": 2,
+          "retry": 0,
+          "retryPolicy": "explicit_retry_toggle_or_recreation",
+          "sdkMemoryBytes": null,
+          "secondActive": true,
+          "secondAllocationBytes": 14155776,
+          "secondEvaluated": true,
+          "secondTextureCount": 1
+        },
+        "video_quality_verified": false
+      }
+    ],
+    "loaded_modules": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/loaded-quality-modules.json",
+      "sha256": "b1376aeac509e776a1716c80a2d6ded8ddd5077efb26a49b7707278590ba16ed"
+    },
+    "screenshots": [
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/screenshots/off-before.jpg",
+        "sha256": "86dcd488e2ebb17df8b6f3ed619a47d0e429f8c8df8f40e0e85b8c68f130d19f"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/screenshots/plus-after-manual-motion.jpg",
+        "sha256": "afb76984327b1ecf404b18f30c1fefd92ebf647e2a9ea211ed4fb4c0ff5bcc49"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/screenshots/plus.jpg",
+        "sha256": "9d1fdcf7459ee14907cb40840a6412b84b426ac5cea255dbe777954358bad170"
+      },
+      {
+        "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/screenshots/two.jpg",
+        "sha256": "abcbbce9b9a9143349276c8466b285510f4a89357fde825429a2ce2b2ecfd175"
+      }
+    ],
+    "motion_status_samples": [
+      {
+        "phase": "optical_flow",
+        "seconds": 45.18043639999814,
+        "distinct_samples": 45,
+        "active_foreground_samples": 2,
+        "fps_mean": 29.813355547846367,
+        "fps_min": 29.805542678457208,
+        "fps_max": 29.821168417235526,
+        "video_captured": false,
+        "video_quality_verified": false,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/quality-motion-optical_flow.json",
+          "sha256": "f9e0e2fc33f1a86255996598c5a8f610fd657bbea55bf5938928fe82c38dc16c"
+        },
+        "user_motion_feedback_received": true,
+        "actual_motion_coverage_synchronized_to_samples": false
+      },
+      {
+        "phase": "plus",
+        "seconds": 45.201005100003385,
+        "distinct_samples": 45,
+        "active_foreground_samples": 45,
+        "fps_mean": 30.082616648686592,
+        "fps_min": 29.722121937581168,
+        "fps_max": 30.800624477693443,
+        "video_captured": false,
+        "video_quality_verified": false,
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/quality-motion-plus.json",
+          "sha256": "8f07a056dee55decb49f026f3457bcb968433eab0d1e419c1d1491932fc7592a"
+        },
+        "user_motion_feedback_received": true,
+        "actual_motion_coverage_synchronized_to_samples": false
+      }
+    ],
+    "manual_feedback": [
+      {
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/manual-optical_flow-feedback.json",
+          "sha256": "8f6881db27298e32c97e35842ef92b318989dd9bbd81b83db86229b12dda44d2"
+        },
+        "feedback": {
+          "videoQualityVerified": false,
+          "phase": "optical_flow",
+          "userActionsCompleted": true,
+          "qualityFeedback": "动作完成，未看到明显异常",
+          "timestamp": "2026-10-05T23:39:54.5421837+08:00",
+          "manualObservationPassed": true
+        }
+      },
+      {
+        "raw": {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/manual-plus-feedback.json",
+          "sha256": "0f89409950d026f899152a79c4d29038f99afe551be716c9472c923984edf7b1"
+        },
+        "feedback": {
+          "phase": "plus",
+          "requestedActions": [
+            "slow camera pan",
+            "fast camera turn",
+            "occlusion"
+          ],
+          "qualityFeedback": "未看到明显异常",
+          "videoQualityVerified": false,
+          "userActionsCompleted": true,
+          "timestamp": "2026-10-05T23:37:06.0416124+08:00",
+          "manualObservationPassed": true
+        }
+      }
+    ],
+    "manual_observation_passed_for_both_flow_modes": true,
+    "pause_resume": {
+      "raw": [
+        {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/pause-before-control.json",
+          "sha256": "97e0116f16df359c28309b91cdfe056261ae958fa53357363bd212155d34b97f"
+        },
+        {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/pause-after-control.json",
+          "sha256": "18b6c4b12ba3b547f9b64e45e268c8973f77982c27d4ef8af535d7a12985ef6e"
+        },
+        {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/pause-summary.json",
+          "sha256": "4f30a6caafa5e61f936a8168651788d930d4b71b0b61062df4899bc4d7d9daf7"
+        },
+        {
+          "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/resume-after-control.json",
+          "sha256": "346eb5b1661a422b33b5184c6d93c8a7b20b568f6c7cb392b2615aed1c107f37"
+        }
+      ],
+      "first_resume_frame_reset_captured": false,
+      "no_present_live_look_limitation_remains": true
+    },
+    "launch_result": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/launch-result.json",
+      "sha256": "b57fcae42d3542a7c40f2c2557ae433f48ec6df4e6edd799b81a0f32afa5faed"
+    },
+    "launch_exit": {
+      "graphics_launch": true,
+      "strict_acceptance_run": false,
+      "target_exit_code": -1073740791,
+      "target_success": false,
+      "validation_requested": false
+    },
+    "clean_sdk_retirement_observed": true,
+    "retirement_log": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-experiments-quality-20261005-232743-320/layer.jsonl",
+      "sha256": "94f02b824b4c77f45582c52b140617c9d2c1596dc37a7d44291fc8ee7f4421e0"
+    }
+  },
+  "strict_application_call_attribution_snapshot": {
+    "session": "src-tauri/target/nr-followup-20261005/eden-attribution-baseline-20261005-235024-521",
+    "running_snapshot": true,
+    "prepared": {
+      "path": "src-tauri/target/nr-followup-20261005/attribution.prepared.json",
+      "sha256": "df7369114b821e428c56f09790b04514e6debe8d21412626d65e757600b25d6b"
+    },
+    "inputs": {
+      "path": "src-tauri/target/nr-followup-20261005/eden-attribution-baseline-20261005-235024-521/target-inputs.json",
+      "sha256": "30613f6792ea5f0758470564cbb46c085803e474cc7c951c65301d5531b592e5"
+    },
+    "validation": {
+      "raw": {
+        "path": "src-tauri/target/nr-followup-20261005/eden-attribution-baseline-20261005-235024-521/nr-validation.jsonl",
+        "sha256": "8453de339780747e5585206fc6612f2d398ff3ceef0b5518be6852c6adff0d62"
+      },
+      "errors": 14,
+      "warnings": 0,
+      "messages_by_id": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "count": 3
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "count": 21
+        },
+        {
+          "severity": 4096,
+          "id": -60244330,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 115483881,
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 522653285,
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1823614687,
+          "count": 2
+        }
+      ],
+      "messages_by_entry_point": [
+        {
+          "severity": 16,
+          "id": -42261870,
+          "application_call": null,
+          "count": 3
+        },
+        {
+          "severity": 16,
+          "id": 0,
+          "application_call": null,
+          "count": 21
+        },
+        {
+          "severity": 4096,
+          "id": -60244330,
+          "application_call": "vkCreateShaderModule",
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 115483881,
+          "application_call": "vkCreateShaderModule",
+          "count": 1
+        },
+        {
+          "severity": 4096,
+          "id": 522653285,
+          "application_call": "vkCmdEndQuery",
+          "count": 10
+        },
+        {
+          "severity": 4096,
+          "id": 1823614687,
+          "application_call": "vkCreateShaderModule",
+          "count": 2
+        }
+      ],
+      "proxy_layout_errors": 0,
+      "duplicate_message_limit": 10,
+      "messages_filtered_by_us": false
+    },
+    "application_entry_point_is_not_final_fault_owner": true,
+    "game_integration_accepted": false,
+    "manual_scene_entry_confirmed": false
+  },
+  "user_scope_correction_2026_10_06": "Stop repeated known emulator baseline errors; retain raw records; continue M5/M6. Eden 0xC0000409 remains excluded.",
+  "known_emulator_errors_block_implementation": false,
+  "superseded_implementation_status": "M5/M6 now implemented as default-off experiments; see nr-scheduling-resizing-2026-10-06/summary.json"
+}

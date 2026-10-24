@@ -1,0 +1,252 @@
+.emulator-page {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 24px;
+  container-type: inline-size;
+}
+
+.page-header,
+.emulator-identity,
+.identity-title,
+.path-row,
+.version-actions,
+.component-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-header,
+.emulator-identity,
+.component-footer {
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+
+.section-description {
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.branch-select {
+  flex: 0 0 230px;
+}
+
+.management-card {
+  padding: 24px;
+}
+
+.identity-title,
+.path-input,
+.install-controls > :first-child {
+  min-width: 0;
+}
+
+.emulator-logo {
+  flex: 0 0 48px;
+}
+
+.emulator-name {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.launch-button {
+  flex-shrink: 0;
+  min-width: 180px;
+}
+
+.card-divider {
+  margin-block: 20px;
+}
+
+.row-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.path-row > .row-title {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.path-input {
+  flex: 1;
+}
+
+.version-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: 24px;
+}
+
+.version-section {
+  min-width: 0;
+  padding-right: 20px;
+}
+
+.latest-version {
+  padding-left: 20px;
+  padding-right: 0;
+  border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.version-value,
+.firmware-version {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  margin-bottom: 10px;
+}
+
+.version-text {
+  font-family: 'JetBrains Mono Variable', monospace;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.status-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.version-actions {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.version-actions > .section-description {
+  flex: 1 1 160px;
+}
+
+.install-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 24px;
+}
+
+.install-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px;
+  align-items: center;
+  gap: 16px;
+}
+
+.firmware-controls {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.65fr) minmax(0, 1.35fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.firmware-status {
+  padding-right: 16px;
+  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.firmware-version {
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+
+.component-footer {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.firmware-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.keys-link {
+  display: inline-block;
+  margin-left: 8px;
+  text-underline-offset: 3px;
+}
+
+.emulator-page :deep(.v-btn) {
+  letter-spacing: normal;
+}
+
+@container (max-width: 780px) {
+  .install-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+@container (max-width: 560px) {
+  .page-header,
+  .emulator-identity {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .branch-select {
+    flex-basis: auto;
+  }
+
+  .management-card {
+    padding: 16px;
+  }
+
+  .path-row {
+    flex-wrap: wrap;
+  }
+
+  .path-row > .row-title {
+    flex-basis: 100%;
+  }
+
+  .version-grid,
+  .firmware-controls {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .version-section,
+  .firmware-status {
+    padding: 0;
+    border: 0;
+  }
+
+  .latest-version {
+    padding-top: 16px;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+
+  .install-controls {
+    grid-template-columns: minmax(0, 1fr) 112px;
+    gap: 12px;
+  }
+}
+
+@container (max-width: 380px) {
+  .path-input {
+    flex-basis: 100%;
+  }
+
+  .install-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

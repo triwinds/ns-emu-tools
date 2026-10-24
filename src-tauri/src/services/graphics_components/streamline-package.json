@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "launcher_protocol": 2,
+  "native_nr": true,
+  "version": "local-graphics-eb2386a617e9af8c-63330fa934adb0bd",
+  "common_version": "graphics-common-eb2386a617e9af8c",
+  "files": [
+    {
+      "name": "LICENSE-DLSS.txt",
+      "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294"
+    },
+    {
+      "name": "LICENSE-NGX.txt",
+      "sha256": "3027f23ca5a46dd9cb8183fbd522983a86f64d7daac5982912bf9f214671f294"
+    },
+    {
+      "name": "LICENSE-NsEmuTools.txt",
+      "sha256": "94d1afa7d1f089935e035c1327394457da625e5d3543d78b844c10ab65268b5e"
+    },
+    {
+      "name": "LICENSE-Streamline-third-party.md",
+      "sha256": "cb251639994465f31d2178c16acedf1ff4f9cef1c370a09782ed36d4c86c1dca"
+    },
+    {
+      "name": "LICENSE-Streamline.txt",
+      "sha256": "7b6f23e7d6f3ad6292f9308d2b42cdc3d82ae4e9b2abb55f230279d83bedd43d"
+    },
+    {
+      "name": "NvLowLatencyVk.dll",
+      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6"
+    },
+    {
+      "name": "nvngx_dlss.dll",
+      "sha256": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
+    },
+    {
+      "name": "nvngx_dlssg.dll",
+      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f"
+    },
+    {
+      "name": "nvngx_dlssnr.dll",
+      "sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e"
+    },
+    {
+      "name": "README-RUNTIMES.txt",
+      "sha256": "471c3f6190020f5a5911ff46bcd58d2303dbc78a82ad228e618cb69e9fd3213b"
+    },
+    {
+      "name": "sl.common.dll",
+      "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68"
+    },
+    {
+      "name": "sl.dlss.dll",
+      "sha256": "648e95b803a9bccbf24ded68a4399d005b4757d18924d259f19b323d5e26059c"
+    },
+    {
+      "name": "sl.dlss_g.dll",
+      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e"
+    },
+    {
+      "name": "sl.interposer.dll",
+      "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6"
+    },
+    {
+      "name": "sl.pcl.dll",
+      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502"
+    },
+    {
+      "name": "sl.reflex.dll",
+      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced"
+    },
+    {
+      "name": "SOURCE-NR.json",
+      "sha256": "064488f53b6aec7e17f3b32adc78200775eb4496327397ecd80448926ec6922a"
+    },
+    {
+      "name": "SOURCE-Streamline.json",
+      "sha256": "68b487acf86010c9a2b1930ed6624778f1bf97410cfbdfd61b7d453f0c2f2d53"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(std430,binding=0) readonly buffer Data { uint words[]; } data;
+layout(rg32f,binding=1) uniform writeonly image2D motionUv;
+layout(rg16f,binding=2) uniform writeonly image2D motionPixels;
+layout(std430,binding=3) readonly buffer Matches { uint changed; uint sameTiles[]; } matches;
+layout(rg16f,binding=4) uniform writeonly image2D motionPixelsSr;
+// Packed current-to-previous S10.5 pixel vectors only.
+layout(push_constant) uniform Settings { uint width; uint height; uint reset; uint flags; uint edgeThreshold; } settings;
+uint indexAt(ivec2 p) {
+    p=clamp(p,ivec2(0),ivec2(settings.width,settings.height)-1);
+    return uint(p.y)*settings.width+uint(p.x);
+}
+vec2 vectorAt(ivec2 p) {
+    uint raw=data.words[indexAt(p)];
+    return vec2(float(int(raw<<16)>>16),float(int(raw)>>16))/32.;
+}
+vec2 sampleFlow(vec2 p) {
+    vec2 pos=p/4.-.5; ivec2 b=ivec2(floor(pos)); vec2 f=fract(pos);
+    return mix(mix(vectorAt(b),vectorAt(b+ivec2(1,0)),f.x),
+        mix(vectorAt(b+ivec2(0,1)),vectorAt(b+ivec2(1,1)),f.x),f.y);
+}
+vec2 sampleFgFlow(vec2 p) {
+    // Interpolating foreground and background velocities invents a third
+    // trajectory at fast silhouettes. Preserve the nearest flow layer and
+    // smooth only taps agreeing within the configured presentation-pixel radius.
+    vec2 pos=p/4.-.5; ivec2 b=ivec2(floor(pos)); vec2 f=fract(pos);
+    vec2 anchor=vectorAt(ivec2(floor(p/4.)));
+    vec2 sum=vec2(0); float support=0.;
+    for(int y=0;y<2;y++) for(int x=0;x<2;x++) {
+        vec2 v=vectorAt(b+ivec2(x,y));
+        float w=(x==0 ? 1.-f.x : f.x)*(y==0 ? 1.-f.y : f.y);
+        if(dot(v-anchor,v-anchor)<=float(settings.edgeThreshold*settings.edgeThreshold)) {sum+=v*w; support+=w;}
+    }
+    return support>0. ? sum/support : anchor;
+}
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy); ivec2 size=imageSize(motionUv);
+    if(any(greaterThanEqual(p,size))) return;
+    vec2 forward=vec2(0);
+    if(settings.reset==0) forward=sampleFlow(vec2(p)+.5);
+    // NR/SR retain raw motion. Exact unchanged RGBA tiles only force FG
+    // motion to zero, preserving its existing static-overlay protection.
+    vec2 fgForward=settings.reset==0 && (settings.flags&8u)!=0 ? sampleFgFlow(vec2(p)+.5) : forward;
+    uint tile=uint(p.y/4)*settings.width+uint(p.x/4);
+    if((settings.flags&4u)!=0 && matches.sameTiles[tile]!=0) fgForward=vec2(0);
+    imageStore(motionUv,p,vec4(forward/vec2(size),0,0));
+    imageStore(motionPixels,p,vec4(fgForward,0,0));
+    imageStore(motionPixelsSr,p,vec4(forward,0,0));
+}

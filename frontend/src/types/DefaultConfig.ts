@@ -1,4 +1,5 @@
 import type {AppConfig} from "@/types";
+import { graphicsAdvanced } from '@/utils/graphicsAdvanced'
 
 // 注意：这些是示例默认值，实际路径会根据运行平台自动设置
 // Windows: D:\Yuzu, D:\Ryujinx
@@ -39,7 +40,19 @@ export const defaultConfig: AppConfig = {
       "backend": "auto"
     },
     "other": {
-      "rename_yuzu_to_cemu": false
+      "rename_yuzu_to_cemu": false,
+      "streamline_nvof": true,
+      "streamline_sr": false,
+      "streamline_fg": true,
+      "streamline_nr": false,
+      "streamline_nr_intensity": 100,
+      "streamline_nr_consolidated": false,
+      "streamline_input_scale": 100,
+      "streamline_input_max_edge": 0,
+      "streamline_sr_mode": "balanced",
+      "streamline_sr_preset": "j",
+      "streamline_advanced": graphicsAdvanced(),
+      "streamline_nr_presets": []
     }
   }
 }

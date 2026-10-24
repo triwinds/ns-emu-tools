@@ -1,14 +1,14 @@
 //! Yuzu 系列模拟器管理服务
 //!
-//! 提供 Eden 安装、以及历史 Yuzu/Citron 安装目录的版本检测等功能
+//! 提供 Eden/Citron 各发布分支安装、以及历史 Yuzu 安装目录的版本检测等功能
 
 use crate::config::{get_config, CONFIG};
 use crate::error::{AppError, AppResult};
 use crate::models::yuzu_branch::{
     is_citron_branch, is_downloadable_yuzu_branch, normalize_downloadable_yuzu_branch,
     normalize_yuzu_branch, yuzu_user_dir_branch, CITRON_NIGHTLY_BRANCH, CITRON_STABLE_BRANCH,
-    DOWNLOAD_AVAILABLE_BRANCHES, EDEN_BRANCH, LEGACY_CITRON_BRANCH, LEGACY_YUZU_BRANCH,
-    YUZU_EA_BRANCH, YUZU_MAINLINE_BRANCH,
+    DOWNLOAD_AVAILABLE_BRANCHES, EDEN_BRANCH, EDEN_NIGHTLY_BRANCH, LEGACY_CITRON_BRANCH,
+    LEGACY_YUZU_BRANCH, YUZU_EA_BRANCH, YUZU_MAINLINE_BRANCH,
 };
 use crate::models::{ProgressEvent, ProgressStatus, ProgressStep}; // Import models
 use crate::repositories::yuzu::{get_latest_change_log, get_yuzu_release_info_by_version};
@@ -71,6 +71,7 @@ fn emulator_download_title(branch: &str) -> String {
 pub fn get_emu_name(branch: &str) -> &'static str {
     match normalize_yuzu_branch(branch) {
         Some(EDEN_BRANCH) => EDEN_NAME,
+        Some(EDEN_NIGHTLY_BRANCH) => "Eden Nightly",
         Some(CITRON_STABLE_BRANCH) => "Citron Stable",
         Some(CITRON_NIGHTLY_BRANCH) => "Citron Nightly",
         Some(YUZU_EA_BRANCH) => "Yuzu EA",
@@ -91,7 +92,7 @@ pub fn normalize_yuzu_branch_for_config(branch: &str) -> String {
 
 fn unsupported_install_branch_error(branch: &str) -> AppError {
     AppError::InvalidArgument(format!(
-        "不支持的分支: {}，当前支持 eden、citron-stable、citron-nightly",
+        "不支持的分支: {}，当前支持 eden、eden-nightly、citron-stable、citron-nightly",
         branch
     ))
 }
@@ -110,7 +111,7 @@ fn unsupported_citron_linux_error() -> AppError {
 
 fn validate_yuzu_install_platform(branch: &str) -> AppResult<()> {
     let branch = require_downloadable_yuzu_branch(branch)?;
-    if branch == EDEN_BRANCH {
+    if matches!(branch, EDEN_BRANCH | EDEN_NIGHTLY_BRANCH) {
         return Ok(());
     }
 
@@ -194,7 +195,7 @@ fn expected_yuzu_exe_path_for_branch(yuzu_path: &Path, branch: &str) -> PathBuf 
         }
 
         let exe_name = match normalize_yuzu_branch(branch) {
-            Some(EDEN_BRANCH) => "eden.exe",
+            Some(EDEN_BRANCH | EDEN_NIGHTLY_BRANCH) => "eden.exe",
             Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => "citron.exe",
             Some(YUZU_MAINLINE_BRANCH | YUZU_EA_BRANCH | LEGACY_YUZU_BRANCH) => "yuzu.exe",
             _ => "yuzu.exe",
@@ -279,7 +280,7 @@ fn find_existing_yuzu_user_dir(base_dir: &Path, branch: &str) -> Option<PathBuf>
 #[cfg(target_os = "macos")]
 fn get_macos_bundle_spec(branch: &str) -> Option<(&'static str, &'static str)> {
     match normalize_yuzu_branch(branch) {
-        Some(EDEN_BRANCH) => Some(("Eden.app", "Eden")),
+        Some(EDEN_BRANCH | EDEN_NIGHTLY_BRANCH) => Some(("Eden.app", "Eden")),
         Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => Some(("Citron.app", "Citron")),
         Some(YUZU_MAINLINE_BRANCH | YUZU_EA_BRANCH | LEGACY_YUZU_BRANCH) => {
             Some(("yuzu.app", "yuzu"))
@@ -365,7 +366,10 @@ fn select_macos_asset(
         }
 
         match branch {
-            EDEN_BRANCH if name.contains("macOS") && name_lower.ends_with(".tar.gz") => {
+            EDEN_BRANCH | EDEN_NIGHTLY_BRANCH
+                if name_lower.starts_with("eden-macos-")
+                    && (name_lower.ends_with(".tar.gz") || name_lower.ends_with(".dmg")) =>
+            {
                 debug!("选择 Eden macOS 资源: {}", name);
                 return Some(asset.download_url.clone());
             }
@@ -389,6 +393,9 @@ fn select_windows_asset(
     let branch = normalize_downloadable_yuzu_branch(branch)?;
 
     match branch {
+        EDEN_NIGHTLY_BRANCH => {
+            select_eden_nightly_windows_asset(release_info, std::env::consts::ARCH)
+        }
         EDEN_BRANCH => {
             for asset in &release_info.assets {
                 let name = asset.name.to_lowercase();
@@ -432,6 +439,29 @@ fn select_windows_asset(
     }
 }
 
+#[cfg(any(target_os = "windows", test))]
+fn select_eden_nightly_windows_asset(
+    release_info: &crate::models::release::ReleaseInfo,
+    arch: &str,
+) -> Option<String> {
+    let suffixes: &[&str] = match arch {
+        "x86_64" => &[
+            "-amd64-clang-pgo.zip",
+            "-amd64-msvc-standard.zip",
+            "-amd64-gcc-standard.zip",
+        ],
+        "aarch64" => &["-arm64-clang-pgo.zip", "-arm64-clang-standard.zip"],
+        _ => return None,
+    };
+    suffixes.iter().find_map(|suffix| {
+        release_info.assets.iter().find_map(|asset| {
+            let name = asset.name.to_ascii_lowercase();
+            (name.starts_with("eden-windows-") && name.ends_with(suffix))
+                .then(|| asset.download_url.clone())
+        })
+    })
+}
+
 pub fn select_current_platform_yuzu_asset(
     release_info: &crate::models::release::ReleaseInfo,
     branch: &str,
@@ -457,7 +487,7 @@ pub fn select_current_platform_yuzu_asset(
 ///
 /// # 参数
 /// * `target_version` - 目标版本
-/// * `branch` - 分支 (eden)
+/// * `branch` - Eden/Citron 发布分支
 /// * `on_progress` - 进度回调
 ///
 /// # 返回
@@ -619,6 +649,7 @@ where
 fn yuzu_download_source_origin(branch: &str) -> &'static str {
     match normalize_yuzu_branch(branch) {
         Some(EDEN_BRANCH) => "https://git.eden-emu.dev",
+        Some(EDEN_NIGHTLY_BRANCH) => "https://nightly.eden-emu.dev",
         Some(CITRON_STABLE_BRANCH) => "https://github.com/citron-neo/emulator",
         Some(CITRON_NIGHTLY_BRANCH) => "https://github.com/citron-neo/CI",
         _ => "https://github.com",
@@ -712,11 +743,18 @@ where
     let package_path_for_extract = package_path.to_path_buf();
     let yuzu_path_for_extract = yuzu_path.to_path_buf();
     let installed_app = match spawn_blocking_io("install_eden_app_bundle", move || {
-        crate::utils::archive::extract_and_install_app_from_tar_gz(
-            &package_path_for_extract,
-            &yuzu_path_for_extract,
-            app_name,
-        )
+        if package_path_for_extract
+            .extension()
+            .is_some_and(|ext| ext == "dmg")
+        {
+            crate::utils::archive::extract_dmg(&package_path_for_extract, &yuzu_path_for_extract)
+        } else {
+            crate::utils::archive::extract_and_install_app_from_tar_gz(
+                &package_path_for_extract,
+                &yuzu_path_for_extract,
+                app_name,
+            )
+        }
     })
     .await
     {
@@ -1027,7 +1065,18 @@ pub async fn install_eden<F>(target_version: &str, on_event: F) -> AppResult<()>
 where
     F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
 {
-    info!("开始安装 Eden 版本: {}", target_version);
+    install_eden_for_branch(target_version, EDEN_BRANCH, on_event).await
+}
+
+async fn install_eden_for_branch<F>(
+    target_version: &str,
+    branch: &str,
+    on_event: F,
+) -> AppResult<()>
+where
+    F: Fn(ProgressEvent) + Send + Sync + 'static + Clone,
+{
+    info!("开始安装 {} 版本: {}", get_emu_name(branch), target_version);
 
     let (yuzu_path, auto_delete) = {
         let config = get_config();
@@ -1037,9 +1086,8 @@ where
         )
     };
 
-    validate_yuzu_release_step(target_version, EDEN_BRANCH, on_event.clone()).await?;
-    let package_path =
-        download_yuzu_package_step(target_version, EDEN_BRANCH, on_event.clone()).await?;
+    validate_yuzu_release_step(target_version, branch, on_event.clone()).await?;
+    let package_path = download_yuzu_package_step(target_version, branch, on_event.clone()).await?;
 
     #[cfg(target_os = "macos")]
     install_eden_macos_step(&package_path, &yuzu_path, on_event.clone()).await?;
@@ -1185,7 +1233,7 @@ pub fn remove_target_app(branch: &str) -> AppResult<()> {
     #[cfg(not(target_os = "macos"))]
     {
         let exe_name = match normalize_yuzu_branch(branch) {
-            Some(EDEN_BRANCH) => "eden.exe",
+            Some(EDEN_BRANCH | EDEN_NIGHTLY_BRANCH) => "eden.exe",
             Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => "citron.exe",
             _ => return Ok(()),
         };
@@ -1211,7 +1259,7 @@ fn target_app_executable_path(branch: &str) -> Option<PathBuf> {
     #[cfg(not(target_os = "macos"))]
     {
         let exe_name = match normalize_yuzu_branch(branch) {
-            Some(EDEN_BRANCH) => "eden.exe",
+            Some(EDEN_BRANCH | EDEN_NIGHTLY_BRANCH) => "eden.exe",
             Some(CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH) => "citron.exe",
             _ => return None,
         };
@@ -1407,6 +1455,7 @@ where
     // 根据分支安装
     match branch {
         EDEN_BRANCH => install_eden(target_version, on_event).await?,
+        EDEN_NIGHTLY_BRANCH => install_eden_for_branch(target_version, branch, on_event).await?,
         CITRON_STABLE_BRANCH | CITRON_NIGHTLY_BRANCH => {
             install_citron(target_version, branch, on_event).await?
         }
@@ -1581,8 +1630,35 @@ fn extract_version_after_prefix(text: &str, prefix: &str) -> Option<String> {
     }
 }
 
+fn normalize_eden_commit_version(token: &str) -> Option<String> {
+    let version = token.trim();
+    let commit = version.split('-').next()?;
+    if !(7..=40).contains(&commit.len())
+        || !commit.chars().all(|c| c.is_ascii_hexdigit())
+        || version.len() > 64
+        || !version
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+    {
+        return None;
+    }
+    Some(version.to_string())
+}
+
+fn extract_eden_version_after_prefix(text: &str, prefix: &str) -> Option<String> {
+    extract_version_after_prefix(text, prefix).or_else(|| {
+        // A commit SHA can contain only a-f, without any decimal digits.
+        let token = text.strip_prefix(prefix)?.split_whitespace().next()?;
+        normalize_eden_commit_version(token)
+    })
+}
+
 fn infer_branch_from_marker(text: &str) -> Option<&'static str> {
     let marker = text.trim();
+
+    if marker == "Eden Nightly" || marker.starts_with("Eden Nightly ") {
+        return Some(EDEN_NIGHTLY_BRANCH);
+    }
 
     if marker.eq_ignore_ascii_case("eden")
         || marker.starts_with("Eden ")
@@ -1612,10 +1688,32 @@ fn infer_branch_from_marker(text: &str) -> Option<&'static str> {
 }
 
 fn detect_yuzu_version_from_ascii_strings(strings: &[String]) -> Option<(String, Option<String>)> {
+    // GenerateSCMRev.cmake embeds the build name and update source. Nightly
+    // also embeds eden-emu/eden for switching to stable, so its presence alone
+    // cannot identify the channel. Prefer the explicit nightly build name.
+    for text in strings {
+        for prefix in ["Eden Nightly | ", "Eden Nightly "] {
+            if let Some(version) = extract_eden_version_after_prefix(text, prefix) {
+                return Some((version, Some(EDEN_NIGHTLY_BRANCH.to_string())));
+            }
+        }
+    }
+
+    let eden_branch = if strings.iter().any(|text| {
+        matches!(
+            text.trim(),
+            "Eden Nightly" | "eden-ci/nightly" | "nightly.eden-emu.dev"
+        )
+    }) {
+        EDEN_NIGHTLY_BRANCH
+    } else {
+        EDEN_BRANCH
+    };
+
     for text in strings {
         for prefix in ["Eden | ", "Eden "] {
-            if let Some(version) = extract_version_after_prefix(text, prefix) {
-                return Some((version, Some(EDEN_BRANCH.to_string())));
+            if let Some(version) = extract_eden_version_after_prefix(text, prefix) {
+                return Some((version, Some(eden_branch.to_string())));
             }
         }
 
@@ -1645,11 +1743,19 @@ fn detect_yuzu_version_from_ascii_strings(strings: &[String]) -> Option<(String,
     }
 
     for (index, text) in strings.iter().enumerate() {
-        let Some(version) = normalize_version_token(text) else {
+        let Some(version) = normalize_version_token(text).or_else(|| {
+            (eden_branch == EDEN_NIGHTLY_BRANCH)
+                .then(|| normalize_eden_commit_version(text))
+                .flatten()
+        }) else {
             continue;
         };
 
-        if !is_likely_release_version(&version) {
+        if !is_likely_release_version(&version)
+            && !(eden_branch == EDEN_NIGHTLY_BRANCH
+                && version.contains('-')
+                && normalize_eden_commit_version(&version).is_some())
+        {
             continue;
         }
 
@@ -1658,6 +1764,13 @@ fn detect_yuzu_version_from_ascii_strings(strings: &[String]) -> Option<(String,
         let branch = strings[start..end]
             .iter()
             .find_map(|marker| infer_branch_from_marker(marker))
+            .map(|branch| {
+                if matches!(branch, EDEN_BRANCH | EDEN_NIGHTLY_BRANCH) {
+                    eden_branch
+                } else {
+                    branch
+                }
+            })
             .map(ToString::to_string);
 
         if branch.is_some() {
@@ -1795,9 +1908,19 @@ fn save_detected_yuzu_version(version: &str, branch: Option<&str>) -> AppResult<
     Ok(())
 }
 
+fn detect_yuzu_version_from_installed_executable(
+    exe_path: &Path,
+) -> Option<(String, Option<String>)> {
+    // A matching fingerprint identifies the exact release and channel installed
+    // by this tool; nightly binaries embed a SHA/branch rather than the full
+    // timestamped release tag used by the download API.
+    detect_yuzu_version_from_install_metadata(exe_path)
+        .or_else(|| detect_yuzu_version_from_binary(exe_path))
+}
+
 /// 开始检测 Yuzu 版本
 ///
-/// 优先直接解析二进制内嵌版本串；如果失败，则在 Windows 上回退到窗口标题检测。
+/// 优先匹配安装记录，再解析二进制版本串；Windows 最后回退到窗口标题检测。
 pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
     info!("开始检测 Yuzu 版本");
 
@@ -1809,8 +1932,11 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
         return Ok(None);
     }
 
-    if let Some((version, branch)) = detect_yuzu_version_from_binary(&exe_path) {
-        info!("通过二进制检测到版本: {}, 分支: {:?}", version, branch);
+    if let Some((version, branch)) = detect_yuzu_version_from_installed_executable(&exe_path) {
+        info!(
+            "通过安装记录或二进制检测到版本: {}, 分支: {:?}",
+            version, branch
+        );
         save_detected_yuzu_version(&version, branch.as_deref())?;
         return Ok(Some(version));
     }
@@ -1821,12 +1947,6 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
             save_detected_yuzu_version(&version, branch.as_deref())?;
             return Ok(Some(version));
         }
-    }
-
-    if let Some((version, branch)) = detect_yuzu_version_from_install_metadata(&exe_path) {
-        info!("通过安装元数据检测到版本: {}, 分支: {:?}", version, branch);
-        save_detected_yuzu_version(&version, branch.as_deref())?;
-        return Ok(Some(version));
     }
 
     #[cfg(not(windows))]
@@ -1900,19 +2020,17 @@ pub async fn detect_yuzu_version() -> AppResult<Option<String>> {
                             guard.1 = Some(YUZU_MAINLINE_BRANCH.to_string());
                         }
                         return windows::Win32::Foundation::BOOL(0); // Stop enumeration
-                    } else if window_title.starts_with("Eden | ") {
-                        let mut guard = data.lock().unwrap();
-                        // 提取版本号，去掉可能存在的 MSVC 版本信息
-                        // 例如: "Eden | v0.0.4-rc3 | MSVC 19.44.35219.0" -> "v0.0.4-rc3"
-                        let version_part = &window_title[7..];
-                        let version = if let Some(pipe_pos) = version_part.find(" | ") {
-                            version_part[..pipe_pos].to_string()
-                        } else {
-                            version_part.to_string()
-                        };
-                        guard.0 = Some(version);
-                        guard.1 = Some(EDEN_BRANCH.to_string());
-                        return windows::Win32::Foundation::BOOL(0);
+                    } else if window_title.starts_with("Eden | ")
+                        || window_title.starts_with("Eden Nightly | ")
+                    {
+                        if let Some((version, branch)) = detect_yuzu_version_from_ascii_strings(
+                            std::slice::from_ref(&window_title),
+                        ) {
+                            let mut guard = data.lock().unwrap();
+                            guard.0 = Some(version);
+                            guard.1 = branch;
+                            return windows::Win32::Foundation::BOOL(0);
+                        }
                     } else if window_title.starts_with("citron | ") {
                         let mut guard = data.lock().unwrap();
                         // 提取版本号，去掉可能存在的 MSVC 版本信息
@@ -2483,6 +2601,7 @@ mod tests {
     #[test]
     fn test_get_emu_name() {
         assert_eq!(get_emu_name("eden"), "Eden");
+        assert_eq!(get_emu_name(EDEN_NIGHTLY_BRANCH), "Eden Nightly");
         assert_eq!(get_emu_name("citron"), "Citron Stable");
         assert_eq!(get_emu_name(CITRON_STABLE_BRANCH), "Citron Stable");
         assert_eq!(get_emu_name(CITRON_NIGHTLY_BRANCH), "Citron Nightly");
@@ -2528,6 +2647,118 @@ mod tests {
             detected,
             Some(("v0.2.0-rc1".to_string(), Some(EDEN_BRANCH.to_string())))
         );
+    }
+
+    #[test]
+    fn test_eden_nightly_build_name_takes_precedence_over_stable_update_markers() {
+        let strings = [
+            "Eden | v0.2.1",
+            "eden-emu/eden",
+            "d3550c4571",
+            "master",
+            "d3550c4571-master",
+            "Eden Nightly",
+            "2026-10-01T22:15:11Z",
+            "Eden Nightly d3550c4571-master ",
+            "nightly.eden-emu.dev",
+            "eden-ci/nightly",
+            "eden-emu/eden",
+        ]
+        .map(str::to_string);
+        assert_eq!(
+            detect_yuzu_version_from_ascii_strings(&strings),
+            Some((
+                "d3550c4571-master".to_string(),
+                Some(EDEN_NIGHTLY_BRANCH.to_string())
+            ))
+        );
+    }
+
+    #[test]
+    fn test_eden_nightly_window_title_and_alphabetic_commit() {
+        for version in ["d3550c4571-master", "abcdefabcd-master", "abcdefabcd"] {
+            let strings = vec![format!("Eden Nightly | {version} | Clang 22.1.4")];
+            assert_eq!(
+                detect_yuzu_version_from_ascii_strings(&strings),
+                Some((version.to_string(), Some(EDEN_NIGHTLY_BRANCH.to_string())))
+            );
+        }
+    }
+
+    #[test]
+    fn test_eden_nightly_update_source_identifies_legacy_build_name() {
+        for marker in ["eden-ci/nightly", "nightly.eden-emu.dev"] {
+            let strings = ["Eden | v0.2.1", "eden-emu/eden", marker].map(str::to_string);
+            assert_eq!(
+                detect_yuzu_version_from_ascii_strings(&strings),
+                Some(("v0.2.1".to_string(), Some(EDEN_NIGHTLY_BRANCH.to_string())))
+            );
+        }
+    }
+
+    #[test]
+    fn test_eden_nightly_context_fallback_preserves_commit_version() {
+        let strings = [
+            "abcdefabcd",
+            "master",
+            "abcdefabcd-master",
+            "Eden Nightly",
+            "2026-10-01T22:15:11Z",
+            "eden-emu/eden",
+        ]
+        .map(str::to_string);
+        assert_eq!(
+            detect_yuzu_version_from_ascii_strings(&strings),
+            Some((
+                "abcdefabcd-master".to_string(),
+                Some(EDEN_NIGHTLY_BRANCH.to_string())
+            ))
+        );
+    }
+
+    #[test]
+    fn test_eden_stable_does_not_use_nightly_mentions_or_commit_shape_as_channel() {
+        let strings = [
+            "Nightly",
+            "https://nightly.eden-emu.dev/latest/release.json",
+            "Eden-Windows-nightly-d3550c4571-amd64-msvc-standard.zip",
+            "Eden v0.2.1 ",
+            "eden-emu/eden",
+        ]
+        .map(str::to_string);
+        assert_eq!(
+            detect_yuzu_version_from_ascii_strings(&strings),
+            Some(("v0.2.1".to_string(), Some(EDEN_BRANCH.to_string())))
+        );
+        assert_eq!(
+            detect_yuzu_version_from_ascii_strings(&["Eden abcdefabcd-master ".to_string()]),
+            Some((
+                "abcdefabcd-master".to_string(),
+                Some(EDEN_BRANCH.to_string())
+            ))
+        );
+    }
+
+    #[test]
+    #[ignore = "requires official Windows packages in EDEN_BINARY_SAMPLE_DIR"]
+    fn test_eden_version_detection_from_official_binary_samples() {
+        let sample_root = PathBuf::from(
+            std::env::var_os("EDEN_BINARY_SAMPLE_DIR").expect("set EDEN_BINARY_SAMPLE_DIR"),
+        );
+        for (directory, version, branch) in [
+            ("stable-msvc", "v0.2.1", EDEN_BRANCH),
+            ("nightly-msvc", "d3550c4571-master", EDEN_NIGHTLY_BRANCH),
+            ("nightly-clang", "d3550c4571-master", EDEN_NIGHTLY_BRANCH),
+            ("nightly-older", "9ace6742d7-master", EDEN_NIGHTLY_BRANCH),
+        ] {
+            let exe_path = sample_root.join(directory).join("eden.exe");
+            assert_eq!(
+                detect_yuzu_version_from_binary(&exe_path),
+                Some((version.to_string(), Some(branch.to_string()))),
+                "{}",
+                exe_path.display()
+            );
+        }
     }
 
     #[test]
@@ -2606,6 +2837,66 @@ mod tests {
 
         let detected = detect_yuzu_version_from_install_metadata(&exe_path);
         assert_eq!(detected, None);
+    }
+
+    #[test]
+    #[cfg(not(target_os = "macos"))]
+    fn test_eden_nightly_install_record_overrides_embedded_stable_version() {
+        let dir = tempdir().unwrap();
+        let exe_path = dir.path().join("eden.exe");
+        std::fs::write(&exe_path, b"Eden | v0.2.1\0").unwrap();
+        let version = "v1790892656.d3550c4571";
+        write_yuzu_install_metadata(dir.path(), version, EDEN_NIGHTLY_BRANCH).unwrap();
+        assert_eq!(
+            detect_yuzu_version_from_installed_executable(&exe_path),
+            Some((version.to_string(), Some(EDEN_NIGHTLY_BRANCH.to_string())))
+        );
+
+        std::fs::write(&exe_path, b"replacement Eden | v0.3.0\0Eden | v0.3.0\0").unwrap();
+        assert_eq!(
+            detect_yuzu_version_from_installed_executable(&exe_path),
+            Some(("v0.3.0".to_string(), Some(EDEN_BRANCH.to_string())))
+        );
+    }
+
+    #[test]
+    fn test_eden_nightly_asset_selection_matches_architecture() {
+        let mut release = ReleaseInfo {
+            name: "Eden Nightly".to_string(),
+            tag_name: "v1790892656.d3550c4571".to_string(),
+            description: String::new(),
+            published_at: None,
+            prerelease: false,
+            html_url: None,
+            assets: [
+                "Eden-Windows-d3550c4571-rog-ally-clang-pgo.zip",
+                "Eden-Windows-d3550c4571-arm64-clang-pgo.zip",
+                "Eden-Windows-d3550c4571-amd64-clang-pgo.zip",
+                "Eden-Windows-d3550c4571-amd64-msvc-standard.zip",
+                "Eden-macOS-d3550c4571.dmg",
+            ]
+            .into_iter()
+            .map(|name| ReleaseAsset {
+                name: name.to_string(),
+                download_url: format!("https://nightly.eden-emu.dev/{name}"),
+                size: 0,
+                content_type: None,
+            })
+            .collect(),
+        };
+        assert!(select_eden_nightly_windows_asset(&release, "x86_64")
+            .unwrap()
+            .ends_with("-amd64-clang-pgo.zip"));
+        assert!(select_eden_nightly_windows_asset(&release, "aarch64")
+            .unwrap()
+            .ends_with("-arm64-clang-pgo.zip"));
+        assert!(select_macos_asset(&release, EDEN_NIGHTLY_BRANCH)
+            .unwrap()
+            .ends_with(".dmg"));
+        release
+            .assets
+            .retain(|asset| !asset.name.contains("-amd64-"));
+        assert_eq!(select_eden_nightly_windows_asset(&release, "x86_64"), None);
     }
 
     #[test]

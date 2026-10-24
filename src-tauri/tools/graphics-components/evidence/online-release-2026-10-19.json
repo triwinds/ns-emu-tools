@@ -1,0 +1,49 @@
+{
+  "bundledComponents": false,
+  "date": "2026-10-19",
+  "downloadBackend": "production rust/bytehaul",
+  "elapsedSeconds": 169.6694748,
+  "githubSource": "direct",
+  "initialCacheEmpty": true,
+  "modifiedDllRejected": true,
+  "modifiedZipRejected": true,
+  "nrInstalled": true,
+  "nvidiaInstalled": true,
+  "packages": [
+    {
+      "archiveBytes": 2020539,
+      "archiveSha256": "dda7a455981c8764adab846c263c42193fe549bc58b35d423e76bff200f1b80e",
+      "kind": "common",
+      "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/graphics-common-eb2386a617e9af8c/graphics-common-eb2386a617e9af8c.zip",
+      "verifiedMembers": 5,
+      "version": "graphics-common-eb2386a617e9af8c"
+    },
+    {
+      "archiveBytes": 149263713,
+      "archiveSha256": "c36c2f3f18bdd9707e780390ee2022ce694c4a449b8d745506e3c53d454b2baf",
+      "kind": "nvidia",
+      "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/graphics-nvidia-63330fa934adb0bd/graphics-nvidia-63330fa934adb0bd.zip",
+      "verifiedMembers": 18,
+      "version": "graphics-nvidia-63330fa934adb0bd"
+    },
+    {
+      "archiveBytes": 78244601,
+      "archiveSha256": "f9bc211737ab6c7dda0827b53d970710dd2947c3abad2d721bd1f39b3dc728b1",
+      "kind": "xess",
+      "url": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/download/graphics-xess-7d7f127905a00113/graphics-xess-7d7f127905a00113.zip",
+      "verifiedMembers": 12,
+      "version": "graphics-xess-7d7f127905a00113"
+    }
+  ],
+  "reinstallWithoutDownload": true,
+  "sharedProgramsReused": true,
+  "xessInstalled": true,
+  "localDeliveryRestored": true,
+  "existingExeSha256": "12ee878a6cb0a454eae0094324ef375188d5425e0f7d5a88ddd35661021b983f",
+  "sourceArchive": "graphics-sources-5bfb1a0164744ef6.zip",
+  "releaseUrls": {
+    "common": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/tag/graphics-common-eb2386a617e9af8c",
+    "nvidia": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/tag/graphics-nvidia-63330fa934adb0bd",
+    "xess": "https://github.com/triwinds/ns-emu-tools-runtimes/releases/tag/graphics-xess-7d7f127905a00113"
+  }
+}

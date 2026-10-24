@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "patch_sha256": "2adabfc11450f6bb88e5eac5f66319432bcddeda3a786154e71db09e918709eb",
+  "files": [
+    {
+      "name": "sl.interposer.dll",
+      "sha256": "d72eff9e477f6b5b98b380f17594fb506e0a44a7d84378f419c394be8ddadef6",
+      "origin": "sdk-route-v3",
+      "source": "_artifacts/sl.interposer/Develop_x64/sl.interposer.dll"
+    },
+    {
+      "name": "sl.common.dll",
+      "sha256": "59241b5bd8d303206baaa1fe25c1f4fc5e44140f8af0c202965052bfaeef4e68",
+      "origin": "sdk-route-v3",
+      "source": "_artifacts/sl.common/Develop_x64/sl.common.dll"
+    },
+    {
+      "name": "sl.dlss_g.dll",
+      "sha256": "fa1f72c54ea3efc92baa5574d112e7b04c4d10949d394c8ec9a0aeba51963a3e",
+      "origin": "frozen-reference",
+      "source": "dlss/sl.dlss_g.dll"
+    },
+    {
+      "name": "sl.reflex.dll",
+      "sha256": "84e09f064cddd4712b78105bacf98c69bb4192dbfebe797f1f49bc3206fabced",
+      "origin": "frozen-reference",
+      "source": "dlss/sl.reflex.dll"
+    },
+    {
+      "name": "sl.pcl.dll",
+      "sha256": "5ce4a529ccb3c47892fb89e1c45eaa6fdad1bc8059ae70ff520bbbacc5bd6502",
+      "origin": "frozen-reference",
+      "source": "dlss/sl.pcl.dll"
+    },
+    {
+      "name": "nvngx_dlssg.dll",
+      "sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+      "origin": "frozen-reference",
+      "source": "dlss/nvngx_dlssg.dll"
+    },
+    {
+      "name": "NvLowLatencyVk.dll",
+      "sha256": "2a77dc3e1c724b7eea5755be0ae7423752e79a2459fae72181a9f00e3507e5d6",
+      "origin": "frozen-reference",
+      "source": "dlss/NvLowLatencyVk.dll"
+    }
+  ]
+}

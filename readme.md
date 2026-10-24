@@ -21,6 +21,7 @@
  - ~~支持安装 Yuzu EA/正式版模拟器~~
  - ~~支持 Yuzu 版本检测及更新~~ (yuzu 目前已经停止开发)
  - 支持安装 Ryubing/Ryujinx 正式/Canary 版模拟器及版本检测及更新
+ - 支持安装 Ryujinx Nextendo 分支，下载源使用 [Nextendo 官方 GitHub Releases](https://github.com/NextendoNetwork/Ryujinx-Nextendo/releases)
  - 支持安装 Eden 模拟器及版本检测及更新
  - Eden 下载源已切换到官方自建 Git 仓库
  - 支持安装 Citron 模拟器及版本检测及更新（Windows/macOS）

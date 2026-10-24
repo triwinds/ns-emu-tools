@@ -1,0 +1,1088 @@
+//! Process-scoped FG Vulkan layer; transparent unless explicitly enabled by the launcher.
+#![allow(clippy::missing_safety_doc)]
+#[cfg(all(
+    feature = "sdk-bridge",
+    any(
+        feature = "xess-native-aa",
+        all(feature = "xess-fg", not(feature = "hybrid-xess-fg"))
+    )
+))]
+compile_error!("Build XeSS separately from the Streamline/optical-flow component");
+#[cfg(any(
+    feature = "sdk-bridge",
+    feature = "xess-fg",
+    feature = "xess-native-aa"
+))]
+pub(crate) fn hybrid_enabled() -> bool {
+    cfg!(feature = "hybrid-xess-fg") && std::env::var("NS_EMU_XESS_HYBRID").as_deref() == Ok("1")
+}
+#[cfg(any(
+    feature = "sdk-bridge",
+    feature = "xess-fg",
+    feature = "xess-native-aa"
+))]
+pub(crate) fn dual_fg_enabled() -> bool {
+    cfg!(feature = "hybrid-xess-fg") && std::env::var("NS_EMU_FG_SWITCHABLE").as_deref() == Ok("1")
+}
+#[cfg(feature = "sdk-bridge")]
+pub(crate) fn xess_output() -> bool {
+    #[cfg(all(windows, feature = "hybrid-xess-fg"))]
+    if dual_fg_enabled() {
+        return dual_fg::xess();
+    }
+    hybrid_enabled()
+}
+#[cfg(all(windows, feature = "hybrid-xess-fg"))]
+mod dual_fg;
+#[cfg(all(windows, feature = "hybrid-xess-fg"))]
+#[used]
+#[no_mangle]
+pub static nsEmuFgSwitchV1: [u8; b"NS_EMU_FG_SWITCH_V1".len()] = *b"NS_EMU_FG_SWITCH_V1";
+#[cfg(all(windows, feature = "hybrid-xess-fg"))]
+#[used]
+#[no_mangle]
+pub static nsEmuDlssXeSSFGV1: [u8; b"NS_EMU_DLSS_XESS_FG_V1".len()] = *b"NS_EMU_DLSS_XESS_FG_V1";
+#[cfg(all(windows, feature = "xess-component"))]
+mod xess_status;
+#[cfg(all(windows, feature = "xess-component"))]
+#[used]
+#[no_mangle]
+pub static nsEmuXeSSComponentV1: [u8; b"NS_EMU_XESS_COMPONENT_V1".len()] =
+    *b"NS_EMU_XESS_COMPONENT_V1";
+#[cfg(all(windows, feature = "xess-fg"))]
+#[used]
+#[no_mangle]
+pub static nsEmuXeSSFrameGenerationV1: [u8; b"NS_EMU_XESS_FG_GAME_V1".len()] =
+    *b"NS_EMU_XESS_FG_GAME_V1";
+#[cfg(all(windows, feature = "xess-native-aa"))]
+#[used]
+#[no_mangle]
+pub static nsEmuXeSSNativeAaV1: [u8; b"NS_EMU_XESS_NATIVE_AA_V1".len()] =
+    *b"NS_EMU_XESS_NATIVE_AA_V1";
+mod abi;
+pub mod input_dimensions;
+#[path = "../../streamline-runtime-files.rs"]
+pub mod runtime_files;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuFixedRuntimeV1: [u8; b"NS_EMU_FIXED_RUNTIME_V1".len()] =
+    *b"NS_EMU_FIXED_RUNTIME_V1";
+#[path = "../../streamline-advanced-settings.rs"]
+pub mod advanced_settings;
+// The toolbox checks the verified DLL for this marker before a tuned launch.
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuGraphicsAdvancedV1: [u8; 27] = *b"NS_EMU_GRAPHICS_ADVANCED_V1";
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuOpticalFlowV1: [u8; b"NS_EMU_OPTICAL_FLOW_V1".len()] = *b"NS_EMU_OPTICAL_FLOW_V1";
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuInputScalingV1: [u8; b"NS_EMU_INPUT_SCALING_V1".len()] =
+    *b"NS_EMU_INPUT_SCALING_V1";
+#[cfg(all(windows, feature = "sdk-bridge"))]
+#[used]
+#[no_mangle]
+pub static nsEmuInputScalingLiveV1: [u8; b"NS_EMU_INPUT_SCALING_LIVE_V1".len()] =
+    *b"NS_EMU_INPUT_SCALING_LIVE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrLookV1: [u8; 17] = *b"NS_EMU_NR_LOOK_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrSpatialLookV1: [u8; 25] = *b"NS_EMU_NR_SPATIAL_LOOK_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrTwoPassV1: [u8; 21] = *b"NS_EMU_NR_TWO_PASS_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrInterpassV1: [u8; b"NS_EMU_NR_INTERPASS_V1".len()] = *b"NS_EMU_NR_INTERPASS_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrTemporalLookV1: [u8; 26] = *b"NS_EMU_NR_TEMPORAL_LOOK_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrLookScopeV1: [u8; 23] = *b"NS_EMU_NR_LOOK_SCOPE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrTemporalModesV1: [u8; 27] = *b"NS_EMU_NR_TEMPORAL_MODES_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrPersistenceV1: [u8; 24] = *b"NS_EMU_NR_PERSISTENCE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrLookExperimentsV1: [u8; b"NS_EMU_NR_LOOK_EXPERIMENTS_V1".len()] =
+    *b"NS_EMU_NR_LOOK_EXPERIMENTS_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrConsolidatedV1: [u8; b"NS_EMU_NR_CONSOLIDATED_V1".len()] =
+    *b"NS_EMU_NR_CONSOLIDATED_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrInferenceScaleV1: [u8; b"NS_EMU_NR_INFERENCE_SCALE_V1".len()] =
+    *b"NS_EMU_NR_INFERENCE_SCALE_V1";
+#[cfg(all(windows, feature = "native-nr"))]
+#[used]
+#[no_mangle]
+pub static nsEmuNrInferenceCapV1: [u8; b"NS_EMU_NR_INFERENCE_CAP_V1".len()] =
+    *b"NS_EMU_NR_INFERENCE_CAP_V1";
+mod capture;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod live;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_abi;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_api;
+pub mod nr_history;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_input_difference;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_interpass;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_layout;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_look;
+pub mod nr_look_history;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_package;
+pub mod nr_pass_history;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_reconstruct;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_runtime;
+pub mod nr_source_frames;
+#[cfg(all(windows, feature = "native-nr"))]
+mod nr_validation;
+#[cfg(all(windows, feature = "native-nr"))]
+mod target_nr;
+#[cfg(all(windows, feature = "native-nr"))]
+mod validation_calls;
+#[cfg(all(windows, feature = "native-nr"))]
+#[no_mangle]
+pub extern "C" fn nrLayerAbi() -> u64 {
+    0x0001_0000_0000_0001
+}
+#[cfg(any(test, all(windows, feature = "sdk-bridge")))]
+mod fg_dynamic;
+mod present_layout;
+mod queue_sync;
+mod route_objects;
+mod scale_copy;
+mod scale_model;
+mod scale_probe;
+mod sdk_layout_trace;
+mod sdk_output_layout;
+mod sdk_transfer_access;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod sdk_validation_log;
+mod source_auto;
+mod source_model;
+#[cfg(any(test, all(windows, feature = "sdk-bridge")))]
+#[path = "../../streamline-sr-preset.rs"]
+mod sr_preset;
+#[cfg(any(test, all(windows, feature = "sdk-bridge")))]
+mod target_device_plan;
+#[cfg(any(test, all(windows, feature = "sdk-bridge")))]
+mod target_fg_gate;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_runtime;
+#[cfg(all(windows, feature = "xess-native-aa"))]
+mod target_xess_aa;
+mod trace;
+#[cfg(any(test, all(windows, feature = "native-nr")))]
+mod validation_context;
+#[cfg(all(windows, any(feature = "xess-native-aa", feature = "xess-fg")))]
+mod vulkan_features;
+#[cfg(all(windows, feature = "xess-native-aa"))]
+#[path = "../../../tools/xess-vulkan-diagnostics/src/api.rs"]
+mod xess_api;
+#[cfg(all(windows, feature = "xess-fg"))]
+mod xess_fg;
+#[cfg(all(windows, feature = "xess-native-aa"))]
+mod xess_native;
+use abi::*;
+use ash::vk::{self, Handle};
+use serde_json::json;
+use std::collections::HashMap;
+use std::ffi::{c_char, CStr};
+use std::sync::{Mutex, OnceLock};
+
+#[derive(Clone, Copy)]
+struct Instance {
+    handle: vk::Instance,
+    gipa: vk::PFN_vkGetInstanceProcAddr,
+    physical_gpa: Option<vk::PFN_vkGetInstanceProcAddr>,
+}
+#[derive(Clone, Copy)]
+struct Device {
+    set_loader_data: Option<SetDeviceLoaderData>,
+    physical: vk::PhysicalDevice,
+    handle: vk::Device,
+    gdpa: vk::PFN_vkGetDeviceProcAddr,
+}
+#[derive(Default)]
+struct State {
+    instances: HashMap<usize, Instance>,
+    devices: HashMap<usize, Device>,
+}
+static STATE: OnceLock<Mutex<State>> = OnceLock::new();
+fn state() -> std::sync::MutexGuard<'static, State> {
+    STATE
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+}
+// Vulkan dispatchable objects share their dispatch-table key with child objects.
+unsafe fn key<T: Handle>(handle: T) -> usize {
+    let raw = handle.as_raw();
+    if raw == 0 {
+        0
+    } else {
+        *(raw as *const usize)
+    }
+}
+unsafe fn instance<T: Handle>(handle: T) -> Option<Instance> {
+    state().instances.get(&key(handle)).copied()
+}
+unsafe fn device<T: Handle>(handle: T) -> Option<Device> {
+    state().devices.get(&key(handle)).copied()
+}
+fn address(f: vk::PFN_vkVoidFunction) -> usize {
+    f.map_or(0, |f| f as usize)
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkNegotiateLoaderLayerInterfaceVersion(
+    p: *mut Negotiation,
+) -> vk::Result {
+    if p.is_null() || (*p).s_type != 1 || (*p).version < 2 {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    }
+    (*p).version = 2;
+    (*p).gipa = Some(vkGetInstanceProcAddr);
+    (*p).gdpa = Some(vkGetDeviceProcAddr);
+    (*p).physical_gpa = Some(physical_gpa);
+    trace::event!("negotiate", json!({"version": 2}));
+    vk::Result::SUCCESS
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkCreateInstance(
+    info: *const vk::InstanceCreateInfo,
+    alloc: *const vk::AllocationCallbacks,
+    output: *mut vk::Instance,
+) -> vk::Result {
+    if !trace::authorized() || info.is_null() || output.is_null() {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    }
+    let chain = find_link(
+        (*info).p_next,
+        vk::StructureType::LOADER_INSTANCE_CREATE_INFO,
+    )
+    .cast::<InstanceChain>();
+    if chain.is_null() || (*chain).data[0] == 0 {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    }
+    let link = (*chain).data[0] as *mut InstanceLink;
+    let gipa = (*link).gipa;
+    let physical_gpa = (*link).physical_gpa;
+    let Some(next) = gipa(vk::Instance::null(), c"vkCreateInstance".as_ptr()) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    let next: vk::PFN_vkCreateInstance = std::mem::transmute(next);
+    trace::event!(
+        "instance_request",
+        json!({"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count),"api_version":if (*info).p_application_info.is_null(){0}else{(*(*info).p_application_info).api_version}}),
+    );
+    // Only advance the Loader-owned link, never application creation parameters.
+    (*chain).data[0] = (*link).next as usize;
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    let native_xess =
+        target_xess_aa::enabled().then(|| xess_native::create_instance(next, info, alloc, output));
+    #[cfg(not(all(windows, feature = "xess-native-aa")))]
+    let native_xess: Option<vk::Result> = None;
+    #[cfg(all(windows, feature = "xess-fg"))]
+    let native_xess = if native_xess.is_none() && xess_fg::enabled() && !hybrid_enabled() {
+        Some(xess_fg::create_instance(next, info, alloc, output))
+    } else {
+        native_xess
+    };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    let result = if let Some(result) = native_xess {
+        result
+    } else if target_runtime::enabled() {
+        target_runtime::create_instance(next, info, alloc, output)
+    } else {
+        #[cfg(feature = "native-nr")]
+        let result = if nr_validation::enabled() {
+            let enables = [vk::ValidationFeatureEnableEXT::SYNCHRONIZATION_VALIDATION];
+            let mut validation =
+                vk::ValidationFeaturesEXT::default().enabled_validation_features(&enables);
+            let mut callback = nr_validation::create_info();
+            let copy = (*info).push_next(&mut validation).push_next(&mut callback);
+            next(&copy, alloc, output)
+        } else {
+            next(info, alloc, output)
+        };
+        #[cfg(not(feature = "native-nr"))]
+        let result = next(info, alloc, output);
+        result
+    };
+    #[cfg(not(all(windows, feature = "sdk-bridge")))]
+    let result = native_xess.unwrap_or_else(|| next(info, alloc, output));
+    (*chain).data[0] = link as usize;
+    if result == vk::Result::SUCCESS {
+        state().instances.insert(
+            key(*output),
+            Instance {
+                handle: *output,
+                gipa,
+                physical_gpa,
+            },
+        );
+        #[cfg(all(windows, feature = "native-nr"))]
+        if nr_validation::enabled() {
+            if nr_validation::created(*output, gipa).is_err() {
+                std::process::abort();
+            }
+        }
+    }
+    trace::event!(
+        "vkCreateInstance",
+        json!({"result": result.as_raw(), "next": next as usize}),
+    );
+    result
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkDestroyInstance(
+    handle: vk::Instance,
+    alloc: *const vk::AllocationCallbacks,
+) {
+    let Some(dispatch) = instance(handle) else {
+        return;
+    };
+    let k = key(handle);
+    let next: vk::PFN_vkDestroyInstance =
+        std::mem::transmute((dispatch.gipa)(handle, c"vkDestroyInstance".as_ptr()).unwrap());
+    #[cfg(all(windows, feature = "native-nr"))]
+    if nr_validation::enabled() {
+        nr_validation::before_destroy(handle);
+    }
+    next(handle, alloc);
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    sdk_validation_log::after_destroy_instance(handle);
+    state().instances.remove(&k);
+    #[cfg(all(windows, feature = "native-nr"))]
+    if nr_validation::enabled() {
+        nr_validation::report(state().instances.is_empty());
+    }
+    trace::event!(
+        "vkDestroyInstance",
+        json!({"remaining_instances": state().instances.len()}),
+    );
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkCreateDevice(
+    physical: vk::PhysicalDevice,
+    info: *const vk::DeviceCreateInfo,
+    alloc: *const vk::AllocationCallbacks,
+    output: *mut vk::Device,
+) -> vk::Result {
+    let Some(parent) = instance(physical) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    if info.is_null() || output.is_null() {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    }
+    let chain = find_link((*info).p_next, vk::StructureType::LOADER_DEVICE_CREATE_INFO)
+        .cast::<DeviceChain>();
+    if chain.is_null() || (*chain).data == 0 {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    }
+    let callback = find_function(
+        (*info).p_next,
+        vk::StructureType::LOADER_DEVICE_CREATE_INFO,
+        1,
+    )
+    .cast::<DeviceChain>();
+    let set_loader_data = if callback.is_null() || (*callback).data == 0 {
+        None
+    } else {
+        Some(std::mem::transmute::<usize, SetDeviceLoaderData>(
+            (*callback).data,
+        ))
+    };
+    let link = (*chain).data as *mut DeviceLink;
+    let gdpa = (*link).gdpa;
+    let Some(next) = ((*link).gipa)(parent.handle, c"vkCreateDevice".as_ptr()) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    let next: vk::PFN_vkCreateDevice = std::mem::transmute(next);
+    let queues: Vec<_> = (0..(*info).queue_create_info_count as usize)
+        .map(|index| {
+            let q = &*(*info).p_queue_create_infos.add(index);
+            json!({"family":q.queue_family_index,"count":q.queue_count,"flags":q.flags.as_raw()})
+        })
+        .collect();
+    let mut feature_chain = Vec::new();
+    let mut node = (*info).p_next.cast::<vk::BaseInStructure>();
+    for _ in 0..64 {
+        if node.is_null() {
+            break;
+        }
+        feature_chain.push(format!("{:?}", (*node).s_type));
+        node = (*node).p_next;
+    }
+    trace::event!(
+        "device_request",
+        json!({"queues":queues,"feature_chain":feature_chain,"extensions":extension_names((*info).pp_enabled_extension_names,(*info).enabled_extension_count)}),
+    );
+    (*chain).data = (*link).next as usize;
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    let native_xess = target_xess_aa::enabled()
+        .then(|| xess_native::create_device(parent, next, physical, info, alloc, output));
+    #[cfg(not(all(windows, feature = "xess-native-aa")))]
+    let native_xess: Option<vk::Result> = None;
+    #[cfg(all(windows, feature = "xess-fg"))]
+    let native_xess = if native_xess.is_none() && xess_fg::enabled() && !hybrid_enabled() {
+        Some(xess_fg::create_device(
+            parent, next, physical, info, alloc, output,
+        ))
+    } else {
+        native_xess
+    };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    let result = if let Some(result) = native_xess {
+        result
+    } else if target_runtime::enabled() {
+        target_runtime::create_device(parent, next, physical, info, alloc, output)
+    } else {
+        next(physical, info, alloc, output)
+    };
+    #[cfg(not(all(windows, feature = "sdk-bridge")))]
+    let result = native_xess.unwrap_or_else(|| next(physical, info, alloc, output));
+    (*chain).data = link as usize;
+    if result == vk::Result::SUCCESS {
+        state().devices.insert(
+            key(*output),
+            Device {
+                set_loader_data,
+                physical,
+                handle: *output,
+                gdpa,
+            },
+        );
+        #[cfg(all(windows, feature = "xess-fg"))]
+        if xess_fg::enabled() || dual_fg_enabled() {
+            xess_fg::device_created(*output, info);
+        }
+        #[cfg(all(windows, feature = "xess-native-aa"))]
+        if xess_native::enabled() {
+            xess_native::device_created(*output, info);
+        }
+    }
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if result == vk::Result::SUCCESS && target_runtime::enabled() {
+        if let Err(error) = target_runtime::device_created(parent, physical, *output, info) {
+            trace::event!(
+                "target_sdk_error",
+                json!({"stage":"set_info","error":error}),
+            );
+            std::process::abort();
+        }
+    }
+    trace::event!(
+        "vkCreateDevice",
+        json!({"result": result.as_raw(), "next": next as usize}),
+    );
+    result
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkDestroyDevice(
+    handle: vk::Device,
+    alloc: *const vk::AllocationCallbacks,
+) {
+    let Some(dispatch) = device(handle) else {
+        return;
+    };
+    let k = key(handle);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() || dual_fg_enabled() {
+        xess_fg::destroy_device(handle);
+    }
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if xess_native::enabled() {
+        xess_native::destroy_device(handle);
+    }
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    target_fg::drain_device(handle);
+    if route_objects::drain_device(handle).is_err() {
+        std::process::abort();
+    }
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        target_runtime::destroy_device(handle);
+    }
+    let next: vk::PFN_vkDestroyDevice =
+        std::mem::transmute((dispatch.gdpa)(handle, c"vkDestroyDevice".as_ptr()).unwrap());
+    next(handle, alloc);
+    state().devices.remove(&k);
+    queue_sync::retired(handle);
+    present_layout::retired_device(handle);
+    sdk_layout_trace::retired_device(handle);
+    sdk_output_layout::retired_device(handle);
+    sdk_transfer_access::retired_device(handle);
+    trace::event!(
+        "vkDestroyDevice",
+        json!({"remaining_devices": state().devices.len()}),
+    );
+}
+
+// Copy dispatch under lock; no map or trace lock is held over the call down-chain.
+macro_rules! device_hook {
+    ($name:ident, $pfn:ident, ($first:ident: $ty:ty $(, $arg:ident: $argty:ty)*), $ret:ty, $failure:expr) => {
+        #[no_mangle]
+        pub unsafe extern "system" fn $name($first: $ty, $($arg: $argty),*) -> $ret {
+            let Some(d) = device($first) else { return $failure; };
+            #[cfg(all(windows,feature="sdk-bridge"))]
+            if target_runtime::enabled(){target_runtime::ensure_device(d.handle);}
+            let name = concat!(stringify!($name), "\0");
+            let Some(next) = (d.gdpa)(d.handle, name.as_ptr().cast()) else { return $failure; };
+            #[cfg(all(windows,feature="sdk-bridge"))]
+            let next=if target_runtime::enabled(){target_runtime::device_proc(d.handle,CStr::from_bytes_with_nul_unchecked(name.as_bytes())).or_else(||queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(name.as_bytes()))).unwrap_or(next)}else{queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(name.as_bytes())).unwrap_or(next)};
+            #[cfg(not(all(windows,feature="sdk-bridge")))]
+            let next=queue_sync::intercept(CStr::from_bytes_with_nul_unchecked(name.as_bytes())).unwrap_or(next);
+            let next: vk::$pfn = std::mem::transmute(next);
+            trace::event!(stringify!($name), json!({"next": next as usize, "hook": $name as *const () as usize, "object": $first.as_raw()}));
+            #[cfg(all(windows,feature="native-nr"))]
+            { return validation_context::application(stringify!($name), || next($first, $($arg),*)); }
+            #[cfg(not(all(windows,feature="native-nr")))]
+            next($first, $($arg),*)
+        }
+    };
+}
+device_hook!(vkGetDeviceQueue, PFN_vkGetDeviceQueue, (handle: vk::Device, family: u32, index: u32, output: *mut vk::Queue), (), ());
+device_hook!(vkGetDeviceQueue2, PFN_vkGetDeviceQueue2, (handle: vk::Device, info: *const vk::DeviceQueueInfo2, output: *mut vk::Queue), (), ());
+device_hook!(vkDeviceWaitIdle, PFN_vkDeviceWaitIdle, (handle: vk::Device), vk::Result, vk::Result::ERROR_DEVICE_LOST);
+
+#[no_mangle]
+pub unsafe extern "system" fn vkGetSwapchainImagesKHR(
+    handle: vk::Device,
+    swapchain: vk::SwapchainKHR,
+    count: *mut u32,
+    images: *mut vk::Image,
+) -> vk::Result {
+    let Some(d) = device(handle) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        target_runtime::ensure_device(d.handle);
+    }
+    let Some(next) = (d.gdpa)(handle, c"vkGetSwapchainImagesKHR".as_ptr()) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    let next = if target_runtime::enabled() {
+        target_runtime::device_proc(handle, c"vkGetSwapchainImagesKHR").unwrap_or(next)
+    } else {
+        next
+    };
+    let next: vk::PFN_vkGetSwapchainImagesKHR = std::mem::transmute(next);
+    #[cfg(all(windows, feature = "native-nr"))]
+    let result = validation_context::application("vkGetSwapchainImagesKHR", || {
+        next(handle, swapchain, count, images)
+    });
+    #[cfg(not(all(windows, feature = "native-nr")))]
+    let result = next(handle, swapchain, count, images);
+    // Proxy ownership is required even when all optional source probes are off.
+    if matches!(result, vk::Result::SUCCESS | vk::Result::INCOMPLETE)
+        && !count.is_null()
+        && !images.is_null()
+    {
+        present_layout::images(
+            handle.as_raw(),
+            swapchain.as_raw(),
+            scale_probe::items(images, *count),
+        );
+    }
+    result
+}
+device_hook!(vkAcquireNextImageKHR, PFN_vkAcquireNextImageKHR, (handle: vk::Device, swapchain: vk::SwapchainKHR, timeout: u64, semaphore: vk::Semaphore, fence: vk::Fence, index: *mut u32), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+device_hook!(vkAcquireNextImage2KHR, PFN_vkAcquireNextImage2KHR, (handle: vk::Device, info: *const vk::AcquireNextImageInfoKHR, index: *mut u32), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+
+device_hook!(vkAllocateCommandBuffers, PFN_vkAllocateCommandBuffers, (handle: vk::Device, info: *const vk::CommandBufferAllocateInfo, output: *mut vk::CommandBuffer), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+device_hook!(vkBeginCommandBuffer, PFN_vkBeginCommandBuffer, (handle: vk::CommandBuffer, info: *const vk::CommandBufferBeginInfo), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+device_hook!(vkEndCommandBuffer, PFN_vkEndCommandBuffer, (handle: vk::CommandBuffer), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+device_hook!(vkQueueSubmit, PFN_vkQueueSubmit, (handle: vk::Queue, count: u32, submits: *const vk::SubmitInfo, fence: vk::Fence), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+device_hook!(vkQueueWaitIdle, PFN_vkQueueWaitIdle, (handle: vk::Queue), vk::Result, vk::Result::ERROR_INITIALIZATION_FAILED);
+
+unsafe fn device_intercept(name: &CStr) -> vk::PFN_vkVoidFunction {
+    macro_rules! pick { ($($f:ident),*) => { match name.to_bytes() { $(s if s == stringify!($f).as_bytes() => return Some(std::mem::transmute($f as *const ())),)* _ => {} } }; }
+    if let Some(hook) = scale_probe::intercept(name) {
+        return Some(hook);
+    }
+    #[cfg(all(windows, feature = "native-nr"))]
+    if let Some(hook) = validation_calls::intercept(name, nr_validation::enabled()) {
+        return Some(hook);
+    }
+    if name == c"vkQueueBindSparse" {
+        return queue_sync::intercept(name);
+    }
+    pick!(
+        vkGetDeviceProcAddr,
+        vkDestroyDevice,
+        vkGetDeviceQueue,
+        vkGetDeviceQueue2,
+        vkAllocateCommandBuffers,
+        vkBeginCommandBuffer,
+        vkEndCommandBuffer,
+        vkQueueSubmit,
+        vkQueueWaitIdle,
+        vkDeviceWaitIdle,
+        vkCreateSwapchainKHR,
+        vkDestroySwapchainKHR,
+        vkGetSwapchainImagesKHR,
+        vkAcquireNextImageKHR,
+        vkAcquireNextImage2KHR,
+        vkQueuePresentKHR
+    );
+    // Queue synchronization must also cover Submit2 when source probing is off.
+    if let Some(hook) = queue_sync::intercept(name) {
+        return Some(hook);
+    }
+    // The proxy's PRESENT -> TRANSFER_SRC contract is not a tracing feature.
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        return present_layout::barrier_intercept(name);
+    }
+    None
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkGetDeviceProcAddr(
+    handle: vk::Device,
+    name: *const c_char,
+) -> vk::PFN_vkVoidFunction {
+    if name.is_null() || handle == vk::Device::null() {
+        return None;
+    }
+    let d = device(handle)?;
+    let next = (d.gdpa)(handle, name);
+    // Never advertise an unsupported command merely because we have a wrapper.
+    next?;
+    if capture::select_next(CStr::from_ptr(name)) {
+        trace::event!(
+            "idle_capture_query",
+            json!({"next": address(next), "device": handle.as_raw()}),
+        );
+        return next;
+    }
+    let intercepted = device_intercept(CStr::from_ptr(name));
+    let result = intercepted.or(next);
+    if intercepted.is_some() {
+        trace::event!(
+            "gdpa",
+            json!({"name": CStr::from_ptr(name).to_string_lossy(), "next": address(next), "returned": address(result)}),
+        );
+    }
+    result
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkGetInstanceProcAddr(
+    handle: vk::Instance,
+    name: *const c_char,
+) -> vk::PFN_vkVoidFunction {
+    if name.is_null() {
+        return None;
+    }
+    let name_str = CStr::from_ptr(name);
+    match name_str.to_bytes() {
+        b"vkGetInstanceProcAddr" => {
+            return Some(std::mem::transmute(vkGetInstanceProcAddr as *const ()))
+        }
+        b"vkCreateInstance" => return Some(std::mem::transmute(vkCreateInstance as *const ())),
+        _ => {}
+    }
+    let d = instance(handle)?;
+    let next = (d.gipa)(handle, name);
+    next?;
+    let result = match name_str.to_bytes() {
+        b"vkCreateDevice" => Some(std::mem::transmute(vkCreateDevice as *const ())),
+        b"vkDestroyInstance" => Some(std::mem::transmute(vkDestroyInstance as *const ())),
+        b"vkCreateWin32SurfaceKHR" => {
+            Some(std::mem::transmute(vkCreateWin32SurfaceKHR as *const ()))
+        }
+        b"vkDestroySurfaceKHR" => Some(std::mem::transmute(vkDestroySurfaceKHR as *const ())),
+        #[cfg(all(windows, feature = "xess-fg"))]
+        b"vkGetPhysicalDeviceSurfaceCapabilitiesKHR" if xess_fg::enabled() => Some(
+            std::mem::transmute(xess_fg::get_surface_capabilities as *const ()),
+        ),
+        _ => device_intercept(name_str).or(next),
+    };
+    result
+}
+unsafe extern "system" fn physical_gpa(
+    handle: vk::Instance,
+    name: *const c_char,
+) -> vk::PFN_vkVoidFunction {
+    if name.is_null() {
+        return None;
+    }
+    let d = instance(handle)?;
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() && CStr::from_ptr(name) == c"vkGetPhysicalDeviceSurfaceCapabilitiesKHR" {
+        return Some(std::mem::transmute(
+            xess_fg::get_surface_capabilities as *const (),
+        ));
+    }
+    d.physical_gpa.and_then(|f| f(handle, name))
+}
+
+/// Diagnostic export: exposes the saved next-layer address, never invokes it.
+#[no_mangle]
+pub unsafe extern "system" fn probeNextAddress(
+    handle: u64,
+    is_device: u32,
+    name: *const c_char,
+) -> usize {
+    if !trace::authorized() || name.is_null() {
+        return 0;
+    }
+    if is_device != 0 {
+        device(vk::Device::from_raw(handle)).map_or(0, |d| address((d.gdpa)(d.handle, name)))
+    } else {
+        instance(vk::Instance::from_raw(handle)).map_or(0, |d| address((d.gipa)(d.handle, name)))
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn probeLiveObjects() -> u64 {
+    let s = state();
+    ((s.instances.len() as u64) << 32) | s.devices.len() as u64
+}
+
+/// Experimental callbacks use exact live object identity, without dereferencing
+/// untrusted handles. Copy the dispatch record before calling any downstream code.
+#[no_mangle]
+pub unsafe extern "system" fn probeRouteGipa(
+    handle: vk::Instance,
+    name: *const c_char,
+) -> vk::PFN_vkVoidFunction {
+    if !trace::authorized() || name.is_null() || handle == vk::Instance::null() {
+        return None;
+    }
+    let dispatch = state()
+        .instances
+        .values()
+        .find(|d| d.handle == handle)
+        .copied()?;
+    let next = (dispatch.gipa)(handle, name);
+    trace::event!(
+        "route_gipa",
+        json!({"handle":handle.as_raw(),"name":CStr::from_ptr(name).to_string_lossy(),"next":address(next)}),
+    );
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    {
+        next?;
+        return sdk_validation_log::intercept(CStr::from_ptr(name)).or(next);
+    }
+    #[cfg(not(all(windows, feature = "sdk-bridge")))]
+    next
+}
+#[no_mangle]
+pub unsafe extern "system" fn probeRouteGdpa(
+    handle: vk::Device,
+    name: *const c_char,
+) -> vk::PFN_vkVoidFunction {
+    if !trace::authorized() || name.is_null() || handle == vk::Device::null() {
+        return None;
+    }
+    let dispatch = state()
+        .devices
+        .values()
+        .find(|d| d.handle == handle)
+        .copied()?;
+    let next = (dispatch.gdpa)(handle, name);
+    trace::event!(
+        "route_gdpa",
+        json!({"handle":handle.as_raw(),"name":CStr::from_ptr(name).to_string_lossy(),"next":address(next)}),
+    );
+    next?;
+    route_objects::intercept(CStr::from_ptr(name)).or(next)
+}
+
+/// Physical-device handle at this layer's boundary, associated during creation.
+#[no_mangle]
+pub unsafe extern "system" fn probeRoutePhysical(handle: vk::Device) -> vk::PhysicalDevice {
+    if !trace::authorized() {
+        return vk::PhysicalDevice::null();
+    }
+    state()
+        .devices
+        .values()
+        .find(|d| d.handle == handle)
+        .map_or(vk::PhysicalDevice::null(), |d| d.physical)
+}
+
+unsafe fn extension_names(names: *const *const c_char, count: u32) -> Vec<String> {
+    (0..count as usize)
+        .map(|i| CStr::from_ptr(*names.add(i)).to_string_lossy().into_owned())
+        .collect()
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn vkCreateWin32SurfaceKHR(
+    handle: vk::Instance,
+    info: *const vk::Win32SurfaceCreateInfoKHR,
+    alloc: *const vk::AllocationCallbacks,
+    out: *mut vk::SurfaceKHR,
+) -> vk::Result {
+    let Some(d) = instance(handle) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    let next: vk::PFN_vkCreateWin32SurfaceKHR =
+        std::mem::transmute((d.gipa)(handle, c"vkCreateWin32SurfaceKHR".as_ptr()).unwrap());
+    #[cfg(all(windows, feature = "xess-fg"))]
+    let result = if xess_fg::enabled() {
+        xess_fg::create_surface(handle, next, info, alloc, out)
+    } else {
+        next(handle, info, alloc, out)
+    };
+    #[cfg(not(all(windows, feature = "xess-fg")))]
+    let result = next(handle, info, alloc, out);
+    #[cfg(all(windows, feature = "hybrid-xess-fg"))]
+    if dual_fg_enabled() && result == vk::Result::SUCCESS {
+        xess_fg::track_dual_surface(*out, (*info).hwnd);
+    }
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() && result == vk::Result::SUCCESS {
+        target_runtime::surface_created(handle, info, *out);
+    }
+    trace::event!(
+        "vkCreateWin32SurfaceKHR",
+        json!({"result":result.as_raw(),"object":handle.as_raw()}),
+    );
+    result
+}
+#[no_mangle]
+pub unsafe extern "system" fn vkDestroySurfaceKHR(
+    handle: vk::Instance,
+    surface: vk::SurfaceKHR,
+    alloc: *const vk::AllocationCallbacks,
+) {
+    let Some(d) = instance(handle) else { return };
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        target_runtime::surface_destroyed(surface);
+    }
+    let next: vk::PFN_vkDestroySurfaceKHR =
+        std::mem::transmute((d.gipa)(handle, c"vkDestroySurfaceKHR".as_ptr()).unwrap());
+    next(handle, surface, alloc);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() || dual_fg_enabled() {
+        xess_fg::destroy_surface(surface);
+    }
+    trace::event!("vkDestroySurfaceKHR", json!({"object":handle.as_raw()}));
+}
+#[no_mangle]
+pub unsafe extern "system" fn vkCreateSwapchainKHR(
+    handle: vk::Device,
+    info: *const vk::SwapchainCreateInfoKHR,
+    alloc: *const vk::AllocationCallbacks,
+    out: *mut vk::SwapchainKHR,
+) -> vk::Result {
+    let Some(d) = device(handle) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    trace::event!("vkCreateSwapchainKHR", json!({"object":handle.as_raw()}));
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_runtime::enabled() {
+        target_runtime::ensure_device(handle);
+        if let Some(result) = target_runtime::create_swapchain(handle, info, alloc, out) {
+            return result;
+        }
+    }
+    let next: vk::PFN_vkCreateSwapchainKHR =
+        std::mem::transmute((d.gdpa)(handle, c"vkCreateSwapchainKHR".as_ptr()).unwrap());
+    let mut copy = *info;
+    copy.image_usage = scale_copy::swapchain_usage(d, &copy);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() {
+        xess_fg::before_swapchain(d, &mut copy);
+    }
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if xess_native::enabled() {
+        copy.image_usage = xess_native::swapchain_usage(d, &copy);
+    }
+    let result = next(handle, &copy, alloc, out);
+    if result == vk::Result::SUCCESS {
+        scale_copy::swapchain_created(d, *out, &copy, result);
+        #[cfg(all(windows, feature = "xess-fg"))]
+        if xess_fg::enabled() {
+            xess_fg::swapchain_created(d, *out, &copy);
+        }
+        #[cfg(all(windows, feature = "xess-native-aa"))]
+        if xess_native::enabled() {
+            xess_native::swapchain_created(d, *out, &copy);
+        }
+    }
+    result
+}
+
+#[cfg(all(
+    windows,
+    any(
+        feature = "sdk-bridge",
+        feature = "xess-native-aa",
+        feature = "xess-fg"
+    )
+))]
+#[cfg_attr(not(feature = "sdk-bridge"), allow(dead_code))]
+mod fg_api;
+
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod fg_pause;
+#[cfg(all(windows, any(feature = "sdk-bridge", feature = "xess-native-aa")))]
+#[cfg_attr(not(feature = "sdk-bridge"), allow(dead_code))]
+mod frame_capture;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_fg;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_input_scale;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_nvof;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_sr;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_sr_motion;
+#[cfg(all(windows, feature = "sdk-bridge"))]
+mod target_window;
+
+#[no_mangle]
+pub unsafe extern "system" fn vkQueuePresentKHR(
+    queue: vk::Queue,
+    info: *const vk::PresentInfoKHR,
+) -> vk::Result {
+    let Some(d) = device(queue) else {
+        return vk::Result::ERROR_INITIALIZATION_FAILED;
+    };
+    let native = (d.gdpa)(d.handle, c"vkQueuePresentKHR".as_ptr()).unwrap();
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    let address = if target_runtime::enabled() {
+        target_runtime::device_proc(d.handle, c"vkQueuePresentKHR").unwrap_or(native)
+    } else {
+        native
+    };
+    #[cfg(not(all(windows, feature = "sdk-bridge")))]
+    let address = native;
+    let next: vk::PFN_vkQueuePresentKHR = std::mem::transmute(address);
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() && !hybrid_enabled() {
+        return xess_fg::present(d, queue, info, next);
+    }
+    #[cfg(all(windows, feature = "hybrid-xess-fg"))]
+    let next = if dual_fg_enabled() {
+        xess_fg::dual_present
+    } else if hybrid_enabled() {
+        xess_fg::hybrid_present
+    } else {
+        next
+    };
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if target_xess_aa::enabled() {
+        return xess_native::present(d, queue, info, next);
+    }
+    trace::event!(
+        "vkQueuePresentKHR",
+        json!({"object":queue.as_raw(),"next":address as usize,"hook":vkQueuePresentKHR as *const () as usize}),
+    );
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_fg::enabled() {
+        return target_fg::present(d, queue, info, next);
+    }
+    let consumed = scale_copy::before_present(d, queue, &*info);
+    let mut forwarded = *info;
+    if consumed {
+        forwarded.wait_semaphore_count = 0;
+        forwarded.p_wait_semaphores = std::ptr::null();
+    }
+    let result = next(queue, &forwarded);
+    scale_probe::present(queue, info, result);
+    result
+}
+#[no_mangle]
+pub unsafe extern "system" fn vkDestroySwapchainKHR(
+    handle: vk::Device,
+    swapchain: vk::SwapchainKHR,
+    alloc: *const vk::AllocationCallbacks,
+) {
+    let Some(d) = device(handle) else { return };
+    #[cfg(all(windows, feature = "xess-fg"))]
+    if xess_fg::enabled() || dual_fg_enabled() {
+        xess_fg::destroy_swapchain(handle, swapchain);
+    }
+    #[cfg(all(windows, feature = "xess-native-aa"))]
+    if xess_native::enabled() {
+        xess_native::destroy_swapchain(handle, swapchain);
+    }
+    let native = (d.gdpa)(handle, c"vkDestroySwapchainKHR".as_ptr()).unwrap();
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    let address = if target_runtime::enabled() {
+        target_runtime::device_proc(handle, c"vkDestroySwapchainKHR").unwrap_or(native)
+    } else {
+        native
+    };
+    #[cfg(not(all(windows, feature = "sdk-bridge")))]
+    let address = native;
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_fg::enabled() {
+        target_fg::before_destroy(swapchain);
+    }
+    let next: vk::PFN_vkDestroySwapchainKHR = std::mem::transmute(address);
+    next(handle, swapchain, alloc);
+    source_auto::retire_swapchain(handle.as_raw(), swapchain.as_raw());
+    present_layout::retired(handle, swapchain);
+    #[cfg(all(windows, feature = "sdk-bridge"))]
+    if target_fg::enabled() {
+        target_fg::after_destroy(handle, swapchain);
+    }
+    trace::event!(
+        "vkDestroySwapchainKHR",
+        json!({"object":handle.as_raw(),"next":address as usize,"hook":vkDestroySwapchainKHR as *const () as usize}),
+    );
+}
+
+#[cfg(test)]
+mod dispatch_tests {
+    use super::*;
+
+    #[test]
+    fn synchronization2_queue_commands_remain_intercepted_without_source_probing() {
+        unsafe {
+            for name in [c"vkQueueSubmit2", c"vkQueueSubmit2KHR"] {
+                assert!(device_intercept(name).is_some());
+            }
+            assert!(device_intercept(c"vkUnsupportedProbeCommand").is_none());
+        }
+    }
+}
