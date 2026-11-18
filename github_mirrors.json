@@ -9,8 +9,8 @@
     "raw": "https://raw.githubusercontent.com/XIU2/UserScript/master/GithubEnhanced-High-Speed-Download.user.js"
   },
   "counts": {
-    "download": 14,
-    "raw": 6
+    "download": 13,
+    "raw": 3
   },
   "download": [
     {
@@ -18,13 +18,6 @@
       "url": "https://gh-proxy.org/https://github.com",
       "region": "美国",
       "description": "[美国 Cloudflare CDN] - 该公益加速源由 [gh-proxy.com] 提供",
-      "source_array": "download_url_us"
-    },
-    {
-      "kind": "download",
-      "url": "https://cdn.gh-proxy.org/https://github.com",
-      "region": "其他",
-      "description": "[Fastly CDN] - 该公益加速源由 [gh-proxy.com] 提供",
       "source_array": "download_url_us"
     },
     {
@@ -122,30 +115,9 @@
     },
     {
       "kind": "raw",
-      "url": "https://hk.gh-proxy.org/https://raw.githubusercontent.com",
-      "region": "香港 2",
-      "description": "[中国香港] - 该公益加速源由 [gh-proxy.com] 提供\n\n - 缓存：有（官方注明 2 小时）",
-      "source_array": "raw_url"
-    },
-    {
-      "kind": "raw",
-      "url": "https://ghfast.top/https://raw.githubusercontent.com",
-      "region": "韩国",
-      "description": "[日本、韩国、新加坡、美国、德国等]（CDN 不固定） - 该公益加速源由 [ghproxy.link] 提供\n\n - 缓存：无（或很短）",
-      "source_array": "raw_url"
-    },
-    {
-      "kind": "raw",
       "url": "https://fastly.jsdelivr.net/gh",
       "region": "日本 1",
       "description": "[日本 东京] - 该公益加速源由 [JSDelivr CDN] 提供\n\n - 缓存：有\n - 不支持大小超过 50 MB 的文件\n - 不支持版本号格式的分支名（如 v1.2.3）",
-      "source_array": "raw_url"
-    },
-    {
-      "kind": "raw",
-      "url": "https://cdn.gh-proxy.org/https://raw.githubusercontent.com",
-      "region": "日本 2",
-      "description": "[Fastly CDN] - 该公益加速源由 [gh-proxy.com] 提供\n\n - 缓存：有",
       "source_array": "raw_url"
     },
     {
