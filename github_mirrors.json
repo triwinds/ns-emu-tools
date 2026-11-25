@@ -99,16 +99,16 @@
     },
     {
       "kind": "download",
-      "url": "https://ghfast.top/https://github.com",
+      "url": "https://ghproxy.net/https://github.com",
       "region": "其他",
-      "description": "[日本、韩国、新加坡、美国、德国等]（CDN 不固定） - 该公益加速源由 [ghproxy.link] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
+      "description": "[法国] - 该公益加速源由 [ghproxy.net] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
       "source_array": "download_url_us"
     },
     {
       "kind": "download",
-      "url": "https://wget.la/https://github.com",
+      "url": "https://ghfast.top/https://github.com",
       "region": "其他",
-      "description": "[中国香港、中国台湾、日本、美国等]（CDN 不固定） - 该公益加速源由 [ucdn.me] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
+      "description": "[日本、韩国、新加坡、美国、德国等]（CDN 不固定） - 该公益加速源由 [ghproxy.link] 提供\n\n提示：希望大家尽量多使用美国节点（每次随机 负载均衡），\n避免流量都集中到亚洲公益节点，减少成本压力，公益才能更持久~",
       "source_array": "download_url_us"
     }
   ],
